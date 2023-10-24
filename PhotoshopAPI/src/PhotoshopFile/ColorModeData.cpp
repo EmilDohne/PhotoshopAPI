@@ -23,11 +23,11 @@ bool ColorModeData::read(File& document, const FileHeader& header)
 	// Just dump the data without parsing it
 	if (this->m_Size > 0)
 	{
-		this->m_Data = ReadBinaryArray<char>(document, this->m_Size);
+		this->m_Data = ReadBinaryArray<uint8_t>(document, this->m_Size);
 	}
 	else
 	{
-		this->m_Data = std::vector<char>(0);
+		this->m_Data = std::vector<uint8_t>(0);
 	}
 
 	return true;

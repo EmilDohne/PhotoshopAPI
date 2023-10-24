@@ -22,7 +22,7 @@ struct ResourceBlock
 	uint32_t m_Size = 0;				// Size of m_Data
 	uint32_t m_BlockSize = 0;			// Size of the whole block
 
-	std::vector<char> m_Data;
+	std::vector<uint8_t> m_Data;
 
 	ResourceBlock() : m_Size(0), m_BlockSize(0) {};
 	ResourceBlock(File& document);

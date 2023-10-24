@@ -14,53 +14,42 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 T ReadBinaryData(File& document)
 {
-	T data{};
-	document.read(reinterpret_cast<char*>(&data), sizeof(T));
-	return endianByteSwap(data);
+	uint8_t data[sizeof(T)];
+	document.read(reinterpret_cast<char *>(data), sizeof(T));
+	return endianDecodeBE<T>(data);
 }
 
 // Read a large amount of data into a std::vector for use on large amounts of data,
 // assumes the file is already open for reading
-template <typename T> 
-inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
-{
-	return ReadBinaryArrayImpl<T>(document, size);
-}
-
 template <typename T>
-inline std::vector<T> ReadBinaryArrayImpl(File& document, uint64_t size)
+inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<T> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size * sizeof(T));
-
-	if (!isLE)
+	for (const T item : data)
 	{
-		return data;
-	}
-
-	for (const auto& item : data)
-	{
-		endianByteSwap(item);
+		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(item));
 	}
 
 	return data;
 }
 
 template<>
-inline std::vector<unsigned char> ReadBinaryArrayImpl(File& document, uint64_t size)
+inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t size)
 {
-	std::vector<unsigned char> data(size);
+	std::vector<uint8_t> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size);
 	return data;
 }
 
 template<>
-inline std::vector<char> ReadBinaryArrayImpl(File& document, uint64_t size)
+inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t size)
 {
-	std::vector<char> data(size);
+	std::vector<int8_t> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size);
 	return data;
 }
+
 
 template <typename T>
 inline T RoundUpToMultiple(T value, T padding)
