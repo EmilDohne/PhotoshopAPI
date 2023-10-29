@@ -16,7 +16,6 @@ PSAPI_NAMESPACE_BEGIN
 
 struct ResourceBlock
 {
-	Signature m_Signature;				// Must be 8BIM
 	Enum::ImageResource m_UniqueId;
 	PascalString m_Name;
 	uint32_t m_Size = 0;				// Size of m_Data

@@ -11,14 +11,14 @@ PSAPI_NAMESPACE_BEGIN
 // ----------------------------------------------------------------------------------------
 ResourceBlock::ResourceBlock(File& document)
 {
-	this->m_Signature = Signature(ReadBinaryData<uint32_t>(document));
-	if (this->m_Signature != Signature("8BIM"))
+	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
+	if (signature != Signature("8BIM"))
 	{
 		PSAPI_LOG_ERROR("ResourceBlock", "Signature does not match '8BIM', got '%c%c%c%c' instead",
-			this->m_Signature.m_Representation[0],
-			this->m_Signature.m_Representation[1],
-			this->m_Signature.m_Representation[2],
-			this->m_Signature.m_Representation[3])
+			signature.m_Representation[0],
+			signature.m_Representation[1],
+			signature.m_Representation[2],
+			signature.m_Representation[3])
 	}
 	this->m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
 	this->m_Name = PascalString(document, 2u);
