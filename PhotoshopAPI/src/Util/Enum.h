@@ -1,10 +1,29 @@
 #pragma once
 
 #include "../Macros.h"
+#include "Logger.h"
 
 #include <unordered_map>
+#include <optional>
 
 PSAPI_NAMESPACE_BEGIN
+
+namespace 
+{
+	// Template function for finding any of the enums by  their value defined in the respective std::map
+	template <typename KeyType, typename ValueType>
+	inline std::optional<KeyType> findByValue(const std::unordered_map<KeyType, ValueType>& map, const ValueType searchValue)
+	{
+		for (const auto& pair : map)
+		{
+			if (pair.second == searchValue)
+			{
+				return pair.first;
+			}
+		}
+		return std::nullopt;
+	}
+}
 
 // Header Enums
 namespace Enum
@@ -147,5 +166,128 @@ namespace Enum
 		}
 	}
 }
+
+// Layer and Mask Information Enums
+namespace Enum
+{
+	enum class ChannelID
+	{
+		Red,
+		Green,
+		Blue,
+		Custom,
+		TransparencyMask,
+		UserSuppliedLayerMask,
+		RealUserSuppliedLayerMask
+	};
+
+	inline ChannelID intToChannelID(const int16_t value)
+	{
+		switch (value)
+		{
+		case 0: return ChannelID::Red;
+		case 1: return ChannelID::Green;
+		case 2: return ChannelID::Blue;
+		case -1: return ChannelID::TransparencyMask;
+		case -2: return ChannelID::UserSuppliedLayerMask;
+		case -3: return ChannelID::RealUserSuppliedLayerMask;
+		default: return ChannelID::Custom;	// These are channels set by the user
+		}
+	}
+
+	enum class BlendMode
+	{
+		Passthrough,
+		Normal,
+		Dissolve,
+		Darken,
+		Multiply,
+		ColorBurn,
+		LinearBurn,
+		DarkerColor,
+		Lighten,
+		Screen,
+		ColorDodge,
+		LinearDodge,
+		LighterColor,
+		Overlay,
+		SoftLight,
+		HardLight,
+		VividLight,
+		LinearLight,
+		PinLight,
+		HardMix,
+		Difference,
+		Exclusion,
+		Subtract,
+		Divide,
+		Hue,
+		Saturation,
+		Color,
+		Luminosity
+	};
+
+	namespace {
+		inline std::unordered_map<std::string, BlendMode> blendModeMap
+		{
+			{"pass", BlendMode::Passthrough},
+			{"norm", BlendMode::Normal},
+			{"diss", BlendMode::Dissolve},
+			{"dark", BlendMode::Darken},
+			{"mul ", BlendMode::Multiply},
+			{"idiv", BlendMode::ColorBurn},
+			{"lbrn", BlendMode::LinearBurn},
+			{"dkCl", BlendMode::DarkerColor},
+			{"lite", BlendMode::Lighten},
+			{"scrn", BlendMode::Screen},
+			{"div ", BlendMode::ColorDodge},
+			{"lddg", BlendMode::LinearDodge},
+			{"lgCl", BlendMode::LighterColor},
+			{"over", BlendMode::Overlay},
+			{"sLit", BlendMode::SoftLight},
+			{"hLit", BlendMode::HardLight},
+			{"vLit", BlendMode::VividLight},
+			{"lLit", BlendMode::LinearLight},
+			{"pLit", BlendMode::PinLight},
+			{"hMix", BlendMode::HardMix},
+			{"diff", BlendMode::Difference},
+			{"smud", BlendMode::Exclusion},
+			{"fsub", BlendMode::Subtract},
+			{"fdiv", BlendMode::Divide},
+			{"hue ", BlendMode::Hue},
+			{"sat ", BlendMode::Saturation},
+			{"colr", BlendMode::Color},
+			{"lum ", BlendMode::Luminosity}
+		};
+	}
+
+	// Bidirectional mapping of blend modes
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getBlendMode(TKey key)
+	{
+		PSAPI_LOG_ERROR("getBlendMode", "No overload for the specific search type found")
+	}
+
+	template<>
+	inline std::optional<BlendMode> getBlendMode(std::string key)
+	{
+		auto it = blendModeMap.find(key);
+
+		if (it != blendModeMap.end()) {
+			return std::optional<BlendMode>(it->second);
+		}
+		else {
+			return std::nullopt;
+		}
+	}
+
+	template <>
+	inline std::optional<std::string> getBlendMode(BlendMode key)
+	{
+		return findByValue(blendModeMap, key);
+	}
+}
+
+
 
 PSAPI_NAMESPACE_END

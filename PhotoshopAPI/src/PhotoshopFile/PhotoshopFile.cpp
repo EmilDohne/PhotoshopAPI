@@ -13,9 +13,10 @@ bool PhotoshopFile::read(File& document)
 {
 	bool wasSuccessful = true;
 
-	wasSuccessful *= m_Header.read(document);
-	wasSuccessful *= m_ColorModeData.read(document, m_Header);
-	wasSuccessful *= m_ImageResources.read(document, m_ColorModeData.m_Offset + m_ColorModeData.m_Size);
+	wasSuccessful = wasSuccessful && m_Header.read(document);
+	wasSuccessful = wasSuccessful && m_ColorModeData.read(document, m_Header);
+	wasSuccessful = wasSuccessful && m_ImageResources.read(document, m_ColorModeData.m_Offset + m_ColorModeData.m_Size);
+	wasSuccessful = wasSuccessful && m_LayerMaskInfo.read(document, m_Header, m_ImageResources.m_Offset + m_ImageResources.m_Size);
 
 	return wasSuccessful;
 }

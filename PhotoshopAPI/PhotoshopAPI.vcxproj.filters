@@ -63,6 +63,9 @@
     <ClInclude Include="src\Util\Struct\PascalString.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Util\StringUtil.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\PhotoshopFile\FileHeader.cpp">
@@ -87,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\PhotoshopFile\ImageResources.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\PhotoshopFile\LayerAndMaskInformation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

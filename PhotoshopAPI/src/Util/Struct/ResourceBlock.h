@@ -23,7 +23,7 @@ struct ResourceBlock
 
 	std::vector<uint8_t> m_Data;
 
-	ResourceBlock() : m_Size(0), m_BlockSize(0) {};
+	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Size(0), m_BlockSize(0) {};
 	ResourceBlock(File& document);
 };
 

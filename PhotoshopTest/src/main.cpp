@@ -8,7 +8,7 @@
 
 std::vector<std::filesystem::path> relPaths =
 {
-	"\\documents\\SingleLayer_8bit.psb",
+	"\\documents\\SingleLayer_8bit.psd",
 	"\\documents\\SingleLayer_8bit.psb",
 };
 

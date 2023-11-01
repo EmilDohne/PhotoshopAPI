@@ -93,6 +93,7 @@
     <ClInclude Include="src\PhotoshopFile\ImageResources.h" />
     <ClInclude Include="src\PhotoshopFile\LayerAndMaskInformation.h" />
     <ClInclude Include="src\PhotoshopFile\PhotoshopFile.h" />
+    <ClInclude Include="src\Util\StringUtil.h" />
     <ClInclude Include="src\Util\Struct\Section.h" />
     <ClInclude Include="src\Util\EndianByteSwap.h" />
     <ClInclude Include="src\Util\Enum.h" />
@@ -107,6 +108,7 @@
     <ClCompile Include="src\PhotoshopFile\ColorModeData.cpp" />
     <ClCompile Include="src\PhotoshopFile\FileHeader.cpp" />
     <ClCompile Include="src\PhotoshopFile\ImageResources.cpp" />
+    <ClCompile Include="src\PhotoshopFile\LayerAndMaskInformation.cpp" />
     <ClCompile Include="src\PhotoshopFile\PhotoshopFile.cpp" />
     <ClCompile Include="src\Util\Struct\File.cpp" />
     <ClCompile Include="src\Util\Struct\PascalString.cpp" />
