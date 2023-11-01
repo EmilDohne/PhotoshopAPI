@@ -21,11 +21,16 @@ inline T endianDecodeBE(const uint8_t* src)
 };
 
 // Specializations adapted from: https://github.com/alipha/cpp/blob/master/endian/endian.hpp
-
 template<>
 inline uint8_t endianDecodeBE<uint8_t>(const uint8_t* src)
 {
     return src[0];
+}
+
+template<>
+inline int8_t endianDecodeBE<int8_t>(const uint8_t* src)
+{
+    return static_cast<int8_t>(src[0]);
 }
 
 template<>
@@ -38,6 +43,12 @@ inline uint16_t endianDecodeBE<uint16_t>(const uint8_t* src)
 }
 
 template<>
+inline int16_t endianDecodeBE<int16_t>(const uint8_t* src)
+{
+    return static_cast<int16_t>(endianDecodeBE<uint16_t>(src));
+}
+
+template<>
 inline uint32_t endianDecodeBE<uint32_t>(const uint8_t* src)
 {
     return static_cast<uint32_t>(
@@ -46,6 +57,12 @@ inline uint32_t endianDecodeBE<uint32_t>(const uint8_t* src)
         | static_cast<uint32_t>(src[2]) << 8
         | static_cast<uint32_t>(src[3])
         );
+}
+
+template<>
+inline int32_t endianDecodeBE<int32_t>(const uint8_t* src)
+{
+    return static_cast<int32_t>(endianDecodeBE<uint32_t>(src));
 }
 
 template<>
@@ -63,5 +80,24 @@ inline uint64_t endianDecodeBE<uint64_t>(const uint8_t* src)
         );
 }
 
+template<>
+inline int64_t endianDecodeBE<int64_t>(const uint8_t* src)
+{
+    return static_cast<int64_t>(endianDecodeBE<uint64_t>(src));
+}
+
+// Floats are stored as IEE754 in Photoshop documents meaning we can just use a static cast
+// to convert them
+template<>
+inline float32_t endianDecodeBE<float32_t>(const uint8_t* src)
+{
+    return static_cast<float32_t>(endianDecodeBE<uint32_t>(src));
+}
+
+template<>
+inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
+{
+    return static_cast<float64_t>(endianDecodeBE<uint64_t>(src));
+}
 
 PSAPI_NAMESPACE_END
