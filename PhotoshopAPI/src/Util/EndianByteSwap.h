@@ -86,18 +86,19 @@ inline int64_t endianDecodeBE<int64_t>(const uint8_t* src)
     return static_cast<int64_t>(endianDecodeBE<uint64_t>(src));
 }
 
-// Floats are stored as IEE754 in Photoshop documents meaning we can just use a static cast
-// to convert them
+// Floats are stored as IEE754 in Photoshop documents, therefore we decode BE and then just reinterpret the result
 template<>
 inline float32_t endianDecodeBE<float32_t>(const uint8_t* src)
 {
-    return static_cast<float32_t>(endianDecodeBE<uint32_t>(src));
+    uint32_t val = endianDecodeBE<uint32_t>(src);
+    return reinterpret_cast<float32_t&>(val);
 }
 
 template<>
 inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
 {
-    return static_cast<float64_t>(endianDecodeBE<uint64_t>(src));
+    uint64_t val = endianDecodeBE<uint64_t>(src);
+    return reinterpret_cast<float64_t&>(val);
 }
 
 PSAPI_NAMESPACE_END
