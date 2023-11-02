@@ -22,9 +22,10 @@ namespace {
 			uint64_t m_Size;
 		};
 
+		// A singular layer mask as represented in the LayerMaskData section found in the layer records
 		struct LayerMask
 		{
-			uint32_t m_Top = 0u, m_Left = 0u, m_Bottom = 0u, m_Right = 0u;
+			int32_t m_Top = 0, m_Left = 0, m_Bottom = 0, m_Right = 0;
 			uint8_t m_DefaultColor = 0u;		// 0 or 255
 
 			bool m_PositionRelativeToLayer = false;	// Bit 0 of the flags
@@ -38,10 +39,10 @@ namespace {
 			bool m_HasVectorMaskFeather = false;	// Bit 3 of the maskParams
 
 			// Only exists on one of the two masks
-			std::optional<uint8_t> m_UserMaskDensity = 0u;
-			std::optional<float64_t> m_UserMaskFeather = 0.0f;
-			std::optional<uint8_t> m_VectorMaskDensity = 0u;
-			std::optional<float64_t> m_VectorMaskFeather = 0.0f;
+			std::optional<uint8_t> m_UserMaskDensity;
+			std::optional<float64_t> m_UserMaskFeather;
+			std::optional<uint8_t> m_VectorMaskDensity;
+			std::optional<float64_t> m_VectorMaskFeather;
 
 			void setFlags(const uint32_t bitFlag);
 			void setMaskParams(const uint32_t bitFlag);
@@ -62,24 +63,33 @@ namespace {
 			const uint8_t m_VectorMaskFeatherMask = 1u << 3;
 		};
 
-
 		// This section can hold either no mask, one mask or two masks depending on the size of the data in it.
 		// The layout is a bit confusing here as it reads the second mask in reverse order. The mask parameters
 		// exist only on one of the masks rather than both as they cover both cases
 		struct LayerMaskData
 		{
-			uint32_t m_Size = 0u;
+			uint32_t m_Size = 4u;	// Includes the section length marker
 			std::optional<LayerMask> m_LayerMask;
 			std::optional<LayerMask> m_VectorMask;
 
 
 			LayerMaskData() {};
-			LayerMaskData(File& document, const uint32_t sectionLength);
+			LayerMaskData(File& document);
 		};
+
 
 		struct LayerBlendingRanges
 		{
-			LayerBlendingRanges();
+			uint32_t m_Size = 4u;	// Includes the section length marker
+
+			// Blending ranges hold 2 low and 2 high values, if the marker wasnt split in photoshop 
+			// the low and high values are identical
+			using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
+			Data m_SourceRanges;
+			Data m_DestinationRanges;
+
+			LayerBlendingRanges() {};
+			LayerBlendingRanges(File& document);
 		};
 	}
 
@@ -94,6 +104,9 @@ namespace {
 		uint8_t m_Clipping;	// 0 or 1
 		uint8_t m_BitFlags;
 
+
+		std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
+		LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
 		PascalString m_LayerName;
 
 		LayerRecord() :
@@ -127,11 +140,19 @@ namespace {
 		ChannelImageData(File& document, const FileHeader& header, const uint64_t offset) {};
 	};
 
+
+	struct TaggedBlock
+	{
+		
+	};
+
+
 	struct AdditionaLayerInfo : public FileSection
 	{
 		AdditionaLayerInfo() {};
 		AdditionaLayerInfo(File& document, const uint64_t offset) {};
 	};
+
 
 	struct LayerInfo : public FileSection
 	{
