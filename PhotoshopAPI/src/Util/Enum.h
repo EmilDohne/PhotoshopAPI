@@ -8,6 +8,10 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
+// Utility
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 namespace 
 {
 	// Template function for finding any of the enums by  their value defined in the respective std::map
@@ -25,7 +29,10 @@ namespace
 	}
 }
 
+
 // Header Enums
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 namespace Enum
 {
 	// File Format Version
@@ -83,7 +90,10 @@ namespace Enum
 	};
 }
 
+
 // Image Resource Enums
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 namespace Enum
 {
 	enum class ImageResource
@@ -167,9 +177,15 @@ namespace Enum
 	}
 }
 
+
 // Layer and Mask Information Enums
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 namespace Enum
 {
+	// Channel ID information
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
 	enum class ChannelID
 	{
 		Red,
@@ -195,6 +211,10 @@ namespace Enum
 		}
 	}
 
+
+	// Blend mode information
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
 	enum class BlendMode
 	{
 		Passthrough,
@@ -285,6 +305,116 @@ namespace Enum
 	inline std::optional<std::string> getBlendMode(BlendMode key)
 	{
 		return findByValue(blendModeMap, key);
+	}
+
+
+	// Tagged Block keys for Additional Layer information
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	enum class TaggedBlockKey
+	{
+		// Adjustment Layers, for now unimplemented
+		adjSolidColor,
+		adjGradient,
+		adjPattern,
+		adjBrightnessContrast,
+		adjLevels,
+		adjCurves,
+		adjExposure,
+		adjVibrance,
+		adjOldHueSat,	// This should never be encountered
+		adjNewHueSat,	// New referring to post photoshop 5.0 here (1998)
+		adjColorBalance,
+		adjBlackandWhite,
+		adjPhotoFilter,
+		adjChannelMixer,
+		adjColorLookup,
+		adjInvert,
+		adjPosterize,
+		adjThreshold,
+		adjGradientMap,
+		adjSelectiveColor,
+		// Effects Layer, not planned
+		// Gets its own prefix as it encompasses many different types of other layers
+		fxLayer,
+		// Tagged blocks with information about the layer (likely only present for the additional layer info
+		// at the end of each layer record. Not the one at the end of the layer and mask section
+		lrUnicodeName,
+		lrId,
+		lrSectionDivider,	// This stores information about if it is a group layer and if its open or closed
+		lrMetaData,
+		lrAnnotations,
+		// Non-Pixel layers
+		lrTypeTool,		// This is the superseeded version 'TySh', not 'tySh' as that was phased out in 2000
+		lrPatternData,
+		lrLinked,		// Probably Smart objects 
+		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide lenght field
+		// Additional layer specific data
+		lrCompositorUsed,
+		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
+		lrPixelSourceData,	// Data for 3d or video layers
+		lrUserMask,
+		// 16- and 32-bit files store their layer records under these tagged blocks at the end of the layer
+		// and mask information section
+		Lr16,
+		Lr32,
+		Layr,
+		// Unknown 8-byte wide types
+		Alph,
+		lrFilterMask,
+		lrFilterEffects,
+
+
+	};
+
+	namespace {
+		inline std::unordered_map<std::string, TaggedBlockKey> taggedBlockMap
+		{
+			{"SoCo", TaggedBlockKey::adjSolidColor},
+			{"GdFl", TaggedBlockKey::adjGradient},
+			{"PtFl", TaggedBlockKey::adjPattern},
+			{"brit", TaggedBlockKey::adjBrightnessContrast},
+			{"levl", TaggedBlockKey::adjLevels},
+			{"curv", TaggedBlockKey::adjCurves},
+			{"expA", TaggedBlockKey::adjExposure},
+			{"vibA", TaggedBlockKey::adjVibrance},
+			{"hue ", TaggedBlockKey::adjOldHueSat},
+			{"hue2", TaggedBlockKey::adjNewHueSat},
+			{"blnc", TaggedBlockKey::adjColorBalance},
+			{"blwh", TaggedBlockKey::adjBlackandWhite},
+			{"phfl", TaggedBlockKey::adjPhotoFilter},
+			{"mixr", TaggedBlockKey::adjChannelMixer},
+			{"clrL", TaggedBlockKey::adjColorLookup},
+			{"nvrt", TaggedBlockKey::adjInvert},
+			{"post", TaggedBlockKey::adjPosterize},
+			{"thrs", TaggedBlockKey::adjThreshold},
+			{"grdm", TaggedBlockKey::adjGradientMap},
+			{"selc", TaggedBlockKey::adjSelectiveColor},
+			{"lrFX", TaggedBlockKey::fxLayer},
+			{"luni", TaggedBlockKey::lrUnicodeName},
+			{"lyid", TaggedBlockKey::lrId},
+			{"lsct", TaggedBlockKey::lrSectionDivider},
+			{"shmd", TaggedBlockKey::lrMetaData},
+			{"Anno", TaggedBlockKey::lrAnnotations},
+			{"TySh", TaggedBlockKey::lrTypeTool},
+			{"shpa", TaggedBlockKey::lrPatternData},
+			{"lnkD", TaggedBlockKey::lrLinked},
+			{"lnk3", TaggedBlockKey::lrLinked},
+			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
+			{"cinf", TaggedBlockKey::lrCompositorUsed},
+			{"Mtrn", TaggedBlockKey::lrSavingMergedTransparency},
+			{"Mt16", TaggedBlockKey::lrSavingMergedTransparency},
+			{"Mt32", TaggedBlockKey::lrSavingMergedTransparency},
+			{"PxSD", TaggedBlockKey::lrPixelSourceData},
+			{"LMsk", TaggedBlockKey::lrUserMask},
+			{"Lr16", TaggedBlockKey::Lr16},
+			{"Lr32", TaggedBlockKey::Lr32},
+			{"Layr", TaggedBlockKey::Layr},
+			{"Alph", TaggedBlockKey::Alph},
+			{"FMsk", TaggedBlockKey::lrFilterMask},
+			{"FXid", TaggedBlockKey::lrFilterEffects},
+			{"FEid", TaggedBlockKey::lrFilterEffects}
+		};
 	}
 }
 

@@ -8,8 +8,10 @@
 
 std::vector<std::filesystem::path> relPaths =
 {
-	"\\documents\\SingleLayer_8bit.psd",
-	"\\documents\\SingleLayer_8bit.psb",
+	// "\\documents\\SingleLayer_8bit.psd",
+	// "\\documents\\SingleLayer_8bit.psb",
+	"\\documents\\Masks_8bit.psd",
+	"\\documents\\Masks_8bit.psb"
 };
 
 
@@ -19,7 +21,7 @@ int main()
 
 	for (const auto& path : relPaths)
 	{
-		auto combined_path = currentDirectory;
+		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
 		NAMESPACE_PSAPI::File file(combined_path);
 		NAMESPACE_PSAPI::PhotoshopFile document;
