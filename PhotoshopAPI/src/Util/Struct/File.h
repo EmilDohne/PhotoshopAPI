@@ -28,7 +28,16 @@ struct File
 
 	inline void skip(uint64_t size)
 	{
+		if (size == 0)
+		{
+			return;
+		}
+		if (this->m_Offset + size > this->m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
+		}
 		m_Document.ignore(size);
+		this->m_Offset += size;
 	}
 
 	inline uint64_t getOffset()
