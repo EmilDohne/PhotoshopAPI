@@ -3,9 +3,11 @@
 #include "../Macros.h"
 #include "../Util/Read.h"
 #include "../Util/StringUtil.h"
+#include "../Util/Struct/TaggedBlock.h"
 #include "FileHeader.h"
 
 #include <variant>
+
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -21,6 +23,8 @@ void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
 {
 	this->m_HasUserMaskDensity = (bitFlag & this->m_UserMaskDensityMask) != 0;
@@ -166,7 +170,7 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 {
 	this->m_Size = ReadBinaryData<uint32_t>(document) + 4u;
-	uint32_t toRead = this->m_Size - 4u;
+	int32_t toRead = this->m_Size - 4u;
 
 	// This appears to always be 5 different layer blending ranges. In photoshop (as of CC 23.3.2)
 	// we only have control over Combined, Red, Green and Blue. My guess is that the 5th blending range is 
@@ -204,6 +208,9 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	this->m_Bottom = ReadBinaryData<uint32_t>(document);
 	this->m_Right = ReadBinaryData<uint32_t>(document);
 
+	this->m_Size = 16u;
+
+
 	this->m_ChannelCount = ReadBinaryData<uint16_t>(document);
 	if (this->m_ChannelCount > 56)
 	{
@@ -215,13 +222,14 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	for (int i = 0; i < this->m_ChannelCount; i++)
 	{
 		LayerRecords::ChannelInformation channelInfo{};
-
 		channelInfo.m_ChannelID = Enum::intToChannelID(ReadBinaryData<uint16_t>(document));
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
-
 		this->m_ChannelInformation.emplace_back(channelInfo);
+
+		// Size of one channel information section is 6 or 10 bytes
+		this->m_Size += 2u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 	}
 
 	// Perform a signature check but do not store it as it isnt required
@@ -231,6 +239,7 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM', got '%s' instead",
 			uint32ToString(signature.m_Value))
 	}
+	this->m_Size += 4u;
 	
 	std::string blendModeStr = uint32ToString(ReadBinaryData<uint32_t>(document));
 	std::optional<Enum::BlendMode> blendMode = Enum::getBlendMode<std::string, Enum::BlendMode>(blendModeStr);
@@ -243,16 +252,20 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 		this->m_BlendMode = Enum::BlendMode::Normal;
 		PSAPI_LOG_ERROR("LayerRecord", "Got invalid blend mode: %s", blendModeStr.c_str());
 	}
+	this->m_Size += 4u;
+
 
 	this->m_Opacity = ReadBinaryData<uint8_t>(document);
 	this->m_Clipping = ReadBinaryData<uint8_t>(document);
 	this->m_BitFlags = ReadBinaryData<uint8_t>(document);
 
 	document.skip(1u);	// Filler byte;
+	this->m_Size += 4u;
 
 	// This is the length of the next fields, we need this to find the length of the additional layer info
 	const uint32_t extraDataLen = ReadBinaryData<uint32_t>(document);
-	uint32_t toRead = extraDataLen;
+	this->m_Size += 4u + static_cast<uint64_t>(extraDataLen);
+	int32_t toRead = extraDataLen;
 	{
 		LayerRecords::LayerMaskData layerMaskSection = LayerRecords::LayerMaskData(document);
 		if (layerMaskSection.m_Size > 4u)
@@ -273,10 +286,49 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 
 	}
 
-	document.skip(toRead);
-
+	// A single tagged block takes at least 12 (or 16) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
+	if (toRead >= 12u)
+	{
+		this->m_AdditionalLayerInfo.emplace(AdditionaLayerInfo(document, header, document.getOffset(), toRead));
+	}
 }
 
+
+ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const std::vector<LayerRecords::ChannelInformation>& channelInfos)
+{
+	this->m_Offset = offset;
+	document.setOffset(offset);
+	this->m_Size = 0;
+
+	for (const auto& channel : channelInfos)
+	{
+		this->m_Compression[channel.m_ChannelID] = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
+		this->m_Data[channel.m_ChannelID] = std::vector<uint8_t>{};
+		this->m_Size += channel.m_Size;
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+AdditionaLayerInfo::AdditionaLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength)
+{
+	this->m_Offset = offset;
+	document.setOffset(offset);
+	this->m_Size = maxLength;
+
+	int64_t toRead = maxLength;
+	while (toRead >= 12u)
+	{
+		/*std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header);
+		toRead -= taggedBlock->getTotalSize();
+		this->m_TaggedBlocks.push_back(std::move(taggedBlock));*/
+		this->m_TaggedBlocks.push_back(readTaggedBlock(document, header));
+	}
+	if (toRead >= 0)
+	{
+		document.skip(toRead);
+	}
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -286,28 +338,34 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	document.setOffset(offset);
 
 	// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
-	// (note, this value is padded to a multiple of 4, despite what the docs say)
+	// (note, this value is padded to a multiple of 4, despite what the docs say. We dont need
+	// to do this padding ourselves in read mode, only in write mode)
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 	this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
+	this->m_Size += 4u;
 
 	// If this value is negative the first alpha channel of the layer records holds the merged image result (Image Data Section) alpha channel
 	// TODO this isnt yet implemented
 	int16_t layerCount = std::abs(ReadBinaryData<int16_t>(document));
+	this->m_Size += 2u;
 	this->m_LayerRecords.reserve(layerCount);
 	this->m_ChannelImageData.reserve(layerCount);
 
 	// Extract layer records
 	for (int i = 0; i < layerCount; i++)
 	{
-		this->m_LayerRecords.emplace_back(LayerRecord(document, header, document.getOffset()));
+		const LayerRecord layerRecord = LayerRecord(document, header, document.getOffset());
+		this->m_Size += layerRecord.m_Size;
+		this->m_LayerRecords.push_back(std::move(layerRecord));
 	}
 
 	// Extract Channel Image Data
 	for (int i = 0; i < layerCount; i++)
 	{
-		this->m_ChannelImageData.emplace_back(ChannelImageData(document, header, document.getOffset()));
+		const ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), this->m_LayerRecords[i].m_ChannelInformation);
+		this->m_Size += channelImageData.m_Size;
+		this->m_ChannelImageData.push_back(std::move(channelImageData));
 	}
-
 }
 
 
@@ -324,8 +382,14 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 	this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
 	
-	
 	this->m_LayerInfo = LayerInfo(document, header, document.getOffset());
+
+	uint64_t toRead = this->m_Size - this->m_LayerInfo.m_Size;
+	// If there is still data left to read, this is the additional layer information which is also present at the end of each layer record
+	if (toRead >= 12u)
+	{
+		this->m_AdditionalLayerInfo.emplace(AdditionaLayerInfo(document, header, document.getOffset(), toRead));
+	}
 
 	return true;
 }
