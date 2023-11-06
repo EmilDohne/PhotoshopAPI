@@ -4,6 +4,7 @@
 #include "Logger.h"
 
 #include <unordered_map>
+#include <vector>
 #include <optional>
 
 PSAPI_NAMESPACE_BEGIN
@@ -26,6 +27,25 @@ namespace
 			}
 		}
 		return std::nullopt;
+	}
+
+	// Template function for finding any of the enums by their value defined in the respective std::map
+	template <typename KeyType, typename ValueType>
+	inline std::optional<std::vector<KeyType>> findMultipleByValue(const std::unordered_map<KeyType, ValueType>& map, const ValueType searchValue)
+	{
+		std::vector<KeyType> results;
+		for (const auto& pair : map)
+		{
+			if (pair.second == searchValue)
+			{
+				results.push_back(pair.first);
+			}
+		}
+		if (results.size() == 0)
+		{
+			return std::nullopt;
+		}
+		return results;
 	}
 }
 
@@ -416,6 +436,74 @@ namespace Enum
 			{"FEid", TaggedBlockKey::lrFilterEffects}
 		};
 	}
+
+	// Bidirectional mapping of Tagged block keys
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getTaggedBlockKey(TKey key)
+	{
+		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found")
+	}
+
+	template<>
+	inline std::optional<TaggedBlockKey> getTaggedBlockKey(std::string key)
+	{
+		auto it = taggedBlockMap.find(key);
+
+		if (it != taggedBlockMap.end()) {
+			return std::optional<TaggedBlockKey>(it->second);
+		}
+		else {
+			return std::nullopt;
+		}
+	}
+
+	// Sometimes multiple strings can match a singular key, therefore we return a vector here
+	template <>
+	inline std::optional<std::vector<std::string>> getTaggedBlockKey(TaggedBlockKey key)
+	{
+		return findMultipleByValue(taggedBlockMap, key);
+	}
+
+	inline bool constexpr isTaggedBlockSizeUint64(TaggedBlockKey key)
+	{
+		if (
+			key == TaggedBlockKey::lrUserMask
+			|| key == TaggedBlockKey::Lr16
+			|| key == TaggedBlockKey::Lr32
+			|| key == TaggedBlockKey::Layr
+			|| key == TaggedBlockKey::lrSavingMergedTransparency
+			|| key == TaggedBlockKey::Alph
+			|| key == TaggedBlockKey::lrFilterMask
+			|| key == TaggedBlockKey::lrFilterEffects
+			|| key == TaggedBlockKey::lrLinked_8Byte
+			|| key == TaggedBlockKey::lrPixelSourceData
+			|| key == TaggedBlockKey::lrCompositorUsed
+			)
+		{
+			return true;
+		}
+		return false;
+	}
+
+
+	// 
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	enum class Compression
+	{
+		Raw,
+		Rle,
+		Zip,
+		ZipPrediction
+	};
+
+	inline std::unordered_map<uint16_t, Compression> compressionMap
+	{
+		{0, Compression::Raw},
+		{1, Compression::Rle},
+		{2, Compression::Zip},
+		{3, Compression::ZipPrediction}
+	};
 }
 
 

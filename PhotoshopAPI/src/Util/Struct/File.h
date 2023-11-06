@@ -26,9 +26,10 @@ struct File
 		m_Offset += size;
 	}
 
-	inline void skip(uint64_t size)
+
+	inline void skip(int64_t size)
 	{
-		if (size == 0)
+		if (size <= 0)
 		{
 			return;
 		}
@@ -40,13 +41,19 @@ struct File
 		this->m_Offset += size;
 	}
 
+
 	inline uint64_t getOffset()
 	{
 		return m_Offset;
 	}
 
+
 	inline void setOffset(const uint64_t offset)
 	{
+		if (offset == this->m_Offset)
+		{
+			return;
+		}
 		if (offset > m_Size)
 		{
 			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the file size of %" PRIu64 ".", offset, this->m_Size);
@@ -55,6 +62,7 @@ struct File
 		this->m_Offset = offset;
 		this->m_Document.seekg(offset, std::ios::beg);
 	}
+
 
 	inline uint64_t getSize()
 	{

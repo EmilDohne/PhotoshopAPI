@@ -17,8 +17,9 @@
 - [X] Read ColorModeData
 - [X] Read Image Resources
 - [ ] Read Layer and Mask information
-    - [ ] Read Global Layer Mask Info
+    - [X] Read Global Layer Mask Info
     - [ ] Read Layer Records
+        - [ ] Add parsing of tagged blocks 
     - [ ] Read Channel Image Data
         - [ ] Compress using blosc2
     - [ ] Read Additional Layer Information

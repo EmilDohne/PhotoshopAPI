@@ -16,7 +16,7 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 T ReadBinaryData(File& document)
 {
-	uint8_t data[sizeof(T)];
+	uint8_t data[sizeof(T)]{};
 	document.read(reinterpret_cast<char *>(data), sizeof(T));
 	return endianDecodeBE<T>(data);
 }
@@ -39,6 +39,22 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(File& document, const Enum::Vers
 		return endianDecodeBE<TPsb>(dataPsb);
 	default:
 		return static_cast<TPsb>(0);
+	}
+}
+
+
+// Figure out, at runtime, how big a variable is depending on the version specified in the file header
+template <typename TPsd, typename TPsb>
+uint32_t SwapPsdPsb(const Enum::Version version)
+{
+	switch (version)
+	{
+	case Enum::Version::Psd:
+		return sizeof(TPsd);
+	case Enum::Version::Psb:
+		return sizeof(TPsb);
+	default:
+		return 0u;
 	}
 }
 

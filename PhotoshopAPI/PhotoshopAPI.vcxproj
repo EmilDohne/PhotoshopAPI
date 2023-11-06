@@ -103,6 +103,7 @@
     <ClInclude Include="src\Util\Read.h" />
     <ClInclude Include="src\Util\Struct\ResourceBlock.h" />
     <ClInclude Include="src\Util\Struct\Signature.h" />
+    <ClInclude Include="src\Util\Struct\TaggedBlock.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\PhotoshopFile\ColorModeData.cpp" />
@@ -114,6 +115,7 @@
     <ClCompile Include="src\Util\Struct\PascalString.cpp" />
     <ClCompile Include="src\Util\Struct\ResourceBlock.cpp" />
     <ClCompile Include="src\Util\Struct\Signature.cpp" />
+    <ClCompile Include="src\Util\Struct\TaggedBlock.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
