@@ -8,7 +8,7 @@
 PSAPI_NAMESPACE_BEGIN
 
 // Convert a big endian uint32_t to a std::string. For example
-std::string uint32ToString(const uint32_t value) {
+inline std::string uint32ToString(const uint32_t value) {
     std::string charString;
 
     // Iterate through the bits, 8 bits at a time (each character)
