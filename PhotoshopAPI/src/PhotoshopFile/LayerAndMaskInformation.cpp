@@ -319,10 +319,9 @@ AdditionaLayerInfo::AdditionaLayerInfo(File& document, const FileHeader& header,
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
-		/*std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header);
+		std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header);
 		toRead -= taggedBlock->getTotalSize();
-		this->m_TaggedBlocks.push_back(std::move(taggedBlock));*/
-		this->m_TaggedBlocks.push_back(readTaggedBlock(document, header));
+		this->m_TaggedBlocks.push_back(std::move(taggedBlock));
 	}
 	if (toRead >= 0)
 	{
@@ -354,7 +353,7 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// Extract layer records
 	for (int i = 0; i < layerCount; i++)
 	{
-		const LayerRecord layerRecord = LayerRecord(document, header, document.getOffset());
+		LayerRecord layerRecord = LayerRecord(document, header, document.getOffset());
 		this->m_Size += layerRecord.m_Size;
 		this->m_LayerRecords.push_back(std::move(layerRecord));
 	}
@@ -362,7 +361,7 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// Extract Channel Image Data
 	for (int i = 0; i < layerCount; i++)
 	{
-		const ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), this->m_LayerRecords[i].m_ChannelInformation);
+		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), this->m_LayerRecords[i].m_ChannelInformation);
 		this->m_Size += channelImageData.m_Size;
 		this->m_ChannelImageData.push_back(std::move(channelImageData));
 	}

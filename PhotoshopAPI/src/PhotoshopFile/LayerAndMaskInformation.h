@@ -8,8 +8,8 @@
 #include "../Util/Struct/ResourceBlock.h"
 #include "../Util/Struct/TaggedBlock.h"
 
-
 #include <vector>
+
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -18,11 +18,17 @@ struct AdditionaLayerInfo : public FileSection
 {
 	std::vector<std::unique_ptr<TaggedBlock::Base>> m_TaggedBlocks;
 
-	AdditionaLayerInfo() {};
+	AdditionaLayerInfo() = default;
+	AdditionaLayerInfo(const AdditionaLayerInfo&) = delete;
+	AdditionaLayerInfo(AdditionaLayerInfo&&) = default;
+	AdditionaLayerInfo& operator=(const AdditionaLayerInfo&) = delete;
+	AdditionaLayerInfo& operator=(AdditionaLayerInfo&&) = default;
+
 	AdditionaLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength);
 };
 
 
+// Structs to hold the different types of data found in the layer records themselves
 namespace LayerRecords
 {
 	struct ChannelInformation
@@ -162,6 +168,7 @@ struct LayerInfo : public FileSection
 	LayerInfo(File& document, const FileHeader& header, const uint64_t offset);
 };
 
+
 struct LayerAndMaskInformation : public FileSection
 {
 
@@ -172,7 +179,6 @@ struct LayerAndMaskInformation : public FileSection
 
 	bool read(File& document, const FileHeader& header, const uint64_t offset);
 };
-
 
 
 PSAPI_NAMESPACE_END
