@@ -84,6 +84,7 @@ public:
             {
                 if (severity == Enum::Severity::Error)
                 {
+                    std::cout << logMessage << std::endl;
                     throw std::runtime_error(logMessage);
                 }
                 std::cout << logMessage << std::endl;

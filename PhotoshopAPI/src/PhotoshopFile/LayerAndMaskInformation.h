@@ -111,6 +111,8 @@ namespace LayerRecords
 	
 struct LayerRecord : public FileSection
 {
+	PascalString m_LayerName;
+
 	uint32_t m_Top, m_Left, m_Bottom, m_Right;
 	uint16_t m_ChannelCount;
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
@@ -119,10 +121,8 @@ struct LayerRecord : public FileSection
 	uint8_t m_Clipping;	// 0 or 1
 	uint8_t m_BitFlags;
 
-
 	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
 	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
-	PascalString m_LayerName;
 	std::optional<AdditionaLayerInfo> m_AdditionalLayerInfo;
 
 	LayerRecord() :

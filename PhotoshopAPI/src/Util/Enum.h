@@ -333,6 +333,7 @@ namespace Enum
 	// --------------------------------------------------------------------------------
 	enum class TaggedBlockKey
 	{
+		Unknown,
 		// Adjustment Layers, for now unimplemented
 		adjSolidColor,
 		adjGradient,
@@ -383,7 +384,13 @@ namespace Enum
 		Alph,
 		lrFilterMask,
 		lrFilterEffects,
-
+		//
+		lrBlendClippingElements,
+		lrBlendInteriorElements,
+		lrKnockoutSetting,
+		lrProtectedSetting,
+		lrSheetColorSetting,
+		lrReferencePoint,
 
 	};
 
@@ -433,7 +440,13 @@ namespace Enum
 			{"Alph", TaggedBlockKey::Alph},
 			{"FMsk", TaggedBlockKey::lrFilterMask},
 			{"FXid", TaggedBlockKey::lrFilterEffects},
-			{"FEid", TaggedBlockKey::lrFilterEffects}
+			{"FEid", TaggedBlockKey::lrFilterEffects},
+			{"clbl", TaggedBlockKey::lrBlendClippingElements},
+			{"infx", TaggedBlockKey::lrBlendInteriorElements},
+			{"knko", TaggedBlockKey::lrKnockoutSetting},
+			{"lspf", TaggedBlockKey::lrProtectedSetting},
+			{"lclr", TaggedBlockKey::lrSheetColorSetting},
+			{"fxrp", TaggedBlockKey::lrReferencePoint},
 		};
 	}
 
@@ -453,7 +466,7 @@ namespace Enum
 			return std::optional<TaggedBlockKey>(it->second);
 		}
 		else {
-			return std::nullopt;
+			return std::optional<TaggedBlockKey>(TaggedBlockKey::Unknown);
 		}
 	}
 
