@@ -79,7 +79,6 @@ public:
         auto logMessage = this->createMessage(time, task, buffer, severity);
 
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
             if (severity >= m_Severity)
             {
                 if (severity == Enum::Severity::Error)
@@ -100,7 +99,6 @@ public:
 
 private:
     Enum::Severity m_Severity = Enum::Severity::Debug;
-    std::mutex m_mutex; // Mutex for thread safety
 
     Logger() {
     }
