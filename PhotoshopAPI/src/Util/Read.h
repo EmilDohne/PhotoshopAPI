@@ -62,7 +62,7 @@ uint32_t SwapPsdPsb(const Enum::Version version)
 template <typename TPsd, typename TPsb>
 TPsb ExtractWidestValue(std::variant<TPsd, TPsb> variant)
 {
-	if (sizeof(TPsb) < sizeof(TPsd))
+	if constexpr (sizeof(TPsb) < sizeof(TPsd))
 	{
 		PSAPI_LOG_WARNING("ExtractWidestValue", "PSD value is wider in size than PSB value, will cast down. Might overflow");
 	}

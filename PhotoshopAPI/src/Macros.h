@@ -8,6 +8,7 @@
 #define PSAPI_NAMESPACE_BEGIN namespace NAMESPACE_PSAPI {
 #define PSAPI_NAMESPACE_END }
 
+#define PSAPI_UNUSED(x) (void)(x);
 
 // Check that float and double are 32 and 64 bit wide respectively 
 static_assert(sizeof(float) == 4 && CHAR_BIT == 8 && std::numeric_limits<float>::is_iec559, "float type is not 32 bit wide, this is not currently supported");

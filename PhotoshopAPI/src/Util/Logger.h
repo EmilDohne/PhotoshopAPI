@@ -73,10 +73,11 @@ public:
             va_list args;
             va_start(args, format);
             int result = vsnprintf(buffer, sizeof(buffer), format, args);
+            PSAPI_UNUSED(result)
             va_end(args);
         }
         auto time = this->getTime();
-        auto logMessage = this->createMessage(time, task, buffer, severity);
+        auto logMessage = this->createMessage(time, task, buffer);
 
         {
             if (severity >= m_Severity)
@@ -119,12 +120,12 @@ private:
     }
 
 
-    inline const std::string createMessage(std::string time, std::string task, const std::string& message, Enum::Severity severity)
+    inline const std::string createMessage(std::string time, std::string task, const std::string& message)
     {
         time = leftAlignString(time, 22);
 
         task = "[" + task + "]";
-        task = leftAlignString(task, 15);
+        task = leftAlignString(task, 25);
 
         std::string joinedMessage = time + task + message;
 
