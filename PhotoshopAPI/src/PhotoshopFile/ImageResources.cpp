@@ -16,16 +16,16 @@ PSAPI_NAMESPACE_BEGIN
 
 bool ImageResources::read(File& document, const uint64_t offset)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
-	this->m_Size = RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u;
+	m_Size = RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u;
 
-	uint32_t toRead = static_cast<uint32_t>(this->m_Size) - 4u;
+	uint32_t toRead = static_cast<uint32_t>(m_Size) - 4u;
 	while (toRead > 0)
 	{
 		ResourceBlock resource = ResourceBlock(document);
 		toRead -= resource.m_BlockSize;
-		this->m_ResourceBlocks.emplace_back(resource);
+		m_ResourceBlocks.emplace_back(resource);
 	}
 	return true;
 }

@@ -20,7 +20,7 @@ namespace TaggedBlock
 		uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
 		std::variant<uint32_t, uint64_t> m_Length;
 
-		uint64_t getTotalSize() { return this->m_TotalLength; };
+		uint64_t getTotalSize() { return m_TotalLength; };
 	protected:
 		Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
 		// The length of the tagged block with all the the signature, key and length marker

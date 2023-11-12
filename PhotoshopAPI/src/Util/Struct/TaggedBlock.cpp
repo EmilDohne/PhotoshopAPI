@@ -40,26 +40,26 @@ namespace TaggedBlock
 // ---------------------------------------------------------------------------------------------------------------------
 TaggedBlock::Generic::Generic(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding)
 {
-	this->m_Offset = offset;
-	this->m_Signature = signature;
-	this->m_Key = key;
-	if (Enum::isTaggedBlockSizeUint64(this->m_Key) && header.m_Version == Enum::Version::Psb)
+	m_Offset = offset;
+	m_Signature = signature;
+	m_Key = key;
+	if (Enum::isTaggedBlockSizeUint64(m_Key) && header.m_Version == Enum::Version::Psb)
 	{
 		uint64_t length = ReadBinaryData<uint64_t>(document);
 		length = RoundUpToMultiple<uint64_t>(length, padding);
-		this->m_Length = length;
-		this->m_Data = ReadBinaryArray<uint8_t>(document, std::get<uint64_t>(this->m_Length));
+		m_Length = length;
+		m_Data = ReadBinaryArray<uint8_t>(document, std::get<uint64_t>(m_Length));
 
-		this->m_TotalLength = length + 4u + 4u + 8u;
+		m_TotalLength = length + 4u + 4u + 8u;
 	}
 	else
 	{
 		uint32_t length = ReadBinaryData<uint32_t>(document);
 		length = RoundUpToMultiple<uint32_t>(length, padding);
-		this->m_Length = length;
-		this->m_Data = ReadBinaryArray<uint8_t>(document, std::get<uint32_t>(this->m_Length));
+		m_Length = length;
+		m_Data = ReadBinaryArray<uint8_t>(document, std::get<uint32_t>(m_Length));
 
-		this->m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
+		m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
 	}
 }
 
@@ -68,14 +68,14 @@ TaggedBlock::Generic::Generic(File& document, const FileHeader& header, const ui
 // ---------------------------------------------------------------------------------------------------------------------
 TaggedBlock::Lr16::Lr16(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
-	this->m_Offset = offset;
-	this->m_Signature = signature;
+	m_Offset = offset;
+	m_Signature = signature;
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>((length), padding);
-	this->m_Length = length;
-	this->m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(this->m_Length));
+	m_Length = length;
+	m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	this->m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + 8u;
 };
 
 
@@ -83,14 +83,14 @@ TaggedBlock::Lr16::Lr16(File& document, const FileHeader& header, const uint64_t
 // ---------------------------------------------------------------------------------------------------------------------
 TaggedBlock::Lr32::Lr32(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
-	this->m_Offset = offset;
-	this->m_Signature = signature;
+	m_Offset = offset;
+	m_Signature = signature;
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>((length), padding);
-	this->m_Length = length;
-	this->m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(this->m_Length));
+	m_Length = length;
+	m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	this->m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + 8u;
 };
 
 

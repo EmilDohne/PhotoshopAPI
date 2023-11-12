@@ -15,19 +15,19 @@ PSAPI_NAMESPACE_BEGIN
 
 bool ColorModeData::read(File& document)
 {
-	this->m_Offset = 26;
-	document.setOffset(this->m_Offset);
+	m_Offset = 26;
+	document.setOffset(m_Offset);
 
-	this->m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
+	m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
 
 	// Just dump the data without parsing it
-	if (this->m_Size > 0)
+	if (m_Size > 0)
 	{
-		this->m_Data = ReadBinaryArray<uint8_t>(document, this->m_Size);
+		m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
 	}
 	else
 	{
-		this->m_Data = std::vector<uint8_t>(0);
+		m_Data = std::vector<uint8_t>(0);
 	}
 
 	return true;

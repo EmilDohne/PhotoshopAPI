@@ -76,8 +76,8 @@ public:
             PSAPI_UNUSED(result)
             va_end(args);
         }
-        auto time = this->getTime();
-        auto logMessage = this->createMessage(time, task, buffer);
+        auto time = getTime();
+        auto logMessage = createMessage(time, task, buffer);
 
         {
             if (severity >= m_Severity)
@@ -95,7 +95,7 @@ public:
 
     inline void setSeverity(Enum::Severity severity)
     {
-        this->m_Severity = severity;
+        m_Severity = severity;
     }
 
 private:

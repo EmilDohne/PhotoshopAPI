@@ -19,10 +19,10 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 {
-	this->m_PositionRelativeToLayer = (bitFlag & this->m_PositionRelativeToLayerMask) != 0;
-	this->m_Disabled = (bitFlag & this->m_DisabledMask) != 0;
-	this->m_IsVector = (bitFlag & this->m_IsVectorMask) != 0;
-	this->m_HasMaskParams = (bitFlag & this->m_HasMaskParamsMask) != 0;
+	m_PositionRelativeToLayer = (bitFlag & m_PositionRelativeToLayerMask) != 0;
+	m_Disabled = (bitFlag & m_DisabledMask) != 0;
+	m_IsVector = (bitFlag & m_IsVectorMask) != 0;
+	m_HasMaskParams = (bitFlag & m_HasMaskParamsMask) != 0;
 }
 
 
@@ -30,10 +30,10 @@ void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
 {
-	this->m_HasUserMaskDensity = (bitFlag & this->m_UserMaskDensityMask) != 0;
-	this->m_HasUserMaskFeather = (bitFlag & this->m_UserMaskFeatherMask) != 0;
-	this->m_HasVectorMaskDensity = (bitFlag & this->m_VectorMaskDensityMask) != 0;
-	this->m_HasVectorMaskFeather = (bitFlag & this->m_VectorMaskFeatherMask) != 0;
+	m_HasUserMaskDensity = (bitFlag & m_UserMaskDensityMask) != 0;
+	m_HasUserMaskFeather = (bitFlag & m_UserMaskFeatherMask) != 0;
+	m_HasVectorMaskDensity = (bitFlag & m_VectorMaskDensityMask) != 0;
+	m_HasVectorMaskFeather = (bitFlag & m_VectorMaskFeatherMask) != 0;
 }
 
 
@@ -42,24 +42,24 @@ void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
 uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 {
 	uint32_t bytesRead = 0u;
-	if (this->m_HasUserMaskDensity)
+	if (m_HasUserMaskDensity)
 	{
-		this->m_UserMaskDensity.emplace(ReadBinaryData<uint8_t>(document));
+		m_UserMaskDensity.emplace(ReadBinaryData<uint8_t>(document));
 		bytesRead += 1u;
 	}
-	if (this->m_HasUserMaskFeather)
+	if (m_HasUserMaskFeather)
 	{
-		this->m_UserMaskFeather.emplace(ReadBinaryData<float64_t>(document));
+		m_UserMaskFeather.emplace(ReadBinaryData<float64_t>(document));
 		bytesRead += 8u;
 	}
-	if (this->m_HasVectorMaskDensity)
+	if (m_HasVectorMaskDensity)
 	{
-		this->m_VectorMaskDensity.emplace(ReadBinaryData<uint8_t>(document));
+		m_VectorMaskDensity.emplace(ReadBinaryData<uint8_t>(document));
 		bytesRead += 1u;
 	}
-	if (this->m_HasVectorMaskFeather)
+	if (m_HasVectorMaskFeather)
 	{
-		this->m_VectorMaskFeather.emplace(ReadBinaryData<float64_t>(document));
+		m_VectorMaskFeather.emplace(ReadBinaryData<float64_t>(document));
 		bytesRead += 8u;
 	}
 
@@ -71,8 +71,8 @@ uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 LayerRecords::LayerMaskData::LayerMaskData(File& document)
 {
-	this->m_Size = ReadBinaryData<uint32_t>(document) + 4u;
-	int64_t toRead = static_cast<int64_t>(this->m_Size) - 4u;
+	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
+	int64_t toRead = static_cast<int64_t>(m_Size) - 4u;
 
 	// Empty section;
 	if (toRead == 0)
@@ -106,7 +106,7 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 
 		// Store this value to compare against later
 		hasMaskParams = mask.m_HasMaskParams;
-		if (hasMaskParams && this->m_Size <= 28)
+		if (hasMaskParams && m_Size <= 28)
 		{
 			const uint8_t maskParams = ReadBinaryData<uint8_t>(document);
 			mask.setMaskParams(maskParams);
@@ -116,11 +116,11 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 
 		if ((bitFlags & 1u << 3) != 0u)
 		{
-			this->m_VectorMask.emplace(mask);
+			m_VectorMask.emplace(mask);
 		}
 		else
 		{
-			this->m_LayerMask.emplace(mask);
+			m_LayerMask.emplace(mask);
 		}
 	}
 
@@ -156,7 +156,7 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 			toRead -= layerMask.readMaskParams(document);
 		}
 
-		this->m_LayerMask.emplace(layerMask);
+		m_LayerMask.emplace(layerMask);
 	}
 
 	if (toRead < 0 || toRead > 2)
@@ -172,8 +172,8 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 {
-	this->m_Size = ReadBinaryData<uint32_t>(document) + 4u;
-	int32_t toRead = this->m_Size - 4u;
+	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
+	int32_t toRead = m_Size - 4u;
 
 	// This appears to always be 5 different layer blending ranges. In photoshop (as of CC 23.3.2)
 	// we only have control over Combined, Red, Green and Blue. My guess is that the 5th blending range is 
@@ -185,14 +185,14 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 		uint8_t sourceHigh1 = ReadBinaryData<uint8_t>(document);
 		uint8_t sourceHigh2 = ReadBinaryData<uint8_t>(document);
 
-		this->m_SourceRanges.emplace_back(std::tuple(sourceLow1, sourceLow2, sourceHigh1, sourceHigh2));
+		m_SourceRanges.emplace_back(std::tuple(sourceLow1, sourceLow2, sourceHigh1, sourceHigh2));
 
 		uint8_t destinationLow1 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationLow2 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationHigh1 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationHigh2 = ReadBinaryData<uint8_t>(document);
 
-		this->m_DestinationRanges.emplace_back(std::tuple(destinationLow1, destinationLow2, destinationHigh1, destinationHigh2));
+		m_DestinationRanges.emplace_back(std::tuple(destinationLow1, destinationLow2, destinationHigh1, destinationHigh2));
 
 		toRead -= 8u;
 	}
@@ -203,36 +203,36 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_t offset)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
 
-	this->m_Top = ReadBinaryData<uint32_t>(document);
-	this->m_Left = ReadBinaryData<uint32_t>(document);
-	this->m_Bottom = ReadBinaryData<uint32_t>(document);
-	this->m_Right = ReadBinaryData<uint32_t>(document);
+	m_Top = ReadBinaryData<uint32_t>(document);
+	m_Left = ReadBinaryData<uint32_t>(document);
+	m_Bottom = ReadBinaryData<uint32_t>(document);
+	m_Right = ReadBinaryData<uint32_t>(document);
 
-	this->m_Size = 16u;
+	m_Size = 16u;
 
 
-	this->m_ChannelCount = ReadBinaryData<uint16_t>(document);
-	if (this->m_ChannelCount > 56)
+	m_ChannelCount = ReadBinaryData<uint16_t>(document);
+	if (m_ChannelCount > 56)
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "A Photoshop document cannot have more than 56 channels at once")
 	}
-	this->m_ChannelInformation.reserve(this->m_ChannelCount);
+	m_ChannelInformation.reserve(m_ChannelCount);
 
 	// Read the Channel Information, there is one of these for each channel in the layer record
-	for (int i = 0; i < this->m_ChannelCount; i++)
+	for (int i = 0; i < m_ChannelCount; i++)
 	{
 		LayerRecords::ChannelInformation channelInfo{};
 		channelInfo.m_ChannelID = Enum::intToChannelID(ReadBinaryData<uint16_t>(document));
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
-		this->m_ChannelInformation.emplace_back(channelInfo);
+		m_ChannelInformation.emplace_back(channelInfo);
 
 		// Size of one channel information section is 6 or 10 bytes
-		this->m_Size += static_cast<uint64_t>(2u) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		m_Size += static_cast<uint64_t>(2u) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 	}
 
 	// Perform a signature check but do not store it as it isnt required
@@ -242,38 +242,38 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM', got '%s' instead",
 			uint32ToString(signature.m_Value).c_str())
 	}
-	this->m_Size += 4u;
+	m_Size += 4u;
 	
 	std::string blendModeStr = uint32ToString(ReadBinaryData<uint32_t>(document));
 	std::optional<Enum::BlendMode> blendMode = Enum::getBlendMode<std::string, Enum::BlendMode>(blendModeStr);
 	if (blendMode.has_value())
 	{
-		this->m_BlendMode = blendMode.value();
+		m_BlendMode = blendMode.value();
 	}
 	else
 	{
-		this->m_BlendMode = Enum::BlendMode::Normal;
+		m_BlendMode = Enum::BlendMode::Normal;
 		PSAPI_LOG_ERROR("LayerRecord", "Got invalid blend mode: %s", blendModeStr.c_str());
 	}
-	this->m_Size += 4u;
+	m_Size += 4u;
 
 
-	this->m_Opacity = ReadBinaryData<uint8_t>(document);
-	this->m_Clipping = ReadBinaryData<uint8_t>(document);
-	this->m_BitFlags = ReadBinaryData<uint8_t>(document);
+	m_Opacity = ReadBinaryData<uint8_t>(document);
+	m_Clipping = ReadBinaryData<uint8_t>(document);
+	m_BitFlags = ReadBinaryData<uint8_t>(document);
 
 	document.skip(1u);	// Filler byte;
-	this->m_Size += 4u;
+	m_Size += 4u;
 
 	// This is the length of the next fields, we need this to find the length of the additional layer info
 	const uint32_t extraDataLen = ReadBinaryData<uint32_t>(document);
-	this->m_Size += 4u + static_cast<uint64_t>(extraDataLen);
+	m_Size += 4u + static_cast<uint64_t>(extraDataLen);
 	int32_t toRead = extraDataLen;
 	{
 		LayerRecords::LayerMaskData layerMaskSection = LayerRecords::LayerMaskData(document);
 		if (layerMaskSection.m_Size > 4u)
 		{
-			this->m_LayerMaskData.emplace(layerMaskSection);
+			m_LayerMaskData.emplace(layerMaskSection);
 			toRead -= layerMaskSection.m_Size;
 		}
 		else
@@ -281,18 +281,18 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 			toRead -= 4u;
 		}
 
-		this->m_LayerBlendingRanges = LayerRecords::LayerBlendingRanges(document);
-		toRead -= this->m_LayerBlendingRanges.m_Size;
+		m_LayerBlendingRanges = LayerRecords::LayerBlendingRanges(document);
+		toRead -= m_LayerBlendingRanges.m_Size;
 
-		this->m_LayerName = PascalString(document, 4u);
-		toRead -= this->m_LayerName.m_Size;
+		m_LayerName = PascalString(document, 4u);
+		toRead -= m_LayerName.m_Size;
 
 	}
 
 	// A single tagged block takes at least 12 (or 16) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
 	if (toRead >= 12u)
 	{
-		this->m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 1u));
+		m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 1u));
 	}
 }
 
@@ -302,15 +302,15 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 	// TODO add this back in on parsing of image data
 	PSAPI_UNUSED(header)
 
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
-	this->m_Size = 0;
+	m_Size = 0;
 
 	for (const auto& channel : channelInfos)
 	{
-		this->m_Compression[channel.m_ChannelID] = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
-		this->m_Data[channel.m_ChannelID] = std::vector<uint8_t>{};
-		this->m_Size += channel.m_Size;	// The size holds the value of the compression marker
+		m_Compression[channel.m_ChannelID] = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
+		m_Data[channel.m_ChannelID] = std::vector<uint8_t>{};
+		m_Size += channel.m_Size;	// The size holds the value of the compression marker
 		document.skip(channel.m_Size - 2u);
 	}
 }
@@ -319,21 +319,21 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 // ---------------------------------------------------------------------------------------------------------------------
 AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
-	this->m_Size = 0u;
+	m_Size = 0u;
 
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
 		std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header, padding);
 		toRead -= taggedBlock->getTotalSize();
-		this->m_Size += taggedBlock->getTotalSize();
-		this->m_TaggedBlocks.push_back(std::move(taggedBlock));
+		m_Size += taggedBlock->getTotalSize();
+		m_TaggedBlocks.push_back(std::move(taggedBlock));
 	}
 	if (toRead >= 0)
 	{
-		this->m_Size += toRead;
+		m_Size += toRead;
 		document.skip(toRead);
 		return;
 	}
@@ -349,7 +349,7 @@ AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& heade
 // ---------------------------------------------------------------------------------------------------------------------
 LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
 
 	if (!isFromAdditionalLayerInfo)
@@ -357,13 +357,13 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
 		// (note, this section is padded to 4 bytes which means we might have some padding bytes at the end)
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
-		this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		m_Size = ExtractWidestValue<uint32_t, uint64_t>(size) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 	}
 	else if (isFromAdditionalLayerInfo && sectionSize.has_value())
 	{
 		// The reason for this specialization is that in 16 and 32 bit mode photoshop writes the layer info section
 		// in a tagged block "Lr16" or "Lr32" which already has a size variable.
-		this->m_Size = sectionSize.value();
+		m_Size = sectionSize.value();
 	}
 	else
 	{
@@ -373,24 +373,24 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// If this value is negative the first alpha channel of the layer records holds the merged image result (Image Data Section) alpha channel
 	// TODO this isnt yet implemented
 	uint16_t layerCount = static_cast<uint16_t>(std::abs(ReadBinaryData<int16_t>(document)));
-	this->m_LayerRecords.reserve(layerCount);
-	this->m_ChannelImageData.reserve(layerCount);
+	m_LayerRecords.reserve(layerCount);
+	m_ChannelImageData.reserve(layerCount);
 
 	// Extract layer records
 	for (int i = 0; i < layerCount; i++)
 	{
 		LayerRecord layerRecord = LayerRecord(document, header, document.getOffset());
-		this->m_LayerRecords.push_back(std::move(layerRecord));
+		m_LayerRecords.push_back(std::move(layerRecord));
 	}
 
 	// Extract Channel Image Data
 	for (int i = 0; i < layerCount; i++)
 	{
-		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), this->m_LayerRecords[i].m_ChannelInformation);
-		this->m_ChannelImageData.push_back(std::move(channelImageData));
+		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), m_LayerRecords[i].m_ChannelInformation);
+		m_ChannelImageData.push_back(std::move(channelImageData));
 	}
 
-	const uint64_t expectedOffset = this->m_Offset + this->m_Size;
+	const uint64_t expectedOffset = m_Offset + m_Size;
 	if (document.getOffset() != expectedOffset)
 	{
 		int64_t toSkip = static_cast<int64_t>(expectedOffset) - static_cast<int64_t>(document.getOffset());
@@ -408,13 +408,13 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 // ---------------------------------------------------------------------------------------------------------------------
 GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
 
 	// As this section is undocumented, we currently just skip it.
 	// TODO explore if this is relevant
-	this->m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
-	document.skip(this->m_Size - 4u);
+	m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
+	document.skip(m_Size - 4u);
 }
 
 
@@ -423,37 +423,37 @@ GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 bool LayerAndMaskInformation::read(File& document, const FileHeader& header, const uint64_t offset)
 {
-	this->m_Offset = offset;
+	m_Offset = offset;
 	document.setOffset(offset);
 
 	// Read the layer mask info length marker which is 4 bytes in psd and 8 bytes in psb mode
 	// This value is
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
-	this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
+	m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
 
 	// Parse Layer Info Section
 	{
-		this->m_LayerInfo = LayerInfo(document, header, document.getOffset());
+		m_LayerInfo = LayerInfo(document, header, document.getOffset());
 		// Check the theoretical document offset against what was read by the layer info section. These should be identical
-		if (document.getOffset() != (this->m_Offset + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version)) + this->m_LayerInfo.m_Size)
+		if (document.getOffset() != (m_Offset + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version)) + m_LayerInfo.m_Size)
 		{
 			PSAPI_LOG_ERROR("LayerAndMaskInformation", "Layer Info read an incorrect amount of bytes from the document, expected an offset of %" PRIu64 ", but got %" PRIu64 " instead.",
-				this->m_Offset + this->m_LayerInfo.m_Size + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version),
+				m_Offset + m_LayerInfo.m_Size + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version),
 				document.getOffset())
 			return false;
 		}
 	}
 	// Parse Global Layer Mask Info
 	{
-		this->m_GlobalLayerMaskInfo = GlobalLayerMaskInfo(document, document.getOffset());
+		m_GlobalLayerMaskInfo = GlobalLayerMaskInfo(document, document.getOffset());
 	}
 
-	int64_t toRead = this->m_Size - this->m_LayerInfo.m_Size - this->m_GlobalLayerMaskInfo.m_Size;
+	int64_t toRead = m_Size - m_LayerInfo.m_Size - m_GlobalLayerMaskInfo.m_Size;
 	// If there is still data left to read, this is the additional layer information which is also present at the end of each layer record
 	if (toRead >= 12u)
 	{
 		// Tagged blocks at the end of the layer and mask information seem to be padded to 4-bytes
-		this->m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 4u));
+		m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 4u));
 	}
 
 	return true;
