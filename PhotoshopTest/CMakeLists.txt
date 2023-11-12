@@ -11,6 +11,11 @@ add_custom_command(TARGET ${EXE} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${PROJECT_SOURCE_DIR}/documents/ $<TARGET_FILE_DIR:${EXE}>/documents/)
 
+
+
 if(MSVC)
- target_compile_options(${EXE} PRIVATE "/MP")
+	target_compile_options(${EXE} PRIVATE "/MP")
+	target_compile_options(${EXE} PRIVATE /W4 /WX)
+else()
+	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
