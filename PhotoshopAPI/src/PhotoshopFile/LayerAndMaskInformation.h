@@ -14,17 +14,17 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-struct AdditionaLayerInfo : public FileSection
+struct AdditionalLayerInfo : public FileSection
 {
 	std::vector<std::unique_ptr<TaggedBlock::Base>> m_TaggedBlocks;
 
-	AdditionaLayerInfo() = default;
-	AdditionaLayerInfo(const AdditionaLayerInfo&) = delete;
-	AdditionaLayerInfo(AdditionaLayerInfo&&) = default;
-	AdditionaLayerInfo& operator=(const AdditionaLayerInfo&) = delete;
-	AdditionaLayerInfo& operator=(AdditionaLayerInfo&&) = default;
+	AdditionalLayerInfo() = default;
+	AdditionalLayerInfo(const AdditionalLayerInfo&) = delete;
+	AdditionalLayerInfo(AdditionalLayerInfo&&) = default;
+	AdditionalLayerInfo& operator=(const AdditionalLayerInfo&) = delete;
+	AdditionalLayerInfo& operator=(AdditionalLayerInfo&&) = default;
 
-	AdditionaLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength);
+	AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
 };
 
 
@@ -123,7 +123,7 @@ struct LayerRecord : public FileSection
 
 	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
 	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
-	std::optional<AdditionaLayerInfo> m_AdditionalLayerInfo;
+	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
 	LayerRecord() :
 		m_Top(0u),
@@ -142,7 +142,7 @@ struct LayerRecord : public FileSection
 struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
-	GlobalLayerMaskInfo(File& document, const uint64_t offset) {};
+	GlobalLayerMaskInfo(File& document, const uint64_t offset);
 };
 
 
@@ -165,7 +165,7 @@ struct LayerInfo : public FileSection
 	std::vector<ChannelImageData> m_ChannelImageData;
 
 	LayerInfo(){};
-	LayerInfo(File& document, const FileHeader& header, const uint64_t offset);
+	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 };
 
 
@@ -175,7 +175,7 @@ struct LayerAndMaskInformation : public FileSection
 	LayerInfo m_LayerInfo;
 	GlobalLayerMaskInfo m_GlobalLayerMaskInfo;
 	ChannelImageData m_ChannelImageData;
-	std::optional<AdditionaLayerInfo> m_AdditionalLayerInfo;
+	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
 	bool read(File& document, const FileHeader& header, const uint64_t offset);
 };

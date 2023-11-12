@@ -8,6 +8,9 @@
 
 #include <variant>
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
+
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -229,7 +232,7 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 		this->m_ChannelInformation.emplace_back(channelInfo);
 
 		// Size of one channel information section is 6 or 10 bytes
-		this->m_Size += 2u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		this->m_Size += static_cast<uint64_t>(2u) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 	}
 
 	// Perform a signature check but do not store it as it isnt required
@@ -237,7 +240,7 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	if (signature != Signature("8BIM"))
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM', got '%s' instead",
-			uint32ToString(signature.m_Value))
+			uint32ToString(signature.m_Value).c_str())
 	}
 	this->m_Size += 4u;
 	
@@ -289,13 +292,16 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	// A single tagged block takes at least 12 (or 16) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
 	if (toRead >= 12u)
 	{
-		this->m_AdditionalLayerInfo.emplace(AdditionaLayerInfo(document, header, document.getOffset(), toRead));
+		this->m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 1u));
 	}
 }
 
 
 ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const std::vector<LayerRecords::ChannelInformation>& channelInfos)
 {
+	// TODO add this back in on parsing of image data
+	PSAPI_UNUSED(header)
+
 	this->m_Offset = offset;
 	document.setOffset(offset);
 	this->m_Size = 0;
@@ -304,14 +310,14 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 	{
 		this->m_Compression[channel.m_ChannelID] = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
 		this->m_Data[channel.m_ChannelID] = std::vector<uint8_t>{};
-		this->m_Size += channel.m_Size;
+		this->m_Size += channel.m_Size;	// The size holds the value of the compression marker
 		document.skip(channel.m_Size - 2u);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-AdditionaLayerInfo::AdditionaLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength)
+AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
 {
 	this->m_Offset = offset;
 	document.setOffset(offset);
@@ -320,7 +326,7 @@ AdditionaLayerInfo::AdditionaLayerInfo(File& document, const FileHeader& header,
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
-		std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header);
+		std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header, padding);
 		toRead -= taggedBlock->getTotalSize();
 		this->m_Size += taggedBlock->getTotalSize();
 		this->m_TaggedBlocks.push_back(std::move(taggedBlock));
@@ -329,25 +335,44 @@ AdditionaLayerInfo::AdditionaLayerInfo(File& document, const FileHeader& header,
 	{
 		this->m_Size += toRead;
 		document.skip(toRead);
+		return;
+	}
+
+	if (toRead <= 0)
+	{
+		PSAPI_LOG_WARNING("AdditionalLayerInfo", "Read too much data for the additional layer info, was allowed %" PRIu64 " but read %" PRIu64 " instead",
+			maxLength, maxLength - toRead);
 	}
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t offset)
+LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
 	this->m_Offset = offset;
 	document.setOffset(offset);
 
-	// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
-	// (note, this value is padded to a multiple of 4, despite what the docs say. We dont need
-	// to do this padding ourselves in read mode, only in write mode)
-	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
-	this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
+	if (!isFromAdditionalLayerInfo)
+	{
+		// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
+		// (note, this section is padded to 4 bytes which means we might have some padding bytes at the end)
+		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
+		this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+	}
+	else if (isFromAdditionalLayerInfo && sectionSize.has_value())
+	{
+		// The reason for this specialization is that in 16 and 32 bit mode photoshop writes the layer info section
+		// in a tagged block "Lr16" or "Lr32" which already has a size variable.
+		this->m_Size = sectionSize.value();
+	}
+	else
+	{
+		PSAPI_LOG_ERROR("LayerInfo", "LayerInfo() expects an explicit section size if the call is from the additional layer information section");
+	}
 
 	// If this value is negative the first alpha channel of the layer records holds the merged image result (Image Data Section) alpha channel
 	// TODO this isnt yet implemented
-	int16_t layerCount = std::abs(ReadBinaryData<int16_t>(document));
+	uint16_t layerCount = static_cast<uint16_t>(std::abs(ReadBinaryData<int16_t>(document)));
 	this->m_LayerRecords.reserve(layerCount);
 	this->m_ChannelImageData.reserve(layerCount);
 
@@ -364,6 +389,32 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), this->m_LayerRecords[i].m_ChannelInformation);
 		this->m_ChannelImageData.push_back(std::move(channelImageData));
 	}
+
+	const uint64_t expectedOffset = this->m_Offset + this->m_Size;
+	if (document.getOffset() != expectedOffset)
+	{
+		int64_t toSkip = static_cast<int64_t>(expectedOffset) - static_cast<int64_t>(document.getOffset());
+		// Check that the skipped bytes are within the amount needed to pad a LayerInfo section
+		if (toSkip < -4 || toSkip > 4)
+		{
+			PSAPI_LOG_ERROR("LayerInfo", "Tried skipping bytes larger than the padding of the section: %i", toSkip)
+		}
+		document.setOffset(document.getOffset() + toSkip);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
+{
+	this->m_Offset = offset;
+	document.setOffset(offset);
+
+	// As this section is undocumented, we currently just skip it.
+	// TODO explore if this is relevant
+	this->m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
+	document.skip(this->m_Size - 4u);
 }
 
 
@@ -379,14 +430,30 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	// This value is
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 	this->m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
-	
-	this->m_LayerInfo = LayerInfo(document, header, document.getOffset());
 
-	int64_t toRead = this->m_Size - this->m_LayerInfo.m_Size;
+	// Parse Layer Info Section
+	{
+		this->m_LayerInfo = LayerInfo(document, header, document.getOffset());
+		// Check the theoretical document offset against what was read by the layer info section. These should be identical
+		if (document.getOffset() != (this->m_Offset + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version)) + this->m_LayerInfo.m_Size)
+		{
+			PSAPI_LOG_ERROR("LayerAndMaskInformation", "Layer Info read an incorrect amount of bytes from the document, expected an offset of %" PRIu64 ", but got %" PRIu64 " instead.",
+				this->m_Offset + this->m_LayerInfo.m_Size + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version),
+				document.getOffset())
+			return false;
+		}
+	}
+	// Parse Global Layer Mask Info
+	{
+		this->m_GlobalLayerMaskInfo = GlobalLayerMaskInfo(document, document.getOffset());
+	}
+
+	int64_t toRead = this->m_Size - this->m_LayerInfo.m_Size - this->m_GlobalLayerMaskInfo.m_Size;
 	// If there is still data left to read, this is the additional layer information which is also present at the end of each layer record
 	if (toRead >= 12u)
 	{
-		this->m_AdditionalLayerInfo.emplace(AdditionaLayerInfo(document, header, document.getOffset(), toRead));
+		// Tagged blocks at the end of the layer and mask information seem to be padded to 4-bytes
+		this->m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 4u));
 	}
 
 	return true;
