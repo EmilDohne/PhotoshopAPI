@@ -58,55 +58,55 @@ namespace Enum
 	// File Format Version
 	enum class Version
 	{
-		Psd = 1,
-		Psb = 2
+		Psd,
+		Psb
 	};
 
 	inline std::unordered_map<uint16_t, Version> versionMap
 	{
-		{1, Version::Psd},
-		{2, Version::Psb}
+		{static_cast<uint16_t>(1u), Version::Psd},
+		{static_cast<uint16_t>(2u), Version::Psb}
 	};
 
 	// Bit Depth of the Document
 	enum class BitDepth
 	{
-		BD_1 = 1,
-		BD_8 = 8,
-		BD_16 = 16,
-		BD_32 = 32
+		BD_1,
+		BD_8,
+		BD_16,
+		BD_32
 	};
 
 	inline std::unordered_map<uint16_t, BitDepth> bitDepthMap
 	{
-		{1, BitDepth::BD_1},
-		{8, BitDepth::BD_8},
-		{16, BitDepth::BD_16},
-		{32, BitDepth::BD_32},
+		{static_cast<uint16_t>(1u), BitDepth::BD_1},
+		{static_cast<uint16_t>(8u), BitDepth::BD_8},
+		{static_cast<uint16_t>(16u), BitDepth::BD_16},
+		{static_cast<uint16_t>(32u), BitDepth::BD_32},
 	};
 
 	enum class ColorMode
 	{
-		Bitmap = 0,
-		Grayscale = 1,
-		Indexed = 2,
-		RGB = 3,
-		CMYK = 4,
-		Multichannel = 7,
-		Duotone = 8,
-		Lab = 9
+		Bitmap,
+		Grayscale,
+		Indexed,
+		RGB,
+		CMYK,
+		Multichannel,
+		Duotone,
+		Lab
 	};
 
 	inline std::unordered_map<uint16_t, ColorMode> colorModeMap
 	{
-		{0, ColorMode::Bitmap},
-		{1, ColorMode::Grayscale},
-		{2, ColorMode::Indexed},
-		{3, ColorMode::RGB},
-		{4, ColorMode::CMYK},
-		{7, ColorMode::Multichannel},
-		{8, ColorMode::Duotone},
-		{9, ColorMode::Lab}
+		{static_cast<uint16_t>(0u), ColorMode::Bitmap},
+		{static_cast<uint16_t>(1u), ColorMode::Grayscale},
+		{static_cast<uint16_t>(2u), ColorMode::Indexed},
+		{static_cast<uint16_t>(3u), ColorMode::RGB},
+		{static_cast<uint16_t>(4u), ColorMode::CMYK},
+		{static_cast<uint16_t>(7u), ColorMode::Multichannel},
+		{static_cast<uint16_t>(8u), ColorMode::Duotone},
+		{static_cast<uint16_t>(9u), ColorMode::Lab}
 	};
 }
 
@@ -512,10 +512,10 @@ namespace Enum
 
 	inline std::unordered_map<uint16_t, Compression> compressionMap
 	{
-		{0, Compression::Raw},
-		{1, Compression::Rle},
-		{2, Compression::Zip},
-		{3, Compression::ZipPrediction}
+		{static_cast<uint16_t>(0u), Compression::Raw},
+		{static_cast<uint16_t>(1u), Compression::Rle},
+		{static_cast<uint16_t>(2u), Compression::Zip},
+		{static_cast<uint16_t>(3u), Compression::ZipPrediction}
 	};
 }
 
