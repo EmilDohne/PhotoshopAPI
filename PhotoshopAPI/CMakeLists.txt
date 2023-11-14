@@ -15,12 +15,13 @@ add_library (${LIB} STATIC
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/TaggedBlock.cpp"
 )
 
-if(MSVC)
-	target_compile_options(${LIB} PRIVATE "/MP")
-	target_compile_options(${LIB} PRIVATE /W4 /WX)
-else()
-	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-endif()
+# Unfortunately, these dont compile with blosc2 due to its use of getenv
+# if(MSVC)
+# 	target_compile_options(${LIB} PRIVATE "/MP")
+# 	target_compile_options(${LIB} PRIVATE /W4 /WX)
+# else()
+# 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+# endif()
 
 # Include blosc2 headers
 include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
