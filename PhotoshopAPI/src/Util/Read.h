@@ -76,7 +76,7 @@ TPsb ExtractWidestValue(std::variant<TPsd, TPsb> variant)
 
 
 
-// Read a large amount of data into a std::vector for use on large amounts of data,
+// Read a large amount of data into a std::vector,
 // assumes the file is already open for reading
 template <typename T>
 inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)

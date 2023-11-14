@@ -6,6 +6,7 @@ set (CMAKE_CXX_STANDARD 20)
 
 if(MSVC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES ".lib")
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Enable Hot Reload for MSVC compilers if supported.
@@ -19,6 +20,9 @@ project ("PhotoshopAPIBuild")
 # Include sub-projects.
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
+
+# Add thirdparty libraries
+add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 
 # Set the test project (PhotoshopTest) as the default target
 add_custom_target(default_target ALL
