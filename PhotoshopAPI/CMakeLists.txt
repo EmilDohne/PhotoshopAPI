@@ -21,3 +21,6 @@ if(MSVC)
 else()
 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
+
+# Include blosc2 headers
+include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
