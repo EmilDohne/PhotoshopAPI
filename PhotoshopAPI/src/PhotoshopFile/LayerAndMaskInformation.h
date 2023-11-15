@@ -7,6 +7,7 @@
 #include "../Util/Struct/Section.h"
 #include "../Util/Struct/ResourceBlock.h"
 #include "../Util/Struct/TaggedBlock.h"
+#include "../Util/Compression/Compression.h"
 
 #include <vector>
 

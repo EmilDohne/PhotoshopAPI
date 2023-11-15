@@ -25,3 +25,4 @@ add_library (${LIB} STATIC
 
 # Include blosc2 headers
 include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
+

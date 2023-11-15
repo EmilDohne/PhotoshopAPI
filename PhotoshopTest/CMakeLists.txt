@@ -12,8 +12,9 @@ add_executable(${EXE} ${PROJECT_SOURCE_DIR}/src/main.cpp)
 # endif()
 
 # Include and link the PhotoshopAPI
-include_directories(${CMAKE_SOURCE_DIR}/PhotoshopAPI/src)
+include_directories("${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
+
 
 # Include and link blosc2
 include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
