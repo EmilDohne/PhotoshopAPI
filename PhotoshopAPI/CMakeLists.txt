@@ -26,3 +26,6 @@ add_library (${LIB} STATIC
 # Include blosc2 headers
 include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
 
+#include zlib-ng headers
+include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
+

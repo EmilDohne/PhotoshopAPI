@@ -13,16 +13,38 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Perform a endianDecode operation on an array (std::vector) of items
-// and return the byteswapped elements
+// Perform an endianDecode operation on a binary array (std::vector) and return
+// a vector of the given type
 template<typename T>
-inline std::vector<T> endianDecodeBEArray(std::vector<T>& data)
+std::vector<T> endianDecodeBEBinaryArray(const std::vector<uint8_t>& data)
+{
+    if (data.size() % sizeof(T) != 0)
+    {
+        PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
+            data.size(),
+            sizeof(T))
+    }
+
+    std::vector<T> nativeData;
+    nativeData.reserve(data.size() / sizeof(T));
+
+    // TODO this could potentially be done inline
+    for (int i = 0; i < (data.size() * sizeof(T)); i += sizeof(T))
+    {
+        nativeData.push_back(endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i])));
+    }
+    
+    return nativeData;
+}
+
+// Perform a endianDecode operation on an array (std::vector) of items in-place
+template<typename T>
+void endianDecodeBEArray(std::vector<T>& data)
 {
     for (auto& item : data)
     {
         item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item))
     }
-    return std::move(data);
 }
 
 

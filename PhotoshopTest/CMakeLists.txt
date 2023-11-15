@@ -20,6 +20,10 @@ target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
 include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
 target_link_libraries(${EXE} PRIVATE blosc2_static)
 
+#include and link zlib-ng headers
+include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
+target_link_libraries(${EXE} PRIVATE zlibstatic)
+
 
 # Copy the documents/ folder to the build dir
 add_custom_command(TARGET ${EXE} POST_BUILD

@@ -79,13 +79,9 @@ std::vector<T> DecompressRLE(File& document, const FileHeader& header, const uin
 	// Decompress using the PackBits algorithm
     std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData);
 
-    // Bit shift the array to go from BE -> native
-    std::vector<T> bitShiftedData;
-    bitShiftedData.reserve(static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
-    for (int i = 0; i < (decompressedData.size() * sizeof(T)); i += sizeof(T))
-    {
-        bitShiftedData.push_back(endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&decompressedData[i])));
-    }
+    // Convert decompressed data to native endianness
+    std::vector<T> bitShiftedData = endianDecodeBEBinaryArray(decompressedData);
+
 
     if (bitShiftedData.size() != static_cast<uint64_t>(width) * static_cast<uint64_t>(height))
     {
