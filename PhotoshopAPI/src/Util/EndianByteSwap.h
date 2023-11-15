@@ -3,6 +3,8 @@
 #include "../Macros.h"
 #include "Logger.h"
 
+#include <vector>
+
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 #include <limits.h>
@@ -11,8 +13,20 @@
 PSAPI_NAMESPACE_BEGIN
 
 
+// Perform a endianDecode operation on an array (std::vector) of items
+// and return the byteswapped elements
+template<typename T>
+inline std::vector<T> endianDecodeBEArray(std::vector<T>& data)
+{
+    for (auto& item : data)
+    {
+        item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item))
+    }
+    return std::move(data);
+}
+
+
 // Perform a byteswap to go from big endian PS data to system endianness
-// See https://commandcenter.blogspot.com/2012/04/byte-order-fallacy.html
 template<typename T>
 inline T endianDecodeBE(const uint8_t* src)
 {
@@ -100,5 +114,6 @@ inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
     uint64_t val = endianDecodeBE<uint64_t>(src);
     return reinterpret_cast<float64_t&>(val);
 }
+
 
 PSAPI_NAMESPACE_END
