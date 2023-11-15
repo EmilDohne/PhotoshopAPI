@@ -3,7 +3,7 @@
 ## Project
 
 - [X] Generate CMake project for PhotoshopAPI
-- [ ] Include blosc2 compression library
+- [X ] Include blosc2 compression library
 - [ ] Add README
 
 ## Testing
