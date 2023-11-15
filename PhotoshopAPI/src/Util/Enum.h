@@ -497,17 +497,20 @@ namespace Enum
 		}
 		return false;
 	}
+}
 
 
-	// 
-	// --------------------------------------------------------------------------------
-	// --------------------------------------------------------------------------------
+// Image Data enums
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+namespace Enum
+{
 	enum class Compression
 	{
 		Raw,
-		Rle,
-		Zip,
-		ZipPrediction
+		Rle,			// Run-length encoded data using the PackBits algorithm
+		Zip,			// Regular ZIP compression
+		ZipPrediction	// ZIP compression where 
 	};
 
 	inline std::unordered_map<uint16_t, Compression> compressionMap
@@ -518,7 +521,5 @@ namespace Enum
 		{static_cast<uint16_t>(3u), Compression::ZipPrediction}
 	};
 }
-
-
 
 PSAPI_NAMESPACE_END
