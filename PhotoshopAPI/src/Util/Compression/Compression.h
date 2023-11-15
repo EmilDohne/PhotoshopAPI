@@ -24,11 +24,11 @@ inline std::vector<T> DecompressData(File& document, const Enum::Compression& co
 	case Enum::Compression::Raw:
 		return ReadBinaryArray<T>(document, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 	case Enum::Compression::Rle:
-		return DecompressRLE(document, header, width, height);
+		return DecompressRLE<T>(document, header, width, height);
 	case Enum::Compression::Zip:
-		return DecompressZIP(document, header, width, height, compressedSize)
+		return DecompressZIP<T>(document, header, width, height, compressedSize);
 	case Enum::Compression::ZipPrediction:
-		return DecompressZIPPrediction(document, header, width, height, compressedSize)
+		return DecompressZIPPrediction<T>(document, header, width, height, compressedSize);
 	default:
 		return ReadBinaryArray<T>(document, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 	}

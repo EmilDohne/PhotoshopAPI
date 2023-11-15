@@ -62,12 +62,12 @@ std::vector<T> DecompressRLE(File& document, const FileHeader& header, const uin
 	uint64_t scanlineTotalSize = 0u;
 	for (int i = 0; i < height; ++i)
 	{
-		scanlineTotalSize += ExtractWidestValue<uint16_t, uint32_t>(ReadBinaryDataVariadic<uint16_t, uint32_t>(document));
+		scanlineTotalSize += ExtractWidestValue<uint16_t, uint32_t>(ReadBinaryDataVariadic<uint16_t, uint32_t>(document, header.m_Version));
 	}
 
-    if (scanlineTotalSize != (compressedSize + static_cast<uint64_t>(height) * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version))
+    if (scanlineTotalSize != (compressedSize + static_cast<uint64_t>(height) * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)))
     {
-        PSAPI_LOG_ERROR("DecompressRLE", "Size of compressed data is not what was expected. Expected: " % PRIu64 " but got " % PRIu64 " instead",
+        PSAPI_LOG_ERROR("DecompressRLE", "Size of compressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead",
             compressedSize + static_cast<uint64_t>(height) * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version),
             scanlineTotalSize)
     }
@@ -85,13 +85,13 @@ std::vector<T> DecompressRLE(File& document, const FileHeader& header, const uin
 
     if (bitShiftedData.size() != static_cast<uint64_t>(width) * static_cast<uint64_t>(height))
     {
-        PSAPI_LOG_ERROR("DecompressRLE", "Size of decompressed data is not what was expected. Expected: " %PRIu64 " but got " %PRIu64 " instead", 
+        PSAPI_LOG_ERROR("DecompressRLE", "Size of decompressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead", 
             static_cast<uint64_t>(width) * static_cast<uint64_t>(height),
             bitShiftedData.size())
     }
 	
 	return bitShiftedData;
-};
+}
 
 
 PSAPI_NAMESPACE_END

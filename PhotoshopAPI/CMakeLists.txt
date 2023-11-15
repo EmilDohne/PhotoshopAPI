@@ -15,6 +15,8 @@ add_library (${LIB} STATIC
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/TaggedBlock.cpp"
 )
 
+include_directories("${PROJECT_SOURCE_DIR}/src/Util/Compression")
+
 # Unfortunately, these dont compile with blosc2 due to its use of getenv
 # if(MSVC)
 # 	target_compile_options(${LIB} PRIVATE "/MP")

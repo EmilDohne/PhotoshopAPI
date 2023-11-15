@@ -43,7 +43,7 @@ void endianDecodeBEArray(std::vector<T>& data)
 {
     for (auto& item : data)
     {
-        item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item))
+        item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
     }
 }
 

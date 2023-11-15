@@ -7,6 +7,8 @@
 #include "zlib-ng.h"
 
 
+PSAPI_NAMESPACE_BEGIN
+
 namespace {
 	inline std::vector<uint8_t> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
 	{
@@ -43,9 +45,6 @@ namespace {
 }
 
 
-PSAPI_NAMESPACE_BEGIN
-
-
 template <typename T>
 std::vector<T> DecompressZIP(File& document, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
@@ -69,7 +68,7 @@ template <typename T>
 std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
 	// Convert decompressed data to native endianness
-	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray(decompressedData);
+	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray<T>(decompressedData);
 
 	// Perform prediction decoding
 	for (uint64_t i = 1; i < bitShiftedData.size(); i++)
@@ -91,7 +90,11 @@ std::vector<T> DecompressZIPPrediction(File& document, const FileHeader& header,
 	// Decompress using Inflate ZIP
 	std::vector<uint8_t> decompressedData = UnZip(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * sizeof(T));
 
+	// Remove the prediction encoding from the data
+	// as well as converting to native endianness
 	std::vector<T> outData = RemovePredictionEncoding(decompressedData, width, height);
 
 	return outData;
 }
+
+PSAPI_NAMESPACE_END
