@@ -62,19 +62,28 @@ std::vector<T> DecompressZIP(File& document, const FileHeader& header, const uin
 }
 
 
-// Reverse the prediction encoding after having decompressed the zip as well as converting from BE to native
-// we do this step here as the 32 bit specialization needs 
+// Reverse the prediction encoding after having decompressed the zip compressed byte stream as well as converting from BE to native
 template <typename T>
 std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
 	// Convert decompressed data to native endianness
 	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray<T>(decompressedData);
 
-	// Perform prediction decoding
-	for (uint64_t i = 1; i < bitShiftedData.size(); i++)
+	if (bitShiftedData.size() != static_cast<uint64_t>(height) * static_cast<uint64_t>(width))
 	{
-		// Simple differencing: decode by adding the difference to the previous value
-		bitShiftedData[i] = bitShiftedData[i - 1];
+		PSAPI_LOG_ERROR("RemovePredictionEncoding", "Endian Decoded data does not match expected size, expected %" PRIu64 ", got %i",
+			static_cast<uint64_t>(height) * static_cast<uint64_t>(width),
+			bitShiftedData.size())
+	}
+
+	// Perform prediction decoding per scanline of data
+	for (uint64_t y = 0; y < height; ++y)
+	{
+		for (uint64_t x = 1; x < width; ++x)
+		{
+			// Simple differencing: decode by adding the difference to the previous value
+			bitShiftedData[width * y + x] += bitShiftedData[width * y + x - 1];
+		}
 	}
 
 	return bitShiftedData;
