@@ -208,22 +208,54 @@ namespace Enum
 	// --------------------------------------------------------------------------------
 	enum class ChannelID
 	{
-		Red,
-		Green,
-		Blue,
-		Custom,
-		TransparencyMask,
-		UserSuppliedLayerMask,
-		RealUserSuppliedLayerMask
+		Red,		// Channel 0 in RGB Mode
+		Green,		// Channel 1 in RGB Mode
+		Blue,		// Channel 2 in RGB Mode
+		Cyan,		// Channel 0 in CMYK Mode
+		Magenta,	// Channel 1 in CMYK Mode
+		Yellow,		// Channel 2 in CMYK Mode
+		Black,		// Channel 3 in CMYK Mode
+		Gray,		// Channel 0 in Grayscale Mode
+		Custom,		// Any other channel
+		TransparencyMask,			// Vector mask (?)
+		UserSuppliedLayerMask,		// Pixel Mask
+		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
 	};
 
-	inline ChannelID intToChannelID(const int16_t value)
+	inline ChannelID rgbIntToChannelID(const int16_t value)
 	{
 		switch (value)
 		{
 		case 0: return ChannelID::Red;
 		case 1: return ChannelID::Green;
 		case 2: return ChannelID::Blue;
+		case -1: return ChannelID::TransparencyMask;
+		case -2: return ChannelID::UserSuppliedLayerMask;
+		case -3: return ChannelID::RealUserSuppliedLayerMask;
+		default: return ChannelID::Custom;	// These are channels set by the user
+		}
+	}
+
+	inline ChannelID cmykIntToChannelID(const int16_t value)
+	{
+		switch (value)
+		{
+		case 0: return ChannelID::Cyan;
+		case 1: return ChannelID::Magenta;
+		case 2: return ChannelID::Yellow;
+		case 3: return ChannelID::Black;
+		case -1: return ChannelID::TransparencyMask;
+		case -2: return ChannelID::UserSuppliedLayerMask;
+		case -3: return ChannelID::RealUserSuppliedLayerMask;
+		default: return ChannelID::Custom;	// These are channels set by the user
+		}
+	}
+
+	inline ChannelID grayscaleIntToChannelID(const int16_t value)
+	{
+		switch (value)
+		{
+		case 0: return ChannelID::Gray;
 		case -1: return ChannelID::TransparencyMask;
 		case -2: return ChannelID::UserSuppliedLayerMask;
 		case -3: return ChannelID::RealUserSuppliedLayerMask;
