@@ -56,7 +56,7 @@ std::vector<T> DecompressZIP(File& document, const FileHeader& header, const uin
 	std::vector<uint8_t> decompressedData = UnZip(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * sizeof(T));
 
 	// Convert decompressed data to native endianness
-	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray(decompressedData);
+	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray<T>(decompressedData);
 
 	return bitShiftedData;
 }
@@ -72,7 +72,7 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 	if (bitShiftedData.size() != static_cast<uint64_t>(height) * static_cast<uint64_t>(width))
 	{
 		PSAPI_LOG_ERROR("RemovePredictionEncoding", "Endian Decoded data does not match expected size, expected %" PRIu64 ", got %i",
-			static_cast<uint64_t>(height) * static_cast<uint64_t>(width),
+			static_cast<uint64_t>(height) * static_cast<uint64_t>(width) * sizeof(T),
 			bitShiftedData.size())
 	}
 
@@ -101,7 +101,7 @@ std::vector<T> DecompressZIPPrediction(File& document, const FileHeader& header,
 
 	// Remove the prediction encoding from the data
 	// as well as converting to native endianness
-	std::vector<T> outData = RemovePredictionEncoding(decompressedData, width, height);
+	std::vector<T> outData = RemovePredictionEncoding<T>(decompressedData, width, height);
 
 	return outData;
 }

@@ -44,7 +44,7 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
             {
                 decompressedData.push_back(compressedData.at(i + j + 1));
             }
-            i += value + 1;
+            i += static_cast<uint64_t>(value) + 1;
         }
         ++i;
     }
@@ -65,10 +65,13 @@ std::vector<T> DecompressRLE(File& document, const FileHeader& header, const uin
 		scanlineTotalSize += ExtractWidestValue<uint16_t, uint32_t>(ReadBinaryDataVariadic<uint16_t, uint32_t>(document, header.m_Version));
 	}
 
-    if (scanlineTotalSize != (compressedSize + static_cast<uint64_t>(height) * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)))
+    // Find out the size of the data without the scanline sizes. For example, if the document is 64x64 pixels in 8 bit mode we have 128 bytes of memory to store the scanline size
+    uint64_t dataSize = compressedSize - static_cast<uint64_t>(SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * height;
+
+    if (scanlineTotalSize != dataSize)
     {
         PSAPI_LOG_ERROR("DecompressRLE", "Size of compressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead",
-            compressedSize + static_cast<uint64_t>(height) * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version),
+            dataSize,
             scanlineTotalSize)
     }
 
@@ -77,10 +80,10 @@ std::vector<T> DecompressRLE(File& document, const FileHeader& header, const uin
 	document.read(reinterpret_cast<char*>(compressedData.data()), scanlineTotalSize);
 
 	// Decompress using the PackBits algorithm
-    std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData);
+    std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData, width, height);
 
     // Convert decompressed data to native endianness
-    std::vector<T> bitShiftedData = endianDecodeBEBinaryArray(decompressedData);
+    std::vector<T> bitShiftedData = endianDecodeBEBinaryArray<T>(decompressedData);
 
 
     if (bitShiftedData.size() != static_cast<uint64_t>(width) * static_cast<uint64_t>(height))

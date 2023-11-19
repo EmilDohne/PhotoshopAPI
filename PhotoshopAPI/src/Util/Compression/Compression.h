@@ -13,24 +13,24 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Read and decompress an input datastream using the appropriate compression algorithm
+// Read and decompress an input filestream using the appropriate compression algorithm
 // Call this as well if your input is using RAW compression as it will handle this case
-// Endian-conversion is handled by this function as well
+// Endian-conversion is handled by this function
 template <typename T>
 inline std::vector<T> DecompressData(File& document, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	switch (compression)
 	{
 	case Enum::Compression::Raw:
-		return ReadBinaryArray<T>(document, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
+		return ReadBinaryArray<T>(document, compressedSize);
 	case Enum::Compression::Rle:
-		return DecompressRLE<T>(document, header, width, height);
+		return DecompressRLE<T>(document, header, width, height, compressedSize);
 	case Enum::Compression::Zip:
 		return DecompressZIP<T>(document, header, width, height, compressedSize);
 	case Enum::Compression::ZipPrediction:
 		return DecompressZIPPrediction<T>(document, header, width, height, compressedSize);
 	default:
-		return ReadBinaryArray<T>(document, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
+		return ReadBinaryArray<T>(document, compressedSize);
 	}
 }
 
