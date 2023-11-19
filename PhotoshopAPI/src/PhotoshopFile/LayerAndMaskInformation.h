@@ -8,6 +8,8 @@
 #include "../Util/Struct/ResourceBlock.h"
 #include "../Util/Struct/TaggedBlock.h"
 #include "../Util/Compression/Compression.h"
+#include "../Util/Struct/ImageChannel.h"
+
 
 #include <vector>
 
@@ -152,11 +154,10 @@ struct ChannelImageData : public FileSection
 {
 	// This doesnt yet store the data but rather skips it
 	// TODO add blosc2 compression to this data
-	std::unordered_map<Enum::ChannelID, std::vector<uint8_t>> m_Data;
-	std::unordered_map<Enum::ChannelID, Enum::Compression> m_Compression;
+	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
 	ChannelImageData() {};
-	ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const std::vector<LayerRecords::ChannelInformation>& channelInfos);
+	ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 };
 
 

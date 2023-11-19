@@ -226,7 +226,23 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	for (int i = 0; i < m_ChannelCount; i++)
 	{
 		LayerRecords::ChannelInformation channelInfo{};
-		channelInfo.m_ChannelID = Enum::intToChannelID(ReadBinaryData<uint16_t>(document));
+		switch (header.m_ColorMode)
+		{
+		case Enum::ColorMode::RGB:
+			channelInfo.m_ChannelID = Enum::rgbIntToChannelID(ReadBinaryData<uint16_t>(document));
+			break;
+		case Enum::ColorMode::CMYK:
+			channelInfo.m_ChannelID = Enum::cmykIntToChannelID(ReadBinaryData<uint16_t>(document));
+			break;
+		case Enum::ColorMode::Grayscale:
+			channelInfo.m_ChannelID = Enum::grayscaleIntToChannelID(ReadBinaryData<uint16_t>(document));
+			break;
+		default:
+			PSAPI_UNUSED(ReadBinaryData<uint16_t>(document))
+			PSAPI_LOG_WARNING("LayerRecord", "Currently unsupported ColorMode encountered, storing ChannelID::Custom")
+			channelInfo.m_ChannelID = Enum::ChannelID::Custom;
+			break;
+		}
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
@@ -298,7 +314,9 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 }
 
 
-ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const std::vector<LayerRecords::ChannelInformation>& channelInfos)
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
 	// TODO add this back in on parsing of image data
 	PSAPI_UNUSED(header)
@@ -307,12 +325,49 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 	document.setOffset(offset);
 	m_Size = 0;
 
-	for (const auto& channel : channelInfos)
+	for (const auto& channel : layerRecord.m_ChannelInformation)
 	{
-		m_Compression[channel.m_ChannelID] = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
-		m_Data[channel.m_ChannelID] = std::vector<uint8_t>{};
-		m_Size += channel.m_Size;	// The size holds the value of the compression marker
-		document.skip(channel.m_Size - 2u);
+		uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
+		uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
+
+		// If the channel is a mask the extents are actually stored in the layermaskdata
+		if (channel.m_ChannelID == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID == Enum::ChannelID::RealUserSuppliedLayerMask)
+		{
+			if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
+			{
+				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
+				width = mask.m_Right - mask.m_Left;
+				height = mask.m_Bottom - mask.m_Top;
+			}
+		}
+
+		Enum::Compression channelCompression = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
+		this->m_Size += channel.m_Size;
+
+		if(header.m_Depth == Enum::BitDepth::BD_8)
+		{
+			auto decompressedData = std::make_unique<std::vector<uint8_t>>(DecompressData<uint8_t>(document, channelCompression, header, width, height, channel.m_Size - 2u));
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint8_t>>(channelCompression, std::move(decompressedData), channel.m_ChannelID, width, height));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_16)
+		{
+			auto decompressedData = std::make_unique<std::vector<uint16_t>>(DecompressData<uint16_t>(document, channelCompression, header, width, height, channel.m_Size - 2u));
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint16_t>>(channelCompression, std::move(decompressedData), channel.m_ChannelID, width, height));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_32)
+		{
+			// For some reason 32-bit Photoshop files store their
+			if (channelCompression == Enum::Compression::Zip)
+			{
+				channelCompression = Enum::Compression::ZipPrediction;
+			}
+			auto decompressedData = std::make_unique<std::vector<float32_t>>(DecompressData<float32_t>(document, channelCompression, header, width, height, channel.m_Size - 2u));
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<float32_t>>(channelCompression, std::move(decompressedData), channel.m_ChannelID, width, height));
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("ChannelImageData", "Unimplemented Bit Depth encountered")
+		}
 	}
 }
 
@@ -387,7 +442,8 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// Extract Channel Image Data
 	for (int i = 0; i < layerCount; i++)
 	{
-		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), m_LayerRecords[i].m_ChannelInformation);
+		// TODO add width, height and compression variables here as well
+		ChannelImageData channelImageData = ChannelImageData(document, header, document.getOffset(), m_LayerRecords[i]);
 		m_ChannelImageData.push_back(std::move(channelImageData));
 	}
 
