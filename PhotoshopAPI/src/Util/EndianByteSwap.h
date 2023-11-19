@@ -29,9 +29,10 @@ std::vector<T> endianDecodeBEBinaryArray(const std::vector<uint8_t>& data)
     nativeData.reserve(data.size() / sizeof(T));
 
     // TODO this could potentially be done inline
-    for (int i = 0; i < (data.size() * sizeof(T)); i += sizeof(T))
+    for (uint64_t i = 0; i < data.size(); i += sizeof(T))
     {
-        nativeData.push_back(endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i])));
+        const uint8_t* byteData = reinterpret_cast<const uint8_t*>(data.data() + i);
+        nativeData.push_back(endianDecodeBE<T>(byteData));
     }
     
     return nativeData;

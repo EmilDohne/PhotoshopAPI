@@ -83,9 +83,9 @@ inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<T> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size * sizeof(T));
-	for (const T item : data)
+	for (T item : data)
 	{
-		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(item));
+		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
 	}
 
 	return data;
