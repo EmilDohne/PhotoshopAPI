@@ -73,17 +73,18 @@ public:
             va_list args;
             va_start(args, format);
             int result = vsnprintf(buffer, sizeof(buffer), format, args);
+            PSAPI_UNUSED(result)
             va_end(args);
         }
-        auto time = this->getTime();
-        auto logMessage = this->createMessage(time, task, buffer, severity);
+        auto time = getTime();
+        auto logMessage = createMessage(time, task, buffer);
 
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
             if (severity >= m_Severity)
             {
                 if (severity == Enum::Severity::Error)
                 {
+                    std::cout << logMessage << std::endl;
                     throw std::runtime_error(logMessage);
                 }
                 std::cout << logMessage << std::endl;
@@ -94,12 +95,11 @@ public:
 
     inline void setSeverity(Enum::Severity severity)
     {
-        this->m_Severity = severity;
+        m_Severity = severity;
     }
 
 private:
     Enum::Severity m_Severity = Enum::Severity::Debug;
-    std::mutex m_mutex; // Mutex for thread safety
 
     Logger() {
     }
@@ -120,12 +120,12 @@ private:
     }
 
 
-    inline const std::string createMessage(std::string time, std::string task, const std::string& message, Enum::Severity severity)
+    inline const std::string createMessage(std::string time, std::string task, const std::string& message)
     {
         time = leftAlignString(time, 22);
 
         task = "[" + task + "]";
-        task = leftAlignString(task, 15);
+        task = leftAlignString(task, 25);
 
         std::string joinedMessage = time + task + message;
 

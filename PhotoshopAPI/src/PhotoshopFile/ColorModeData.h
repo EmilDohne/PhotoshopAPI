@@ -16,7 +16,7 @@ struct ColorModeData : public FileSection
 {
 	std::vector<uint8_t> m_Data;
 
-	bool read(File& document, const FileHeader& header);
+	bool read(File& document);
 };
 
 PSAPI_NAMESPACE_END

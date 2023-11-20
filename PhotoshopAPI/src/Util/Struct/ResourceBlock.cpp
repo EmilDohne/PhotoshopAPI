@@ -20,12 +20,12 @@ ResourceBlock::ResourceBlock(File& document)
 			signature.m_Representation[2],
 			signature.m_Representation[3])
 	}
-	this->m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
-	this->m_Name = PascalString(document, 2u);
-	this->m_Size = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
-	this->m_Data = ReadBinaryArray<uint8_t>(document, this->m_Size);
+	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
+	m_Name = PascalString(document, 2u);
+	m_Size = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
+	m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
 
-	this->m_BlockSize = 4u + 2u + this->m_Name.m_Size + 4u + this->m_Size;
+	m_BlockSize = 4u + 2u + m_Name.m_Size + 4u + m_Size;
 }
 
 

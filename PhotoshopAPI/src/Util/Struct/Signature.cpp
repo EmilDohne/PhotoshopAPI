@@ -40,12 +40,12 @@ Signature::Signature(const std::string val)
 
 bool Signature::operator==(const Signature& other)
 {
-    return this->m_Value == other.m_Value;
+    return m_Value == other.m_Value;
 }
 
 bool Signature::operator!=(const Signature& other)
 {
-    return this->m_Value != other.m_Value;
+    return m_Value != other.m_Value;
 }
 
 PSAPI_NAMESPACE_END

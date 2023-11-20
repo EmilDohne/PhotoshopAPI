@@ -13,7 +13,7 @@ PSAPI_NAMESPACE_BEGIN
 // or 4 bytes depending on which section its read from
 struct PascalString
 {
-	uint8_t m_Size;
+	uint8_t m_Size;	// Stores the padded length including the size marker
 	std::string m_String;
 	
 	PascalString() : m_Size(0) {};
