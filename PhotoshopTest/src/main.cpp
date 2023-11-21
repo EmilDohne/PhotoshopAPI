@@ -55,19 +55,6 @@ std::vector<std::filesystem::path> relPaths =
 
 int main()
 {
-	// Set up and run doctest tests
-	{
-		doctest::Context context;
-
-		// set defaults
-		context.setOption("abort-after", 5);	// stop test execution after 5 failed assertions
-
-		int res = context.run();				// run
-
-		if (context.shouldExit())				// important - query flags (and --exit) rely on the user doing this
-			return res;							// propagate the result of the tests
-	}
-
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
 	for (const auto& path : relPaths)
@@ -86,5 +73,18 @@ int main()
 		{
 			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
 		}
+	}
+
+	// Set up and run doctest tests
+	{
+		doctest::Context context;
+
+		// set defaults
+		context.setOption("abort-after", 5);	// stop test execution after 5 failed assertions
+
+		int res = context.run();				// run
+
+		if (context.shouldExit())				// important - query flags (and --exit) rely on the user doing this
+			return res;							// propagate the result of the tests
 	}
 }

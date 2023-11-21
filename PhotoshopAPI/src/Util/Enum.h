@@ -217,7 +217,7 @@ namespace Enum
 		Black,		// Channel 3 in CMYK Mode
 		Gray,		// Channel 0 in Grayscale Mode
 		Custom,		// Any other channel
-		TransparencyMask,			// Vector mask (?)
+		TransparencyMask,			// Alpha Channel
 		UserSuppliedLayerMask,		// Pixel Mask
 		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
 	};
