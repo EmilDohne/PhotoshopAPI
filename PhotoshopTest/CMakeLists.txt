@@ -16,7 +16,7 @@ endif()
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
 
-# include doctest library
+# include doctest v2.4.11 library
 target_include_directories(${EXE} PRIVATE "{CMAKE_SOURCE_DIR}/thirdparty/doctest/")
 
 # Include and link blosc2
