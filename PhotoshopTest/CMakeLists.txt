@@ -2,7 +2,10 @@
 set (EXE PhotoshopTest)
 project(${EXE})
 
-add_executable(${EXE} ${PROJECT_SOURCE_DIR}/src/main.cpp)
+add_executable(${EXE} 
+    "${PROJECT_SOURCE_DIR}/src/main.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
+)
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
@@ -17,7 +20,7 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src"
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
 
 # include doctest v2.4.11 library
-target_include_directories(${EXE} PRIVATE "{CMAKE_SOURCE_DIR}/thirdparty/doctest/")
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/doctest/")
 
 # Include and link blosc2
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")

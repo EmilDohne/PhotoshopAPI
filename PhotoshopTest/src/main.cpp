@@ -1,55 +1,73 @@
+// Include doctest and configure our own main function
+#define DOCTEST_CONFIG_IMPLEMENT
+#include "doctest.h"
+
 #include "Macros.h"
 #include "PhotoshopFile/PhotoshopFile.h"
-
-#include "Util/Struct/Signature.h"
 
 #include <filesystem>
 #include <vector>
 
+
+// This is the data we run all the whole-file tests on. Keep in mind that this does not necessarily cover all of the documents found in /documents
+// as some cover very specific individual sections such as /documents/Compression
 std::vector<std::filesystem::path> relPaths =
 {
-	"\\documents\\CMYK_8bit.psd",
-	"\\documents\\CMYK_8bit.psb",
-	"\\documents\\CMYK_16bit.psd",
-	"\\documents\\CMYK_16bit.psb",
+	"\\documents\\CMYK\\CMYK_8bit.psd",
+	"\\documents\\CMYK\\CMYK_8bit.psb",
+	"\\documents\\CMYK\\CMYK_16bit.psd",
+	"\\documents\\CMYK\\CMYK_16bit.psb",
 
-	"\\documents\\Grayscale_8bit.psd",
-	"\\documents\\Grayscale_8bit.psb",
-	"\\documents\\Grayscale_16bit.psd",
-	"\\documents\\Grayscale_16bit.psb",
-	"\\documents\\Grayscale_32bit.psd",
-	"\\documents\\Grayscale_32bit.psb",
+	"\\documents\\Grayscale\\Grayscale_8bit.psd",
+	"\\documents\\Grayscale\\Grayscale_8bit.psb",
+	"\\documents\\Grayscale\\Grayscale_16bit.psd",
+	"\\documents\\Grayscale\\Grayscale_16bit.psb",
+	"\\documents\\Grayscale\\Grayscale_32bit.psd",
+	"\\documents\\Grayscale\\Grayscale_32bit.psb",
 
-	"\\documents\\Groups_8bit.psd",
-	"\\documents\\Groups_8bit.psb",
-	"\\documents\\Groups_16bit.psd",
-	"\\documents\\Groups_16bit.psb",
-	"\\documents\\Groups_32bit.psd",
-	"\\documents\\Groups_32bit.psb",
+	"\\documents\\Groups\\Groups_8bit.psd",
+	"\\documents\\Groups\\Groups_8bit.psb",
+	"\\documents\\Groups\\Groups_16bit.psd",
+	"\\documents\\Groups\\Groups_16bit.psb",
+	"\\documents\\Groups\\Groups_32bit.psd",
+	"\\documents\\Groups\\Groups_32bit.psb",
 
-	"\\documents\\Indexed_8bit.psd",
-	"\\documents\\Indexed_8bit.psb",
+	"\\documents\\Indexed\\Indexed_8bit.psd",
+	"\\documents\\Indexed\\Indexed_8bit.psb",
 
-	"\\documents\\Masks_8bit.psd",
-	"\\documents\\Masks_8bit.psb",
+	"\\documents\\Masks\\Masks_8bit.psd",
+	"\\documents\\Masks\\Masks_8bit.psb",
 
-	"\\documents\\SingleLayer_8bit.psd",
-	"\\documents\\SingleLayer_8bit.psb",
-	"\\documents\\SingleLayer_8bit_MaximizeCompatibilityOff.psd",
-	"\\documents\\SingleLayer_8bit_MaximizeCompatibilityOff.psb",
-	"\\documents\\SingleLayer_16bit.psd",
-	"\\documents\\SingleLayer_16bit.psb",
-	"\\documents\\SingleLayer_16bit_MaximizeCompatibilityOff.psd",
-	"\\documents\\SingleLayer_16bit_MaximizeCompatibilityOff.psb",
-	"\\documents\\SingleLayer_32bit.psd",
-	"\\documents\\SingleLayer_32bit.psb",
-	"\\documents\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
-	"\\documents\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",
+	"\\documents\\SingleLayer\\SingleLayer_8bit.psd",
+	"\\documents\\SingleLayer\\SingleLayer_8bit.psb",
+	"\\documents\\SingleLayer\\SingleLayer_8bit_MaximizeCompatibilityOff.psd",
+	"\\documents\\SingleLayer\\SingleLayer_8bit_MaximizeCompatibilityOff.psb",
+	"\\documents\\SingleLayer\\SingleLayer_16bit.psd",
+	"\\documents\\SingleLayer\\SingleLayer_16bit.psb",
+	"\\documents\\SingleLayer\\SingleLayer_16bit_MaximizeCompatibilityOff.psd",
+	"\\documents\\SingleLayer\\SingleLayer_16bit_MaximizeCompatibilityOff.psb",
+	"\\documents\\SingleLayer\\SingleLayer_32bit.psd",
+	"\\documents\\SingleLayer\\SingleLayer_32bit.psb",
+	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
+	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",
 };
 
 
 int main()
 {
+	// Set up and run doctest tests
+	{
+		doctest::Context context;
+
+		// set defaults
+		context.setOption("abort-after", 5);	// stop test execution after 5 failed assertions
+
+		int res = context.run();				// run
+
+		if (context.shouldExit())				// important - query flags (and --exit) rely on the user doing this
+			return res;							// propagate the result of the tests
+	}
+
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
 	for (const auto& path : relPaths)
