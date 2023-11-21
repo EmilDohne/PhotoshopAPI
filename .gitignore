@@ -6,6 +6,9 @@
 # VS Code Counter
 .VSCodeCounter/
 
+# Visual studio code settings
+.vscode/
+
 # compiled data
 bin-int/
 bin/
