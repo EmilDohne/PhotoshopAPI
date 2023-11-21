@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Macros.h"
-#include "../Util/Enum.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Signature.h"
-#include "../Util/Struct/Section.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Struct/File.h"
+#include "Struct/Signature.h"
+#include "Struct/Section.h"
 
 #include <cstdint>
 

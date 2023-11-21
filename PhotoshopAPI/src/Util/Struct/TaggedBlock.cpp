@@ -1,13 +1,13 @@
 #include "TaggedBlock.h"
 
-#include "Signature.h"
-#include "File.h"
-#include "../Enum.h"
-#include "../Logger.h"
-#include "../StringUtil.h"
-#include "../../Macros.h"
-#include "../../PhotoshopFile/LayerAndMaskInformation.h"
-#include "../../PhotoshopFile/FileHeader.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Logger.h"
+#include "StringUtil.h"
+#include "Struct/Signature.h"
+#include "Struct/File.h"
+#include "PhotoshopFile/LayerAndMaskInformation.h"
+#include "PhotoshopFile/FileHeader.h"
 
 PSAPI_NAMESPACE_BEGIN
 

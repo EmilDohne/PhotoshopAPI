@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../Macros.h"
 #include "FileHeader.h"
-#include "../Util/Enum.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Section.h"
-#include "../Util/Struct/ResourceBlock.h"
-#include "../Util/Struct/TaggedBlock.h"
-#include "../Util/Compression/Compression.h"
-#include "../Util/Struct/ImageChannel.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Struct/File.h"
+#include "Struct/Section.h"
+#include "Struct/ResourceBlock.h"
+#include "Struct/TaggedBlock.h"
+#include "Struct/ImageChannel.h"
+#include "Compression/Compression.h"
 
 
 #include <vector>

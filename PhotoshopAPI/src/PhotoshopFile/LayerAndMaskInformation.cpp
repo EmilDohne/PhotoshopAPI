@@ -1,10 +1,10 @@
 #include "LayerAndMaskInformation.h"
 
-#include "../Macros.h"
-#include "../Util/Read.h"
-#include "../Util/StringUtil.h"
-#include "../Util/Struct/TaggedBlock.h"
 #include "FileHeader.h"
+#include "Macros.h"
+#include "Read.h"
+#include "StringUtil.h"
+#include "Struct/TaggedBlock.h"
 
 
 #include <variant>

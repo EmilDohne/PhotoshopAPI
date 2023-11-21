@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../Enum.h"
+#include "Macros.h"
+#include "Enum.h"
 
 #include <vector>
 #include <memory>

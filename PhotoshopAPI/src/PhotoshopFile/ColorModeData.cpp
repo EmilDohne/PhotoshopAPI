@@ -1,11 +1,11 @@
 #include "ColorModeData.h"
 
 #include "FileHeader.h"
-#include "../Macros.h"
-#include "../Util/Enum.h"
-#include "../Util/Read.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Section.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Read.h"
+#include "Struct/File.h"
+#include "Struct/Section.h"
 
 #include <vector>
 
