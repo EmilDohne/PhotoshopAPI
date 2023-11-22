@@ -34,6 +34,18 @@ namespace TaggedBlock
 
 		Lr32(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 	};
+
+	struct LayerSectionDivider : Base
+	{
+		Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::lrSectionDivider;
+		Enum::SectionDivider m_Type = Enum::SectionDivider::Any;
+
+		// This is a bit weird, but if the blend mode for the layer is Passthrough, it stores BlendMode::Normal
+		// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
+		std::optional<Enum::BlendMode> m_BlendMode;
+
+		LayerSectionDivider(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	};
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -96,6 +108,50 @@ TaggedBlock::Lr32::Lr32(File& document, const FileHeader& header, const uint64_t
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+TaggedBlock::LayerSectionDivider::LayerSectionDivider(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
+{
+	m_Offset = offset;
+	m_Signature = signature;
+	uint32_t length = ReadBinaryData<uint32_t>(document);
+	length = RoundUpToMultiple<uint32_t>(length, padding);
+	m_Length = length;
+	
+	uint32_t type = ReadBinaryData<uint32_t>(document);
+	if (type < 0 || type > 3)
+	{
+		PSAPI_LOG_ERROR("TaggedBlock", "Layer Section Divider type has to be between 0 and 3, got %u instead", type)
+	};
+	m_Type = Enum::sectionDividerMap.at(type);
+
+
+	// This overrides the layer blend mode if it is present.
+	if (length >= 12u)
+	{
+		Signature sig = Signature(ReadBinaryData<uint32_t>(document));
+		if (sig != Signature("8BIM"))
+		{
+			PSAPI_LOG_ERROR("TaggedBlock", "Signature does not match '8BIM', got '%s' instead",
+				uint32ToString(sig.m_Value).c_str())
+		}
+
+		std::string blendModeStr = uint32ToString(ReadBinaryData<uint32_t>(document));
+		m_BlendMode = Enum::getBlendMode<std::string, Enum::BlendMode>(blendModeStr);
+	}
+
+	if (length >= 16u)
+	{
+		// This is the sub-type information, probably for animated photoshop files
+		// we do not care about this currently
+		document.skip(4u);
+	}
+
+	m_TotalLength = length + 4u + 4u + 4u;
+};
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 std::unique_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding)
 {
 	const uint64_t offset = document.getOffset();
@@ -116,6 +172,8 @@ std::unique_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHea
 			return std::make_unique<TaggedBlock::Lr16>(document, header, offset, signature, padding);
 		case Enum::TaggedBlockKey::Lr32:
 			return std::make_unique<TaggedBlock::Lr32>(document, header, offset, signature, padding);
+		case Enum::TaggedBlockKey::lrSectionDivider:
+			return std::make_unique<TaggedBlock::LayerSectionDivider>(document, header, offset, signature, padding);
 		default:
 			return std::make_unique<TaggedBlock::Generic>(document, header, offset, signature, taggedBlock.value(), padding);
 		}

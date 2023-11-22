@@ -554,4 +554,28 @@ namespace Enum
 	};
 }
 
+
+// Tagged Block enums
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+namespace Enum
+{
+	enum class SectionDivider
+	{
+		Any,
+		OpenFolder,
+		ClosedFolder,
+		BoundingSection
+	};
+
+	inline std::unordered_map<uint32_t, SectionDivider> sectionDividerMap
+	{
+		{static_cast<uint32_t>(0u), SectionDivider::Any},
+		{static_cast<uint32_t>(1u), SectionDivider::OpenFolder},
+		{static_cast<uint32_t>(2u), SectionDivider::ClosedFolder},
+		{static_cast<uint32_t>(3u), SectionDivider::BoundingSection}
+	};
+}
+
+
 PSAPI_NAMESPACE_END
