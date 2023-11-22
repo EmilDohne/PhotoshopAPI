@@ -13,7 +13,7 @@ PSAPI_NAMESPACE_BEGIN
 
 struct ImageData : public FileSection
 {
-
+	
 };
 
 PSAPI_NAMESPACE_END
