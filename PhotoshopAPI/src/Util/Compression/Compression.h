@@ -2,9 +2,9 @@
 
 #include "RLE.h"
 #include "ZIP.h"
-#include "../../Macros.h"
-#include "../Read.h"
-#include "../../Util/Enum.h"
+#include "Macros.h"
+#include "Read.h"
+#include "Enum.h"
 
 
 #include <vector>
@@ -13,9 +13,14 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Read and decompress an input filestream using the appropriate compression algorithm
-// Call this as well if your input is using RAW compression as it will handle this case
-// Endian-conversion is handled by this function
+/// Read and decompress a given number of bytes based on the compression algorithm given, after which
+/// the data is endian decoded into native encoding and returned either in scanline order
+/// 
+/// RRR...
+/// GGG...
+/// BBB...
+/// 
+/// or as a singular image channel depending on where the call was made from
 template <typename T>
 inline std::vector<T> DecompressData(File& document, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {

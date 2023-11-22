@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../Macros.h"
-#include "../Util/Struct/File.h"
+#include "Macros.h"
+#include "Struct/File.h"
 
 #include "FileHeader.h"
 #include "ColorModeData.h"

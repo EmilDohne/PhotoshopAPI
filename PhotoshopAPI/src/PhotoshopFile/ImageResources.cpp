@@ -1,12 +1,12 @@
 #include "ImageResources.h"
 
-#include "../Macros.h"
-#include "../Util/Enum.h"
-#include "../Util/Read.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Section.h"
-#include "../Util/Struct/ResourceBlock.h"
-#include "../Util/Struct/Signature.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Read.h"
+#include "Struct/File.h"
+#include "Struct/Section.h"
+#include "Struct/ResourceBlock.h"
+#include "Struct/Signature.h"
 
 #include <vector>
 

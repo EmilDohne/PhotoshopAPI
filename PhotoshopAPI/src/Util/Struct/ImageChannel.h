@@ -1,7 +1,7 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../Enum.h"
+#include "Macros.h"
+#include "Enum.h"
 
 #include <vector>
 #include <memory>
@@ -9,21 +9,17 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-struct BaseImageChannel
-{
-	virtual ~BaseImageChannel() = default;
-};
-
 
 // A generic Image Channel that could either be part of the Channel Image Data section or Image Data section
 // It is entirely valid to have each channel have a different compression method, width and height. We only
 // store the image data in here but do not deal with reading or writing it. Ownership of the image data belongs
 // to this struct
 template <typename T>
-struct ImageChannel : BaseImageChannel
+struct ImageChannel
 {
 	Enum::Compression m_Compression = Enum::Compression::Raw;
-	std::unique_ptr<std::vector<T>> m_ImageData;
+	Enum::ChannelID m_ChannelID = Enum::ChannelID::Red;
+	std::vector<T> m_ImageData;
 
 	ImageChannel() = default;
 	ImageChannel(const ImageChannel&) = delete;
@@ -32,7 +28,7 @@ struct ImageChannel : BaseImageChannel
 	ImageChannel& operator=(ImageChannel&&) = default;
 
 	// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::unique_ptr<std::vector<T>> imageData, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height)
+	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height)
 	{
 		if (width > 300000u)
 		{
@@ -55,7 +51,6 @@ struct ImageChannel : BaseImageChannel
 private:
 	uint32_t m_Width = 0u;
 	uint32_t m_Height = 0u;
-	Enum::ChannelID m_ChannelID = Enum::ChannelID::Red;
 };
 
 

@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../../PhotoshopFile/FileHeader.h"
-#include "../Enum.h"
-#include "File.h"
-#include "Signature.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "PhotoshopFile/FileHeader.h"
+#include "Struct/File.h"
+#include "Struct/Signature.h"
 
 #include <memory>
 #include <variant>

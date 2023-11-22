@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../Enum.h"
-#include "PascalString.h"
-#include "File.h"
-#include "Signature.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Struct/PascalString.h"
+#include "Struct/File.h"
+#include "Struct/Signature.h"
 
 #include <vector>
 

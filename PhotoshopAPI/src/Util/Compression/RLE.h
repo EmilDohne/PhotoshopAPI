@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../Read.h"
-#include "../EndianByteSwap.h"
-#include "../Struct/File.h"
-#include "../../PhotoshopFile/FileHeader.h"
-#include "../Logger.h"
+#include "Macros.h"
+#include "Read.h"
+#include "Logger.h"
+#include "EndianByteSwap.h"
+#include "Struct/File.h"
+#include "PhotoshopFile/FileHeader.h"
 
 #include <vector>
 
@@ -26,11 +26,13 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
     while (i < compressedData.size()) {
         uint8_t value = compressedData[i];
 
-        if (value == 128) {
-            // Do nothing, nop
+        if (value == 128) 
+        {
+            // Do nothing, nop. Equivalent to 0 in int8_t
         }
-        else if (value > 128) {
-            // Repeated byte
+        else if (value > 128) 
+        {
+            // Repeat the next byte after this n times
             value = 256 - value;
             for (int j = 0; j <= value; ++j)
             {
@@ -38,8 +40,9 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
             }
             ++i;
         }
-        else {
-            // Literal bytes
+        else 
+        {
+            // Header byte indicates the next n bytes are to be read as values
             for (int j = 0; j <= value; ++j)
             {
                 decompressedData.push_back(compressedData.at(i + j + 1));

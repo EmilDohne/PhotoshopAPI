@@ -10,6 +10,8 @@
 PSAPI_NAMESPACE_BEGIN
 
 namespace {
+
+	/// Use zlib-ng to inflate the compressed input data to the expected output size
 	inline std::vector<uint8_t> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
 	{
 		// Inflate the data
@@ -24,9 +26,10 @@ namespace {
 			PSAPI_LOG_ERROR("UnZip", "Inflate initialization failed")
 		}
 
-		// We do actually want to initialize the data here
+		// The size being fixed to exactly what we expect the decompressed data to be sized
+		// makes sure we catch any errors in our calculations of decompressedSize or in the input
+		// byte stream
 		std::vector<uint8_t> decompressedData(decompressedSize);
-
 		stream.avail_out = decompressedData.size();
 		stream.next_out = decompressedData.data();
 
@@ -42,6 +45,7 @@ namespace {
 
 		return decompressedData;
 	}
+
 }
 
 
@@ -76,7 +80,7 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 			bitShiftedData.size())
 	}
 
-	// Perform prediction decoding per scanline of data
+	// Perform prediction decoding per scanline of data in-place
 	for (uint64_t y = 0; y < height; ++y)
 	{
 		for (uint64_t x = 1; x < width; ++x)
@@ -99,8 +103,7 @@ std::vector<T> DecompressZIPPrediction(File& document, const FileHeader& header,
 	// Decompress using Inflate ZIP
 	std::vector<uint8_t> decompressedData = UnZip(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * sizeof(T));
 
-	// Remove the prediction encoding from the data
-	// as well as converting to native endianness
+	// Remove the prediction encoding from the data as well as converting to native endianness
 	std::vector<T> outData = RemovePredictionEncoding<T>(decompressedData, width, height);
 
 	return outData;

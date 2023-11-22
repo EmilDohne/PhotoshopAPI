@@ -1,10 +1,10 @@
 #pragma once
 
-#include "../Macros.h"
-#include "../Util/Enum.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Section.h"
-#include "../Util/Struct/ResourceBlock.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Struct/File.h"
+#include "Struct/Section.h"
+#include "Struct/ResourceBlock.h"
 
 #include <vector>
 

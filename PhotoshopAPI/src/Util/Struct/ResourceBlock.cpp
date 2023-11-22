@@ -1,8 +1,8 @@
 #include "ResourceBlock.h"
 
-#include "../Read.h"
-#include "../Enum.h"
-#include "../Logger.h"
+#include "Read.h"
+#include "Enum.h"
+#include "Logger.h"
 
 PSAPI_NAMESPACE_BEGIN
 

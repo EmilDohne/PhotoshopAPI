@@ -1,14 +1,14 @@
 #pragma once
 
-#include "../Macros.h"
 #include "FileHeader.h"
-#include "../Util/Enum.h"
-#include "../Util/Struct/File.h"
-#include "../Util/Struct/Section.h"
-#include "../Util/Struct/ResourceBlock.h"
-#include "../Util/Struct/TaggedBlock.h"
-#include "../Util/Compression/Compression.h"
-#include "../Util/Struct/ImageChannel.h"
+#include "Macros.h"
+#include "Enum.h"
+#include "Struct/File.h"
+#include "Struct/Section.h"
+#include "Struct/ResourceBlock.h"
+#include "Struct/TaggedBlock.h"
+#include "Struct/ImageChannel.h"
+#include "Compression/Compression.h"
 
 
 #include <vector>
@@ -39,6 +39,7 @@ namespace LayerRecords
 		Enum::ChannelID m_ChannelID;
 		uint64_t m_Size;	// This appears to include the length of the compression marker
 	};
+
 
 	// A singular layer mask as represented in the LayerMaskData section found in the layer records
 	struct LayerMask
@@ -81,6 +82,7 @@ namespace LayerRecords
 		const uint8_t m_VectorMaskFeatherMask = 1u << 3;
 	};
 
+
 	// This section can hold either no mask, one mask or two masks depending on the size of the data in it.
 	// The layout is a bit confusing here as it reads the second mask in reverse order. The mask parameters
 	// exist only on one of the masks rather than both as they cover both cases
@@ -111,7 +113,8 @@ namespace LayerRecords
 	};
 }
 
-	
+
+// A layer record describes a single layer in a photoshop document and may include up to 56 channels
 struct LayerRecord : public FileSection
 {
 	PascalString m_LayerName;
@@ -142,6 +145,7 @@ struct LayerRecord : public FileSection
 };
 
 
+// This currently just gets skipped
 struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
@@ -149,25 +153,50 @@ struct GlobalLayerMaskInfo : public FileSection
 };
 
 
-// Channel Image Data for a single layer, there is at most 56 channels in a given layer
-struct ChannelImageData : public FileSection
+struct BaseChannelImageData : public FileSection
 {
-	// This doesnt yet store the data but rather skips it
+	virtual ~BaseChannelImageData() = default;
+};
+
+// Channel Image Data for a single layer, there is at most 56 channels in a given layer
+template <typename T>
+struct ChannelImageData : BaseChannelImageData
+{
 	// TODO add blosc2 compression to this data
-	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
+	std::vector<ImageChannel<T>> m_ImageData;
 
 	ChannelImageData() {};
 	ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+
+	// Get an index to a specific channel based on the identifier
+	// returns -1 if no matching channel is found
+	int getChannelIndex(Enum::ChannelID channelID)
+	{
+		for (int i = 0; i < m_ImageData.size(); ++i)
+		{
+			if (m_ImageData[i].m_ChannelID == channelID)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
 };
 
 
 struct LayerInfo : public FileSection
 {
+	// These two are guaranteed to be in the same order based on Photoshop specification
 	std::vector<LayerRecord> m_LayerRecords;
-	std::vector<ChannelImageData> m_ChannelImageData;
+	std::vector<std::unique_ptr<BaseChannelImageData>> m_ChannelImageData;
 
 	LayerInfo(){};
 	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+
+	// Find the index to a layer based on a layer name that is given
+	// if no layer with the name is found, return -1. In the case of multiple name matches the last in the photoshop document
+	// is returned. This can also be used to get an index into the ChannelImageData vector
+	int getLayerIndex(const std::string& layerName);
 };
 
 
@@ -176,7 +205,6 @@ struct LayerAndMaskInformation : public FileSection
 
 	LayerInfo m_LayerInfo;
 	GlobalLayerMaskInfo m_GlobalLayerMaskInfo;
-	ChannelImageData m_ChannelImageData;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
 	bool read(File& document, const FileHeader& header, const uint64_t offset);

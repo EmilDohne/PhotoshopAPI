@@ -1,8 +1,7 @@
 #pragma once
 
-#include "../../Macros.h"
-
-#include "../Logger.h"
+#include "Macros.h"
+#include "Logger.h"
 
 #include <filesystem>
 

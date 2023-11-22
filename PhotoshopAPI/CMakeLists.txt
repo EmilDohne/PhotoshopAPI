@@ -16,17 +16,21 @@ add_library (${LIB} STATIC
 )
 
 
-# Unfortunately, these dont compile with blosc2 due to its use of getenv
-# if(MSVC)
-# 	target_compile_options(${LIB} PRIVATE "/MP")
+target_include_directories(${LIB} PUBLIC
+	"${PROJECT_SOURCE_DIR}/src/"
+	"${PROJECT_SOURCE_DIR}/src/Util/"
+)
+
+# Include blosc2 headers
+target_include_directories(${LIB} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
+
+#include zlib-ng headers
+target_include_directories(${LIB} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
+
+# Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
+if(MSVC)
+	target_compile_options(${LIB} PRIVATE "/MP")
 # 	target_compile_options(${LIB} PRIVATE /W4 /WX)
 # else()
 # 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-# endif()
-
-# Include blosc2 headers
-include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
-
-#include zlib-ng headers
-include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
-
+endif()

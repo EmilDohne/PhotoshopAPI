@@ -1,28 +1,34 @@
+# Initialize our Project
 set (EXE PhotoshopTest)
 project(${EXE})
 
-add_executable(${EXE} ${PROJECT_SOURCE_DIR}/src/main.cpp)
+add_executable(${EXE} 
+    "${PROJECT_SOURCE_DIR}/src/main.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
+)
 
-# Unfortunately, these dont compile with blosc2 due to its use of getenv
-# if(MSVC)
-# 	target_compile_options(${LIB} PRIVATE "/MP")
-# 	target_compile_options(${LIB} PRIVATE /W4 /WX)
+# Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
+if(MSVC)
+ 	target_compile_options(${EXE} PRIVATE "/MP")
+# 	target_compile_options(${EXE} PRIVATE /W4 /WX)
 # else()
-# 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
-# endif()
+# 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+endif()
 
 # Include and link the PhotoshopAPI
-include_directories("${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
 
+# include doctest v2.4.11 library
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/doctest/")
 
 # Include and link blosc2
-include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
-link_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include")
+target_link_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 target_link_libraries(${EXE} PRIVATE blosc2_static)
 
 #include and link zlib-ng headers
-include_directories("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
 target_link_libraries(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7/Release/zlibstatic-ng.lib")
 
 

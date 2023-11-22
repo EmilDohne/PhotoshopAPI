@@ -1,7 +1,7 @@
 #include "Signature.h"
 
-#include "../../Macros.h"
-#include "../Logger.h"
+#include "Macros.h"
+#include "Logger.h"
 
 #include <string>
 
