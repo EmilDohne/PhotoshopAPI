@@ -72,8 +72,8 @@ TEST_CASE("Decompress file with RLE compression")
 
 		SUBCASE("Channels are correct")
 		{
-			// Get a raw pointer to the data
-			std::unique_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = std::move(layerInformation.m_ChannelImageData.at(layerIndex));
+			// Get a pointer to the data
+			std::shared_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = layerInformation.m_ChannelImageData.at(layerIndex);
 			if (auto channelImageDataView = dynamic_cast<NAMESPACE_PSAPI::ChannelImageData<uint8_t>*>(channelImageDataPtr.get()))
 			{
 				int channel_r_index = channelImageDataView->getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
@@ -114,8 +114,8 @@ TEST_CASE("Decompress file with RLE compression")
 
 		SUBCASE("Channels are correct")
 		{
-			// Get a raw pointer to the data
-			std::unique_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = std::move(layerInformation.m_ChannelImageData.at(layerIndex));
+			// Get a pointer to the data
+			std::shared_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = layerInformation.m_ChannelImageData.at(layerIndex);
 			if (auto channelImageDataView = dynamic_cast<NAMESPACE_PSAPI::ChannelImageData<uint8_t>*>(channelImageDataPtr.get()))
 			{
 				int channel_r_index = channelImageDataView->getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
@@ -164,7 +164,7 @@ TEST_CASE("Decompress file with RLE compression")
 		SUBCASE("Channels are correct")
 		{
 			// Get a raw pointer to the data
-			std::unique_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = std::move(layerInformation.m_ChannelImageData.at(layerIndex));
+			std::shared_ptr<NAMESPACE_PSAPI::BaseChannelImageData> channelImageDataPtr = layerInformation.m_ChannelImageData.at(layerIndex);
 			if (auto channelImageDataView = dynamic_cast<NAMESPACE_PSAPI::ChannelImageData<uint8_t>*>(channelImageDataPtr.get()))
 			{
 				int channel_r_index = channelImageDataView->getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);

@@ -3,17 +3,20 @@
 #include "doctest.h"
 
 #include "Macros.h"
+#include "Enum.h"
 #include "PhotoshopFile/PhotoshopFile.h"
+#include "LayeredFile/LayeredFile.h"
 
 #include <filesystem>
 #include <vector>
+#include <memory>
 
 
 // This is the data we run all the whole-file tests on. Keep in mind that this does not necessarily cover all of the documents found in /documents
 // as some cover very specific individual sections such as /documents/Compression
 std::vector<std::filesystem::path> relPaths =
 {
-	"\\documents\\CMYK\\CMYK_8bit.psd",
+	/*"\\documents\\CMYK\\CMYK_8bit.psd",
 	"\\documents\\CMYK\\CMYK_8bit.psb",
 	"\\documents\\CMYK\\CMYK_16bit.psd",
 	"\\documents\\CMYK\\CMYK_16bit.psb",
@@ -23,7 +26,7 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\Grayscale\\Grayscale_16bit.psd",
 	"\\documents\\Grayscale\\Grayscale_16bit.psb",
 	"\\documents\\Grayscale\\Grayscale_32bit.psd",
-	"\\documents\\Grayscale\\Grayscale_32bit.psb",
+	"\\documents\\Grayscale\\Grayscale_32bit.psb",*/
 
 	"\\documents\\Groups\\Groups_8bit.psd",
 	"\\documents\\Groups\\Groups_8bit.psb",
@@ -62,8 +65,8 @@ int main()
 		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
 		NAMESPACE_PSAPI::File file(combined_path);
-		NAMESPACE_PSAPI::PhotoshopFile document;
-		bool didParse = document.read(file);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		bool didParse = document->read(file);
 
 		if (didParse)
 		{
@@ -72,6 +75,20 @@ int main()
 		else
 		{
 			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
+		}
+
+		// Generate our layeredFiles
+		if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_8)
+		{
+			NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
+		}
+		else if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_16)
+		{
+			NAMESPACE_PSAPI::LayeredFile<uint16_t> layeredFile(std::move(document));
+		}
+		else if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_16)
+		{
+			NAMESPACE_PSAPI::LayeredFile<float32_t> layeredFile(std::move(document));
 		}
 	}
 

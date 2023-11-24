@@ -3,6 +3,9 @@ project(${LIB})
 
 # Add additional source directories here if needed
 add_library (${LIB} STATIC 
+	"${PROJECT_SOURCE_DIR}/src/LayeredFile/LayeredFile.cpp"
+	"${PROJECT_SOURCE_DIR}/src/LayeredFile/ImageLayer.cpp"
+	"${PROJECT_SOURCE_DIR}/src/LayeredFile/GroupLayer.cpp"
 	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/ColorModeData.cpp"
 	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/FileHeader.cpp"
 	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/ImageResources.cpp"
