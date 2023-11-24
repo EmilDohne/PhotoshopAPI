@@ -359,7 +359,7 @@ AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& heade
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
-		std::unique_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header, padding);
+		std::shared_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header, padding);
 		toRead -= taggedBlock->getTotalSize();
 		m_Size += taggedBlock->getTotalSize();
 		m_TaggedBlocks.push_back(std::move(taggedBlock));
@@ -422,15 +422,15 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	{
 		if (header.m_Depth == Enum::BitDepth::BD_8)
 		{
-			m_ChannelImageData.push_back(std::make_unique<ChannelImageData<uint8_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
+			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<uint8_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_16)
 		{
-			m_ChannelImageData.push_back(std::make_unique<ChannelImageData<uint16_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
+			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<uint16_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_32)
 		{
-			m_ChannelImageData.push_back(std::make_unique<ChannelImageData<float32_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
+			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<float32_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
 		}
 		else
 		{

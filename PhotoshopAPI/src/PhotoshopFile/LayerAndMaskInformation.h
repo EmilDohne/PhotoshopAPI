@@ -19,7 +19,7 @@ PSAPI_NAMESPACE_BEGIN
 
 struct AdditionalLayerInfo : public FileSection
 {
-	std::vector<std::unique_ptr<TaggedBlock::Base>> m_TaggedBlocks;
+	std::vector<std::shared_ptr<TaggedBlock::Base>> m_TaggedBlocks;
 
 	AdditionalLayerInfo() = default;
 	AdditionalLayerInfo(const AdditionalLayerInfo&) = delete;
@@ -28,6 +28,28 @@ struct AdditionalLayerInfo : public FileSection
 	AdditionalLayerInfo& operator=(AdditionalLayerInfo&&) = default;
 
 	AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
+
+	// Retrieve a pointer to a TaggedBlock based on the key given. If the key does not exist, we return std::nullopt
+	template <typename T>
+	std::optional<std::shared_ptr<T>> getTaggedBlock(const Enum::TaggedBlockKey key) const
+	{
+		for (auto& taggedBlock : m_TaggedBlocks)
+		{
+			if (taggedBlock->getKey() == key)
+			{
+				auto downcastedPtr = std::static_pointer_cast<T>(taggedBlock);
+				if (downcastedPtr)
+				{
+					return downcastedPtr;
+				}
+				else
+				{
+					PSAPI_LOG_ERROR("AdditionalLayerInfo", "Unable to cast Base Tagged Block to template argument");
+				}
+			}
+		}
+		return std::nullopt;
+	}
 };
 
 
@@ -188,7 +210,7 @@ struct LayerInfo : public FileSection
 {
 	// These two are guaranteed to be in the same order based on Photoshop specification
 	std::vector<LayerRecord> m_LayerRecords;
-	std::vector<std::unique_ptr<BaseChannelImageData>> m_ChannelImageData;
+	std::vector<std::shared_ptr<BaseChannelImageData>> m_ChannelImageData;
 
 	LayerInfo(){};
 	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
