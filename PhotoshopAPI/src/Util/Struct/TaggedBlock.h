@@ -21,6 +21,8 @@ namespace TaggedBlock
 		std::variant<uint32_t, uint64_t> m_Length;
 
 		uint64_t getTotalSize() { return m_TotalLength; };
+		Enum::TaggedBlockKey getKey() { return m_Key; };
+
 	protected:
 		Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
 		// The length of the tagged block with all the the signature, key and length marker
@@ -34,9 +36,26 @@ namespace TaggedBlock
 
 		Generic(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
 	};
+
+
+	struct LayerSectionDivider : Base
+	{
+		Enum::SectionDivider m_Type = Enum::SectionDivider::Any;
+
+		// This is a bit weird, but if the blend mode for the layer is Passthrough, it stores BlendMode::Normal
+		// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
+		std::optional<Enum::BlendMode> m_BlendMode;
+
+		LayerSectionDivider(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	};
+
+
+	// These are defined in the cpp file
+	struct Lr16;
+	struct Lr32;
 }
 
 // Return a pointer to a Tagged block based on the key it reads
-std::unique_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding = 1u);
+std::shared_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding = 1u);
 
 PSAPI_NAMESPACE_END
