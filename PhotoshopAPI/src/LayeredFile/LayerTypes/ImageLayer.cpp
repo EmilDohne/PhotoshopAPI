@@ -15,9 +15,9 @@ template struct ImageLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord)
+ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData) : Layer<T>(layerRecord, channelImageData)
 {
-	Layer<T>::m_LayerName = layerRecord.m_LayerName.m_String;
+	
 }
 
 

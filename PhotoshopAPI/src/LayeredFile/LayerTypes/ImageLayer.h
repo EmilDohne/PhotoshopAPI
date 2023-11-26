@@ -9,13 +9,14 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+// A pixel based image layer
 template <typename T>
 struct ImageLayer : public Layer<T>
 {
 	// Store the image data as a per-channel map to be used later
 	std::unordered_map<Enum::ChannelID, std::vector<T>> m_ImageData;
 
-	ImageLayer(const LayerRecord& layerRecord);
+	ImageLayer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData);
 };
 
 PSAPI_NAMESPACE_END
