@@ -98,6 +98,9 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_pt
 	auto& channelImageData = file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
 
 	if (layerRecords.size() != channelImageData.size())
+	{
+		PSAPI_LOG_ERROR("LayeredFile", "LayerRecords Size does not match channelImageDataSize. File appears to be corrupted")
+	}
 
 	// Extract and iterate the layer records. We do this in reverse as Photoshop stores the layers in reverse
 	// For example, imagine this layer structure:
@@ -125,17 +128,26 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_pt
 template <typename T>
 std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 	const std::vector<LayerRecord>& layerRecords,
-	const std::vector<std::shared_ptr<ChannelImageData<T>>>& channelImageData,
+	const std::vector<std::shared_ptr<BaseChannelImageData>>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<std::shared_ptr<ChannelImageData<T>>>::reverse_iterator& channelImageDataIterator)
+	std::vector<std::shared_ptr<BaseChannelImageData>>::reverse_iterator& channelImageDataIterator)
 {
 	std::vector<layerVariant<T>> root;
+
+	
 
 	// Iterate the layer records and channelImageData. These are always the same size
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
 	{
 		const auto& layerRecord = *layerRecordsIterator;
 		const auto channelImagePtr = *channelImageDataIterator;
+		// We need to cast up to the correct type here
+		const auto channelImagePtr = dynamic_cast<ChannelImageData<T>*>(channelImagePtr.get()));
+		if (channelImagePtr)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Unable to extract Channel Image Data")
+		}
+
 		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
 		auto sectionDivider = additionalLayerInfo.getTaggedBlock<TaggedBlock::LayerSectionDivider>(Enum::TaggedBlockKey::lrSectionDivider);

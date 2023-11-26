@@ -58,9 +58,9 @@ namespace LayeredFileImpl
 	template <typename T>
 	std::vector<layerVariant<T>> buildLayerHierarchyRecurse(
 		const std::vector<LayerRecord>& layerRecords,
-		const std::vector<std::shared_ptr<ChannelImageData<T>>>& channelImageData,
+		const std::vector<std::shared_ptr<BaseChannelImageData>>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		typename std::vector<std::shared_ptr<ChannelImageData<T>>>::reverse_iterator& channelImageDataIterator);
+		typename std::vector<std::shared_ptr<BaseChannelImageData>>::reverse_iterator& channelImageDataIterator);
 
 
 	// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
