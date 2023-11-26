@@ -395,13 +395,15 @@ namespace Enum
 		lrUnicodeName,
 		lrId,
 		lrSectionDivider,	// This stores information about if it is a group layer and if its open or closed
+		lrArtboard,			// Whether or not the layer is an Artboard layer. May be the keys 'artb', 'artd' or 'abdd'
 		lrMetaData,
 		lrAnnotations,
 		// Non-Pixel layers
 		lrTypeTool,		// This is the superseeded version 'TySh', not 'tySh' as that was phased out in 2000
 		lrPatternData,
-		lrLinked,		// Probably Smart objects 
-		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide lenght field
+		lrLinked,
+		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide length field
+		lrSmartObject,	// Represents the keys 'SoLd' and 'SoLE', there is also 'PlLd' and 'plLd' which were phased out in CS3 which is why we wont support them
 		// Additional layer specific data
 		lrCompositorUsed,
 		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
@@ -423,7 +425,11 @@ namespace Enum
 		lrProtectedSetting,
 		lrSheetColorSetting,
 		lrReferencePoint,
-
+		// Shape Layer Tagged Blocks
+		vecOriginData,
+		vecMaskSettings,	// 'vmsk' for CS6 and up. We dont support the legacy 'vsms' option here 
+		vecStrokeData,
+		vecStrokeContentData,
 	};
 
 	namespace {
@@ -453,12 +459,18 @@ namespace Enum
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
+			{"artb", TaggedBlockKey::lrArtboard},
+			{"artd", TaggedBlockKey::lrArtboard},
+			{"abdd", TaggedBlockKey::lrArtboard},
 			{"shmd", TaggedBlockKey::lrMetaData},
 			{"Anno", TaggedBlockKey::lrAnnotations},
 			{"TySh", TaggedBlockKey::lrTypeTool},
 			{"shpa", TaggedBlockKey::lrPatternData},
 			{"lnkD", TaggedBlockKey::lrLinked},
 			{"lnk3", TaggedBlockKey::lrLinked},
+			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
+			{"SoLd", TaggedBlockKey::lrSmartObject},
+			{"SoLE", TaggedBlockKey::lrSmartObject},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
 			{"cinf", TaggedBlockKey::lrCompositorUsed},
 			{"Mtrn", TaggedBlockKey::lrSavingMergedTransparency},
@@ -479,6 +491,11 @@ namespace Enum
 			{"lspf", TaggedBlockKey::lrProtectedSetting},
 			{"lclr", TaggedBlockKey::lrSheetColorSetting},
 			{"fxrp", TaggedBlockKey::lrReferencePoint},
+			// Vector Data for shape Layers
+			{"vogk", TaggedBlockKey::vecOriginData},
+			{"vmsk", TaggedBlockKey::vecMaskSettings},
+			{"vstk", TaggedBlockKey::vecStrokeData},
+			{"vscg", TaggedBlockKey::vecStrokeContentData},
 		};
 	}
 

@@ -139,7 +139,6 @@ TaggedBlock::LayerSectionDivider::LayerSectionDivider(File& document, const File
 };
 
 
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 std::shared_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding)
