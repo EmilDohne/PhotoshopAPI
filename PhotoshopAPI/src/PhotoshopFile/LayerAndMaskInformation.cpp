@@ -316,8 +316,7 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
-ChannelImageData<T>::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
+ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
 	m_Offset = offset;
 	document.setOffset(offset);
@@ -342,8 +341,21 @@ ChannelImageData<T>::ChannelImageData(File& document, const FileHeader& header, 
 		Enum::Compression channelCompression = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
 		this->m_Size += channel.m_Size;
 
-		std::vector<T> decompressedData = DecompressData<T>(document, channelCompression, header, width, height, channel.m_Size - 2u);
-		this->m_ImageData.push_back(ImageChannel<T>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
+		if (header.m_Depth == Enum::BitDepth::BD_8)
+		{
+			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_16)
+		{
+			std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
+		}
+		if (header.m_Depth == Enum::BitDepth::BD_32)
+		{
+			std::vector<float32_t> decompressedData = DecompressData<float32_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			this->m_ImageData.push_back(std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
+		}
 	}
 }
 
@@ -420,22 +432,7 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// Extract Channel Image Data
 	for (int i = 0; i < layerCount; i++)
 	{
-		if (header.m_Depth == Enum::BitDepth::BD_8)
-		{
-			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<uint8_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
-		}
-		else if (header.m_Depth == Enum::BitDepth::BD_16)
-		{
-			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<uint16_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
-		}
-		else if (header.m_Depth == Enum::BitDepth::BD_32)
-		{
-			m_ChannelImageData.push_back(std::make_shared<ChannelImageData<float32_t>>(document, header, document.getOffset(), m_LayerRecords[i]));
-		}
-		else
-		{
-			PSAPI_LOG_ERROR("LayerInf", "Unimplemented bit depth encountered in parsing of Channel Image Data")
-		}
+		m_ChannelImageData.push_back(ChannelImageData(document, header, document.getOffset(), m_LayerRecords[i]));
 	}
 
 	const uint64_t expectedOffset = m_Offset + m_Size;

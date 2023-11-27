@@ -31,7 +31,7 @@ struct GroupLayer : public Layer<T>
 {
 	std::vector<layerVariant<T>> m_Layers;
 
-	GroupLayer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData);
+	GroupLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 };
 
 

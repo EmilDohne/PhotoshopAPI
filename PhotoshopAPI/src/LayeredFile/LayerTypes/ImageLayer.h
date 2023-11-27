@@ -16,7 +16,7 @@ struct ImageLayer : public Layer<T>
 	// Store the image data as a per-channel map to be used later
 	std::unordered_map<Enum::ChannelID, std::vector<T>> m_ImageData;
 
-	ImageLayer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData);
+	ImageLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 };
 
 PSAPI_NAMESPACE_END
