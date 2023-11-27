@@ -23,6 +23,7 @@ template struct LayeredFile<uint8_t>;
 template struct LayeredFile<uint16_t>;
 template struct LayeredFile<float32_t>;
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -128,52 +129,38 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_pt
 template <typename T>
 std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 	const std::vector<LayerRecord>& layerRecords,
-	const std::vector<std::shared_ptr<BaseChannelImageData>>& channelImageData,
+	const std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<std::shared_ptr<BaseChannelImageData>>::reverse_iterator& channelImageDataIterator)
+	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator)
 {
 	std::vector<layerVariant<T>> root;
-
-	
 
 	// Iterate the layer records and channelImageData. These are always the same size
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
 	{
 		const auto& layerRecord = *layerRecordsIterator;
-		const auto channelImagePtr = *channelImageDataIterator;
-		// We need to cast up to the correct type here
-		const auto channelImagePtr = dynamic_cast<ChannelImageData<T>*>(channelImagePtr.get()));
-		if (channelImagePtr)
+		// Get the variant of channelImageDatas and extract the type we have
+		const auto& channelImage = *channelImageDataIterator;
+
+		layerVariant<T> layer = identifyLayerType<T>(layerRecord, channelImage);
+
+		if (auto groupLayerPtr = std::get_if<GroupLayer<T>>(&layer))
 		{
-			PSAPI_LOG_ERROR("LayeredFile", "Unable to extract Channel Image Data")
+			// Recurse a level down
+			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
+			root.push_back(*groupLayerPtr);
 		}
-
-		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
-
-		auto sectionDivider = additionalLayerInfo.getTaggedBlock<TaggedBlock::LayerSectionDivider>(Enum::TaggedBlockKey::lrSectionDivider);
-
-		if (sectionDivider.has_value() && (sectionDivider.value()->m_Type == Enum::SectionDivider::ClosedFolder || sectionDivider.value()->m_Type == Enum::SectionDivider::OpenFolder))
-		{
-			// Create a new group layer
-			GroupLayer<T> groupLayer(layerRecord);
-
-			// Recurse down a level while incrementing to go to the next layer
-			groupLayer.m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, ++layerRecordsIterator, channelImageData, ++channelImageDataIterator);
-
-			root.push_back(groupLayer);
-		}
-		else if (sectionDivider.has_value() && (sectionDivider.value()->m_Type == Enum::SectionDivider::BoundingSection))
+		else if (auto sectionDividerPtr = std::get_if<SectionDividerLayer<T>>(&layer))
 		{
 			// We have reached the end of the current nested section therefore we return the current root object we hold;
 			return root;
 		}
 		else
 		{
-			// For now we just parse the rest as image layers, but if 
+			root.push_back(layer);
 		}
-		// Increment the iterators to go to the next layer
-		++channelImageDataIterator;
 		++layerRecordsIterator;
+		++channelImageDataIterator;
 	}
 	return root;
 }
@@ -182,7 +169,7 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, std::shared_ptr<ChannelImageData<T>> channelImageData)
+layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
 {
 	auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
@@ -198,13 +185,13 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 			auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>(Enum::TaggedBlockKey::lrArtboard);
 			if (artboardTaggedBlock.has_value())
 			{
-				return ArtboardLayer();
+				return ArtboardLayer<T>();
 			}
-			return GroupLayer(layerRecord, channelImageData);
+			return GroupLayer<T>(layerRecord, channelImageData);
 		}
 		else if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::BoundingSection)
 		{
-			return SectionDividerLayer();
+			return SectionDividerLayer<T>();
 		}
 		// If it is Enum::SectionDivider::Any this is just any other type of layer
 		// we do not need to worry about checking for correctness here as the tagged block takes care of that 

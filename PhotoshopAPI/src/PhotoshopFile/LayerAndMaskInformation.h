@@ -12,6 +12,7 @@
 
 
 #include <vector>
+#include <memory>
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -175,33 +176,85 @@ struct GlobalLayerMaskInfo : public FileSection
 };
 
 
-struct BaseChannelImageData : public FileSection
-{
-	virtual ~BaseChannelImageData() = default;
-};
-
 // Channel Image Data for a single layer, there is at most 56 channels in a given layer
-template <typename T>
-struct ChannelImageData : BaseChannelImageData
+struct ChannelImageData : public FileSection
 {
+
 	// TODO add blosc2 compression to this data
-	std::vector<ImageChannel<T>> m_ImageData;
+	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
 	ChannelImageData() {};
 	ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 
 	// Get an index to a specific channel based on the identifier
 	// returns -1 if no matching channel is found
-	int getChannelIndex(Enum::ChannelID channelID)
+	int getChannelIndex(Enum::ChannelID channelID) const
 	{
 		for (int i = 0; i < m_ImageData.size(); ++i)
 		{
-			if (m_ImageData[i].m_ChannelID == channelID)
+			if (m_ImageData[i]->m_ChannelID == channelID)
 			{
 				return i;
 			}
 		}
 		return -1;
+	}
+
+
+	// Extract a channel from the given index and take ownership of the data. After this function is called the index will point to nullptr
+	// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
+	// had their data removed
+	template <typename T>
+	std::vector<T> extractImageData(int index)
+	{
+		// Take ownership of and invalidate the current index
+		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		if (imageChannelPtr == nullptr)
+		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index)
+			auto emptyVec = std::vector<T>();
+			return emptyVec;
+		}
+		m_ImageData[index] = nullptr;
+
+		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr.get()))
+		{
+			return std::move(imageChannel->getData());
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			auto emptyVec = std::vector<T>();
+			return emptyVec;
+		}
+	}
+
+	// Extract a channel from the given ChannelID and take ownership of the data. After this function is called the index will point to nullptr
+	// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
+	// had their data removed
+	template <typename T>
+	std::vector<T> extractImageData(Enum::ChannelID channelID)
+	{
+		const int index = this->getChannelIndex(channelID);
+
+		// Take ownership of and invalidate the current index
+		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		if (imageChannelPtr == nullptr)
+		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
+			return std::vector<T>();
+		}
+		m_ImageData[index] = nullptr;
+
+		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr))
+		{
+			return std::move(imageChannel->getData());
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			return std::vector<T>();			
+		}
 	}
 };
 
@@ -210,7 +263,7 @@ struct LayerInfo : public FileSection
 {
 	// These two are guaranteed to be in the same order based on Photoshop specification
 	std::vector<LayerRecord> m_LayerRecords;
-	std::vector<std::shared_ptr<BaseChannelImageData>> m_ChannelImageData;
+	std::vector<ChannelImageData> m_ChannelImageData;
 
 	LayerInfo(){};
 	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);

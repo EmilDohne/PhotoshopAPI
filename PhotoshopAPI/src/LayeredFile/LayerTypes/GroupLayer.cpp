@@ -12,7 +12,7 @@ template struct GroupLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData) : Layer<T>(layerRecord, channelImageData)
+GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
 {
 }
 

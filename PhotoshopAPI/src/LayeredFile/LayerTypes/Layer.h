@@ -23,7 +23,7 @@ struct Layer
 	uint64_t m_Width;
 	uint64_t m_Height;
 
-	Layer(const LayerRecord& layerRecord, const std::shared_ptr<ChannelImageData<T>> channelImageData)
+	Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
 	{
 		m_LayerName = layerRecord.m_LayerName.m_String;
 		// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord

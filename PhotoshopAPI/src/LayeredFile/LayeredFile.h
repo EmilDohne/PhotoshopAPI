@@ -58,16 +58,16 @@ namespace LayeredFileImpl
 	template <typename T>
 	std::vector<layerVariant<T>> buildLayerHierarchyRecurse(
 		const std::vector<LayerRecord>& layerRecords,
-		const std::vector<std::shared_ptr<BaseChannelImageData>>& channelImageData,
+		const std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		typename std::vector<std::shared_ptr<BaseChannelImageData>>::reverse_iterator& channelImageDataIterator);
+		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator);
 
 
 	// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
 	// initialized with the given layer record and corresponding channel image data.
 	// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	layerVariant<T> identifyLayerType(const LayerRecord& layerRecord, std::shared_ptr<ChannelImageData<T>> channelImageData);
+	layerVariant<T> identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 
 }
 
