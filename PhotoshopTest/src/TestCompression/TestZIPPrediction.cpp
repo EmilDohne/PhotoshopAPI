@@ -16,25 +16,25 @@ TEST_CASE("Decompress 16 bit file with ZIP Prediction compression")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_16bit.psd";
-		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535);
+		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535, 2);
 	}
 	SUBCASE("PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_16bit.psb";
-		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535);
+		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535, 2);
 	}
 	SUBCASE("MaximizeCompatibilityOff_PSD")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_MaximizeCompatibilityOff_16bit.psd";
-		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535);
+		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535, 2);
 	}
 	SUBCASE("MaximizeCompatibilityOff_PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_MaximizeCompatibilityOff_16bit.psb";
-		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535);
+		checkCompressionFile<uint16_t>(combined_path, 0, 32895, 65535, 2);
 	}
 }
 
@@ -46,24 +46,24 @@ TEST_CASE("Decompress 32 bit file with ZIP Prediction compression")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_32bit.psd";
-		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f);
+		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f, 0.0f);
 	}
 	SUBCASE("PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_32bit.psb";
-		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f);
+		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f, 0.0f);
 	}
 	SUBCASE("MaximizeCompatibilityOff_PSD")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_MaximizeCompatibilityOff_32bit.psd";
-		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f);
+		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f, 0.0f);
 	}
 	SUBCASE("MaximizeCompatibilityOff_PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_ZipPrediction_MaximizeCompatibilityOff_32bit.psb";
-		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f);
+		checkCompressionFile<float32_t>(combined_path, 0.0f, 0.501953f, 1.0f, 0.0f);
 	}
 }

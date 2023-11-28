@@ -1,7 +1,7 @@
 #include "doctest.h"
 
-#include "Macros.h"
 #include "Utility.h"
+#include "Macros.h"
 #include "Compression/RLE.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 
@@ -39,12 +39,12 @@ TEST_CASE("Decompress file with RLE compression")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psd";
-		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255);
+		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 	SUBCASE("PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psb";
-		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255);
+		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 }
