@@ -15,6 +15,18 @@ template void checkCompressionFileImpl<uint8_t>(NAMESPACE_PSAPI::LayerInfo& laye
 template void checkCompressionFileImpl<uint16_t>(NAMESPACE_PSAPI::LayerInfo& layerInformation, const double zero_val, const double val_128, const double one_val, const double red_zero_val);
 template void checkCompressionFileImpl<float32_t>(NAMESPACE_PSAPI::LayerInfo& layerInformation, const double zero_val, const double val_128, const double one_val, const double red_zero_val);
 
+
+// Neat little implementation by DzedCPT https://stackoverflow.com/questions/41160846/test-floating-point-stdvector-with-c-catch
+// That only adds one assertion for each vec rather than for each CHECK
+#define CHECK_VEC_ALMOST_EQUAL(x, y) \
+    REQUIRE(x.size() == y.size()); \
+    for (size_t i = 0; i < x.size(); ++i) { \
+		if (x[i] != doctest::Approx(y[i])) { \
+			CHECK(x[i] == doctest::Approx(y[i])); \
+		} \
+    }
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -44,7 +56,7 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 
 		SUBCASE("Could find layer")
 		{
-			CHECK(layerIndex != -1);
+			REQUIRE(layerIndex != -1);
 		}
 
 		SUBCASE("Channels are correct")
@@ -57,10 +69,10 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 			int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
 			int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
 
-			CHECK(channel_r_index != -1);
-			CHECK(channel_g_index != -1);
-			CHECK(channel_b_index != -1);
-			CHECK(channel_a_index != -1);
+			REQUIRE(channel_r_index != -1);
+			REQUIRE(channel_g_index != -1);
+			REQUIRE(channel_b_index != -1);
+			REQUIRE(channel_a_index != -1);
 
 			// We could also extract directly using this signature and skip the step above
 			// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
@@ -73,11 +85,11 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 			std::vector<T> expected_bg(64 * 64, red_zero_val);
 
 			
-			CHECK(channel_r == expected_r);
-			CHECK(channel_b == expected_bg);
-			CHECK(channel_g == expected_bg);
+			CHECK_VEC_ALMOST_EQUAL(channel_r, expected_r);
+			CHECK_VEC_ALMOST_EQUAL(channel_b, expected_bg);
+			CHECK_VEC_ALMOST_EQUAL(channel_g, expected_bg);
 			// Alpha channel is white
-			CHECK(channel_a == expected_r);
+			CHECK_VEC_ALMOST_EQUAL(channel_a, expected_r);
 
 		}
 	}
@@ -88,7 +100,7 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 
 		SUBCASE("Could find layer")
 		{
-			CHECK(layerIndex != -1);
+			REQUIRE(layerIndex != -1);
 		}
 
 		SUBCASE("Channels are correct")
@@ -100,10 +112,10 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 			int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
 			int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
 
-			CHECK(channel_r_index != -1);
-			CHECK(channel_g_index != -1);
-			CHECK(channel_b_index != -1);
-			CHECK(channel_a_index != -1);
+			REQUIRE(channel_r_index != -1);
+			REQUIRE(channel_g_index != -1);
+			REQUIRE(channel_b_index != -1);
+			REQUIRE(channel_a_index != -1);
 
 			// We could also extract directly using this signature and skip the step above
 			// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
@@ -125,11 +137,11 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 			}
 			std::vector<T> expected_a(64 * 64, one_val);
 
-			CHECK(channel_r == expected_r);
-			CHECK(channel_b == expected_bg);
-			CHECK(channel_g == expected_bg);
+			CHECK_VEC_ALMOST_EQUAL(channel_r, expected_r);
+			CHECK_VEC_ALMOST_EQUAL(channel_b, expected_bg);
+			CHECK_VEC_ALMOST_EQUAL(channel_g, expected_bg);
 			// Alpha channel is white
-			CHECK(channel_a == expected_a);
+			CHECK_VEC_ALMOST_EQUAL(channel_a, expected_a);
 		}
 	}
 
@@ -139,7 +151,7 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 
 		SUBCASE("Could find layer")
 		{
-			CHECK(layerIndex != -1);
+			REQUIRE(layerIndex != -1);
 		}
 
 		SUBCASE("Channels are correct")
@@ -151,21 +163,28 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 			int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
 			int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
 
-			CHECK(channel_r_index != -1);
-			CHECK(channel_g_index != -1);
-			CHECK(channel_b_index != -1);
-			CHECK(channel_a_index != -1);
+			// We could also extract directly using this signature and skip the step above
+			// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
+			std::vector<T> channel_r = channelImageData.extractImageData<T>(channel_r_index);
+			std::vector<T> channel_g = channelImageData.extractImageData<T>(channel_g_index);
+			std::vector<T> channel_b = channelImageData.extractImageData<T>(channel_b_index);
+			std::vector<T> channel_a = channelImageData.extractImageData<T>(channel_a_index);
+
+			REQUIRE(channel_r_index != -1);
+			REQUIRE(channel_g_index != -1);
+			REQUIRE(channel_b_index != -1);
+			REQUIRE(channel_a_index != -1);
 
 			std::vector<T> expected_r(64 * 64, one_val);
 			std::vector<T> expected_g(64 * 64, val_128);
 			std::vector<T> expected_b(64 * 64, zero_val);
 
 
-			CHECK(channelImageData.extractImageData<T>(channel_r_index) == expected_r);
-			CHECK(channelImageData.extractImageData<T>(channel_g_index) == expected_g);
-			CHECK(channelImageData.extractImageData<T>(channel_b_index) == expected_b);
+			CHECK_VEC_ALMOST_EQUAL(channel_r, expected_r);
+			CHECK_VEC_ALMOST_EQUAL(channel_g, expected_g);
+			CHECK_VEC_ALMOST_EQUAL(channel_b, expected_b);
 			// Alpha channel is white
-			CHECK(channelImageData.extractImageData<T>(channel_a_index) == expected_r);
+			CHECK_VEC_ALMOST_EQUAL(channel_a, expected_r);
 		}
 	}
 
