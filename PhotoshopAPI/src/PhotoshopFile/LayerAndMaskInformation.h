@@ -1,57 +1,21 @@
 #pragma once
 
 #include "FileHeader.h"
+#include "AdditionalLayerInfo.h"
 #include "Macros.h"
 #include "Enum.h"
 #include "Struct/File.h"
 #include "Struct/Section.h"
 #include "Struct/ResourceBlock.h"
-#include "Struct/TaggedBlock.h"
 #include "Struct/ImageChannel.h"
 #include "Compression/Compression.h"
-
 
 #include <vector>
 #include <memory>
 
 
+
 PSAPI_NAMESPACE_BEGIN
-
-
-struct AdditionalLayerInfo : public FileSection
-{
-	std::vector<std::shared_ptr<TaggedBlock::Base>> m_TaggedBlocks;
-
-	AdditionalLayerInfo() = default;
-	AdditionalLayerInfo(const AdditionalLayerInfo&) = delete;
-	AdditionalLayerInfo(AdditionalLayerInfo&&) = default;
-	AdditionalLayerInfo& operator=(const AdditionalLayerInfo&) = delete;
-	AdditionalLayerInfo& operator=(AdditionalLayerInfo&&) = default;
-
-	AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
-
-	// Retrieve a pointer to a TaggedBlock based on the key given. If the key does not exist, we return std::nullopt
-	template <typename T>
-	std::optional<std::shared_ptr<T>> getTaggedBlock(const Enum::TaggedBlockKey key) const
-	{
-		for (auto& taggedBlock : m_TaggedBlocks)
-		{
-			if (taggedBlock->getKey() == key)
-			{
-				auto downcastedPtr = std::static_pointer_cast<T>(taggedBlock);
-				if (downcastedPtr)
-				{
-					return downcastedPtr;
-				}
-				else
-				{
-					PSAPI_LOG_ERROR("AdditionalLayerInfo", "Unable to cast Base Tagged Block to template argument");
-				}
-			}
-		}
-		return std::nullopt;
-	}
-};
 
 
 // Structs to hold the different types of data found in the layer records themselves
@@ -114,7 +78,6 @@ namespace LayerRecords
 		uint32_t m_Size = 4u;	// Includes the section length marker
 		std::optional<LayerMask> m_LayerMask;
 		std::optional<LayerMask> m_VectorMask;
-
 
 		LayerMaskData() {};
 		LayerMaskData(File& document);

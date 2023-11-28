@@ -171,10 +171,10 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 template <typename T>
 layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
 {
-	auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
+	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
 	// Check for GroupLayer, ArtboardLayer or SectionDividerLayer
-	auto sectionDividerTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock::LayerSectionDivider>(Enum::TaggedBlockKey::lrSectionDivider);
+	auto sectionDividerTaggedBlock = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
 	if (sectionDividerTaggedBlock.has_value())
 	{
 		if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::ClosedFolder
@@ -182,7 +182,7 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 		{
 			// This may actually house not only a group layer, but potentially also an artboard layer which we check for first
 			// These are, as of yet, unsupported. Therefore we simply return an empty container
-			auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>(Enum::TaggedBlockKey::lrArtboard);
+			auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrArtboard);
 			if (artboardTaggedBlock.has_value())
 			{
 				return ArtboardLayer<T>();
@@ -198,14 +198,14 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 	}
 
 	// Check for Text Layers
-	auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>(Enum::TaggedBlockKey::lrTypeTool);
+	auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTypeTool);
 	if (typeToolTaggedBlock.has_value())
 	{
 		return TextLayer<T>();
 	}
 
 	// Check for Smart Object Layers
-	auto smartObjectTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>(Enum::TaggedBlockKey::lrSmartObject);
+	auto smartObjectTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrSmartObject);
 	if (typeToolTaggedBlock.has_value())
 	{
 		return SmartObjectLayer<T>();
@@ -214,7 +214,7 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 	// Check if it is one of many adjustment layers
 	// We do not currently implement these but it would be worth investigating
 	{
-#define getGenericTaggedBlock additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>
+#define getGenericTaggedBlock additionalLayerInfo.getTaggedBlock<TaggedBlock>
 
 		auto blackAndWhiteTaggedBlock = getGenericTaggedBlock(Enum::TaggedBlockKey::adjBlackandWhite);
 		auto gradientTaggedBlock = getGenericTaggedBlock(Enum::TaggedBlockKey::adjGradient);
@@ -266,7 +266,7 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 	
 	// Now the layer could only be one of two more. A shape or pixel layer (Note files written before CS6 could fail this shape layer check here
 	{
-#define getGenericTaggedBlock additionalLayerInfo.getTaggedBlock<TaggedBlock::Generic>
+#define getGenericTaggedBlock additionalLayerInfo.getTaggedBlock<TaggedBlock>
 		
 		{
 			auto vecOriginDataTaggedBlock = getGenericTaggedBlock(Enum::TaggedBlockKey::vecOriginData);

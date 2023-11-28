@@ -4,8 +4,6 @@
 #include "Macros.h"
 #include "Read.h"
 #include "StringUtil.h"
-#include "Struct/TaggedBlock.h"
-
 
 #include <variant>
 
@@ -356,37 +354,6 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 			std::vector<float32_t> decompressedData = DecompressData<float32_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
 			this->m_ImageData.push_back(std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
 		}
-	}
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
-{
-	m_Offset = offset;
-	document.setOffset(offset);
-	m_Size = 0u;
-
-	int64_t toRead = maxLength;
-	while (toRead >= 12u)
-	{
-		std::shared_ptr<TaggedBlock::Base> taggedBlock = readTaggedBlock(document, header, padding);
-		toRead -= taggedBlock->getTotalSize();
-		m_Size += taggedBlock->getTotalSize();
-		m_TaggedBlocks.push_back(std::move(taggedBlock));
-	}
-	if (toRead >= 0)
-	{
-		m_Size += toRead;
-		document.skip(toRead);
-		return;
-	}
-
-	if (toRead <= 0)
-	{
-		PSAPI_LOG_WARNING("AdditionalLayerInfo", "Read too much data for the additional layer info, was allowed %" PRIu64 " but read %" PRIu64 " instead",
-			maxLength, maxLength - toRead);
 	}
 }
 

@@ -41,7 +41,7 @@ struct File
 	}
 
 
-	inline uint64_t getOffset()
+	inline uint64_t getOffset() const
 	{
 		return m_Offset;
 	}
@@ -63,7 +63,7 @@ struct File
 	}
 
 
-	inline uint64_t getSize()
+	inline uint64_t getSize() const
 	{
 		return m_Size;
 	}
