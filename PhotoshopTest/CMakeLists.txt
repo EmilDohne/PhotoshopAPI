@@ -4,8 +4,13 @@ project(${EXE})
 
 add_executable(${EXE} 
     "${PROJECT_SOURCE_DIR}/src/main.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TestCompression/Utility.cpp"
     "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestZIPPrediction.cpp"
 )
+
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src/TestCompression")
+
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
@@ -14,6 +19,11 @@ if(MSVC)
 # else()
 # 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
+
+target_compile_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/Zi>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
 
 # Include and link the PhotoshopAPI
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")

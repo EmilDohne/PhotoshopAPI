@@ -6,6 +6,7 @@
 
 #include "zlib-ng.h"
 
+#include <algorithm>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -76,7 +77,7 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 	if (bitShiftedData.size() != static_cast<uint64_t>(height) * static_cast<uint64_t>(width))
 	{
 		PSAPI_LOG_ERROR("RemovePredictionEncoding", "Endian Decoded data does not match expected size, expected %" PRIu64 ", got %i",
-			static_cast<uint64_t>(height) * static_cast<uint64_t>(width) * sizeof(T),
+			static_cast<uint64_t>(height) * static_cast<uint64_t>(width),
 			bitShiftedData.size())
 	}
 
@@ -92,6 +93,66 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 
 	return bitShiftedData;
 }
+
+
+// We need to specialize here as 32-bit files have their bytes interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
+// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
+template <>
+inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
+{
+	std::vector<uint8_t> predictionDecodedData = decompressedData;
+
+	// Perform prediction decoding per scanline of data in-place
+	uint64_t index = 0;
+	for (uint64_t y = 0; y < height; ++y)
+	{
+		++index;
+		for (uint64_t x = 1; x < static_cast<uint64_t>(width) * 4u; ++x)
+		{
+			// Simple differencing: decode by adding the difference to the previous value
+			uint8_t value = predictionDecodedData[index] + predictionDecodedData[index - 1];
+			predictionDecodedData[index] = value;
+
+			++index;
+		}
+	}
+
+	// We now need to shuffle the byte order back in its normal place as photoshop stores the bytes deinterleaved for 32 bit types.
+	// Imagine the following sequence of bytes, 1234 1234 1234 1234. If we would encode them literally it wouldnt give us much compression
+	// which is why Photoshop deinterleaves them to 1111 2222 3333 4444 to get better compression. We now need to reverse this interleaving that is done row-by-row
+	std::vector<float32_t> bitShiftedData;
+	bitShiftedData.reserve(static_cast<uint64_t>(width) * height);
+
+	// Create a temporary byte buffer that we reuse to interleave and then immediately endianDecode
+	std::vector<uint8_t> buffer(sizeof(float32_t), 0);
+	for (uint64_t y = 0; y < height; ++y)
+	{
+		for (uint64_t x = 0; x < width; ++x)
+		{
+			// By specifying these in reverse we already take care of endian decoding
+			// Therefore no separate call is needed
+			buffer[3] = predictionDecodedData[y * width * 4 + x];
+			buffer[2] = predictionDecodedData[y * width * 4 + width + x];
+			buffer[1] = predictionDecodedData[y * width * 4 + width * 2 + x];
+			buffer[0] = predictionDecodedData[y * width * 4 + width * 3 + x];
+
+			// Reinterpret the byte array to be a float32_t. This can be considered safe as we limit size of buffer to 0;
+			float32_t tmp = reinterpret_cast<float32_t&>(buffer[0]);
+			bitShiftedData.push_back(tmp);
+		}
+	}
+
+	if (bitShiftedData.size() != static_cast<uint64_t>(height) * static_cast<uint64_t>(width))
+	{
+		PSAPI_LOG_ERROR("RemovePredictionEncoding", "Endian Decoded data does not match expected size, expected %" PRIu64 ", got %i",
+			static_cast<uint64_t>(height) * static_cast<uint64_t>(width),
+			bitShiftedData.size())
+	}
+	
+	return bitShiftedData;
+}
+
+
 
 template <typename T>
 std::vector<T> DecompressZIPPrediction(File& document, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)

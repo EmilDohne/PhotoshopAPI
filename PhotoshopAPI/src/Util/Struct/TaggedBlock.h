@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "Struct/File.h"
 #include "Struct/Signature.h"
 
@@ -12,50 +13,60 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-namespace TaggedBlock
+
+// Generic Tagged Block which does not hold any data. If you wish to parse further tagged blocks extend this struct and add an implementation
+struct TaggedBlock
 {
-	struct Base
-	{
-		Signature m_Signature;
-		uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
-		std::variant<uint32_t, uint64_t> m_Length;
+	Signature m_Signature;
+	uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
+	std::variant<uint32_t, uint64_t> m_Length;
 
-		uint64_t getTotalSize() { return m_TotalLength; };
-		Enum::TaggedBlockKey getKey() { return m_Key; };
+	uint64_t getTotalSize() const { return m_TotalLength; };
+	Enum::TaggedBlockKey getKey() const { return m_Key; };
 
-	protected:
-		Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
-		// The length of the tagged block with all the the signature, key and length marker
-		// use this value to determine how long the total structure is
-		uint64_t m_TotalLength = 0u;
-	};
-
-	struct Generic : Base
-	{
-		std::vector<uint8_t> m_Data;
-
-		Generic(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
-	};
+	virtual ~TaggedBlock() = default;
+	TaggedBlock() = default;
+	TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
+protected:
+	Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
+	// The length of the tagged block with all the the signature, key and length marker
+	// use this value to determine how long the total structure is
+	uint64_t m_TotalLength = 0u;
+};
 
 
-	struct LayerSectionDivider : Base
-	{
-		Enum::SectionDivider m_Type = Enum::SectionDivider::Any;
+// This tagged block demarkates the start or end of a layer section (group). It may additionally store the Passthrough blend mode
+struct LrSectionTaggedBlock : TaggedBlock
+{
+	Enum::SectionDivider m_Type = Enum::SectionDivider::Any;
 
-		// This is a bit weird, but if the blend mode for the layer is Passthrough, it stores BlendMode::Normal
-		// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
-		std::optional<Enum::BlendMode> m_BlendMode;
+	// This is a bit weird, but if the blend mode for the layer is Passthrough, it stores BlendMode::Normal
+	// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
+	std::optional<Enum::BlendMode> m_BlendMode;
 
-		LayerSectionDivider(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
-	};
+	LrSectionTaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+};
 
 
-	// These are defined in the cpp file
-	struct Lr16;
-	struct Lr32;
-}
+// 16-bit files store this tagged block at the end of the layer and mask information section which contains the 
+// layer info section
+struct Lr16TaggedBlock : TaggedBlock
+{
+	LayerInfo m_Data;
 
-// Return a pointer to a Tagged block based on the key it reads
-std::shared_ptr<TaggedBlock::Base> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding = 1u);
+	Lr16TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+};
+
+
+
+// 32-bit files store this tagged block at the end of the layer and mask information section which contains the 
+// layer info section
+struct Lr32TaggedBlock : TaggedBlock
+{
+	LayerInfo m_Data;
+
+	Lr32TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+};
+
 
 PSAPI_NAMESPACE_END

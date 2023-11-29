@@ -11,7 +11,6 @@
 #include <vector>
 #include <memory>
 
-
 // This is the data we run all the whole-file tests on. Keep in mind that this does not necessarily cover all of the documents found in /documents
 // as some cover very specific individual sections such as /documents/Compression
 std::vector<std::filesystem::path> relPaths =
@@ -26,7 +25,7 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\Grayscale\\Grayscale_16bit.psd",
 	"\\documents\\Grayscale\\Grayscale_16bit.psb",
 	"\\documents\\Grayscale\\Grayscale_32bit.psd",
-	"\\documents\\Grayscale\\Grayscale_32bit.psb",*/
+	"\\documents\\Grayscale\\Grayscale_32bit.psb",
 
 	"\\documents\\Groups\\Groups_8bit.psd",
 	"\\documents\\Groups\\Groups_8bit.psb",
@@ -52,7 +51,8 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psd",
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psb",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
-	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",
+	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",*/
+	"\\documents\\tmp.psb"
 };
 
 
@@ -64,6 +64,9 @@ int main()
 	{
 		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
+
+		PSAPI_LOG("Main", "Started Parsing of file %s", combined_path.string().c_str())
+
 		NAMESPACE_PSAPI::File file(combined_path);
 		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
 		bool didParse = document->read(file);
