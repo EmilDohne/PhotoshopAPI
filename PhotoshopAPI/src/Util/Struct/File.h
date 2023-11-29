@@ -11,6 +11,7 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 struct File
 {
 
@@ -24,7 +25,7 @@ struct File
 		m_Document.read(buffer, size);
 		m_Offset += size;
 	}
-
+	
 
 	inline void skip(int64_t size)
 	{

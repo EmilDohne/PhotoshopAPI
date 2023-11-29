@@ -40,3 +40,9 @@ if(MSVC)
 # else()
 # 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
+
+
+target_compile_options(${LIB} PRIVATE "$<$<CONFIG:Release>:/Zi>")
+target_link_options(${LIB} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+target_link_options(${LIB} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+target_link_options(${LIB} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")

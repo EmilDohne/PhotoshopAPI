@@ -20,6 +20,11 @@ if(MSVC)
 # 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
+target_compile_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/Zi>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
+target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
+
 # Include and link the PhotoshopAPI
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)

@@ -120,23 +120,25 @@ inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t
 	// We now need to shuffle the byte order back in its normal place as photoshop stores the bytes deinterleaved for 32 bit types.
 	// Imagine the following sequence of bytes, 1234 1234 1234 1234. If we would encode them literally it wouldnt give us much compression
 	// which is why Photoshop deinterleaves them to 1111 2222 3333 4444 to get better compression. We now need to reverse this interleaving that is done row-by-row
-
-
 	std::vector<float32_t> bitShiftedData;
 	bitShiftedData.reserve(static_cast<uint64_t>(width) * height);
 
 	// Create a temporary byte buffer that we reuse to interleave and then immediately endianDecode
-	std::vector<uint8_t> buffer(4u, 0);
+	std::vector<uint8_t> buffer(sizeof(float32_t), 0);
 	for (uint64_t y = 0; y < height; ++y)
 	{
 		for (uint64_t x = 0; x < width; ++x)
 		{
-			buffer[0] = predictionDecodedData[y * width * 4 + x];
-			buffer[1] = predictionDecodedData[y * width * 4 + width + x];
-			buffer[2] = predictionDecodedData[y * width * 4 + width * 2 + x];
-			buffer[3] = predictionDecodedData[y * width * 4 + width * 3 + x];
+			// By specifying these in reverse we already take care of endian decoding
+			// Therefore no separate call is needed
+			buffer[3] = predictionDecodedData[y * width * 4 + x];
+			buffer[2] = predictionDecodedData[y * width * 4 + width + x];
+			buffer[1] = predictionDecodedData[y * width * 4 + width * 2 + x];
+			buffer[0] = predictionDecodedData[y * width * 4 + width * 3 + x];
 
-			bitShiftedData.push_back(endianDecodeBE<float32_t>(buffer.data()));
+			// Reinterpret the byte array to be a float32_t. This can be considered safe as we limit size of buffer to 0;
+			float32_t tmp = reinterpret_cast<float32_t&>(buffer[0]);
+			bitShiftedData.push_back(tmp);
 		}
 	}
 
