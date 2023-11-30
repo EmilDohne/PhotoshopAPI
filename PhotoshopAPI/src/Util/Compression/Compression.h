@@ -5,6 +5,7 @@
 #include "Macros.h"
 #include "Read.h"
 #include "Enum.h"
+#include "Struct/ByteStream.h"
 
 
 #include <vector>
@@ -22,20 +23,20 @@ PSAPI_NAMESPACE_BEGIN
 /// 
 /// or as a singular image channel depending on where the call was made from
 template <typename T>
-inline std::vector<T> DecompressData(File& document, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+inline std::vector<T> DecompressData(ByteStream& stream, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	switch (compression)
 	{
 	case Enum::Compression::Raw:
-		return ReadBinaryArray<T>(document, compressedSize);
+		return ReadBinaryArray<T>(stream, compressedSize);
 	case Enum::Compression::Rle:
-		return DecompressRLE<T>(document, header, width, height, compressedSize);
+		return DecompressRLE<T>(stream, header, width, height, compressedSize);
 	case Enum::Compression::Zip:
-		return DecompressZIP<T>(document, header, width, height, compressedSize);
+		return DecompressZIP<T>(stream, header, width, height, compressedSize);
 	case Enum::Compression::ZipPrediction:
-		return DecompressZIPPrediction<T>(document, header, width, height, compressedSize);
+		return DecompressZIPPrediction<T>(stream, header, width, height, compressedSize);
 	default:
-		return ReadBinaryArray<T>(document, compressedSize);
+		return ReadBinaryArray<T>(stream, compressedSize);
 	}
 }
 

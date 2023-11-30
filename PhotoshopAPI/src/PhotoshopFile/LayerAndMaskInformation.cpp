@@ -6,6 +6,8 @@
 #include "StringUtil.h"
 
 #include <variant>
+#include <algorithm>
+#include <execution>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -314,10 +316,9 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-ChannelImageData::ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
+ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
 	m_Offset = offset;
-	document.setOffset(offset);
 	m_Size = 0;
 
 	for (const auto& channel : layerRecord.m_ChannelInformation)
@@ -336,22 +337,22 @@ ChannelImageData::ChannelImageData(File& document, const FileHeader& header, con
 			}
 		}
 		// Get the compression of the channel
-		Enum::Compression channelCompression = Enum::compressionMap.at(ReadBinaryData<uint16_t>(document));
+		Enum::Compression channelCompression = Enum::compressionMap.at(ReadBinaryData<uint16_t>(stream));
 		this->m_Size += channel.m_Size;
 
 		if (header.m_Depth == Enum::BitDepth::BD_8)
 		{
-			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
 			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_16)
 		{
-			std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
 			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
 		}
 		if (header.m_Depth == Enum::BitDepth::BD_32)
 		{
-			std::vector<float32_t> decompressedData = DecompressData<float32_t>(document, channelCompression, header, width, height, channel.m_Size - 2u);
+			std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
 			this->m_ImageData.push_back(std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
 		}
 	}
@@ -396,11 +397,39 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		m_LayerRecords.push_back(std::move(layerRecord));
 	}
 
-	// Extract Channel Image Data
-	for (int i = 0; i < layerCount; i++)
+	std::vector<uint64_t> channelImageDataOffsets;
+	std::vector<uint64_t> channelImageDataSizes;
+	uint64_t imageDataOffset = document.getOffset();
+	for (const auto& layerRecord : m_LayerRecords)
 	{
-		m_ChannelImageData.push_back(ChannelImageData(document, header, document.getOffset(), m_LayerRecords[i]));
+		uint64_t imageDataSize = 0u;
+		for (const auto& channel : layerRecord.m_ChannelInformation)
+		{
+			imageDataOffset += channel.m_Size;
+			imageDataSize += channel.m_Size;
+		}
+		channelImageDataOffsets.push_back(imageDataOffset);
+		channelImageDataSizes.push_back(imageDataSize);
 	}
+
+	// Extract Channel Image Data in parallel
+	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord) {
+
+		uint64_t tmpOffset = channelImageDataOffsets[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
+		uint64_t tmpSize = channelImageDataSizes[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
+
+		// Read the binary data. Note that this is done in one step to avoid the offset being set differently before 
+		// reading the data. We also do this within the loop to avoid allocating all the memory at once
+		ByteStream stream(document, tmpOffset, tmpSize);
+
+
+		// Create the ChannelImageData by parsing the given buffer
+		auto result = ChannelImageData(stream, header, tmpOffset, layerRecord);
+
+		std::lock_guard<std::mutex> lock(document.m_Mutex);
+		m_ChannelImageData.push_back(std::move(result));
+		});
+
 
 	const uint64_t expectedOffset = m_Offset + m_Size;
 	if (document.getOffset() != expectedOffset)

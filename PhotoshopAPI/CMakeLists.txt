@@ -14,6 +14,7 @@ add_library (${LIB} STATIC
 	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/AdditionalLayerInfo.cpp"
 	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/PhotoshopFile.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/File.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Util/Struct/ByteStream.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/PascalString.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/ResourceBlock.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Util/Struct/Signature.cpp"
