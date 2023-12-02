@@ -415,47 +415,33 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		channelImageDataSizes.push_back(imageDataSize);
 	}
 
-	// For now extract channel image data in sequence to check if our approach works with the byte streams
-	int index = 0;
-	for (const auto& layerRecord : m_LayerRecords)
+	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
+	// Extract Channel Image Data in parallel. Note that we perform this insertion in 
+	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord) 
 	{
-		//uint64_t tmpOffset = channelImageDataOffsets[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
-		//int64_t tmpSize = channelImageDataSizes[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
-		uint64_t tmpOffset = channelImageDataOffsets.at(index);
-		int64_t tmpSize = channelImageDataSizes.at(index);
+		int index = &layerRecord - &m_LayerRecords[0];
 
+		uint64_t tmpOffset = channelImageDataOffsets[index];
+		uint64_t tmpSize = channelImageDataSizes[index];
+
+		// Read the binary data. Note that this is done in one step to avoid the offset being set differently before 
+		// reading the data. We also do this within the loop to avoid allocating all the memory at once
 		ByteStream stream(document, tmpOffset, tmpSize);
+
+		// Create the ChannelImageData by parsing the given buffer
 		auto result = ChannelImageData(stream, header, tmpOffset, layerRecord);
 
-		if (tmpSize != result.m_Size)
-		{
-			PSAPI_LOG_ERROR("TMP", "Incorrect size, expected %i, got %" PRIu64 " instead" , tmpSize, result.m_Size)
-		}
-
-		m_ChannelImageData.push_back(std::move(result));
-
-		++index;
+		// As each index is unique we do not need to worry about locking the mutex here
+		localResults[index] = (std::move(result));
+	});
+	// Combine results after the parallel loop
+	{
+		std::lock_guard<std::mutex> lock(document.m_Mutex);
+		m_ChannelImageData.insert(m_ChannelImageData.end(), std::make_move_iterator(localResults.begin()), std::make_move_iterator(localResults.end()));
 	}
 
-	// Extract Channel Image Data in parallel
-	//std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord) 
-	//{
-
-	//	uint64_t tmpOffset = channelImageDataOffsets[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
-	//	uint64_t tmpSize = channelImageDataSizes[&layerRecord - &m_LayerRecords[0]]; // Calculate the offset index
-
-	//	// Read the binary data. Note that this is done in one step to avoid the offset being set differently before 
-	//	// reading the data. We also do this within the loop to avoid allocating all the memory at once
-	//	ByteStream stream(document, tmpOffset, tmpSize);
-
-
-	//	// Create the ChannelImageData by parsing the given buffer
-	//	auto result = ChannelImageData(stream, header, tmpOffset, layerRecord);
-
-	//	std::lock_guard<std::mutex> lock(document.m_Mutex);
-	//	m_ChannelImageData.push_back(std::move(result));
-	//});
-
+	// Set the offset to where it is supposed to be as we cannot guarantee the location of the marker after jumping back and forth in image sections
+	document.setOffset(imageDataOffset);
 
 	const uint64_t expectedOffset = m_Offset + m_Size;
 	if (document.getOffset() != expectedOffset)

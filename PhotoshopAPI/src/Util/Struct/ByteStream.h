@@ -14,7 +14,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // A stream of binary data with its own internal offset and size markers.
 // It is meant to replace the read functionality in sections where we cannot dynamically 
-// read from the document itself. This object is meant to represent the binary stream fro a single thread
+// read from the document itself. This object is meant to represent the binary stream for a single thread
 struct ByteStream
 {
 
