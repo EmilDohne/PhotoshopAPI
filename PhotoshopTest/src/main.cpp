@@ -27,12 +27,12 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\Grayscale\\Grayscale_32bit.psd",
 	"\\documents\\Grayscale\\Grayscale_32bit.psb",*/
 
-	"\\documents\\Groups\\Groups_8bit.psd",
+	/*"\\documents\\Groups\\Groups_8bit.psd",
 	"\\documents\\Groups\\Groups_8bit.psb",
 	"\\documents\\Groups\\Groups_16bit.psd",
 	"\\documents\\Groups\\Groups_16bit.psb",
 	"\\documents\\Groups\\Groups_32bit.psd",
-	"\\documents\\Groups\\Groups_32bit.psb",
+	"\\documents\\Groups\\Groups_32bit.psb",*/
 
 	/*"\\documents\\Indexed\\Indexed_8bit.psd",
 	"\\documents\\Indexed\\Indexed_8bit.psb",
