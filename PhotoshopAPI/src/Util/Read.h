@@ -110,11 +110,19 @@ TPsb ExtractWidestValue(std::variant<TPsd, TPsb> variant)
 
 // Read a large amount of data into a std::vector,
 // assumes the file is already open for reading
+// The size parameter indicates the amount of bytes
 template <typename T>
 inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 {
-	std::vector<T> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size * sizeof(T));
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	document.read(reinterpret_cast<char*>(data.data()), size);
 	for (T item : data)
 	{
 		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
@@ -128,8 +136,15 @@ inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 template <typename T>
 inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 {
-	std::vector<T> data(size);
-	stream.read(reinterpret_cast<char*>(data.data()), size * sizeof(T));
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	stream.read(reinterpret_cast<char*>(data.data()), size);
 	for (T item : data)
 	{
 		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
