@@ -31,7 +31,10 @@ void ByteStream::read(char* buffer, uint64_t size)
 			m_Offset + size)
 	}
 
-	buffer = reinterpret_cast<char*>(m_Buffer.data()) + size;
+	// Use memcpy to copy data from m_Buffer to the provided buffer
+	std::memcpy(buffer, m_Buffer.data() + m_Offset, size);
+
+	m_Offset += size;
 }
 
 

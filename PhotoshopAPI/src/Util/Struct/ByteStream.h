@@ -25,6 +25,7 @@ struct ByteStream
 	// Read n amount of bytes into the given buffer
 	void read(char* buffer, uint64_t size);
 
+	// Initialize a ByteStream from a given document and read the size into the ByteStream object
 	ByteStream(File& document, const uint64_t offset, const uint64_t size);
 
 private:
