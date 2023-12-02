@@ -6,6 +6,7 @@
 #include "Enum.h"
 #include "Logger.h"
 #include "Struct/File.h"
+#include "Struct/ByteStream.h"
 
 #include <fstream>
 #include <variant>
@@ -18,6 +19,16 @@ T ReadBinaryData(File& document)
 {
 	uint8_t data[sizeof(T)]{};
 	document.read(reinterpret_cast<char *>(data), sizeof(T));
+	return endianDecodeBE<T>(data);
+}
+
+
+// Read a sizeof(T) amount of data from the given bytestream
+template <typename T>
+T ReadBinaryData(ByteStream& stream)
+{
+	uint8_t data[sizeof(T)]{};
+	stream.read(reinterpret_cast<char*>(data), sizeof(T));
 	return endianDecodeBE<T>(data);
 }
 
@@ -36,6 +47,27 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(File& document, const Enum::Vers
 	case Enum::Version::Psb:
 		uint8_t dataPsb[sizeof(TPsb)];
 		document.read(reinterpret_cast<char*>(dataPsb), sizeof(TPsb));
+		return endianDecodeBE<TPsb>(dataPsb);
+	default:
+		return static_cast<TPsb>(0);
+	}
+}
+
+
+// Read a variadic amount of bytes from a bytestream based on whether it is PSD or PSB
+// and cast to the wider PSB type
+template <typename TPsd, typename TPsb>
+std::variant<TPsd, TPsb> ReadBinaryDataVariadic(ByteStream& stream, const Enum::Version version)
+{
+	switch (version)
+	{
+	case Enum::Version::Psd:
+		uint8_t dataPsd[sizeof(TPsd)];
+		stream.read(reinterpret_cast<char*>(dataPsd), sizeof(TPsd));
+		return endianDecodeBE<TPsd>(dataPsd);
+	case Enum::Version::Psb:
+		uint8_t dataPsb[sizeof(TPsb)];
+		stream.read(reinterpret_cast<char*>(dataPsb), sizeof(TPsb));
 		return endianDecodeBE<TPsb>(dataPsb);
 	default:
 		return static_cast<TPsb>(0);
@@ -78,11 +110,19 @@ TPsb ExtractWidestValue(std::variant<TPsd, TPsb> variant)
 
 // Read a large amount of data into a std::vector,
 // assumes the file is already open for reading
+// The size parameter indicates the amount of bytes
 template <typename T>
 inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 {
-	std::vector<T> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size * sizeof(T));
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	document.read(reinterpret_cast<char*>(data.data()), size);
 	for (T item : data)
 	{
 		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
@@ -90,6 +130,29 @@ inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 
 	return data;
 }
+
+
+// Read a large amount of data into a std::vector from a bytestream
+template <typename T>
+inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
+{
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	stream.read(reinterpret_cast<char*>(data.data()), size);
+	for (T item : data)
+	{
+		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
+	}
+
+	return data;
+}
+
 
 template<>
 inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t size)
@@ -104,6 +167,23 @@ inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<int8_t> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size);
+	return data;
+}
+
+
+template<>
+inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t size)
+{
+	std::vector<uint8_t> data(size);
+	stream.read(reinterpret_cast<char*>(data.data()), size);
+	return data;
+}
+
+template<>
+inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t size)
+{
+	std::vector<int8_t> data(size);
+	stream.read(reinterpret_cast<char*>(data.data()), size);
 	return data;
 }
 

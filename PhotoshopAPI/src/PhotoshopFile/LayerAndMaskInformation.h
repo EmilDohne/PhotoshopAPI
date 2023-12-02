@@ -5,6 +5,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Struct/File.h"
+#include "Struct/ByteStream.h"
 #include "Struct/Section.h"
 #include "Struct/ResourceBlock.h"
 #include "Struct/ImageChannel.h"
@@ -147,7 +148,7 @@ struct ChannelImageData : public FileSection
 	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
 	ChannelImageData() {};
-	ChannelImageData(File& document, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+	ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 
 	// Get an index to a specific channel based on the identifier
 	// returns -1 if no matching channel is found
@@ -163,6 +164,9 @@ struct ChannelImageData : public FileSection
 		return -1;
 	}
 
+	// Extract the size of a section ahead of time. This is used to get offsets into each of the different channelImageData 
+	// instances ahead of time for parallelization.
+	static uint64_t extractSectionSize(File& document, const uint64_t offset, const LayerRecord& layerRecord);
 
 	// Extract a channel from the given index and take ownership of the data. After this function is called the index will point to nullptr
 	// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already

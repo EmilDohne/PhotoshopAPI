@@ -1,8 +1,9 @@
 #pragma once
 
-#include "../../Macros.h"
-#include "../Logger.h"
-#include "../EndianByteSwap.h"
+#include "Macros.h"
+#include "Logger.h"
+#include "EndianByteSwap.h"
+#include "Struct/ByteStream.h"
 
 #include "zlib-ng.h"
 
@@ -51,11 +52,11 @@ namespace {
 
 
 template <typename T>
-std::vector<T> DecompressZIP(File& document, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+std::vector<T> DecompressZIP(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(compressedSize);
-	document.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
+	stream.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
 
 	// Decompress using Inflate ZIP
 	std::vector<uint8_t> decompressedData = UnZip(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * sizeof(T));
@@ -155,11 +156,11 @@ inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t
 
 
 template <typename T>
-std::vector<T> DecompressZIPPrediction(File& document, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+std::vector<T> DecompressZIPPrediction(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(compressedSize);
-	document.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
+	stream.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
 
 	// Decompress using Inflate ZIP
 	std::vector<uint8_t> decompressedData = UnZip(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height) * sizeof(T));

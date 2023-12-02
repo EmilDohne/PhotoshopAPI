@@ -8,7 +8,8 @@ PSAPI_NAMESPACE_BEGIN
 
 // Sequential Read of a single Image Resource Block, in its current state it just dumps the 
 // data rather than parsing it.
-// ----------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 ResourceBlock::ResourceBlock(File& document)
 {
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));

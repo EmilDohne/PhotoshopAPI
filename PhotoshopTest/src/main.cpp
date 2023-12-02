@@ -25,16 +25,16 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\Grayscale\\Grayscale_16bit.psd",
 	"\\documents\\Grayscale\\Grayscale_16bit.psb",
 	"\\documents\\Grayscale\\Grayscale_32bit.psd",
-	"\\documents\\Grayscale\\Grayscale_32bit.psb",
+	"\\documents\\Grayscale\\Grayscale_32bit.psb",*/
 
-	"\\documents\\Groups\\Groups_8bit.psd",
+	/*"\\documents\\Groups\\Groups_8bit.psd",
 	"\\documents\\Groups\\Groups_8bit.psb",
 	"\\documents\\Groups\\Groups_16bit.psd",
 	"\\documents\\Groups\\Groups_16bit.psb",
 	"\\documents\\Groups\\Groups_32bit.psd",
-	"\\documents\\Groups\\Groups_32bit.psb",
+	"\\documents\\Groups\\Groups_32bit.psb",*/
 
-	"\\documents\\Indexed\\Indexed_8bit.psd",
+	/*"\\documents\\Indexed\\Indexed_8bit.psd",
 	"\\documents\\Indexed\\Indexed_8bit.psb",
 
 	"\\documents\\Masks\\Masks_8bit.psd",
@@ -52,7 +52,7 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psb",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",*/
-	"\\documents\\tmp.psb"
+	//"\\documents\\tmp.psb"
 };
 
 
