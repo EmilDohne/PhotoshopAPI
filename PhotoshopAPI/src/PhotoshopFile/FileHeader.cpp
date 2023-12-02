@@ -3,6 +3,8 @@
 #include "Macros.h"
 #include "Read.h"
 
+#include "Profiling/Perf/Instrumentor.h"
+
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
@@ -11,6 +13,8 @@ PSAPI_NAMESPACE_BEGIN
 
 bool FileHeader::read(File& document)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = 0;
 	m_Size = 26;
 

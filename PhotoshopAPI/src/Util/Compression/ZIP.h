@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "EndianByteSwap.h"
 #include "Struct/ByteStream.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include "zlib-ng.h"
 
@@ -16,6 +17,7 @@ namespace {
 	/// Use zlib-ng to inflate the compressed input data to the expected output size
 	inline std::vector<uint8_t> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
 	{
+		PROFILE_FUNCTION();
 		// Inflate the data
 		zng_stream stream{};
 		stream.zfree = Z_NULL;
@@ -54,6 +56,7 @@ namespace {
 template <typename T>
 std::vector<T> DecompressZIP(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
+	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(compressedSize);
 	stream.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);
@@ -72,6 +75,7 @@ std::vector<T> DecompressZIP(ByteStream& stream, const FileHeader& header, const
 template <typename T>
 std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
+	PROFILE_FUNCTION();
 	// Convert decompressed data to native endianness
 	std::vector<T> bitShiftedData = endianDecodeBEBinaryArray<T>(decompressedData);
 
@@ -101,6 +105,7 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 template <>
 inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
+	PROFILE_FUNCTION();
 	std::vector<uint8_t> predictionDecodedData = decompressedData;
 
 	// Perform prediction decoding per scanline of data in-place
@@ -158,6 +163,7 @@ inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t
 template <typename T>
 std::vector<T> DecompressZIPPrediction(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
+	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(compressedSize);
 	stream.read(reinterpret_cast<char*>(compressedData.data()), compressedSize);

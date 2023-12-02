@@ -3,6 +3,7 @@
 #include "Read.h"
 #include "Enum.h"
 #include "Logger.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -12,6 +13,8 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 ResourceBlock::ResourceBlock(File& document)
 {
+	PROFILE_FUNCTION();
+
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
 	if (signature != Signature("8BIM"))
 	{

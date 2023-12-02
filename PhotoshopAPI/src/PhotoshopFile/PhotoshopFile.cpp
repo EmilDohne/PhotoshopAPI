@@ -6,11 +6,15 @@
 #include "LayerAndMaskInformation.h"
 #include "ImageData.h"
 
+#include "Profiling/Perf/Instrumentor.h"
+
 PSAPI_NAMESPACE_BEGIN
 
 
 bool PhotoshopFile::read(File& document)
 {
+	PROFILE_FUNCTION();
+
 	bool wasSuccessful = true;
 
 	wasSuccessful = wasSuccessful && m_Header.read(document);

@@ -4,6 +4,7 @@
 #include "Macros.h"
 #include "Read.h"
 #include "StringUtil.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include <variant>
 #include <algorithm>
@@ -204,6 +205,8 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_t offset)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = offset;
 	document.setOffset(offset);
 
@@ -318,6 +321,8 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 // ---------------------------------------------------------------------------------------------------------------------
 ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = offset;
 	m_Size = 0;
 
@@ -363,6 +368,8 @@ ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header,
 // ---------------------------------------------------------------------------------------------------------------------
 LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = offset;
 	document.setOffset(offset);
 
@@ -478,6 +485,7 @@ int LayerInfo::getLayerIndex(const std::string& layerName)
 // ---------------------------------------------------------------------------------------------------------------------
 GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
 {
+
 	m_Offset = offset;
 	document.setOffset(offset);
 
@@ -493,6 +501,8 @@ GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 bool LayerAndMaskInformation::read(File& document, const FileHeader& header, const uint64_t offset)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = offset;
 	document.setOffset(offset);
 

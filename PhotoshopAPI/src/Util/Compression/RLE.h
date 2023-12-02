@@ -7,6 +7,7 @@
 #include "Struct/File.h"
 #include "Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 
@@ -20,6 +21,7 @@ PSAPI_NAMESPACE_BEGIN
 template<typename T>
 std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
 {
+    PROFILE_FUNCTION();
     std::vector<uint8_t> decompressedData;
     decompressedData.reserve((sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height)));
 
@@ -61,6 +63,7 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 template<typename T>
 std::vector<T> DecompressRLE(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
+    PROFILE_FUNCTION();
 	// Photoshop first stores the byte counts of all the scanlines, this is 2 or 4 bytes depending on 
 	// if the document is PSD or PSB
 	uint64_t scanlineTotalSize = 0u;
