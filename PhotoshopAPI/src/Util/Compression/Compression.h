@@ -6,6 +6,7 @@
 #include "Read.h"
 #include "Enum.h"
 #include "Struct/ByteStream.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 
 #include <vector>
@@ -25,6 +26,7 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 inline std::vector<T> DecompressData(ByteStream& stream, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
+	PROFILE_FUNCTION();
 	switch (compression)
 	{
 	case Enum::Compression::Raw:

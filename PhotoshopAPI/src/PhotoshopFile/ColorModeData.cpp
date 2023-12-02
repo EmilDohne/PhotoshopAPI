@@ -6,6 +6,7 @@
 #include "Read.h"
 #include "Struct/File.h"
 #include "Struct/Section.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 
@@ -15,6 +16,8 @@ PSAPI_NAMESPACE_BEGIN
 
 bool ColorModeData::read(File& document)
 {
+	PROFILE_FUNCTION();
+
 	m_Offset = 26;
 	document.setOffset(m_Offset);
 

@@ -7,6 +7,7 @@
 #include "Struct/Section.h"
 #include "Struct/ResourceBlock.h"
 #include "Struct/Signature.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 
@@ -16,6 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 
 bool ImageResources::read(File& document, const uint64_t offset)
 {
+	PROFILE_FUNCTION();
 	m_Offset = offset;
 	document.setOffset(offset);
 	m_Size = RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u;

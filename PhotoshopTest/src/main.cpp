@@ -7,6 +7,9 @@
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
 
+#include "Profiling/Perf/Instrumentor.h"
+#include "Profiling/Memory/AllocationMetrics.h"
+
 #include <filesystem>
 #include <vector>
 #include <memory>
@@ -25,16 +28,16 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\Grayscale\\Grayscale_16bit.psd",
 	"\\documents\\Grayscale\\Grayscale_16bit.psb",
 	"\\documents\\Grayscale\\Grayscale_32bit.psd",
-	"\\documents\\Grayscale\\Grayscale_32bit.psb",*/
+	"\\documents\\Grayscale\\Grayscale_32bit.psb",
 
-	/*"\\documents\\Groups\\Groups_8bit.psd",
+	"\\documents\\Groups\\Groups_8bit.psd",
 	"\\documents\\Groups\\Groups_8bit.psb",
 	"\\documents\\Groups\\Groups_16bit.psd",
 	"\\documents\\Groups\\Groups_16bit.psb",
 	"\\documents\\Groups\\Groups_32bit.psd",
-	"\\documents\\Groups\\Groups_32bit.psb",*/
+	"\\documents\\Groups\\Groups_32bit.psb",
 
-	/*"\\documents\\Indexed\\Indexed_8bit.psd",
+	"\\documents\\Indexed\\Indexed_8bit.psd",
 	"\\documents\\Indexed\\Indexed_8bit.psb",
 
 	"\\documents\\Masks\\Masks_8bit.psd",
@@ -52,12 +55,15 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psb",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",*/
-	//"\\documents\\tmp.psb"
+	"\\documents\\tmp.psb"
 };
 
 
-int main()
+void profile()
 {
+	// Initialize our Instrumentor instance here to write out our profiling info
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile");
+
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
 	for (const auto& path : relPaths)
@@ -79,7 +85,6 @@ int main()
 		{
 			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
 		}
-
 		// Generate our layeredFiles
 		if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_8)
 		{
@@ -94,6 +99,14 @@ int main()
 			NAMESPACE_PSAPI::LayeredFile<float32_t> layeredFile(std::move(document));
 		}
 	}
+
+	NAMESPACE_PSAPI::Instrumentor::Get().EndSession();
+}
+
+int main()
+{
+	// Profile and test our application all in one step
+	profile();
 
 	// Set up and run doctest tests
 	{
