@@ -8,7 +8,6 @@
 #include "LayeredFile/LayeredFile.h"
 
 #include "Profiling/Perf/Instrumentor.h"
-#include "Profiling/Memory/AllocationMetrics.h"
 
 #include <filesystem>
 #include <vector>

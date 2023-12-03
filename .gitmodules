@@ -1,3 +1,6 @@
 [submodule "PhotoshopAPI/thirdparty/c-blosc2"]
 	path = thirdparty/c-blosc2
 	url = https://github.com/Blosc/c-blosc2
+[submodule "thirdparty/zlib-ng"]
+	path = thirdparty/zlib-ng
+	url = https://github.com/zlib-ng/zlib-ng
