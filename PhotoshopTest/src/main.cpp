@@ -61,7 +61,7 @@ std::vector<std::filesystem::path> relPaths =
 void profile()
 {
 	// Initialize our Instrumentor instance here to write out our profiling info
-	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile");
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "profiling.json");
 
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
@@ -105,7 +105,7 @@ void profile()
 int main()
 {
 	// Profile and test our application all in one step
-	profile();
+	//profile();
 
 	// Set up and run doctest tests
 	{

@@ -10,6 +10,8 @@
 #include <thread>
 #include <memory>
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 #include <cmath>
 
 PSAPI_NAMESPACE_BEGIN
@@ -64,12 +66,22 @@ struct ImageChannel : public BaseImageChannel
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
 		int numChunks = ceil((static_cast<uint64_t>(width) * height * sizeof(T)) / m_ChunkSize);
+		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
+		if (numChunks == 0)
+		{
+			// Check for chunks that are smaller than m_ChunkSize
+			if (static_cast<uint64_t>(width) * height * sizeof(T) > 0)
+			{
+				numChunks = 1;
+			}
+		}
+		m_NumChunks = numChunks;
 		
 		// Set parameters to help with compression and decompression
 		cparams.typesize = sizeof(T);
-		cparams.clevel = 9;
+		cparams.clevel = 5;
 		cparams.nthreads = 1;
-		dparams.nthreads = 1;
+		dparams.nthreads = 4;
 		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
@@ -101,10 +113,14 @@ struct ImageChannel : public BaseImageChannel
 
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
-		std::vector<T> tmpData(m_OrigSize, 0);
+		std::vector<T> tmpData(m_OrigSize, 255);
 		bool needsFree = false;
 
 		uint64_t remainingSize = m_OrigSize;
+
+		PSAPI_LOG("TMP", "NumChunks: %u", m_NumChunks);
+		PSAPI_LOG("TMP", "OrigSize: %" PRIu64 "", m_OrigSize);
+
 		for (uint32_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
 			void* ptr = reinterpret_cast<void*>(tmpData.data() + nchunk * m_ChunkSize);
