@@ -2,14 +2,15 @@
 
 #include "Macros.h"
 #include "Logger.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>
+#include <algorithm>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
 #include <limits.h>
-
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -17,8 +18,9 @@ PSAPI_NAMESPACE_BEGIN
 // Perform an endianDecode operation on a binary array (std::vector) and return
 // a vector of the given type
 template<typename T>
-std::vector<T> endianDecodeBEBinaryArray(const std::vector<uint8_t>& data)
+std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 {
+    PROFILE_FUNCTION();
     if (data.size() % sizeof(T) != 0)
     {
         PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
@@ -35,9 +37,10 @@ std::vector<T> endianDecodeBEBinaryArray(const std::vector<uint8_t>& data)
         const uint8_t* byteData = reinterpret_cast<const uint8_t*>(data.data() + i);
         nativeData.push_back(endianDecodeBE<T>(byteData));
     }
-    
+
     return nativeData;
 }
+
 
 // Perform a endianDecode operation on an array (std::vector) of items in-place
 template<typename T>

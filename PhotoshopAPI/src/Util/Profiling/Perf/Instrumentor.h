@@ -32,7 +32,6 @@
 
 
 // TODO make it so you can disable this via cmake
-#define PSAPI_PROFILING 1
 #if PSAPI_PROFILING
 #define PROFILE_SCOPE(name) NAMESPACE_PSAPI::InstrumentationTimer timer##__LINE__(name)
 #define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCTION__)

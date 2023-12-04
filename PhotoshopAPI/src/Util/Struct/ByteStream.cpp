@@ -1,5 +1,7 @@
 #include "ByteStream.h"
 
+#include "Profiling/Perf/Instrumentor.h"
+
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
@@ -24,6 +26,7 @@ void ByteStream::setOffset(const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 void ByteStream::read(char* buffer, uint64_t size)
 {
+	PROFILE_FUNCTION();
 	if (m_Offset + size > m_Size)
 	{
 		PSAPI_LOG_ERROR("ByteStream", "Trying to read too much data, maximum is %" PRIu64 " but got %" PRIu64 " instead",
@@ -43,6 +46,7 @@ void ByteStream::read(char* buffer, uint64_t size)
 // ---------------------------------------------------------------------------------------------------------------------
 ByteStream::ByteStream(File& document, const uint64_t offset, const uint64_t size)
 {
+	PROFILE_FUNCTION();
 	m_Buffer = std::vector<uint8_t>(size);
 	m_Size = size;
 	document.setOffsetAndRead(reinterpret_cast<char*>(m_Buffer.data()), offset, size);

@@ -73,7 +73,7 @@ std::vector<T> DecompressZIP(ByteStream& stream, const FileHeader& header, const
 
 // Reverse the prediction encoding after having decompressed the zip compressed byte stream as well as converting from BE to native
 template <typename T>
-std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
+std::vector<T> RemovePredictionEncoding(std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
 	PROFILE_FUNCTION();
 	// Convert decompressed data to native endianness
@@ -103,7 +103,7 @@ std::vector<T> RemovePredictionEncoding(const std::vector<uint8_t>& decompressed
 // We need to specialize here as 32-bit files have their bytes interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
 // And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
 template <>
-inline std::vector<float32_t> RemovePredictionEncoding(const std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
+inline std::vector<float32_t> RemovePredictionEncoding(std::vector<uint8_t>& decompressedData, const uint32_t width, const uint32_t height)
 {
 	PROFILE_FUNCTION();
 	std::vector<uint8_t> predictionDecodedData = decompressedData;

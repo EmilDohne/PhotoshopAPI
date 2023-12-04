@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Profiling/Perf/Instrumentor.h"
+#include "Profiling/Memory/CompressionTracker.h"
 
 #include "blosc2.h"
 
@@ -15,7 +16,6 @@
 #include <cmath>
 
 PSAPI_NAMESPACE_BEGIN
-
 
 struct BaseImageChannel
 {
@@ -76,12 +76,13 @@ struct ImageChannel : public BaseImageChannel
 			}
 		}
 		m_NumChunks = numChunks;
-		
+
 		// Set parameters to help with compression and decompression
 		cparams.typesize = sizeof(T);
-		cparams.clevel = 5;
+		cparams.compcode = BLOSC_LZ4;
+		cparams.clevel = 9;
 		cparams.nthreads = 1;
-		dparams.nthreads = 4;
+		dparams.nthreads = std::thread::hardware_concurrency();
 		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
@@ -108,18 +109,17 @@ struct ImageChannel : public BaseImageChannel
 				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks")
 			}
 		}
+
+		// Log the total compressed / uncompressed size to later determine our stats
+		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
 
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
-		std::vector<T> tmpData(m_OrigSize, 255);
-		bool needsFree = false;
+		std::vector<T> tmpData(m_OrigSize, 0);
 
 		uint64_t remainingSize = m_OrigSize;
-
-		PSAPI_LOG("TMP", "NumChunks: %u", m_NumChunks);
-		PSAPI_LOG("TMP", "OrigSize: %" PRIu64 "", m_OrigSize);
 
 		for (uint32_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{

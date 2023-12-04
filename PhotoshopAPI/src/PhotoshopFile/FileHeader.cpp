@@ -22,7 +22,7 @@ bool FileHeader::read(File& document)
 	m_Signature = Signature(signature);
 	if (m_Signature != Signature("8BPS"))
 	{
-		PSAPI_LOG_ERROR("FileHeader", "Signature does not match 8BPS, got '%s' instead", m_Signature);
+		PSAPI_LOG_ERROR("FileHeader", "Signature does not match 8BPS, got '%s' instead", m_Signature.m_Representation);
 		return false;
 	}
 
