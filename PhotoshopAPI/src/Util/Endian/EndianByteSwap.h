@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
+#include "AVX2EndianByteSwap.h"
 
 #include <vector>
 #include <algorithm>
@@ -13,44 +14,6 @@
 #include <limits.h>
 
 PSAPI_NAMESPACE_BEGIN
-
-
-// Perform an endianDecode operation on a binary array (std::vector) and return
-// a vector of the given type
-template<typename T>
-std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
-{
-    PROFILE_FUNCTION();
-    if (data.size() % sizeof(T) != 0)
-    {
-        PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
-            data.size(),
-            sizeof(T))
-    }
-
-    std::vector<T> nativeData;
-    nativeData.reserve(data.size() / sizeof(T));
-
-    // TODO this could potentially be done inline
-    for (uint64_t i = 0; i < data.size(); i += sizeof(T))
-    {
-        const uint8_t* byteData = reinterpret_cast<const uint8_t*>(data.data() + i);
-        nativeData.push_back(endianDecodeBE<T>(byteData));
-    }
-
-    return nativeData;
-}
-
-
-// Perform a endianDecode operation on an array (std::vector) of items in-place
-template<typename T>
-void endianDecodeBEArray(std::vector<T>& data)
-{
-    for (auto& item : data)
-    {
-        item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
-    }
-}
 
 
 // Perform a byteswap to go from big endian PS data to system endianness

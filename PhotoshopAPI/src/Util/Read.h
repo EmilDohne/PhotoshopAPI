@@ -2,7 +2,7 @@
 
 #include "Macros.h"
 
-#include "EndianByteSwap.h"
+#include "Endian/EndianByteSwap.h"
 #include "Enum.h"
 #include "Logger.h"
 #include "Struct/File.h"

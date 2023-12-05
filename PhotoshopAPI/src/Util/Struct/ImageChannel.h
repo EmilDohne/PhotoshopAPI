@@ -56,6 +56,8 @@ protected:
 template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
+	uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+
 	// Take a reference to a decompressed image vector stream and set the according member variables
 	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height) : BaseImageChannel(compression, channelID, width, height)
 	{
@@ -114,7 +116,6 @@ struct ImageChannel : public BaseImageChannel
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
-
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
 		std::vector<T> tmpData(m_OrigSize, 0);
@@ -143,8 +144,8 @@ struct ImageChannel : public BaseImageChannel
 
 private:
 	blosc2_schunk* m_Data;
-	uint32_t m_ChunkSize = 1000 * 10000;	// Size of each individual chunk in the schunk
 	uint32_t m_NumChunks;
+	int64_t m_RemainingSize;
 	uint64_t m_OrigSize;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
 
 };

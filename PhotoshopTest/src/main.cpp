@@ -62,7 +62,7 @@ std::vector<std::filesystem::path> relPaths =
 void profile()
 {
 	// Initialize our Instrumentor instance here to write out our profiling info
-	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "clevel_9_filters.json");
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "serial_no_avx.json");
 	NAMESPACE_PSAPI::CompressionTracker::Get().BeginSession("PSAPI_Profile");
 
 	std::filesystem::path currentDirectory = std::filesystem::current_path();

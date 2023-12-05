@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "EndianByteSwap.h"
+#include "Endian/EndianByteSwap.h"
 #include "File.h"
 
 #include <vector>
