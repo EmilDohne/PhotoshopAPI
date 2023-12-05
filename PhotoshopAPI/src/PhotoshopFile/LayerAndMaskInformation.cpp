@@ -424,7 +424,7 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
 	// Extract Channel Image Data in parallel. Note that we perform this insertion in 
-	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
