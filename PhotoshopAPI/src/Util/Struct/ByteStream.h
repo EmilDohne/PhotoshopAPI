@@ -24,11 +24,13 @@ struct ByteStream
 
 	// Read n amount of bytes into the given buffer
 	void read(char* buffer, uint64_t size);
+	void setOffsetAndRead(char* buffer, uint64_t offset, uint64_t size);
 
 	// Initialize a ByteStream from a given document and read the size into the ByteStream object
 	ByteStream(File& document, const uint64_t offset, const uint64_t size);
 
 private:
+	std::mutex m_Mutex;
 	std::vector<uint8_t> m_Buffer;
 	uint64_t m_Offset = 0u;	// Internal offset for our data
 	uint64_t m_FileOffset = 0u; // The location in the file we are at

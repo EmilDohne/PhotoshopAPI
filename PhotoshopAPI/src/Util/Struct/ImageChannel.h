@@ -82,9 +82,9 @@ struct ImageChannel : public BaseImageChannel
 		// Set parameters to help with compression and decompression
 		cparams.typesize = sizeof(T);
 		cparams.compcode = BLOSC_LZ4;
-		cparams.clevel = 9;
-		cparams.nthreads = 1;
-		dparams.nthreads = std::thread::hardware_concurrency();
+		cparams.clevel = 5;
+		cparams.nthreads = 4;
+		dparams.nthreads = 4;
 		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk

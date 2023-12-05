@@ -154,6 +154,27 @@ inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 }
 
 
+template <typename T>
+inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
+{
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	for (T item : data)
+	{
+		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
+	}
+
+	return data;
+}
+
+
 template<>
 inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t size)
 {
@@ -186,6 +207,24 @@ inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t size)
 	stream.read(reinterpret_cast<char*>(data.data()), size);
 	return data;
 }
+
+template<>
+inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
+{
+	std::vector<uint8_t> data(size);
+	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	return data;
+}
+
+template<>
+inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
+{
+	std::vector<int8_t> data(size);
+	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	return data;
+}
+
+
 
 
 template <typename T>
