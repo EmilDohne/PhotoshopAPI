@@ -3,6 +3,14 @@
 #include "Macros.h"
 #include "AVX2EndianByteSwap.h"
 
+#include <algorithm>
+#include <execution>
+#include <vector>
+#include <span>
+#include <array>
+#include <bit>
+
+
 PSAPI_NAMESPACE_BEGIN
 
 constexpr bool is_little_endian = (std::endian::native == std::endian::little);
@@ -15,120 +23,80 @@ template<typename T>
 std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 {
     PROFILE_FUNCTION();
-    if (data.size() % sizeof(T) != 0)
+    // We want to split up the vector into blocks that can easily fit into a L1 cache 
+    // that we process in parallel while the remaining data gets processed serially
+    // we assume L1 cache size to be >=64KB for most modern processors
+
+    // Additionally, we have to account for AVX2 SIMD size which is 256 bits or 32 bytes
+    // i.e. this means we want to split our data in blocks of 32B * 2KB (2048)
+    std::vector<T> decodedData(data.size() / sizeof(T));
+
+    const uint32_t cacheSize = 2048 * 32;
+    const uint32_t blockSize = 2048;
+    uint32_t numVecs = data.size() / 32;
+    uint32_t numBlocks = numVecs / blockSize;
+
+    // Calculate the leftover data that we will compute serially
+    uint32_t remainderTotal = data.size() % cacheSize;
+
+
+    // Copy each cache member to the individual items
+    std::vector<std::array<uint8_t, cacheSize>> cacheTemporary(numBlocks);
     {
-        PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
-            data.size(),
-            sizeof(T))
+        PROFILE_SCOPE("EndianDecodeMemcpy");
+        for (uint32_t i = 0; i < numBlocks; ++i)
+        {
+            void* cacheAddress = data.data() + cacheSize * i;
+            std::memcpy(cacheTemporary[i].data(), cacheAddress, cacheSize);
+        }
     }
 
-    std::vector<T> nativeData;
-    nativeData.reserve(data.size() / sizeof(T));
-
-    // TODO this could potentially be done inline
-    for (uint64_t i = 0; i < data.size(); i += sizeof(T))
     {
-        const uint8_t* byteData = reinterpret_cast<const uint8_t*>(data.data() + i);
-        nativeData.push_back(endianDecodeBE<T>(byteData));
+        PROFILE_SCOPE("ForEachEndianDecode");
+        // Iterate all the blocks and byteShuffle them in-place
+        std::for_each(std::execution::par, cacheTemporary.begin(), cacheTemporary.end(),
+            [](std::array<uint8_t, cacheSize>& cacheArray)
+            {
+                for (uint32_t i = 0; i < blockSize; ++i)
+                {
+                    std::span<uint8_t, 32> vecSpan{ cacheArray.data() + i * 32, 32 };
+                    if constexpr (is_little_endian)
+                    {
+                        byteShuffleAVX2_2Wide_LE(vecSpan.data());
+                    }
+                    else
+                    {
+                        byteShuffleAVX2_2Wide_BE(vecSpan.data());
+                    }
+                }
+            });
     }
 
-    return nativeData;
+    // Copy the AVX2 decoded data directly into our decodedData
+    std::memcpy(decodedData.data(), cacheTemporary.data(), static_cast<uint64_t>(numBlocks) * cacheSize);
+
+    // Note that we add by sizeof(uint16_t) here as we need to convert per index
+    // the remainderIndex is in binary and we must 
+    {
+        PROFILE_SCOPE("EndianDecodeSimple");
+        uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
+        for (uint32_t i = 0; i < remainderTotal; i += sizeof(T))
+        {
+            const uint8_t* memAddress = data.data() + remainderIndex + i;
+            // remainderIndex as well as i are both for uint8_t and we need half of that
+            const uint64_t decodedDataIndex = (remainderIndex + i) / sizeof(T);
+            decodedData[decodedDataIndex] = endianDecodeBE<T>(memAddress);
+        }
+    }
+
+    return decodedData;
 }
 
 
-// Specializations for the image depth formats as they are the most performance critical and we use AVX2 to vectorize the instructions
 template <>
 inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 {
     return data;
-}
-
-
-template<>
-inline std::vector<uint16_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
-{
-    PROFILE_FUNCTION();
-    if (data.size() % sizeof(uint16_t) != 0)
-    {
-        PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
-            data.size(),
-            sizeof(uint16_t))
-    }
-
-    std::vector<uint16_t> nativeData(data.size() / sizeof(uint16_t));
-
-    // We divide by 32 here as AVX2 has 256bit or 32byte wide registers
-    size_t numVecs = data.size() / 32;
-    size_t remainderVecs = data.size() % 32;
-
-    // Byte swap what we can in place with AVX2 and memcpy it over after the fact
-    for (int i = 0; i < numVecs; ++i)
-    {
-        std::span<uint8_t, 32> vecSpan{ data.data() + i * 32, 32 };
-        if constexpr (is_little_endian)
-        {
-            byteShuffleAVX2_2Wide_LE(vecSpan);
-        }
-        else
-        {
-            byteShuffleAVX2_2Wide_BE(vecSpan);
-        }
-    }
-
-    std::memcpy(reinterpret_cast<void*>(nativeData.data()), reinterpret_cast<void*>(data.data()), numVecs * 32);
-
-    // Decode the remaining items normally
-    for (int i = 0; i < remainderVecs; ++i)
-    {
-        // Use 16 as we have 256bits that can fit 16 uint16_t and multiply index by 2 which is the byte width
-        nativeData[numVecs * 16 + i] = endianDecodeBE<uint16_t>(data.data() + numVecs * 32 + i * 2);
-    }
-
-    return nativeData;
-}
-
-
-template<>
-inline std::vector<float32_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
-{
-    PROFILE_FUNCTION();
-    if (data.size() % sizeof(float32_t) != 0)
-    {
-        PSAPI_LOG_ERROR("endianDecodeBEBinaryArray", "Tried to decode a binary array which is not a multiple of sizeof(T), got size: %i and sizeof T %i",
-            data.size(),
-            sizeof(float32_t))
-    }
-
-    std::vector<float32_t> nativeData(data.size() / sizeof(float32_t));
-
-    // We divide by 32 here as AVX2 has 256bit or 32byte wide registers
-    size_t numVecs = data.size() / 32;
-    size_t remainderVecs = data.size() % 32;
-
-    // Byte swap what we can in place with AVX2 and memcpy it over after the fact
-    for (int i = 0; i < numVecs; ++i)
-    {
-        std::span<uint8_t, 32> vecSpan{ data.data() + i * 32, 32 };
-        if constexpr (is_little_endian)
-        {
-            byteShuffleAVX2_4Wide_LE(vecSpan);
-        }
-        else
-        {
-            byteShuffleAVX2_4Wide_BE(vecSpan);
-        }
-    }
-
-    std::memcpy(reinterpret_cast<void*>(nativeData.data()), reinterpret_cast<void*>(data.data()), numVecs * 32);
-
-    // Decode the remaining items normally
-    for (int i = 0; i < remainderVecs; ++i)
-    {
-        // Use 8 as we have 256bits that can fit 8 float32_t and multiply index by 4 which is the byte width
-        nativeData[numVecs * 8 + i] = endianDecodeBE<uint16_t>(data.data() + numVecs * 32 + i * 4);
-    }
-
-    return nativeData;
 }
 
 
@@ -141,5 +109,64 @@ void endianDecodeBEArray(std::vector<T>& data)
         item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
     }
 }
+
+
+template<>
+inline void endianDecodeBEArray(std::vector<uint16_t>& data)
+{
+    PROFILE_FUNCTION();
+    // We want to split up the vector into blocks that can easily fit into a L1 cache 
+    // that we process in parallel while the remaining data gets processed serially
+    // we assume L1 cache size to be >=64KB for most modern processors
+
+    // Additionally, we have to account for AVX2 SIMD size which is 256 bits or 32 bytes
+    // i.e. this means we want to split our data in blocks of 32B * 2KB (2048)
+    // TODO reset this to 2048
+    const uint32_t cacheSize = 2048 * 32 / sizeof(uint16_t);
+    const uint32_t blockSize = 2048;
+    uint32_t numVecs = data.size() / 32 / sizeof(uint16_t);
+    uint32_t numBlocks = numVecs / blockSize;
+
+    // Calculate the leftover data that we will compute serially
+    uint32_t remainderTotal = data.size() % cacheSize;
+
+    // Create spans of each of the cache blocks to decode them in-place
+    std::vector<std::span<uint16_t>> cacheTemporary(numBlocks);
+    {
+        for (uint32_t i = 0; i < numBlocks; ++i)
+        {
+            auto cacheAddress = data.data() + cacheSize * i;
+            std::span<uint16_t> tmpSpan(cacheAddress, cacheSize);
+            cacheTemporary[i] = tmpSpan;
+        }
+    }
+
+    // Iterate all the blocks and byteShuffle them in-place
+    std::for_each(std::execution::par, cacheTemporary.begin(), cacheTemporary.end(),
+        [](std::span<uint16_t>& cacheSpan)
+        {
+            for (uint32_t i = 0; i < blockSize; ++i)
+            {
+                uint8_t* vecMemoryAddress = reinterpret_cast<uint8_t*>(cacheSpan.data()) + i * 32;
+                if constexpr (is_little_endian)
+                {
+                    byteShuffleAVX2_2Wide_LE(vecMemoryAddress);
+                }
+                else
+                {
+                    byteShuffleAVX2_2Wide_BE(vecMemoryAddress);
+                }
+            }
+        });
+
+    // Decode the remainder using just a regular endianDecode
+    uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
+    for (uint64_t i = 0; i < remainderTotal; ++i)
+    {
+        const uint8_t* memAddress = reinterpret_cast<uint8_t*>(data.data() + remainderIndex + i);
+        data[remainderIndex + i] = endianDecodeBE<uint16_t>(memAddress);
+    }
+}
+
 
 PSAPI_NAMESPACE_END

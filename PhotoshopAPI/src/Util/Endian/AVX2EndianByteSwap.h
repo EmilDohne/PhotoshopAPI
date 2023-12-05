@@ -3,9 +3,6 @@
 #include "Macros.h"
 #include "Logger.h"
 
-#include <span>
-#include <bit>
-
 #include <immintrin.h>
 
 PSAPI_NAMESPACE_BEGIN
@@ -14,11 +11,11 @@ PSAPI_NAMESPACE_BEGIN
 // This function requires the data span to be 32 wide (256 bit register / 8 bits).
 // Please perform checks on whether a byte shuffle is even required before using
 // this function
-inline void byteShuffleAVX2_2Wide_LE(std::span<uint8_t> data)
+inline void byteShuffleAVX2_2Wide_LE(uint8_t* data)
 {
 	// Load our span into a 256 wide register
 	__m256i vec = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&data[0]));
-
+	
 	// Shuffle with a byte mask, note the descending order here
 	vec = _mm256_shuffle_epi8(vec, _mm256_set_epi8(
 		30, 31, 28, 29, 26, 27, 24, 25,
@@ -32,7 +29,7 @@ inline void byteShuffleAVX2_2Wide_LE(std::span<uint8_t> data)
 }
 
 
-inline void byteShuffleAVX2_2Wide_BE(std::span<uint8_t> data)
+inline void byteShuffleAVX2_2Wide_BE(uint8_t* data)
 {
 	// No need to do anything for big endian systems
 }
@@ -42,7 +39,7 @@ inline void byteShuffleAVX2_2Wide_BE(std::span<uint8_t> data)
 // This function requires the data span to be 32 wide (256 bit register / 8 bits)
 // Please perform checks on whether a byte shuffle is even required before using
 // this function
-inline void byteShuffleAVX2_4Wide_LE(std::span<uint8_t> data)
+inline void byteShuffleAVX2_4Wide_LE(uint8_t* data)
 {
 	// Load our span into a 256 wide register
 	__m256i vec = _mm256_loadu_si256(reinterpret_cast<__m256i*>(&data[0]));
@@ -60,7 +57,7 @@ inline void byteShuffleAVX2_4Wide_LE(std::span<uint8_t> data)
 }
 
 
-inline void byteShuffleAVX2_4Wide_BE(std::span<uint8_t> data)
+inline void byteShuffleAVX2_4Wide_BE(uint8_t* data)
 {
 	// No need to do anything for big endian systems
 }
