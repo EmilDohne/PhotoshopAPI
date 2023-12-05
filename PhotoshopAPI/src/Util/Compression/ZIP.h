@@ -2,13 +2,16 @@
 
 #include "Macros.h"
 #include "Logger.h"
-#include "EndianByteSwap.h"
+#include "Endian/EndianByteSwap.h"
 #include "Struct/ByteStream.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 #include "zlib-ng.h"
 
 #include <algorithm>
+#include <execution>
+#include <vector>
+#include <tuple>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -50,6 +53,32 @@ namespace {
 		return decompressedData;
 	}
 
+	inline void predictionDecodeRow(uint64_t y, uint64_t width, std::span<uint8_t> bitShiftedData)
+	{
+		for (uint64_t x = 1; x < width; ++x) {
+			bitShiftedData[x] += bitShiftedData[x - 1];
+		}
+	}
+
+	// Creates two vectors that can be used as iterators for an image by height or width. 
+	inline std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> createImageIterators(const uint32_t width, const uint32_t height)
+	{
+		std::vector<uint32_t> horizontalIter;
+		std::vector<uint32_t> verticalIter;
+		horizontalIter.resize(width);
+		verticalIter.resize(height);
+
+		for (uint32_t i = 0; i < width; ++i)
+		{
+			horizontalIter[i] = i;
+		}
+		for (uint32_t i = 0; i < height; ++i)
+		{
+			verticalIter[i] = i;
+		};
+
+		return std::make_tuple(horizontalIter, verticalIter);
+	}
 }
 
 
@@ -86,15 +115,20 @@ std::vector<T> RemovePredictionEncoding(std::vector<uint8_t>& decompressedData, 
 			bitShiftedData.size())
 	}
 
+	auto imageIters = createImageIterators(width, height);
+	std::vector<uint32_t> horizontalIter = std::get<0>(imageIters);
+	std::vector<uint32_t> verticalIter = std::get<1>(imageIters);
+
 	// Perform prediction decoding per scanline of data in-place
-	for (uint64_t y = 0; y < height; ++y)
-	{
-		for (uint64_t x = 1; x < width; ++x)
+	std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
+		[&](uint32_t y) 
 		{
-			// Simple differencing: decode by adding the difference to the previous value
-			bitShiftedData[width * y + x] += bitShiftedData[width * y + x - 1];
-		}
-	}
+			for (uint64_t x = 1; x < width; ++x)
+			{
+				// Simple differencing: decode by adding the difference to the previous value
+				bitShiftedData[static_cast<uint64_t>(width) * y + x] += bitShiftedData[static_cast<uint64_t>(width) * y + x - 1];
+			}
+		});
 
 	return bitShiftedData;
 }
