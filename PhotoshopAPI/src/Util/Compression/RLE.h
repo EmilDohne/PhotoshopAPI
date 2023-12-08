@@ -3,7 +3,8 @@
 #include "Macros.h"
 #include "Read.h"
 #include "Logger.h"
-#include "EndianByteSwap.h"
+#include "Endian/EndianByteSwap.h"
+#include "Endian/EndianByteSwapArr.h"
 #include "Struct/File.h"
 #include "Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
@@ -61,16 +62,33 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 
 // Reads and decompresses a single channel using the packbits algorithm
 template<typename T>
-std::vector<T> DecompressRLE(ByteStream& stream, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
     PROFILE_FUNCTION();
 	// Photoshop first stores the byte counts of all the scanlines, this is 2 or 4 bytes depending on 
 	// if the document is PSD or PSB
 	uint64_t scanlineTotalSize = 0u;
-	for (int i = 0; i < height; ++i)
-	{
-		scanlineTotalSize += ExtractWidestValue<uint16_t, uint32_t>(ReadBinaryDataVariadic<uint16_t, uint32_t>(stream, header.m_Version));
-	}
+    //
+    if (header.m_Version == Enum::Version::Psd)
+    {
+        std::vector<uint16_t> buff(height);
+        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
+        endianDecodeBEArray<uint16_t>(buff);
+        for (auto item : buff)
+        {
+            scanlineTotalSize += item;
+        }
+    }
+    else
+    {
+        std::vector<uint32_t> buff(height);
+        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
+        endianDecodeBEArray<uint32_t>(buff);
+        for (auto item : buff)
+        {
+            scanlineTotalSize += item;
+        }
+    }
 
     // Find out the size of the data without the scanline sizes. For example, if the document is 64x64 pixels in 8 bit mode we have 128 bytes of memory to store the scanline size
     uint64_t dataSize = compressedSize - static_cast<uint64_t>(SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * height;
@@ -84,7 +102,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, const FileHeader& header, const
 
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(scanlineTotalSize);
-    stream.read(reinterpret_cast<char*>(compressedData.data()), scanlineTotalSize);
+    stream.setOffsetAndRead(reinterpret_cast<char*>(compressedData.data()), offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
 
 	// Decompress using the PackBits algorithm
     std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData, width, height);

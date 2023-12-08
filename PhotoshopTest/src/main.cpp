@@ -8,7 +8,7 @@
 #include "LayeredFile/LayeredFile.h"
 
 #include "Profiling/Perf/Instrumentor.h"
-#include "Profiling/Memory/AllocationMetrics.h"
+#include "Profiling/Memory/CompressionTracker.h"
 
 #include <filesystem>
 #include <vector>
@@ -62,7 +62,8 @@ std::vector<std::filesystem::path> relPaths =
 void profile()
 {
 	// Initialize our Instrumentor instance here to write out our profiling info
-	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile");
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "parallel_cblosc.json");
+	NAMESPACE_PSAPI::CompressionTracker::Get().BeginSession("PSAPI_Profile");
 
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
@@ -100,6 +101,7 @@ void profile()
 		}
 	}
 
+	NAMESPACE_PSAPI::CompressionTracker::Get().EndSession();
 	NAMESPACE_PSAPI::Instrumentor::Get().EndSession();
 }
 

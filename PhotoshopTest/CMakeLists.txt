@@ -37,9 +37,11 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blos
 target_link_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 target_link_libraries(${EXE} PRIVATE blosc2_static)
 
-#include and link zlib-ng headers
-target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7")
-target_link_libraries(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/internal-complibs/zlib-ng-2.0.7/Release/zlibstatic-ng.lib")
+#include zlib-ng headers
+target_include_directories(${EXE} PUBLIC "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
+target_include_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng")
+target_link_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/Release")
+target_link_libraries(${EXE} PUBLIC zlibstatic-ng)
 
 
 # Copy the documents/ folder to the build dir

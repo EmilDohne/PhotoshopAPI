@@ -326,41 +326,61 @@ ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header,
 	m_Offset = offset;
 	m_Size = 0;
 
+	// Store the offsets into each of the channels, note that these are ByteStream offsets, not file offsets!
+	std::vector<uint64_t> channelOffsets;
+	uint64_t countingOffset = 0;
 	for (const auto& channel : layerRecord.m_ChannelInformation)
 	{
-		uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
-		uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-
-		// If the channel is a mask the extents are actually stored in the layermaskdata
-		if (channel.m_ChannelID == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID == Enum::ChannelID::RealUserSuppliedLayerMask)
-		{
-			if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
-			{
-				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
-				width = mask.m_Right - mask.m_Left;
-				height = mask.m_Bottom - mask.m_Top;
-			}
-		}
-		// Get the compression of the channel
-		Enum::Compression channelCompression = Enum::compressionMap.at(ReadBinaryData<uint16_t>(stream));
-		this->m_Size += channel.m_Size;
-
-		if (header.m_Depth == Enum::BitDepth::BD_8)
-		{
-			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
-			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
-		}
-		else if (header.m_Depth == Enum::BitDepth::BD_16)
-		{
-			std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
-			this->m_ImageData.push_back(std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
-		}
-		if (header.m_Depth == Enum::BitDepth::BD_32)
-		{
-			std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelCompression, header, width, height, channel.m_Size - 2u);
-			this->m_ImageData.push_back(std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height));
-		}
+		channelOffsets.push_back(countingOffset);
+		countingOffset += channel.m_Size;
 	}
+
+	// Preallocate the ImageData vector as we need valid indices for the for each loop
+	m_ImageData.resize(layerRecord.m_ChannelInformation.size());
+
+	// Iterate the channels in parallel
+	std::for_each(std::execution::par, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
+		[&](const LayerRecords::ChannelInformation& channel)
+		{
+			uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
+			uint64_t channelOffset = channelOffsets[index];
+
+			uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
+			uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
+
+			// If the channel is a mask the extents are actually stored in the layermaskdata
+			if (channel.m_ChannelID == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID == Enum::ChannelID::RealUserSuppliedLayerMask)
+			{
+				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
+				{
+					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
+					width = mask.m_Right - mask.m_Left;
+					height = mask.m_Bottom - mask.m_Top;
+				}
+			}
+			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
+			uint16_t compressionNum = 0;
+			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
+			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
+			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
+			this->m_Size += channel.m_Size;
+
+			if (header.m_Depth == Enum::BitDepth::BD_8)
+			{
+				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				m_ImageData[index] = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+			}
+			else if (header.m_Depth == Enum::BitDepth::BD_16)
+			{
+				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				m_ImageData[index] = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+			}
+			if (header.m_Depth == Enum::BitDepth::BD_32)
+			{
+				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				m_ImageData[index] = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+			}
+		});
 }
 
 
@@ -424,7 +444,7 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
 	// Extract Channel Image Data in parallel. Note that we perform this insertion in 
-	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord) 
+	std::for_each(m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
@@ -439,13 +459,10 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		auto result = ChannelImageData(stream, header, tmpOffset, layerRecord);
 
 		// As each index is unique we do not need to worry about locking the mutex here
-		localResults[index] = (std::move(result));
+		localResults[index] = std::move(result);
 	});
-	// Combine results after the parallel loop
-	{
-		std::lock_guard<std::mutex> lock(document.m_Mutex);
-		m_ChannelImageData.insert(m_ChannelImageData.end(), std::make_move_iterator(localResults.begin()), std::make_move_iterator(localResults.end()));
-	}
+	// Combine results after the loop
+	m_ChannelImageData.insert(m_ChannelImageData.end(), std::make_move_iterator(localResults.begin()), std::make_move_iterator(localResults.end()));
 
 	// Set the offset to where it is supposed to be as we cannot guarantee the location of the marker after jumping back and forth in image sections
 	document.setOffset(imageDataOffset);

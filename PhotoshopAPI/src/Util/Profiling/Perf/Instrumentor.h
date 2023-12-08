@@ -22,14 +22,16 @@
 #include <thread>
 
 
+#pragma warning (push)
+#pragma warning (disable : 4117)
 // Alias __FUNCSIG__ for non Windows platforms as well
 #ifdef __FUNCSIG__
 #define __FUNCSIG__ __PRETTY_FUNCTION__
 #endif
+#pragma warning (pop)
 
 
 // TODO make it so you can disable this via cmake
-#define PSAPI_PROFILING 1
 #if PSAPI_PROFILING
 #define PROFILE_SCOPE(name) NAMESPACE_PSAPI::InstrumentationTimer timer##__LINE__(name)
 #define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCTION__)

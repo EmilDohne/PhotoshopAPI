@@ -21,7 +21,14 @@ project ("PhotoshopAPIBuild")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
 
+include_directories()
+
 # Add thirdparty libraries
+set(PREFER_EXTERNAL_ZLIB ON)
+set (ZLIB_NG_LIBRARY "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/Release/zlib-ng.lib")
+set (ZLIB_NG_INCLUDE_DIR "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
+
+add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 
 # Set the test project (PhotoshopTest) as the default target
