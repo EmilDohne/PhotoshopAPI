@@ -74,23 +74,34 @@ namespace {
 
 		return std::make_tuple(horizontalIter, verticalIter);
 	}
+
+	// Creates one vectors that can be used as iterators for an image by height. 
+	inline std::vector<uint32_t> createVerticalImageIterator(const uint32_t height)
+	{
+		std::vector<uint32_t> verticalIter;
+		verticalIter.resize(height);
+		for (uint32_t i = 0; i < height; ++i)
+		{
+			verticalIter[i] = i;
+		};
+
+		return verticalIter;
+	}
 }
 
 
 // Reverse the prediction encoding after having decompressed the zip compressed byte stream as well as converting from BE to native
 template <typename T>
-std::vector<T> RemovePredictionEncoding(std::vector<T>& decompressedData, const uint32_t width, const uint32_t height)
+std::vector<T> RemovePredictionEncoding(std::vector<T> decompressedData, const uint32_t width, const uint32_t height)
 {
 	PROFILE_FUNCTION();
 	// Convert decompressed data to native endianness in-place
 	endianDecodeBEArray<T>(decompressedData);
 
-	auto imageIters = createImageIterators(width, height);
-	std::vector<uint32_t> horizontalIter = std::get<0>(imageIters);
-	std::vector<uint32_t> verticalIter = std::get<1>(imageIters);
+	std::vector<uint32_t> verticalIter = createVerticalImageIterator(height);
 
 	// Perform prediction decoding per scanline of data in-place
-	std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
+	std::for_each(std::execution::par_unseq, verticalIter.begin(), verticalIter.end(),
 		[&](uint32_t y) 
 		{
 			for (uint64_t x = 1; x < width; ++x)
@@ -100,14 +111,14 @@ std::vector<T> RemovePredictionEncoding(std::vector<T>& decompressedData, const 
 			}
 		});
 
-	return decompressedData;
+	return std::move(decompressedData);
 }
 
 
 // We need to specialize here as 32-bit files have their bytes interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
 // And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
 template <>
-inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t>& decompressedData, const uint32_t width, const uint32_t height)
+inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> decompressedData, const uint32_t width, const uint32_t height)
 {
 	PROFILE_FUNCTION();
 
@@ -180,7 +191,7 @@ std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const FileHead
 	std::vector<T> decompressedData = UnZip<T>(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 
 	// Convert decompressed data to native endianness in-place
-	//endianDecodeBEArray<T>(decompressedData);
+	endianDecodeBEArray<T>(decompressedData);
 
 	return decompressedData;
 }
@@ -198,9 +209,9 @@ std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, cons
 	std::vector<T> decompressedData = UnZip<T>(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 
 	// Remove the prediction encoding from the data as well as converting to native endianness
-	std::vector<T> outData = RemovePredictionEncoding<T>(decompressedData, width, height);
+	std::vector<T> decodedData = RemovePredictionEncoding<T>(std::move(decompressedData), width, height);
 
-	return outData;
+	return decodedData;
 }
 
 PSAPI_NAMESPACE_END
