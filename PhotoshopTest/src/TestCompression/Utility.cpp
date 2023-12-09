@@ -10,7 +10,7 @@
 #include <type_traits>
 #include <optional>
 
-//// Explicitly instantiate these templates
+/// Explicitly instantiate these templates
 template void checkCompressionFileImpl<uint8_t>(NAMESPACE_PSAPI::LayerInfo& layerInformation, const double zero_val, const double val_128, const double one_val, const double red_zero_val);
 template void checkCompressionFileImpl<uint16_t>(NAMESPACE_PSAPI::LayerInfo& layerInformation, const double zero_val, const double val_128, const double one_val, const double red_zero_val);
 template void checkCompressionFileImpl<float32_t>(NAMESPACE_PSAPI::LayerInfo& layerInformation, const double zero_val, const double val_128, const double one_val, const double red_zero_val);

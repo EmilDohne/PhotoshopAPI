@@ -23,7 +23,9 @@ struct Layer
 	uint64_t m_Width;
 	uint64_t m_Height;
 
+	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_Opacity(255), m_Width(0u), m_Height(0u) {};
 	Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
+	virtual ~Layer() = default;
 };
 
 PSAPI_NAMESPACE_END

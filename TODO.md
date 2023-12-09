@@ -16,14 +16,16 @@
 - [X] Read File Header
 - [X] Read ColorModeData
 - [X] Read Image Resources
-- [ ] Read Layer and Mask information
+- [x] Read Layer and Mask information
     - [X] Read Global Layer Mask Info
     - [X] Read Layer Records
         - [X] Add parsing of tagged blocks 
-    - [ ] Read Channel Image Data
-        - [ ] Compress using blosc2
-    - [ ] Read Additional Layer Information
+    - [x] Read Channel Image Data
+        - [x] Compress using blosc2
+    - [x] Read Additional Layer Information
 - [ ] Read Merged Image Data Section
     - [ ] Compress using blosc2
 
 ## LayeredFile
+
+- [x] Parse Read file

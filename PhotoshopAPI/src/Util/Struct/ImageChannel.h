@@ -145,7 +145,6 @@ struct ImageChannel : public BaseImageChannel
 private:
 	blosc2_schunk* m_Data;
 	uint32_t m_NumChunks;
-	int64_t m_RemainingSize;
 	uint64_t m_OrigSize;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
 
 };

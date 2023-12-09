@@ -7,6 +7,7 @@ add_executable(${EXE}
     "${PROJECT_SOURCE_DIR}/src/TestCompression/Utility.cpp"
     "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
     "${PROJECT_SOURCE_DIR}/src/TestCompression/TestZIPPrediction.cpp"
+    "${PROJECT_SOURCE_DIR}/src/TestGroups/TestLayerDetection.cpp"
 )
 
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src/TestCompression")

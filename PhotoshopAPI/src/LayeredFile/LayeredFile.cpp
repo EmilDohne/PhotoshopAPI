@@ -1,6 +1,7 @@
 #include "LayeredFile.h"
 
 #include "Macros.h"
+#include "StringUtil.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "Struct/TaggedBlock.h"
 #include "LayerTypes/Layer.h"
@@ -13,7 +14,11 @@
 #include "LayerTypes/SmartObjectLayer.h"
 #include "LayerTypes/TextLayer.h"
 
+
 #include <vector>
+#include <span>
+#include <variant>
+#include <memory>
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -93,14 +98,63 @@ LayeredFile<T>::LayeredFile(Enum::BitDepth bitDepth, Enum::ColorMode colorMode, 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
+std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 {
-	auto& layerRecords = file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
-	auto& channelImageData = file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
+	std::vector<std::string> segments = splitString(path, '/');
+	for (const auto layer : m_Layers)
+	{
+		// Get the layer name and recursively check the path
+		if (layer->m_LayerName == segments[0])
+		{
+			// This is a simple path with no nested layers
+			if (segments.size() == 1)
+			{
+				return layer;
+			}
+			// Pass an index of one as we already found the first layer
+			return LayeredFileImpl::findLayerRecurse(layer, segments, 1);
+		}
+	}
+	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str())
+	return nullptr;
+}
 
-	if (layerRecords.size() != channelImageData.size())
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
+{
+	auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
+	auto* channelImageData = &file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
+
+	if (layerRecords->size() != channelImageData->size())
 	{
 		PSAPI_LOG_ERROR("LayeredFile", "LayerRecords Size does not match channelImageDataSize. File appears to be corrupted")
+	}
+
+	// 16 and 32 bit files store their layer records in the additional layer information section. We must therefore overwrite our previous results
+	if (sizeof(T) >= 2u && file->m_LayerMaskInfo.m_AdditionalLayerInfo.has_value())
+	{
+		const AdditionalLayerInfo& additionalLayerInfo = file->m_LayerMaskInfo.m_AdditionalLayerInfo.value();
+		auto lr16TaggedBlock = additionalLayerInfo.getTaggedBlock<Lr16TaggedBlock>(Enum::TaggedBlockKey::Lr16);
+		auto lr32TaggedBlock = additionalLayerInfo.getTaggedBlock<Lr32TaggedBlock>(Enum::TaggedBlockKey::Lr32);
+		if (lr16TaggedBlock.has_value())
+		{
+			auto block = lr16TaggedBlock.value();
+			layerRecords = &block->m_Data.m_LayerRecords;
+			channelImageData = &block->m_Data.m_ChannelImageData;
+		}
+		else if (lr32TaggedBlock.has_value())
+		{
+			auto block = lr32TaggedBlock.value();
+			layerRecords = &block->m_Data.m_LayerRecords;
+			channelImageData = &block->m_Data.m_ChannelImageData;
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "PhotoshopFile does not seem to contain a Lr16 or Lr32 Tagged block which would hold layer information")
+		}
 	}
 
 	// Extract and iterate the layer records. We do this in reverse as Photoshop stores the layers in reverse
@@ -116,9 +170,9 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_pt
 	// Group
 	//
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
-	auto layerRecordsIterator = layerRecords.rbegin();
-	auto channelImageDataIterator = channelImageData.rbegin();
-	std::vector<layerVariant<T>> root = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, layerRecordsIterator, channelImageDataIterator);
+	auto layerRecordsIterator = layerRecords->rbegin();
+	auto channelImageDataIterator = channelImageData->rbegin();
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
 
 	return root;
 }
@@ -127,13 +181,13 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchy(std::unique_pt
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
+std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecurse(
 	const std::vector<LayerRecord>& layerRecords,
 	const std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
 	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator)
 {
-	std::vector<layerVariant<T>> root;
+	std::vector<std::shared_ptr<Layer<T>>> root;
 
 	// Iterate the layer records and channelImageData. These are always the same size
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
@@ -142,15 +196,15 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 		// Get the variant of channelImageDatas and extract the type we have
 		const auto& channelImage = *channelImageDataIterator;
 
-		layerVariant<T> layer = identifyLayerType<T>(layerRecord, channelImage);
+		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
 
-		if (auto groupLayerPtr = std::get_if<GroupLayer<T>>(&layer))
+		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			// Recurse a level down
 			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
-			root.push_back(*groupLayerPtr);
+			root.push_back(groupLayerPtr);
 		}
-		else if (auto sectionDividerPtr = std::get_if<SectionDividerLayer<T>>(&layer))
+		else if (auto groupLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
 		{
 			// We have reached the end of the current nested section therefore we return the current root object we hold;
 			return root;
@@ -169,7 +223,7 @@ std::vector<layerVariant<T>> LayeredFileImpl::buildLayerHierarchyRecurse(
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
+std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
 {
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
@@ -185,13 +239,13 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 			auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrArtboard);
 			if (artboardTaggedBlock.has_value())
 			{
-				return ArtboardLayer<T>();
+				return std::make_shared<ArtboardLayer<T>>(ArtboardLayer<T>());
 			}
-			return GroupLayer<T>(layerRecord, channelImageData);
+			return std::make_shared<GroupLayer<T>>(GroupLayer<T>(layerRecord, channelImageData));
 		}
 		else if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::BoundingSection)
 		{
-			return SectionDividerLayer<T>();
+			return std::make_shared<SectionDividerLayer<T>>(SectionDividerLayer<T>());
 		}
 		// If it is Enum::SectionDivider::Any this is just any other type of layer
 		// we do not need to worry about checking for correctness here as the tagged block takes care of that 
@@ -201,14 +255,14 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 	auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTypeTool);
 	if (typeToolTaggedBlock.has_value())
 	{
-		return TextLayer<T>();
+		return std::make_shared<TextLayer<T>>(TextLayer<T>());
 	}
 
 	// Check for Smart Object Layers
 	auto smartObjectTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrSmartObject);
 	if (typeToolTaggedBlock.has_value())
 	{
-		return SmartObjectLayer<T>();
+		return std::make_shared<SmartObjectLayer<T>>(SmartObjectLayer<T>());
 	}
 
 	// Check if it is one of many adjustment layers
@@ -259,7 +313,7 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 			|| selectiveColorTaggedBlock.has_value()
 			)
 		{
-			return AdjustmentLayer<T>();
+			return std::make_shared<AdjustmentLayer<T>>(AdjustmentLayer<T>());
 		}
 #undef getGenericTaggedBlock
 	}
@@ -280,13 +334,42 @@ layerVariant<T> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecor
 				|| vecStrokeContentDataTaggedBlock.has_value()
 				)
 			{
-				return ShapeLayer<T>();
+				return std::make_shared<ShapeLayer<T>>(ShapeLayer<T>());
 			}
 #undef getGenericTaggedBlock
 		}
 	}
 
-	return ImageLayer<T>(layerRecord, channelImageData);
+	return std::make_shared<ImageLayer<T>>(ImageLayer<T>(layerRecord, channelImageData));
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index)
+{
+	// We must first check that the parent layer passed in is actually a group layer
+	if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+	{
+		for (const auto layerPtr : groupLayerPtr->m_Layers)
+		{
+			// Get the layer name and recursively check the path
+			if (layerPtr->m_LayerName == path[index])
+			{
+				if (index == path.size() - 1)
+				{
+					// This is the last element and we return the item and propagate it up
+					return layerPtr;
+				}
+				return LayeredFileImpl::findLayerRecurse(layerPtr, path, index+1);
+			}
+		}
+		PSAPI_LOG_WARNING("LayeredFile", "Failed to find layer '%s' based on the path", path[index].c_str())
+		return nullptr;
+	}
+	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children")
+	return nullptr;
 }
 
 
