@@ -111,7 +111,8 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 			{
 				return layer;
 			}
-			return LayeredFileImpl::findLayerRecurse(layer, segments, 0);
+			// Pass an index of one as we already found the first layer
+			return LayeredFileImpl::findLayerRecurse(layer, segments, 1);
 		}
 	}
 	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str())
@@ -124,12 +125,36 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 template <typename T>
 std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
 {
-	auto& layerRecords = file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
-	auto& channelImageData = file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
+	auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
+	auto* channelImageData = &file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
 
-	if (layerRecords.size() != channelImageData.size())
+	if (layerRecords->size() != channelImageData->size())
 	{
 		PSAPI_LOG_ERROR("LayeredFile", "LayerRecords Size does not match channelImageDataSize. File appears to be corrupted")
+	}
+
+	// 16 and 32 bit files store their layer records in the additional layer information section. We must therefore overwrite our previous results
+	if (sizeof(T) >= 2u && file->m_LayerMaskInfo.m_AdditionalLayerInfo.has_value())
+	{
+		const AdditionalLayerInfo& additionalLayerInfo = file->m_LayerMaskInfo.m_AdditionalLayerInfo.value();
+		auto lr16TaggedBlock = additionalLayerInfo.getTaggedBlock<Lr16TaggedBlock>(Enum::TaggedBlockKey::Lr16);
+		auto lr32TaggedBlock = additionalLayerInfo.getTaggedBlock<Lr32TaggedBlock>(Enum::TaggedBlockKey::Lr32);
+		if (lr16TaggedBlock.has_value())
+		{
+			auto block = lr16TaggedBlock.value();
+			layerRecords = &block->m_Data.m_LayerRecords;
+			channelImageData = &block->m_Data.m_ChannelImageData;
+		}
+		else if (lr32TaggedBlock.has_value())
+		{
+			auto block = lr32TaggedBlock.value();
+			layerRecords = &block->m_Data.m_LayerRecords;
+			channelImageData = &block->m_Data.m_ChannelImageData;
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "PhotoshopFile does not seem to contain a Lr16 or Lr32 Tagged block which would hold layer information")
+		}
 	}
 
 	// Extract and iterate the layer records. We do this in reverse as Photoshop stores the layers in reverse
@@ -145,9 +170,9 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 	// Group
 	//
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
-	auto layerRecordsIterator = layerRecords.rbegin();
-	auto channelImageDataIterator = channelImageData.rbegin();
-	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, layerRecordsIterator, channelImageDataIterator);
+	auto layerRecordsIterator = layerRecords->rbegin();
+	auto channelImageDataIterator = channelImageData->rbegin();
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
 
 	return root;
 }
@@ -324,6 +349,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& 
 template <typename T>
 std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index)
 {
+	// We must first check that the parent layer passed in is actually a group layer
 	if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
 	{
 		for (const auto layerPtr : groupLayerPtr->m_Layers)
@@ -331,7 +357,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 			// Get the layer name and recursively check the path
 			if (layerPtr->m_LayerName == path[index])
 			{
-				if (index == path.size())
+				if (index == path.size() - 1)
 				{
 					// This is the last element and we return the item and propagate it up
 					return layerPtr;
@@ -343,6 +369,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 		return nullptr;
 	}
 	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children")
+	return nullptr;
 }
 
 
