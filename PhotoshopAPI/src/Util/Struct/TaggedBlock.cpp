@@ -12,7 +12,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TaggedBlock::TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding)
+void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding)
 {
 	m_Offset = offset;
 	m_Signature = signature;
@@ -41,7 +41,7 @@ TaggedBlock::TaggedBlock(File& document, const FileHeader& header, const uint64_
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-Lr16TaggedBlock::Lr16TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding) 
+void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding) 
 {
 	m_Key = Enum::TaggedBlockKey::Lr16;
 	m_Offset = offset;
@@ -57,7 +57,7 @@ Lr16TaggedBlock::Lr16TaggedBlock(File& document, const FileHeader& header, const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-Lr32TaggedBlock::Lr32TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
+void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
 	m_Key = Enum::TaggedBlockKey::Lr32;
 	m_Offset = offset;
@@ -73,7 +73,7 @@ Lr32TaggedBlock::Lr32TaggedBlock(File& document, const FileHeader& header, const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LrSectionTaggedBlock::LrSectionTaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
+void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
 	m_Key = Enum::TaggedBlockKey::lrSectionDivider;
 	m_Offset = offset;

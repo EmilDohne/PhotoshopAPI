@@ -53,25 +53,29 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	{
 		if (taggedBlock.value() == Enum::TaggedBlockKey::Lr16)
 		{
-			auto lr16TaggedBlock = std::make_shared<Lr16TaggedBlock>(document, header, offset, signature, padding);
+			auto lr16TaggedBlock = std::make_shared<Lr16TaggedBlock>();
+			lr16TaggedBlock->read(document, header, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lr16TaggedBlock);
 			return lr16TaggedBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::Lr32)
 		{
-			auto lr32TaggedBlock = std::make_shared<Lr32TaggedBlock>(document, header, offset, signature, padding);
+			auto lr32TaggedBlock = std::make_shared<Lr32TaggedBlock>();
+			lr32TaggedBlock->read(document, header, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lr32TaggedBlock);
 			return lr32TaggedBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrSectionDivider)
 		{
-			auto lrSectionTaggedBlock = std::make_shared<LrSectionTaggedBlock>(document, header, offset, signature, padding);
+			auto lrSectionTaggedBlock = std::make_shared<LrSectionTaggedBlock>();
+			lrSectionTaggedBlock->read(document, header, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lrSectionTaggedBlock);
 			return lrSectionTaggedBlock;
 		}
 		else
 		{
-			auto baseTaggedBlock = std::make_shared<TaggedBlock>(document, header, offset, signature, taggedBlock.value(), padding);
+			auto baseTaggedBlock = std::make_shared<TaggedBlock>();
+			baseTaggedBlock->read(document, header, offset, signature, taggedBlock.value(), padding);
 			this->m_TaggedBlocks.push_back(baseTaggedBlock);
 			return baseTaggedBlock;
 		}

@@ -26,7 +26,9 @@ struct TaggedBlock
 
 	virtual ~TaggedBlock() = default;
 	TaggedBlock() = default;
-	TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
+
+	// Read a TaggedBlock from a file
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
 protected:
 	Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
 	// The length of the tagged block with all the the signature, key and length marker
@@ -44,7 +46,9 @@ struct LrSectionTaggedBlock : TaggedBlock
 	// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
 	std::optional<Enum::BlendMode> m_BlendMode;
 
-	LrSectionTaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	LrSectionTaggedBlock() = default;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 
 
@@ -54,7 +58,9 @@ struct Lr16TaggedBlock : TaggedBlock
 {
 	LayerInfo m_Data;
 
-	Lr16TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	Lr16TaggedBlock() = default;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 
 
@@ -65,7 +71,9 @@ struct Lr32TaggedBlock : TaggedBlock
 {
 	LayerInfo m_Data;
 
-	Lr32TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	Lr32TaggedBlock() = default;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 
 
