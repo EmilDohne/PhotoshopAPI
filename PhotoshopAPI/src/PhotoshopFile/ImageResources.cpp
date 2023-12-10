@@ -2,7 +2,8 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Read.h"
+#include "FileIO/Read.h"
+#include "FileIO/Util.h"
 #include "Struct/File.h"
 #include "Struct/Section.h"
 #include "Struct/ResourceBlock.h"

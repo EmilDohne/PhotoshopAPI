@@ -7,6 +7,8 @@
 #include "Struct/Signature.h"
 #include "Struct/File.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "FileIO/Read.h"
+#include "FileIO/Write.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -49,7 +51,7 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>((length), padding);
 	m_Length = length;
-	m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
+	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
 	m_TotalLength = length + 4u + 4u + 8u;
 };
@@ -65,7 +67,7 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>((length), padding);
 	m_Length = length;
-	m_Data = LayerInfo(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
+	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
 	m_TotalLength = length + 4u + 4u + 8u;
 };

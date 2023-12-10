@@ -261,7 +261,9 @@ struct LayerInfo : public FileSection
 	std::vector<ChannelImageData> m_ChannelImageData;
 
 	LayerInfo(){};
-	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+
+	// Read the layer info section
+	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 
 	// Find the index to a layer based on a layer name that is given
 	// if no layer with the name is found, return -1. In the case of multiple name matches the last in the photoshop document

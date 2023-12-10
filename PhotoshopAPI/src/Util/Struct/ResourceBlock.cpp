@@ -1,6 +1,7 @@
 #include "ResourceBlock.h"
 
-#include "Read.h"
+#include "FileIO/Read.h"
+#include "FileIO/Util.h"
 #include "Enum.h"
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"

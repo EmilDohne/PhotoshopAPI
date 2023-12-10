@@ -2,7 +2,8 @@
 
 #include "FileHeader.h"
 #include "Macros.h"
-#include "Read.h"
+#include "FileIO/Read.h"
+#include "FileIO/Util.h"
 #include "StringUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
 
@@ -428,7 +429,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
+void LayerInfo::read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
 	PROFILE_FUNCTION();
 
@@ -573,7 +574,7 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 
 	// Parse Layer Info Section
 	{
-		m_LayerInfo = LayerInfo(document, header, document.getOffset());
+		m_LayerInfo.read(document, header, document.getOffset());
 		// Check the theoretical document offset against what was read by the layer info section. These should be identical
 		if (document.getOffset() != (m_Offset + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version)) + m_LayerInfo.m_Size)
 		{

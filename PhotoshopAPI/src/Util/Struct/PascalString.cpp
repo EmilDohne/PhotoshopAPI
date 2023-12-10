@@ -1,7 +1,8 @@
 #include "PascalString.h"
 
 #include "Macros.h"
-#include "Read.h"
+#include "FileIO/Read.h"
+#include "FileIO/Util.h"
 #include "Struct/File.h"
 
 #include <string>
