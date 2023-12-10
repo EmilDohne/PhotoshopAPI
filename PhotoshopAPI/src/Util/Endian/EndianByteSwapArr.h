@@ -16,9 +16,10 @@ PSAPI_NAMESPACE_BEGIN
 constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 
 
-// Perform an endianDecode operation on a binary array (std::vector) and return
-// a vector of the given type. Note that the data input may be modified in-place
-// and is therefore no longer valid as a non endian decoded vector afterwards
+// Perform an endianDecode operation on a binary array (std::vector) and return a vector of the given type. 
+// Note that the data input may be modified in-place and is therefore no longer valid as a non endian decoded vector afterwards
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 {
@@ -62,11 +63,11 @@ std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
                     std::span<uint8_t, 32> vecSpan{ cacheArray.data() + i * 32, 32 };
                     if constexpr (is_little_endian)
                     {
-                        byteShuffleAVX2_2Wide_LE(vecSpan.data());
+                        byteShuffleAVX2_LE<T>(vecSpan.data());
                     }
                     else
                     {
-                        byteShuffleAVX2_2Wide_BE(vecSpan.data());
+                        byteShuffleAVX2_BE<T>(vecSpan.data());
                     }
                 }
             });
@@ -93,26 +94,22 @@ std::vector<T> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 }
 
 
+// Return the data as we do not need to byteswap here
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <>
 inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data)
 {
-    return data;
+    return std::move(data);
 }
 
 
-// Perform a endianDecode operation on an array (std::vector) of items in-place
+// Perform a endianDecode operation on an array (std::vector) of items in-place using an extremely fast SIMD + Parallelization
+// approach. Can decode ~100 million bytes of data in around a millisecond on a Ryzen 9 5950x
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
 void endianDecodeBEArray(std::vector<T>& data)
-{
-    for (auto& item : data)
-    {
-        item = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
-    }
-}
-
-
-template<>
-inline void endianDecodeBEArray(std::vector<uint16_t>& data)
 {
     PROFILE_FUNCTION();
     // We want to split up the vector into blocks that can easily fit into a L1 cache 
@@ -122,39 +119,39 @@ inline void endianDecodeBEArray(std::vector<uint16_t>& data)
     // Additionally, we have to account for AVX2 SIMD size which is 256 bits or 32 bytes
     // i.e. this means we want to split our data in blocks of 32B * 2KB (2048)
     // TODO reset this to 2048
-    const uint32_t cacheSize = 2048 * 32 / sizeof(uint16_t);
+    const uint32_t cacheSize = 2048 * 32 / sizeof(T);
     const uint32_t blockSize = 2048;
-    uint32_t numVecs = data.size() / 32 / sizeof(uint16_t);
+    uint32_t numVecs = data.size() / 32 / sizeof(T);
     uint32_t numBlocks = numVecs / blockSize;
 
     // Calculate the leftover data that we will compute serially
     uint32_t remainderTotal = data.size() % cacheSize;
 
     // Create spans of each of the cache blocks to decode them in-place
-    std::vector<std::span<uint16_t>> cacheTemporary(numBlocks);
+    std::vector<std::span<T>> cacheTemporary(numBlocks);
     {
         for (uint32_t i = 0; i < numBlocks; ++i)
         {
             auto cacheAddress = data.data() + cacheSize * i;
-            std::span<uint16_t> tmpSpan(cacheAddress, cacheSize);
+            std::span<T> tmpSpan(cacheAddress, cacheSize);
             cacheTemporary[i] = tmpSpan;
         }
     }
 
     // Iterate all the blocks and byteShuffle them in-place
     std::for_each(std::execution::par, cacheTemporary.begin(), cacheTemporary.end(),
-        [](std::span<uint16_t>& cacheSpan)
+        [](std::span<T>& cacheSpan)
         {
             for (uint32_t i = 0; i < blockSize; ++i)
             {
                 uint8_t* vecMemoryAddress = reinterpret_cast<uint8_t*>(cacheSpan.data()) + i * 32;
                 if constexpr (is_little_endian)
                 {
-                    byteShuffleAVX2_2Wide_LE(vecMemoryAddress);
+                    byteShuffleAVX2_LE<T>(vecMemoryAddress);
                 }
                 else
                 {
-                    byteShuffleAVX2_2Wide_BE(vecMemoryAddress);
+                    byteShuffleAVX2_BE<T>(vecMemoryAddress);
                 }
             }
         });
@@ -164,9 +161,17 @@ inline void endianDecodeBEArray(std::vector<uint16_t>& data)
     for (uint64_t i = 0; i < remainderTotal; ++i)
     {
         const uint8_t* memAddress = reinterpret_cast<uint8_t*>(data.data() + remainderIndex + i);
-        data[remainderIndex + i] = endianDecodeBE<uint16_t>(memAddress);
+        data[remainderIndex + i] = endianDecodeBE<T>(memAddress);
     }
 }
 
+
+// Do nothing as no byteswap is necessary
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <>
+inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
+{
+}
 
 PSAPI_NAMESPACE_END
