@@ -11,7 +11,7 @@ PSAPI_NAMESPACE_BEGIN
 // data rather than parsing it.
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-ResourceBlock::ResourceBlock(File& document)
+void ResourceBlock::read(File& document)
 {
 	PROFILE_FUNCTION();
 

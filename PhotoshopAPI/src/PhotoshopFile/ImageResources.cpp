@@ -25,7 +25,8 @@ bool ImageResources::read(File& document, const uint64_t offset)
 	uint32_t toRead = static_cast<uint32_t>(m_Size) - 4u;
 	while (toRead > 0)
 	{
-		ResourceBlock resource = ResourceBlock(document);
+		ResourceBlock resource;
+		resource.read(document);
 		toRead -= resource.m_BlockSize;
 		m_ResourceBlocks.emplace_back(resource);
 	}
