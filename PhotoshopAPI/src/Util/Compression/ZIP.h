@@ -18,7 +18,9 @@ PSAPI_NAMESPACE_BEGIN
 
 namespace {
 
-	/// Use zlib-ng to inflate the compressed input data to the expected output size
+	// Use zlib-ng to inflate the compressed input data to the expected output size
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	template<typename T>
 	inline std::vector<T> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
 	{
@@ -42,6 +44,7 @@ namespace {
 		stream.avail_out = decompressedData.size() * sizeof(T);
 		stream.next_out = reinterpret_cast<uint8_t*>(decompressedData.data());
 
+
 		if (zng_inflate(&stream, Z_FINISH) != Z_STREAM_END)
 		{
 			PSAPI_LOG_ERROR("UnZip", "Inflate decompression failed")
@@ -56,6 +59,8 @@ namespace {
 	}
 
 	// Creates two vectors that can be used as iterators for an image by height or width. 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	inline std::tuple<std::vector<uint32_t>, std::vector<uint32_t>> createImageIterators(const uint32_t width, const uint32_t height)
 	{
 		std::vector<uint32_t> horizontalIter;
@@ -75,7 +80,9 @@ namespace {
 		return std::make_tuple(horizontalIter, verticalIter);
 	}
 
-	// Creates one vectors that can be used as iterators for an image by height. 
+	// Creates one vectors that can be used as iterators for an image by height.
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	inline std::vector<uint32_t> createVerticalImageIterator(const uint32_t height)
 	{
 		std::vector<uint32_t> verticalIter;
@@ -91,6 +98,8 @@ namespace {
 
 
 // Reverse the prediction encoding after having decompressed the zip compressed byte stream as well as converting from BE to native
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::vector<T> RemovePredictionEncoding(std::vector<T> decompressedData, const uint32_t width, const uint32_t height)
 {
@@ -117,6 +126,8 @@ std::vector<T> RemovePredictionEncoding(std::vector<T> decompressedData, const u
 
 // We need to specialize here as 32-bit files have their bytes interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
 // And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <>
 inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> decompressedData, const uint32_t width, const uint32_t height)
 {
@@ -179,6 +190,8 @@ inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> de
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
@@ -197,6 +210,8 @@ std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const FileHead
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {

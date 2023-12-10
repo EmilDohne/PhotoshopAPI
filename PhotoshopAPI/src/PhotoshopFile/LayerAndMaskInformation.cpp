@@ -341,7 +341,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 		m_LayerBlendingRanges.read(document);
 		toRead -= m_LayerBlendingRanges.m_Size;
 
-		m_LayerName = PascalString(document, 4u);
+		m_LayerName.read(document, 4u);
 		toRead -= m_LayerName.m_Size;
 
 	}

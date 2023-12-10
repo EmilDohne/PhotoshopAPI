@@ -108,7 +108,7 @@ void profile()
 int main()
 {
 	// Profile and test our application all in one step
-	//profile();
+	profile();
 
 	// Set up and run doctest tests
 	{

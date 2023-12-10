@@ -17,7 +17,10 @@ struct PascalString
 	std::string m_String;
 	
 	PascalString() : m_Size(0) {};
-	PascalString(File& document, const uint8_t padding);
+	// Initialize a padded PascalString based on its size
+	PascalString(std::string name, const uint8_t padding);
+
+	void read(File& document, const uint8_t padding);
 };
 
 PSAPI_NAMESPACE_END

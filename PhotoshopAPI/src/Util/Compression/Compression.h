@@ -23,6 +23,8 @@ PSAPI_NAMESPACE_BEGIN
 /// BBB...
 /// 
 /// or as a singular image channel depending on where the call was made from
+/// ---------------------------------------------------------------------------------------------------------------------
+/// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 inline std::vector<T> DecompressData(ByteStream& stream, uint64_t offset, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {

@@ -15,16 +15,11 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
- 	target_compile_options(${EXE} PRIVATE "/MP")
+ 	target_compile_options(${EXE} PRIVATE /MP /Ox)
 # 	target_compile_options(${EXE} PRIVATE /W4 /WX)
 # else()
 # 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
-
-target_compile_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/Zi>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
 
 # Include and link the PhotoshopAPI
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")

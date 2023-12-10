@@ -3,8 +3,8 @@
 ## Project
 
 - [X] Generate CMake project for PhotoshopAPI
-- [X ] Include blosc2 compression library
-- [ ] Add README
+- [X] Include blosc2 compression library
+- [X] Add README (initial)
 
 ## Testing
 
@@ -13,6 +13,7 @@
  
 ## PhotoshopFile
 
+### Read
 - [X] Read File Header
 - [X] Read ColorModeData
 - [X] Read Image Resources
@@ -25,6 +26,18 @@
     - [x] Read Additional Layer Information
 - [ ] Read Merged Image Data Section
     - [ ] Compress using blosc2
+
+### Write
+- [ ] Write File Header
+- [ ] Write ColorModeData
+- [ ] Write Image Resources
+- [ ] Write Layer and Mask information
+    - [ ] Write Global Layer Mask Info
+    - [ ] Write Layer Records
+    - [ ] Write Channel Image Data
+    - [ ] Write Additional Layer Information
+- [ ] Write Merged Image Data Section (?)
+
 
 ## LayeredFile
 

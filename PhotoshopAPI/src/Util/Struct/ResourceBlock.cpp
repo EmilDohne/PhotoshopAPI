@@ -25,7 +25,7 @@ ResourceBlock::ResourceBlock(File& document)
 			signature.m_Representation[3])
 	}
 	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
-	m_Name = PascalString(document, 2u);
+	m_Name.read(document, 2u);
 	m_Size = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
 	m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
 

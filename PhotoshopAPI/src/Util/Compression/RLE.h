@@ -17,8 +17,9 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// This is the packbits algorithm described here: https://en.wikipedia.org/wiki/PackBits
-// We iterate byte by byte and decompress
+// This is the packbits algorithm described here: https://en.wikipedia.org/wiki/PackBits we iterate byte by byte and decompress
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
 {
@@ -61,6 +62,8 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 
 
 // Reads and decompresses a single channel using the packbits algorithm
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
@@ -68,7 +71,6 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 	// Photoshop first stores the byte counts of all the scanlines, this is 2 or 4 bytes depending on 
 	// if the document is PSD or PSB
 	uint64_t scanlineTotalSize = 0u;
-    //
     if (header.m_Version == Enum::Version::Psd)
     {
         std::vector<uint16_t> buff(height);

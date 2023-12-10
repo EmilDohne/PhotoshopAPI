@@ -23,10 +23,12 @@ struct CompressionResults
     uint64_t uncompressedSize;
 };
 
+
 struct CompressionTrackerSession
 {
     std::string Name;
 };
+
 
 class CompressionTracker
 {

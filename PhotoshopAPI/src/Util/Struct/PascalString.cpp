@@ -10,7 +10,16 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-PascalString::PascalString(File& document, const uint8_t padding)
+PascalString::PascalString(std::string name, const uint8_t padding)
+{
+	uint8_t stringSize = name.size();
+	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
+	m_String = name;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PascalString::read(File& document, const uint8_t padding)
 {
 	uint8_t stringSize = ReadBinaryData<uint8_t>(document);
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
