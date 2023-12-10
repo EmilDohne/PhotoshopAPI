@@ -158,7 +158,9 @@ struct LayerRecord : public FileSection
 struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
-	GlobalLayerMaskInfo(File& document, const uint64_t offset);
+
+	// Skip the contents of the Global Layer and Mask Info based on the length marker
+	void read(File& document, const uint64_t offset);
 };
 
 
@@ -166,11 +168,15 @@ struct GlobalLayerMaskInfo : public FileSection
 struct ChannelImageData : public FileSection
 {
 
-	// TODO add blosc2 compression to this data
+	// We hold the image data for all of the channels in this vector.
+	// The image data gets compressed using blosc2 on creation allowing for a very small
+	// memory footpring
 	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
 	ChannelImageData() {};
-	ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+
+	// Read a single channel image data instance from a pre-allocated bytestream
+	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 
 	// Get an index to a specific channel based on the identifier
 	// returns -1 if no matching channel is found

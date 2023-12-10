@@ -358,7 +358,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
+void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
 	PROFILE_FUNCTION();
 
@@ -407,17 +407,20 @@ ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header,
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
 				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				m_ImageData[index] = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
 				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				m_ImageData[index] = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
 				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				m_ImageData[index] = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
 }
@@ -496,7 +499,8 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 		ByteStream stream(document, tmpOffset, tmpSize);
 
 		// Create the ChannelImageData by parsing the given buffer
-		auto result = ChannelImageData(stream, header, tmpOffset, layerRecord);
+		auto result = ChannelImageData();
+		result.read(stream, header, tmpOffset, layerRecord);
 
 		// As each index is unique we do not need to worry about locking the mutex here
 		localResults[index] = std::move(result);
@@ -540,9 +544,8 @@ int LayerInfo::getLayerIndex(const std::string& layerName)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-GlobalLayerMaskInfo::GlobalLayerMaskInfo(File& document, const uint64_t offset)
+void GlobalLayerMaskInfo::read(File& document, const uint64_t offset)
 {
-
 	m_Offset = offset;
 	document.setOffset(offset);
 
@@ -582,7 +585,7 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	}
 	// Parse Global Layer Mask Info
 	{
-		m_GlobalLayerMaskInfo = GlobalLayerMaskInfo(document, document.getOffset());
+		m_GlobalLayerMaskInfo.read(document, document.getOffset());
 	}
 
 	int64_t toRead = m_Size - m_LayerInfo.m_Size - m_GlobalLayerMaskInfo.m_Size;
