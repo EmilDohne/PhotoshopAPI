@@ -80,8 +80,9 @@ namespace LayerRecords
 		std::optional<LayerMask> m_LayerMask;
 		std::optional<LayerMask> m_VectorMask;
 
-		LayerMaskData() {};
-		LayerMaskData(File& document);
+		LayerMaskData() = default;
+
+		void read(File& document);
 	};
 
 
@@ -95,8 +96,9 @@ namespace LayerRecords
 		Data m_SourceRanges;
 		Data m_DestinationRanges;
 
-		LayerBlendingRanges() {};
-		LayerBlendingRanges(File& document);
+		LayerBlendingRanges() = default;
+
+		void read(File& document);
 	};
 }
 
@@ -128,7 +130,27 @@ struct LayerRecord : public FileSection
 		m_Opacity(0u),
 		m_Clipping(0u),
 		m_BitFlags(0u) {};
-	LayerRecord(File& document, const FileHeader& header, const uint64_t offset);
+	// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
+	LayerRecord(
+		PascalString layerName,
+		uint32_t top,
+		uint32_t left,
+		uint32_t bottom,
+		uint32_t right,
+		uint16_t channelCount,
+		std::vector<LayerRecords::ChannelInformation> channelInfo,
+		Enum::BlendMode blendMode,
+		uint8_t opacity,
+		uint8_t clipping,
+		uint8_t bitFlags,
+		std::optional<LayerRecords::LayerMaskData> layerMaskData,
+		LayerRecords::LayerBlendingRanges layerBlendingRanges,
+		std::optional<AdditionalLayerInfo> additionalLayerInfo
+	);
+	
+
+
+	void read(File& document, const FileHeader& header, const uint64_t offset);
 };
 
 

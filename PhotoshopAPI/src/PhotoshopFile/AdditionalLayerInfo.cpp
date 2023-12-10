@@ -11,7 +11,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
+void AdditionalLayerInfo::read(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
 {
 	m_Offset = offset;
 	document.setOffset(offset);
@@ -20,7 +20,7 @@ AdditionalLayerInfo::AdditionalLayerInfo(File& document, const FileHeader& heade
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
-		const std::shared_ptr<TaggedBlock> taggedBlock = this->m_TaggedBlocks.readTaggedBlock(document, header, padding);
+		const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, padding);
 		toRead -= taggedBlock->getTotalSize();
 		m_Size += taggedBlock->getTotalSize();
 	}

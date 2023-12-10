@@ -71,7 +71,7 @@ uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerRecords::LayerMaskData::LayerMaskData(File& document)
+void LayerRecords::LayerMaskData::read(File& document)
 {
 	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
 	int64_t toRead = static_cast<int64_t>(m_Size) - 4u;
@@ -172,7 +172,7 @@ LayerRecords::LayerMaskData::LayerMaskData(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
+void LayerRecords::LayerBlendingRanges::read(File& document)
 {
 	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
 	int32_t toRead = m_Size - 4u;
@@ -203,7 +203,44 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_t offset)
+LayerRecord::LayerRecord(
+	PascalString layerName,
+	uint32_t top,
+	uint32_t left,
+	uint32_t bottom,
+	uint32_t right,
+	uint16_t channelCount,
+	std::vector<LayerRecords::ChannelInformation> channelInfo,
+	Enum::BlendMode blendMode,
+	uint8_t opacity,
+	uint8_t clipping,
+	uint8_t bitFlags,
+	std::optional<LayerRecords::LayerMaskData> layerMaskData,
+	LayerRecords::LayerBlendingRanges layerBlendingRanges,
+	std::optional<AdditionalLayerInfo> additionalLayerInfo)
+{
+	m_LayerName = layerName;
+	m_Top = top;
+	m_Left = left;
+	m_Bottom = bottom;
+	m_Right = right;
+	m_ChannelCount = channelCount;
+	m_ChannelInformation = std::move(channelInfo);
+	m_BlendMode = blendMode;
+	m_Opacity = opacity;
+	m_Clipping = clipping;
+	m_BitFlags = bitFlags;
+	if (layerMaskData.has_value())
+		m_LayerMaskData.emplace(layerMaskData.value());
+	m_LayerBlendingRanges = layerBlendingRanges;
+	if (additionalLayerInfo.has_value())
+		m_AdditionalLayerInfo.emplace(std::move(additionalLayerInfo.value()));
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LayerRecord::read(File& document, const FileHeader& header, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
 
@@ -290,7 +327,8 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	m_Size += 4u + static_cast<uint64_t>(extraDataLen);
 	int32_t toRead = extraDataLen;
 	{
-		LayerRecords::LayerMaskData layerMaskSection = LayerRecords::LayerMaskData(document);
+		LayerRecords::LayerMaskData layerMaskSection = LayerRecords::LayerMaskData{};
+		layerMaskSection.read(document);
 		if (layerMaskSection.m_Size > 4u)
 		{
 			m_LayerMaskData.emplace(layerMaskSection);
@@ -300,8 +338,7 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 		{
 			toRead -= 4u;
 		}
-
-		m_LayerBlendingRanges = LayerRecords::LayerBlendingRanges(document);
+		m_LayerBlendingRanges.read(document);
 		toRead -= m_LayerBlendingRanges.m_Size;
 
 		m_LayerName = PascalString(document, 4u);
@@ -312,7 +349,9 @@ LayerRecord::LayerRecord(File& document, const FileHeader& header, const uint64_
 	// A single tagged block takes at least 12 (or 16) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
 	if (toRead >= 12u)
 	{
-		m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 1u));
+		AdditionalLayerInfo layerInfo = {};
+		layerInfo.read(document, header, document.getOffset(), toRead, 1u);
+		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
 	}
 }
 
@@ -420,7 +459,8 @@ LayerInfo::LayerInfo(File& document, const FileHeader& header, const uint64_t of
 	// Extract layer records
 	for (int i = 0; i < layerCount; i++)
 	{
-		LayerRecord layerRecord = LayerRecord(document, header, document.getOffset());
+		LayerRecord layerRecord = {};
+		layerRecord.read(document, header, document.getOffset());
 		m_LayerRecords.push_back(std::move(layerRecord));
 	}
 
@@ -550,7 +590,9 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	if (toRead >= 12u)
 	{
 		// Tagged blocks at the end of the layer and mask information seem to be padded to 4-bytes
-		m_AdditionalLayerInfo.emplace(AdditionalLayerInfo(document, header, document.getOffset(), toRead, 4u));
+		AdditionalLayerInfo layerInfo = {};
+		layerInfo.read(document, header, document.getOffset(), toRead, 4u);
+		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
 	}
 
 	return true;

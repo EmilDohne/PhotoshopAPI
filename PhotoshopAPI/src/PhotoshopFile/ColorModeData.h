@@ -16,6 +16,10 @@ struct ColorModeData : public FileSection
 {
 	std::vector<uint8_t> m_Data;
 
+	ColorModeData(): m_Data({}) {};
+	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
+	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
+
 	bool read(File& document);
 };
 

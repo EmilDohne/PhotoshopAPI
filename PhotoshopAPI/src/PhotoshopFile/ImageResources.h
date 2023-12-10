@@ -16,6 +16,10 @@ struct ImageResources : public FileSection
 {
 	std::vector<ResourceBlock> m_ResourceBlocks;
 
+	ImageResources() = default;
+	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
+	ImageResources(std::vector<ResourceBlock> resourceBlocks) : m_ResourceBlocks(std::move(resourceBlocks)) {};
+
 	bool read(File& document, const uint64_t offset);
 };
 

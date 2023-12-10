@@ -22,6 +22,17 @@ struct FileHeader : public FileSection
 	Enum::BitDepth m_Depth;			// Depth of the Document
 	Enum::ColorMode m_ColorMode;	// Color Mode of the File
 
+	FileHeader() = default;
+	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
+	FileHeader(Signature signature, Enum::Version version, uint16_t numChannels, uint32_t width, uint32_t height, Enum::BitDepth depth, Enum::ColorMode colorMode) :
+		m_Signature(signature),
+		m_Version(version),
+		m_NumChannels(numChannels),
+		m_Height(height),
+		m_Width(width),
+		m_Depth(depth),
+		m_ColorMode(colorMode) {};
+
 	bool read(File& document);
 };
 
