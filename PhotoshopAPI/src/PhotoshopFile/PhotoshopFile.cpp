@@ -11,6 +11,9 @@
 PSAPI_NAMESPACE_BEGIN
 
 
+// Read our PhotoshopFile layer by layer
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 bool PhotoshopFile::read(File& document)
 {
 	PROFILE_FUNCTION();
@@ -23,6 +26,17 @@ bool PhotoshopFile::read(File& document)
 	wasSuccessful = wasSuccessful && m_LayerMaskInfo.read(document, m_Header, m_ImageResources.m_Offset + m_ImageResources.m_Size);
 
 	return wasSuccessful;
+}
+
+
+void PhotoshopFile::write(File& document)
+{
+	PROFILE_FUNCTION();
+
+	m_Header.write(document);
+	m_ColorModeData.write(document);
+	m_ImageResources.write(document);
+	m_LayerMaskInfo.write(document);
 }
 
 

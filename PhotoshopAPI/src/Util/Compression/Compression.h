@@ -3,7 +3,7 @@
 #include "RLE.h"
 #include "ZIP.h"
 #include "Macros.h"
-#include "Read.h"
+#include "FileIO/Read.h"
 #include "Enum.h"
 #include "Struct/ByteStream.h"
 #include "Profiling/Perf/Instrumentor.h"

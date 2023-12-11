@@ -24,8 +24,8 @@ struct FileHeader : public FileSection
 
 	FileHeader() = default;
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
-	FileHeader(Signature signature, Enum::Version version, uint16_t numChannels, uint32_t width, uint32_t height, Enum::BitDepth depth, Enum::ColorMode colorMode) :
-		m_Signature(signature),
+	FileHeader(Enum::Version version, uint16_t numChannels, uint32_t width, uint32_t height, Enum::BitDepth depth, Enum::ColorMode colorMode) :
+		m_Signature(Signature("8BPS")),
 		m_Version(version),
 		m_NumChannels(numChannels),
 		m_Height(height),
@@ -34,6 +34,7 @@ struct FileHeader : public FileSection
 		m_ColorMode(colorMode) {};
 
 	bool read(File& document);
+	void write(File& document);
 };
 
 

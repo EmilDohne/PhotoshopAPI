@@ -26,7 +26,10 @@ struct PhotoshopFile
 	ImageResources m_ImageResources;
 	LayerAndMaskInformation m_LayerMaskInfo;
 
+	PhotoshopFile(FileHeader header, ColorModeData colorModeData, ImageResources imageResources, LayerAndMaskInformation layerMaskInfo);
+
 	bool read(File& document);
+	void write(File& document);
 };
 
 
