@@ -174,4 +174,16 @@ inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
 {
 }
 
+
+// Perform a endianEncode operation on an array (std::vector) of items in-place using an extremely fast SIMD + Parallelization
+// approach. Can decode ~100 million bytes of data in around a millisecond on a Ryzen 9 5950x. Note that this just calls
+// endianDecode as the idea is the same (byteswapping data on little endian systems)
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::vector<T> endianEncodeBEArray(std::vector<T>& data)
+{
+    return std::move(endianDecodeBEArray<T>(data));
+}
+
 PSAPI_NAMESPACE_END

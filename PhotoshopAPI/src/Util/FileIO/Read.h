@@ -27,7 +27,7 @@ ReadBinaryArray<T>						// Read a large amount of binary data into a std::vector
 
 PSAPI_NAMESPACE_BEGIN
 
-// Read a sizeof(T) amount of data from the given filestream
+// Read a sizeof(T) amount of data from the given filestream and decode the data
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
@@ -39,7 +39,7 @@ T ReadBinaryData(File& document)
 }
 
 
-// Read a sizeof(T) amount of data from the given bytestream
+// Read a sizeof(T) amount of data from the given bytestream and decode the data
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
@@ -52,7 +52,7 @@ T ReadBinaryData(ByteStream& stream)
 
 
 // Read a variadic amount of bytes from a document based on whether it is PSD or PSB
-// and cast to the wider PSB type
+// and cast to the wider PSB type while decoding the result
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename TPsd, typename TPsb>
@@ -75,7 +75,7 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(File& document, const Enum::Vers
 
 
 // Read a variadic amount of bytes from a bytestream based on whether it is PSD or PSB
-// and cast to the wider PSB type
+// and cast to the wider PSB type while decoding the result
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename TPsd, typename TPsb>
@@ -97,9 +97,8 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(ByteStream& stream, const Enum::
 }
 
 
-// Read a large amount of data into a std::vector,
-// assumes the file is already open for reading
-// The size parameter indicates the amount of bytes
+// Read a large amount of data into a std::vector, assumes the file is already open 
+// for reading. The size parameter indicates the amount of bytes
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
