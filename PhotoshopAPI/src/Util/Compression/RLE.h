@@ -2,6 +2,7 @@
 
 #include "Macros.h"
 #include "FileIO/Read.h"
+#include "FileIO/Util.h"
 #include "Logger.h"
 #include "Endian/EndianByteSwap.h"
 #include "Endian/EndianByteSwapArr.h"

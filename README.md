@@ -32,7 +32,9 @@ Unit and Integration testing of the PhotoshopAPI that builds to an executable, p
 > [!WARNING]
 > This section will likely heavily change in the near future
 
-The intended usage of the PhotoshopAPI is through the LayeredFile struct. See a minimal reproducible example below:
+The intended usage of the PhotoshopAPI is through the LayeredFile struct. See a minimal reproducible example below.
+
+For more detailed documentation on design decisions as well as general architecture and examples of how to use please refer to the [docs/](/docs/DOCS.md) directory of this repository
 
 ### Reading files
 ```cpp
