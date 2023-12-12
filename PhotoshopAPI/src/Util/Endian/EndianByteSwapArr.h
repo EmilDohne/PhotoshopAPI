@@ -183,7 +183,8 @@ inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
 template<typename T>
 std::vector<T> endianEncodeBEArray(std::vector<T>& data)
 {
-    return std::move(endianDecodeBEArray<T>(data));
+    endianDecodeBEArray<T>(data);
+    return std::move(data);
 }
 
 PSAPI_NAMESPACE_END
