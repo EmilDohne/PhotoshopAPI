@@ -105,10 +105,26 @@ void profile()
 	NAMESPACE_PSAPI::Instrumentor::Get().EndSession();
 }
 
+void sampleWrite()
+{
+	std::filesystem::path currentDirectory = std::filesystem::current_path();
+	std::filesystem::path combined_path = currentDirectory;
+	combined_path += "\\SampleWrite.psd";
+	NAMESPACE_PSAPI::File file(combined_path);
+	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+
+
+
+	document->write(file);
+}
+
 int main()
 {
 	// Profile and test our application all in one step
-	profile();
+	//profile();
+
+	sampleWrite();
+
 
 	// Set up and run doctest tests
 	{
