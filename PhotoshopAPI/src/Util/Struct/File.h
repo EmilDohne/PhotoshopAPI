@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
-#include <span>
+#include <vector>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -23,16 +23,15 @@ struct File
 
 	// Read n bytes from the file into the input buffer, make sure the buffer is 
 	// properly allocated before running the function
-	// TODO refactor this to use a span like the write operation
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	void read(char* buffer, uint64_t size);
 	
 
-	// Write n bytes to the file from the input span.
+	// Write n bytes to the file from the input buffer.
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	void write(std::span<uint8_t> buffer);
+	void write(char* buffer, uint64_t size);
 
 
 	// Skip n bytes in the file and increment our position marker, checks if the offset 

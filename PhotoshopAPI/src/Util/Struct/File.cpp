@@ -21,13 +21,12 @@ void File::read(char* buffer, uint64_t size)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-void File::write(std::span<uint8_t> buffer)
+void File::write(char* buffer, uint64_t size)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);
-	m_Size += buffer.size();
-	m_Offset += buffer.size();
-	// Reinterpret casting from and to byte types is safe here
-	m_Document.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
+	m_Size += size;
+	m_Offset += size;
+	m_Document.write(buffer, size);
 }
 
 
@@ -101,7 +100,17 @@ File::File(const std::filesystem::path& file)
 	m_Offset = 0;
 	m_Size = 0;
 
-	m_Document.open(file, std::ios::binary);
+
+	// Check if the file exists and otherwise create it
+	if (std::filesystem::exists(file))
+	{
+		m_Document.open(file, std::ios::binary | std::fstream::in | std::fstream::out);
+	}
+	else
+	{
+		PSAPI_LOG("File", "Created file %s", file.string().c_str())
+		m_Document.open(file, std::ios::binary | std::fstream::in | std::fstream::out | std::fstream::trunc);
+	}
 
 	if (m_Document.is_open())
 	{
