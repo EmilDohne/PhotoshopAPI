@@ -4,6 +4,7 @@
 #include "Util.h"
 #include "Struct/File.h"
 #include "Endian/EndianByteSwap.h"
+#include "Endian/EndianByteSwapArr.h"
 
 #include <span>
 #include <variant>
@@ -18,8 +19,7 @@ template <typename T>
 void WriteBinaryData(File& document, T data)
 {
 	data = endianEncodeBE<T>(data);
-	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(data), sizeof(T));
-	document.write(dataSpan);
+	document.write(reinterpret_cast<char*>(&data), sizeof(T));
 }
 
 
@@ -33,14 +33,12 @@ void WriteBinaryDataVariadic(File& document, std::variant<TPsd, TPsb> data, Enum
 	if (std::holds_alternative<TPsd>(data))
 	{
 		TPsd psdData = endianEncodeBE<TPsd>(std::get<TPsd>(data));
-		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(psdData), sizeof(TPsd));
-		document.write(dataSpan);
+		document.write(reinterpret_cast<char*>(&psdData), sizeof(TPsd));
 	}
 	else if (std::holds_alternative<TPsb>(data))
 	{
 		TPsb psbData = endianEncodeBE<TPsb>(std::get<TPsb>(data));
-		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(psbData), sizeof(TPsb));
-		document.write(dataSpan);
+		document.write(reinterpret_cast<char*>(&psbData), sizeof(TPsb));
 	}
 }
 
@@ -53,7 +51,7 @@ void WriteBinaryArray(File& document, std::vector<T> data)
 {
 	// Endian encode in-place
 	data = endianEncodeBEArray<T>(data);
-	document.write(std::span<uint8_t>(reinterpret_cast<uint8_t*>(data.begin()), data.size() * sizeof(T)));
+	document.write(reinterpret_cast<char*>(data.data()), data.size() * sizeof(T));
 }
 
 
