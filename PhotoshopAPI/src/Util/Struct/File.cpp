@@ -21,12 +21,12 @@ void File::read(char* buffer, uint64_t size)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-void File::write(char* buffer, uint64_t size)
+void File::write(std::span<uint8_t> buffer)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);
-	m_Size += size;
-	m_Offset += size;
-	m_Document.write(buffer, size);
+	m_Size += buffer.size();
+	m_Offset += buffer.size();
+	m_Document.write(reinterpret_cast<char*>(buffer.data()), buffer.size());
 }
 
 
