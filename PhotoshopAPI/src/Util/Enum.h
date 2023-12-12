@@ -154,46 +154,60 @@ namespace Enum
 		PrintFlagsInfo
 	};
 
-
-	inline ImageResource intToImageResource(const uint16_t value)
-	{
-		switch (value)
+	namespace {
+		inline std::unordered_map<uint16_t, ImageResource> imageResourceMap = 
 		{
-		case 1005: return ImageResource::ResolutionInfo;
-		case 1006: return ImageResource::AlphaChannelNames;
-		case 1010: return ImageResource::BackgroundColor;
-		case 1011: return ImageResource::PrintFlags;
-		case 1013: return ImageResource::ColorHalftoningInfo;
-		case 1016: return ImageResource::ColorTransferFunctions;
-		case 1024: return ImageResource::LayerStateInformation;
-		case 1026: return ImageResource::LayerGroupInformation;
-		case 1028: return ImageResource::IPTCRecord;
-		case 1032: return ImageResource::GridAndGuidesInformation;
-		case 1036: return ImageResource::ThumbnailResource;
-		case 1037: return ImageResource::GlobalAngle;
-		case 1041: return ImageResource::ICCUntaggedProfile;
-		case 1043: return ImageResource::SpotHalftone;
-		case 1044: return ImageResource::IDSeed;
-		case 1045: return ImageResource::UnicodeAlphaNames;
-		case 1049: return ImageResource::GlobalAltitude;
-		case 1050: return ImageResource::Slices;
-		case 1053: return ImageResource::AlphaIdentifiers;
-		case 1054: return ImageResource::URLList;
-		case 1057: return ImageResource::VersionInfo;
-		case 1058: return ImageResource::ExifData1;
-		case 1060: return ImageResource::XMPMetadata;
-		case 1061: return ImageResource::CaptionDigest;
-		case 1062: return ImageResource::PrintScale;
-		case 1064: return ImageResource::PixelAspectRatio;
-		case 1067: return ImageResource::AlternateSpotColors;
-		case 1069: return ImageResource::LayerSelectionID;
-		case 1072: return ImageResource::LayerGroupEnabledID;
-		case 1077: return ImageResource::DisplayInfo;
-		case 1082: return ImageResource::PrintInformation;
-		case 1083: return ImageResource::PrintStyle;
-		case 10000: return ImageResource::PrintFlagsInfo;
-		default: return ImageResource::NotImplemented;
+			{1, ImageResource::NotImplemented},
+			{1005, ImageResource::ResolutionInfo},
+			{1006, ImageResource::AlphaChannelNames},
+			{1010, ImageResource::BackgroundColor},
+			{1011, ImageResource::PrintFlags},
+			{1013, ImageResource::ColorHalftoningInfo},
+			{1016, ImageResource::ColorTransferFunctions},
+			{1024, ImageResource::LayerStateInformation},
+			{1026, ImageResource::LayerGroupInformation},
+			{1028, ImageResource::IPTCRecord},
+			{1032, ImageResource::GridAndGuidesInformation},
+			{1036, ImageResource::ThumbnailResource},
+			{1037, ImageResource::GlobalAngle},
+			{1041, ImageResource::ICCUntaggedProfile},
+			{1043, ImageResource::SpotHalftone},
+			{1044, ImageResource::IDSeed},
+			{1045, ImageResource::UnicodeAlphaNames},
+			{1049, ImageResource::GlobalAltitude},
+			{1050, ImageResource::Slices},
+			{1053, ImageResource::AlphaIdentifiers},
+			{1054, ImageResource::URLList},
+			{1057, ImageResource::VersionInfo},
+			{1058, ImageResource::ExifData1},
+			{1060, ImageResource::XMPMetadata},
+			{1061, ImageResource::CaptionDigest},
+			{1062, ImageResource::PrintScale},
+			{1064, ImageResource::PixelAspectRatio},
+			{1067, ImageResource::AlternateSpotColors},
+			{1069, ImageResource::LayerSelectionID},
+			{1072, ImageResource::LayerGroupEnabledID},
+			{1077, ImageResource::DisplayInfo},
+			{1082, ImageResource::PrintInformation},
+			{1083, ImageResource::PrintStyle},
+			{10000, ImageResource::PrintFlagsInfo}
+
+		};
+	}
+
+	inline ImageResource intToImageResource(uint16_t key)
+	{
+		auto it = imageResourceMap.find(key);
+
+		if (it != imageResourceMap.end()) {
+			return it->second;
 		}
+		return ImageResource::NotImplemented;
+	}
+
+	inline uint16_t imageResourceToInt(ImageResource key)
+	{
+		return findByValue(imageResourceMap, key).value();
 	}
 }
 

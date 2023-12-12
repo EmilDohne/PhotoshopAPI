@@ -1,6 +1,7 @@
 #include "ResourceBlock.h"
 
 #include "FileIO/Read.h"
+#include "FileIO/Write.h"
 #include "FileIO/Util.h"
 #include "Enum.h"
 #include "Logger.h"
@@ -31,6 +32,21 @@ void ResourceBlock::read(File& document)
 	m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
 
 	m_BlockSize = 4u + 2u + m_Name.m_Size + 4u + m_Size;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void ResourceBlock::write(File& document)
+{
+	PROFILE_FUNCTION();
+
+	Signature sig = Signature("8BPS");
+	WriteBinaryData<uint32_t>(document, sig.m_Value);
+	
+	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
+	m_Name.write(document, 2u);
+	WriteBinaryData<uint32_t>(document, m_Size);	// This value is already padded
+	WriteBinaryArray<uint8_t>(document, m_Data);
 }
 
 

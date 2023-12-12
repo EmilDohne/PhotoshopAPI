@@ -2,6 +2,7 @@
 
 #include "Macros.h"
 #include "FileIO/Read.h"
+#include "FileIO/Write.h"
 
 #include "Profiling/Perf/Instrumentor.h"
 
@@ -22,7 +23,7 @@ bool FileHeader::read(File& document)
 
 	uint32_t signature = ReadBinaryData<uint32_t>(document);
 	m_Signature = Signature(signature);
-	if (m_Signature != Signature("8BPS"))
+	if (signature != Signature("8BPS").m_Value)
 	{
 		PSAPI_LOG_ERROR("FileHeader", "Signature does not match 8BPS, got '%s' instead", m_Signature.m_Representation);
 		return false;
@@ -120,7 +121,30 @@ bool FileHeader::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 void FileHeader::write(File& document)
 {
+	PROFILE_FUNCTION();
 
+	m_Offset = 0;
+	m_Size = 26;
+
+	// Write the signature, must be 8BPS
+	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
+	
+	std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, m_Version);
+	WriteBinaryData<uint16_t>(document, versionVal.value());
+
+	// Filler bytes, must be explicitly set them to 0
+	WriteBinaryArray<uint8_t>(document, std::vector<uint8_t>(6u, 0u));
+
+	WriteBinaryData<uint16_t>(document, m_NumChannels);
+
+	WriteBinaryData<uint32_t>(document, m_Height);
+	WriteBinaryData<uint32_t>(document, m_Width);
+
+	std::optional<uint16_t> depthVal = findByValue(Enum::bitDepthMap, m_Depth);
+	WriteBinaryData<uint16_t>(document, depthVal.value());
+
+	std::optional<uint16_t> colorModeVal = findByValue(Enum::colorModeMap, m_ColorMode);
+	WriteBinaryData<uint16_t>(document, colorModeVal.value());
 }
 
 PSAPI_NAMESPACE_END

@@ -21,6 +21,7 @@ struct PascalString
 	PascalString(std::string name, const uint8_t padding);
 
 	void read(File& document, const uint8_t padding);
+	void write(File& document, const uint8_t padding) const;
 };
 
 PSAPI_NAMESPACE_END

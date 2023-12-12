@@ -34,9 +34,9 @@ void PhotoshopFile::write(File& document)
 	PROFILE_FUNCTION();
 
 	m_Header.write(document);
-	m_ColorModeData.write(document);
+	m_ColorModeData.write(document, m_Header);
 	m_ImageResources.write(document);
-	m_LayerMaskInfo.write(document);
+	//m_LayerMaskInfo.write(document);
 }
 
 
