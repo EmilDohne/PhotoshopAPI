@@ -342,8 +342,8 @@ ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header,
 	std::for_each(std::execution::par, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
 		[&](const LayerRecords::ChannelInformation& channel)
 		{
-			uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
-			uint64_t channelOffset = channelOffsets[index];
+			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
+			const uint64_t channelOffset = channelOffsets[index];
 
 			uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
 			uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
@@ -362,22 +362,22 @@ ChannelImageData::ChannelImageData(ByteStream& stream, const FileHeader& header,
 			uint16_t compressionNum = 0;
 			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
 			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
-			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
+			const Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
 			this->m_Size += channel.m_Size;
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				const std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				m_ImageData[index] = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				const std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				m_ImageData[index] = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				const std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				m_ImageData[index] = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
 			}
 		});
