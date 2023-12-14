@@ -15,9 +15,10 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
- 	target_compile_options(${EXE} PRIVATE "/MP")
+	target_compile_options(${EXE} PRIVATE /MP /O2 /arch:AVX2 /GL)
 # 	target_compile_options(${EXE} PRIVATE /W4 /WX)
-# else()
+else()
+	target_compile_options(${EXE} PRIVATE -O3 -march=native -mtune=native -flto)
 # 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 

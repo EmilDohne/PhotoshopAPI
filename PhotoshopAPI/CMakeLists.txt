@@ -38,10 +38,11 @@ target_include_directories(${LIB} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
-	target_compile_options(${LIB} PRIVATE "/MP")
+	target_compile_options(${LIB} PRIVATE /MP /O2 /arch:AVX2 /GL)
 # 	target_compile_options(${LIB} PRIVATE /W4 /WX)
-# else()
-# 	target_compile_options(${LI B} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+else()
+	target_compile_options(${LIB} PRIVATE -O3 -march=native -mtune=native -flto)
+# 	target_compile_options(${LIB} PRIVATE -Wall -Wextra -Wpedantic -Werror)
 endif()
 
 target_compile_options(${LIB} PRIVATE "$<$<CONFIG:Release>:/Zi>")
