@@ -20,9 +20,9 @@ PSAPI_NAMESPACE_BEGIN
 struct BaseImageChannel
 {
 	Enum::Compression m_Compression = Enum::Compression::Raw;
-	Enum::ChannelID m_ChannelID = Enum::ChannelID::Red;
+	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
 
-	BaseImageChannel(Enum::Compression compression, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height)
+	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const uint32_t width, const uint32_t height, const uint32_t xcoord, const uint32_t ycoord)
 	{
 		if (width > 300000u)
 		{
@@ -43,9 +43,17 @@ struct BaseImageChannel
 
 	virtual ~BaseImageChannel() = default;
 
+	uint32_t getWidth() { return m_Width; };
+	uint32_t getHeight() { return m_Height; };
+	uint32_t getCenterX() { return m_XCoord; };
+	uint32_t getCenterY() { return m_YCoord; };
+
 protected:
+	// Photoshop stores their positions as a bounding rect but we instead store extents and center coordinates
 	uint32_t m_Width = 0u;
 	uint32_t m_Height = 0u;
+	uint32_t m_XCoord = 0u;
+	uint32_t m_YCoord = 0u;
 };
 
 
@@ -59,8 +67,10 @@ struct ImageChannel : public BaseImageChannel
 	uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
 
 	// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height) : BaseImageChannel(compression, channelID, width, height)
+	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const uint32_t width, const uint32_t height, const uint32_t xcoord, const uint32_t ycoord) :
+		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
+
 		PROFILE_FUNCTION();
 		m_OrigSize = static_cast<uint64_t>(width) * height;
 
@@ -83,6 +93,7 @@ struct ImageChannel : public BaseImageChannel
 		cparams.typesize = sizeof(T);
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
+		// TODO set this to hardware concurrency?
 		cparams.nthreads = 4;
 		dparams.nthreads = 4;
 		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
