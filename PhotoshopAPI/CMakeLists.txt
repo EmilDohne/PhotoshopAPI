@@ -1,28 +1,13 @@
 set(LIB PhotoshopAPI)
 project(${LIB})
 
+# Define MY_SOURCES to be a list of all the source files
+file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
+
 # Add additional source directories here if needed
-add_library (${LIB} STATIC 
-	"${PROJECT_SOURCE_DIR}/src/LayeredFile/LayeredFile.cpp"
-	"${PROJECT_SOURCE_DIR}/src/LayeredFile/LayerTypes/Layer.cpp"
-	"${PROJECT_SOURCE_DIR}/src/LayeredFile/LayerTypes/ImageLayer.cpp"
-	"${PROJECT_SOURCE_DIR}/src/LayeredFile/LayerTypes/GroupLayer.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/ColorModeData.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/FileHeader.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/ImageResources.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/LayerAndMaskInformation.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/AdditionalLayerInfo.cpp"
-	"${PROJECT_SOURCE_DIR}/src/PhotoshopFile/PhotoshopFile.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/File.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/ByteStream.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/PascalString.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/ResourceBlock.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/Signature.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/TaggedBlock.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Util/Struct/TaggedBlockStorage.cpp"
-)
+add_library (${LIB} STATIC ${MY_SOURCES})
 
-
+# Set some additional includes 
 target_include_directories(${LIB} PUBLIC
 	"${PROJECT_SOURCE_DIR}/src/"
 	"${PROJECT_SOURCE_DIR}/src/Util/"

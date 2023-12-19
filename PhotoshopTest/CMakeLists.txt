@@ -2,15 +2,13 @@
 set (EXE PhotoshopTest)
 project(${EXE})
 
-add_executable(${EXE} 
-    "${PROJECT_SOURCE_DIR}/src/main.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/Utility.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestZIPPrediction.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestGroups/TestLayerDetection.cpp"
-)
+# Define MY_SOURCES to be a list of all the source files
+file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src/TestCompression")
+
+add_executable(${EXE} ${MY_SOURCES})
+
+target_include_directories(${EXE} PRIVATE "${PROJECT_SOURCE_DIR}/PhotoshopTest/src/TestCompression")
 
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
@@ -33,7 +31,7 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blos
 target_link_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 target_link_libraries(${EXE} PRIVATE blosc2_static)
 
-#include zlib-ng headers
+#include and link zlib-ng 
 target_include_directories(${EXE} PUBLIC "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
 target_include_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng")
 target_link_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/Release")

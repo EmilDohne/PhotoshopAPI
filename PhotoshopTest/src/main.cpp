@@ -121,9 +121,9 @@ void sampleWrite()
 int main()
 {
 	// Profile and test our application all in one step
-	//profile();
+	profile();
 
-	sampleWrite();
+	//sampleWrite();
 
 
 	// Set up and run doctest tests
