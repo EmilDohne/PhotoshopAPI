@@ -17,6 +17,8 @@ struct TaggedBlock;
 // we assume so for retrieving tagged blocks. I.e if you retrieve a tagged block it will return the first instance of it
 struct TaggedBlockStorage
 {
+	TaggedBlockStorage() = default;
+	TaggedBlockStorage(std::vector<std::shared_ptr<TaggedBlock>> taggedBlocks);
 
 	// Retrieve the object represented by the specified tagged block. Note, this returns the first instance rather than all instances
 	// We assume tagged blocks are unique but this may not always be the case. Returns nullptr if no type is found

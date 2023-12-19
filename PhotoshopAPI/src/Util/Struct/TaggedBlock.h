@@ -59,6 +59,7 @@ struct Lr16TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr16TaggedBlock() = default;
+	Lr16TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) {};
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
@@ -72,6 +73,7 @@ struct Lr32TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr32TaggedBlock() = default;
+	Lr32TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) {};
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
