@@ -24,7 +24,7 @@ namespace LayerRecords
 {
 	struct ChannelInformation
 	{
-		Enum::ChannelID m_ChannelID;
+		Enum::ChannelIDInfo m_ChannelID;
 		uint64_t m_Size;	// This appears to include the length of the compression marker
 	};
 
@@ -108,7 +108,7 @@ struct LayerRecord : public FileSection
 {
 	PascalString m_LayerName;
 
-	uint32_t m_Top, m_Left, m_Bottom, m_Right;
+	int32_t m_Top, m_Left, m_Bottom, m_Right;
 	uint16_t m_ChannelCount;
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
 	Enum::BlendMode m_BlendMode;
@@ -133,10 +133,10 @@ struct LayerRecord : public FileSection
 	// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
 	LayerRecord(
 		PascalString layerName,
-		uint32_t top,
-		uint32_t left,
-		uint32_t bottom,
-		uint32_t right,
+		int32_t top,
+		int32_t left,
+		int32_t bottom,
+		int32_t right,
 		uint16_t channelCount,
 		std::vector<LayerRecords::ChannelInformation> channelInfo,
 		Enum::BlendMode blendMode,
@@ -170,7 +170,7 @@ struct ChannelImageData : public FileSection
 
 	// We hold the image data for all of the channels in this vector.
 	// The image data gets compressed using blosc2 on creation allowing for a very small
-	// memory footpring
+	// memory footprint
 	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
 	ChannelImageData() {};
@@ -184,7 +184,7 @@ struct ChannelImageData : public FileSection
 	{
 		for (int i = 0; i < m_ImageData.size(); ++i)
 		{
-			if (m_ImageData[i]->m_ChannelID == channelID)
+			if (m_ImageData[i]->m_ChannelID.id == channelID)
 			{
 				return i;
 			}
@@ -261,6 +261,7 @@ struct LayerInfo : public FileSection
 	std::vector<ChannelImageData> m_ChannelImageData;
 
 	LayerInfo(){};
+	LayerInfo(std::vector<LayerRecord> layerRecords, std::vector<ChannelImageData> imageData) : m_LayerRecords(std::move(layerRecords)), m_ChannelImageData(std::move(imageData)) {};
 
 	// Read the layer info section
 	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
@@ -278,6 +279,9 @@ struct LayerAndMaskInformation : public FileSection
 	LayerInfo m_LayerInfo;
 	GlobalLayerMaskInfo m_GlobalLayerMaskInfo;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
+
+	LayerAndMaskInformation(LayerInfo& layerInfo, GlobalLayerMaskInfo globalLayerMaskInfo, std::optional<AdditionalLayerInfo> additionalLayerInfo) :
+		m_LayerInfo(layerInfo), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
 
 	bool read(File& document, const FileHeader& header, const uint64_t offset);
 };

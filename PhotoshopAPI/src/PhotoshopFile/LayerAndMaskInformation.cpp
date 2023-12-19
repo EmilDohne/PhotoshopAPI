@@ -206,10 +206,10 @@ void LayerRecords::LayerBlendingRanges::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 LayerRecord::LayerRecord(
 	PascalString layerName,
-	uint32_t top,
-	uint32_t left,
-	uint32_t bottom,
-	uint32_t right,
+	int32_t top,
+	int32_t left,
+	int32_t bottom,
+	int32_t right,
 	uint16_t channelCount,
 	std::vector<LayerRecords::ChannelInformation> channelInfo,
 	Enum::BlendMode blendMode,
@@ -248,10 +248,10 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	m_Offset = offset;
 	document.setOffset(offset);
 
-	m_Top = ReadBinaryData<uint32_t>(document);
-	m_Left = ReadBinaryData<uint32_t>(document);
-	m_Bottom = ReadBinaryData<uint32_t>(document);
-	m_Right = ReadBinaryData<uint32_t>(document);
+	m_Top = ReadBinaryData<int32_t>(document);
+	m_Left = ReadBinaryData<int32_t>(document);
+	m_Bottom = ReadBinaryData<int32_t>(document);
+	m_Right = ReadBinaryData<int32_t>(document);
 
 	m_Size = 16u;
 
@@ -279,9 +279,9 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 			channelInfo.m_ChannelID = Enum::grayscaleIntToChannelID(ReadBinaryData<uint16_t>(document));
 			break;
 		default:
-			PSAPI_UNUSED(ReadBinaryData<uint16_t>(document))
+			int16_t index = ReadBinaryData<uint16_t>(document);
 			PSAPI_LOG_WARNING("LayerRecord", "Currently unsupported ColorMode encountered, storing ChannelID::Custom")
-			channelInfo.m_ChannelID = Enum::ChannelID::Custom;
+				channelInfo.m_ChannelID = { Enum::ChannelID::Custom, index };
 			break;
 		}
 
@@ -387,15 +387,19 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
 			uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
+			uint32_t centerX = (layerRecord.m_Left + layerRecord.m_Right) / 2;
+			uint32_t centerY = (layerRecord.m_Top + layerRecord.m_Bottom) / 2;
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
-			if (channel.m_ChannelID == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID == Enum::ChannelID::RealUserSuppliedLayerMask)
+			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
 			{
 				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
 				{
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 					width = mask.m_Right - mask.m_Left;
 					height = mask.m_Bottom - mask.m_Top;
+					centerX = (mask.m_Left + mask.m_Right) / 2;
+					centerY = (mask.m_Top + mask.m_Bottom) / 2;
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
@@ -408,19 +412,19 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
 				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
 				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
 				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
