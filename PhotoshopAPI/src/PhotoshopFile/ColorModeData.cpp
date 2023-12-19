@@ -53,7 +53,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 	{
 		WriteBinaryData<uint32_t>(document, m_Data.size());
 		WriteBinaryArray<uint8_t>(document, m_Data);
-		m_Size = m_Data.size();
+		m_Size = m_Data.size() + 4u;
 	}
 	else if (header.m_Depth == Enum::BitDepth::BD_32)
 	{
@@ -77,6 +77,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		m_Data = data;
 		WriteBinaryData<uint32_t>(document, data.size());
 		WriteBinaryArray<uint8_t>(document, data);
+		m_Size = data.size() + 4u;
 
 	}
 	else
@@ -86,7 +87,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 			PSAPI_LOG_ERROR("ColorModeData", "Invalid size for ColorMode data detected, only indexed colours have data in this \
 				section (32-bit files get handled internally)")
 		}
-		m_Size = 0;
+		m_Size = 4u;
 		WriteBinaryData<uint32_t>(document, 0u);
 	}
 }

@@ -16,7 +16,7 @@ struct ColorModeData : public FileSection
 {
 	std::vector<uint8_t> m_Data;
 
-	ColorModeData() : m_Data({}) { m_Size = 0u; m_Offset = 26u; };
+	ColorModeData() : m_Data({}) { m_Size = 4u; m_Offset = 26u; };
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
 
