@@ -14,11 +14,15 @@
 #include "LayerTypes/SmartObjectLayer.h"
 #include "LayerTypes/TextLayer.h"
 
+#include "LayeredFile/Util/GenerateHeader.h"
+#include "LayeredFile/Util/GenerateColorModeData.h"
+
 
 #include <vector>
 #include <span>
 #include <variant>
 #include <memory>
+#include <algorithm>
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -27,6 +31,19 @@ PSAPI_NAMESPACE_BEGIN
 template struct LayeredFile<uint8_t>;
 template struct LayeredFile<uint16_t>;
 template struct LayeredFile<float32_t>;
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+PhotoshopFile LayeredFile<T>::toPhotoshopFile()
+{
+	FileHeader header = generateHeader(this, m_Version);
+	ColorModeData colorModeData = generateColorModeData(this);
+
+
+	PhotoshopFile file();
+}
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,8 +59,9 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
 
-	// Build the layer hierarchy
+	// Build the layer hierarchy, both nested and flat for easy traversal
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
+	m_FlatLayers = LayeredFileImpl::generateFlatLayers<T>(m_Layers);
 }
 
 
@@ -86,18 +104,6 @@ LayeredFile<T>::LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayeredFile<T>::LayeredFile(Enum::BitDepth bitDepth, Enum::ColorMode colorMode, uint64_t width, uint64_t height)
-{
-	m_BitDepth = bitDepth;
-	m_ColorMode = colorMode;
-	m_Width = width;
-	m_Height = height;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
 std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 {
 	std::vector<std::string> segments = splitString(path, '/');
@@ -117,6 +123,39 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 	}
 	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str())
 	return nullptr;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order)
+{
+	if (order == LayerOrder::forward)
+	{
+		if (layer.has_value())
+		{
+			std::vector<std::shared_ptr<Layer<T>>> layerVec;
+			layerVec.push_back(layer.value());
+			return LayeredFileImpl::generateFlatLayers(layerVec);
+		}
+		return LayeredFileImpl::generateFlatLayers(m_Layers);
+	}
+	else if (order == LayerOrder::reverse)
+	{
+		if (layer.has_value())
+		{
+			std::vector<std::shared_ptr<Layer<T>>> layerVec;
+			layerVec.push_back(layer.value());
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(layerVec);
+			std::reverse(flatLayers.begin(), flatLayers.end());
+			return flatLayers;
+		}
+		std::vector<std::shared_ptr<Layer<T>>> flatLayers LayeredFileImpl::generateFlatLayers(m_Layers);
+		std::reverse(flatLayers.begin(), flatLayers.end());
+		return flatLayers;
+	}
+	PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse")
 }
 
 
@@ -217,6 +256,36 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		++channelImageDataIterator;
 	}
 	return root;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::generateFlatLayers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers)
+{
+	std::vector<std::shared_ptr<Layer<T>>> flatLayers;
+	LayeredFileImpl::generateFlatLayersRecurse(nestedLayers, flatLayers);
+
+	return flatLayers;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers)
+{
+	for (const auto& layer : nestedLayers)
+	{
+		// Recurse down if its a group layer
+		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+		{
+			flatLayers.push_back(layer);
+			LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
+		}
+		flatLayers.push_back(layer);
+	}
 }
 
 
@@ -371,6 +440,8 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children")
 	return nullptr;
 }
+
+
 
 
 PSAPI_NAMESPACE_END
