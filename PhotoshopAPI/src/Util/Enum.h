@@ -234,46 +234,59 @@ namespace Enum
 		TransparencyMask,			// Alpha Channel
 		UserSuppliedLayerMask,		// Pixel Mask
 		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
+
 	};
 
-	inline ChannelID rgbIntToChannelID(const int16_t value)
+	// Structure to hold both the unique identifier of a layer as well as its index 
+	// allowing for much easier handling later on
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	struct ChannelIDInfo
+	{
+		ChannelID id;
+		int16_t index;
+	};
+
+	
+
+	inline ChannelIDInfo rgbIntToChannelID(const int16_t value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Red;
-		case 1: return ChannelID::Green;
-		case 2: return ChannelID::Blue;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case 0: return ChannelIDInfo{ ChannelID::Red, value };
+		case 1: return ChannelIDInfo{ ChannelID::Green, value };
+		case 2: return ChannelIDInfo{ ChannelID::Blue, value };
+		case -1: return ChannelIDInfo{ ChannelID::TransparencyMask, value };
+		case -2: return ChannelIDInfo{ ChannelID::UserSuppliedLayerMask, value };
+		case -3: return ChannelIDInfo{ ChannelID::RealUserSuppliedLayerMask, value };
+		default: return ChannelIDInfo{ ChannelID::Custom, value };	// These are channels set by the user
 		}
 	}
 
-	inline ChannelID cmykIntToChannelID(const int16_t value)
+	inline ChannelIDInfo cmykIntToChannelID(const int16_t value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Cyan;
-		case 1: return ChannelID::Magenta;
-		case 2: return ChannelID::Yellow;
-		case 3: return ChannelID::Black;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case 0: return ChannelIDInfo{ ChannelID::Red, value };
+		case 1: return ChannelIDInfo{ChannelID::Magenta, value};
+		case 2: return ChannelIDInfo{ChannelID::Yellow, value};
+		case 3: return ChannelIDInfo{ ChannelID::Black, value };
+		case -1: return ChannelIDInfo{ChannelID::TransparencyMask, value};
+		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
+		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
+		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
 		}
 	}
 
-	inline ChannelID grayscaleIntToChannelID(const int16_t value)
+	inline ChannelIDInfo grayscaleIntToChannelID(const int16_t value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Gray;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case 0: return ChannelIDInfo{ChannelID::Gray, value};
+		case -1: return ChannelIDInfo{ ChannelID::TransparencyMask, value };
+		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
+		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
+		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
 		}
 	}
 
