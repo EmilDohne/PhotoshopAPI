@@ -47,6 +47,7 @@ struct LrSectionTaggedBlock : TaggedBlock
 	std::optional<Enum::BlendMode> m_BlendMode;
 
 	LrSectionTaggedBlock() = default;
+	LrSectionTaggedBlock(Enum::SectionDivider sectionDivider, std::optional<Enum::BlendMode> blendMode) : m_Type(sectionDivider), m_BlendMode(blendMode) {};
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
