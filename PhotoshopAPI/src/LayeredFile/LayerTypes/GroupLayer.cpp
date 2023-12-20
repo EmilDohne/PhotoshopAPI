@@ -12,8 +12,66 @@ template struct GroupLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+std::tuple<LayerRecord, std::vector<ChannelImageData>> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode)
+{
+	PascalString lrName = Layer<T>::generatePascalString();
+	auto extents = Layer<T>::generateExtents();
+	int32_t top = std::get<0>(extents);
+	int32_t left = std::get<1>(extents);
+	int32_t bottom = std::get<2>(extents);
+	int32_t right = std::get<3>(extents);
+	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(m_LayerMask.has_value());
+	// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
+	// again later
+	std::vector<LayerRecords::ChannelInformation> channelInfo;
+	for (const auto& it : m_ImageData)
+	{
+		channelInfo.push_back(LayerRecords::ChannelInformation{ it.first.id, it.second.m_OrigSize });
+	}
+	uint8_t clipping = 0u;	// No clipping mask for now
+	uint8_t bitFlags = 1u << 1;	// Set the layer to be visible
+	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
+	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
+
+	LayerRecord lrRecord = LayerRecord(
+		lrName,
+		top,
+		left,
+		bottom,
+		right,
+		channelCount,
+		channelInfo,
+		m_BlendMode,
+		m_Opacity,
+		clipping,
+		bitFlags,
+		lrMaskData,
+		blendingRanges,
+		std::nullopt	// We dont really need to pass any additional layer info in here
+	);
+	return lrRecord;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
 {
+	// Because Photoshop stores the Passthrough blend mode on the layer section divider tagged block we must check if it present here
+	if (!layerRecord.m_AdditionalLayerInfo.has_value()) return;
+	const auto& taggedBlocks = layerRecord.m_AdditionalLayerInfo.value().m_TaggedBlocks;
+	const auto lrSectionBlockPtr = taggedBlocks.getTaggedBlockView<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
+	if (!lrSectionBlockPtr) return;
+
+	if (lrSectionBlockPtr.m_BlendMode.has_value())
+	{
+		m_BlendMode = lrSectionBlockPtr.m_BlendMode.value();
+	}
+	if (lrSectionBlockPtr.m_Type == Enum::SectionDivider::ClosedFolder)
+	{
+		m_isCollapsed = true;
+	}
 }
 
 
