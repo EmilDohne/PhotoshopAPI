@@ -28,6 +28,7 @@ struct Layer
 	std::string m_LayerName;
 	std::optional<LayerMask<T>> m_LayerMask;
 	Enum::BlendMode m_BlendMode;
+	bool m_IsVisible; // Is the layer hidden or not?
 
 	uint8_t m_Opacity;	// 0 - 255 despite the appearance being 0-100 in photoshop
 
@@ -40,7 +41,7 @@ struct Layer
 	Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 
 	// Each layer must implement a function that parses it to a photoshop representation
-	virtual std::tuple<LayerRecord, std::vector<ChannelImageData>> toPhotoshop(Enum::ColorMode colorMode) = 0;
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy) = 0;
 	virtual ~Layer() = default;
 protected:
 
@@ -61,7 +62,9 @@ protected:
 	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode);
 
 
-	std::unordered_map<
+	// Extract the layer mask into a tuple of channel information as well as the image data. If doCopy is
+	// set to false the mask can be considered invalidated and must no longer be accessed.
+	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> extractLayerMask(bool doCopy);
 };
 
 PSAPI_NAMESPACE_END

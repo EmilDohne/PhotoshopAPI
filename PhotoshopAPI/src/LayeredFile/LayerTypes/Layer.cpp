@@ -40,6 +40,8 @@ Layer<T>::Layer(const LayerRecord& layerRecord, const ChannelImageData& channelI
 			m_BlendMode = layerRecord.m_BlendMode;
 		}
 	}
+	// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
+	m_IsVisible = layerRecord.m_BitFlags.m_isVisible;
 	m_Opacity = layerRecord.m_Opacity;
 	m_Width = layerRecord.m_Right - layerRecord.m_Left;
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
@@ -245,6 +247,30 @@ LayerRecords::LayerBlendingRanges Layer<T>::generateBlendingRanges(const Enum::C
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> Layer<T>::extractLayerMask(bool doCopy)
+{
+	if (!m_LayerMask.has_value())
+	{
+		return std::nullopt;
+	}
+
+	auto& maskImgChannel = m_LayerMask.value().maskData;
+	Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
+	LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel.m_OrigSize };
+
+	// TODO this might not be doing much at all
+	if (doCopy)
+		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(channelImgData);
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> > data = std::make_tuple(channelInfo, std::move(imgData));
+		return std::make_optional(data);
+	else
+		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(std::move(channelImgData));
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> > data = std::make_tuple(channelInfo, std::move(imgData));
+		return std::make_optional(data);
+}
 
 
 

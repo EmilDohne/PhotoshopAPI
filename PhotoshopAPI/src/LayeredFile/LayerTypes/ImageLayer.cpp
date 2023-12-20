@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <optional>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -19,7 +20,7 @@ template struct ImageLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, std::vector<ChannelImageData>> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode)
+std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
 	auto extents = Layer<T>::generateExtents();
@@ -28,29 +29,15 @@ std::tuple<LayerRecord, std::vector<ChannelImageData>> ImageLayer<T>::toPhotosho
 	int32_t bottom = std::get<2>(extents);
 	int32_t right = std::get<3>(extents);
 	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(m_LayerMask.has_value());
-	// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
-	// again later
-	std::vector<LayerRecords::ChannelInformation> channelInfo;
-	std::vector<ChannelImageData> imageChannels;
-	for (const auto& it : m_ImageData)
-	{
-		channelInfo.push_back(LayerRecords::ChannelInformation{ it.first.id, it.second.m_OrigSize });
-		ChannelImageData channelImgData{};
-		channelImgData.m_ImageData = std::move(it.second);
-		imageChannels.push_back(ChannelImageData(std::make_unique<BaseImageChannel>(channelImgData));
-	}
-	if (m_LayerMask.has_value())
-	{
-		auto& maskImgChannel = m_LayerMask.value().maskData;
-		Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
-		channelInfo.push_back(LayerRecord::m_ChannelInformation{ maskIdInfo, maskImgChannel.m_OrigSize });
-		ChannelImageData channelImgData{};
-		channelImgData.m_ImageData = std::move(maskImgChannel);
-		imageChannels.push_back(ChannelImageData(std::make_unique<BaseImageChannel>(channelImgData));
-	}
+
+	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
+	// the compression mode chosen on export and must therefore be updated later.
+	auto channelData = this->extractImageData(doCopy);
+	auto& channelInfoVec = std::get<0>(channelData);
+	auto channelImgData = std::move(std::get<1>(channelData));
 
 	uint8_t clipping = 0u;	// No clipping mask for now
-	uint8_t bitFlags = 1u << 1;	// Set the layer to be visible
+	LayerRecords::BitFlags bitFlags(false, m_IsVisible, false);
 	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 	
@@ -61,7 +48,7 @@ std::tuple<LayerRecord, std::vector<ChannelImageData>> ImageLayer<T>::toPhotosho
 		bottom,
 		right,
 		channelCount,
-		channelInfo,
+		channelInfoVec,
 		m_BlendMode,
 		m_Opacity,
 		clipping,
@@ -70,7 +57,8 @@ std::tuple<LayerRecord, std::vector<ChannelImageData>> ImageLayer<T>::toPhotosho
 		blendingRanges,
 		std::nullopt	// We dont really need to pass any additional layer info in here
 	);
-	return std::make_tuple(lrRecord, imageChannels);
+
+	return std::make_tuple(lrRecord, channelImgData);
 }
 
 
@@ -97,6 +85,38 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, const ChannelImageData
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::extractImageData(const bool doCopy)
+{
+	std::vector<LayerRecords::ChannelInformation> channelInfoVec;
+	std::vector<std::unique_ptr<BaseImageChannel> channelDataVec;
+
+	// First extract our mask data, the order of our channels does not matter as long as the 
+	// order of channelInfo and channelData is the same
+	auto maskData = Layer<T>::extractLayerMask(doCopy);
+	if (maskData.has_value())
+	{
+		channelInfoVec.push_back(std::get<0>(maskData.value()));
+		channelDataVec.push_back(std::move(std::get<1>(maskData.value())));
+	}
+
+	// Extract all the channels next and push them into our data representation
+	for (const auto& it : m_ImageData)
+	{
+		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second.m_OrigSize });
+		if (doCopy)
+			ChannelDataVec.push_back(std::make_unique<BaseImageChannel>(it.second));
+		else
+			ChannelDataVec.push_back(std::make_unique<BaseImageChannel>(std::move(it.second)));
+	}
+
+	// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
+	ChannelImageData channelData(channelDataVec);
+
+	return std::make_tuple(channelInfoVec, channelData);
+}
 
 
 PSAPI_NAMESPACE_END
