@@ -243,7 +243,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
 			root.push_back(groupLayerPtr);
 		}
-		else if (auto groupLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
+		else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
 		{
 			// We have reached the end of the current nested section therefore we return the current root object we hold;
 			return root;
@@ -283,8 +283,14 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 		{
 			flatLayers.push_back(layer);
 			LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
+			// If the layer is a group we actually want to insert a section divider at the end of it. This makes reconstructing the layer
+			// hierarchy much easier later on. We dont actually need to give this a name 
+			flatLayers.push_back(std::make_shared<Layer<T>>(SectionDividerLayer<T>{}));
 		}
-		flatLayers.push_back(layer);
+		else
+		{
+			flatLayers.push_back(layer);
+		}
 	}
 }
 
