@@ -91,7 +91,7 @@ template <typename T>
 std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::extractImageData(const bool doCopy)
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfoVec;
-	std::vector<std::unique_ptr<BaseImageChannel> channelDataVec;
+	std::vector<std::unique_ptr<BaseImageChannel>> channelDataVec;
 
 	// First extract our mask data, the order of our channels does not matter as long as the 
 	// order of channelInfo and channelData is the same
