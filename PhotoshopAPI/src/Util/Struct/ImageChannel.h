@@ -17,6 +17,7 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 struct BaseImageChannel
 {
 	Enum::Compression m_Compression = Enum::Compression::Raw;
@@ -159,5 +160,6 @@ private:
 	uint64_t m_OrigSize;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
 
 };
+
 
 PSAPI_NAMESPACE_END
