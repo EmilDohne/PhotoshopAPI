@@ -18,8 +18,10 @@ struct ImageLayer : public Layer<T>
 	std::unordered_map<Enum::ChannelIDInfo, ImageChannel<T>> m_ImageData;
 
 	// Generate a photoshop layerRecords and imageData based on the current layer
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode);
+	std::tuple<LayerRecord, std::vector<ChannelImageData>> toPhotoshop(const Enum::ColorMode colorMode);
 
+	// Initialize our imageLayer by first parsing the base Layer instance and then moving
+	// the additional channels into our representation
 	ImageLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 };
 
