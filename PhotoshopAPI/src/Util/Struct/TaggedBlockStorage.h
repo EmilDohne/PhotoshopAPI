@@ -21,7 +21,8 @@ struct TaggedBlockStorage
 	TaggedBlockStorage(std::vector<std::shared_ptr<TaggedBlock>> taggedBlocks);
 
 	// Retrieve the object represented by the specified tagged block. Note, this returns the first instance rather than all instances
-	// We assume tagged blocks are unique but this may not always be the case. Returns nullptr if no type is found
+	// We assume tagged blocks are unique but this may not always be the case. Returns nullptr if no type is found.
+	// Usage: specify the type of tagged block you want to retrieve with the template argument as well as the key.
 	template <typename T>
 	std::shared_ptr<T> getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
