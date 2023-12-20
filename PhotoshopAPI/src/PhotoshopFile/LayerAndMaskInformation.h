@@ -22,6 +22,33 @@ PSAPI_NAMESPACE_BEGIN
 // Structs to hold the different types of data found in the layer records themselves
 namespace LayerRecords
 {
+
+	// Holds the bit flags found in each layer record instance, there are only 5 documented ones but the other 3 appear to also hold some information.
+	// However, this is mostly irrelevant for now
+	struct BitFlags
+	{
+		bool m_isTransparencyProtected = false;
+		bool m_isVisible = false;
+		bool m_isBit4Useful = false;	// This bit simply tells us if the next section holds useful information and whether it should be considered
+		bool m_isPixelDataIrrelevant = false;	// If m_isBit4Useful is set to false this will always also be false, no matter if the value itself would be true
+
+		// Set the internal flag states using the provided flag uint8_t
+		void setFlags(const uint8_t flags);
+		// Return the current flag states as a uint8_t with the relevant bits set
+		uint8_t getFlags() const;
+
+		BitFlags() = default;
+		BitFlags(const uint8_t flags);
+		BitFlags(const bool isTransparencyProtected, const bool isVisible, const bool isPixelDataIrrelevant);
+
+	private:
+		const static uint8_t m_transparencyProtectedMask = 1u << 0;
+		const static uint8_t m_visibleMask = 1u << 1;
+		const static uint8_t m_bit4UsefulMask = 1u << 3;
+		const static uint8_t m_pixelDataIrrelevantMask = 1u << 4;
+	};
+
+
 	struct ChannelInformation
 	{
 		Enum::ChannelIDInfo m_ChannelID;
@@ -112,9 +139,9 @@ struct LayerRecord : public FileSection
 	uint16_t m_ChannelCount;
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
 	Enum::BlendMode m_BlendMode;
-	uint8_t m_Opacity; // 0 - 255
+	uint8_t m_Opacity;	// 0 - 255
 	uint8_t m_Clipping;	// 0 or 1
-	uint8_t m_BitFlags;
+	LayerRecords::BitFlags m_BitFlags;
 
 	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
 	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
@@ -129,7 +156,7 @@ struct LayerRecord : public FileSection
 		m_BlendMode(Enum::BlendMode::Normal),
 		m_Opacity(0u),
 		m_Clipping(0u),
-		m_BitFlags(0u) {};
+		m_BitFlags(LayerRecords::BitFlags{}) {};
 	// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
 	LayerRecord(
 		PascalString layerName,
@@ -142,7 +169,7 @@ struct LayerRecord : public FileSection
 		Enum::BlendMode blendMode,
 		uint8_t opacity,
 		uint8_t clipping,
-		uint8_t bitFlags,
+		LayerRecords::BitFlags bitFlags,
 		std::optional<LayerRecords::LayerMaskData> layerMaskData,
 		LayerRecords::LayerBlendingRanges layerBlendingRanges,
 		std::optional<AdditionalLayerInfo> additionalLayerInfo
@@ -173,7 +200,8 @@ struct ChannelImageData : public FileSection
 	// memory footprint
 	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 
-	ChannelImageData() {};
+	ChannelImageData() = default;
+	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) {};
 
 	// Read a single channel image data instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);

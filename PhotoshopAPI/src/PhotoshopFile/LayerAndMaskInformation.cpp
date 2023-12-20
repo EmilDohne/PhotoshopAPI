@@ -20,6 +20,59 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+void LayerRecords::BitFlags::setFlags(const uint8_t flags)
+{
+	m_isTransparencyProtected = (flags & m_transparencyProtectedMask) != 0;
+	m_isVisible = (flags & m_visibleMask) != 0;
+	// Bit 2 holds no relevant information
+	m_isBit4Useful = (flags & m_bit4UsefulMask) != 0;
+	m_isPixelDataIrrelevant = (flags & m_pixelDataIrrelevantMask) != 0 && m_isBit4Useful;
+	// bit 5-7 holds no data (according to the documentation)
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint8_t LayerRecords::BitFlags::getFlags() const
+{
+	uint8_t result = 0u;
+	if (m_isTransparencyProtected) result & 1u << 0;
+	if (m_isVisible) result & 1u << 1;
+	if (m_isBit4Useful) result & 1u << 3;
+	if (m_isPixelDataIrrelevant) result & 1u << 4;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LayerRecords::BitFlags::BitFlags(const uint8_t flags)
+{
+	this->setFlags(flags);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool isVisible, const bool isPixelDataIrrelevant)
+{
+	m_isTransparencyProtected = isTransparencyProtected;
+	m_isVisible = isVisible;
+	// TODO this approach of simplifying is probably fine but we need to test if it actually defaults to false or not
+	if (isPixelDataIrrelevant)
+	{
+		m_isBit4Useful = true;
+		m_isPixelDataIrrelevant = true;
+	}
+	else
+	{
+		m_isBit4Useful = false;
+		m_isPixelDataIrrelevant = false;
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 {
 	m_PositionRelativeToLayer = (bitFlag & m_PositionRelativeToLayerMask) != 0;
@@ -215,7 +268,7 @@ LayerRecord::LayerRecord(
 	Enum::BlendMode blendMode,
 	uint8_t opacity,
 	uint8_t clipping,
-	uint8_t bitFlags,
+	LayerRecords::BitFlags bitFlags,
 	std::optional<LayerRecords::LayerMaskData> layerMaskData,
 	LayerRecords::LayerBlendingRanges layerBlendingRanges,
 	std::optional<AdditionalLayerInfo> additionalLayerInfo)
@@ -318,7 +371,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 	m_Opacity = ReadBinaryData<uint8_t>(document);
 	m_Clipping = ReadBinaryData<uint8_t>(document);
-	m_BitFlags = ReadBinaryData<uint8_t>(document);
+	m_BitFlags = LayerRecords::BitFlags(ReadBinaryData<uint8_t>(document));
 
 	document.skip(1u);	// Filler byte;
 	m_Size += 4u;
