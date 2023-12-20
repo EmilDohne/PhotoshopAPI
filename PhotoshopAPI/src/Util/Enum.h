@@ -245,6 +245,11 @@ namespace Enum
 	{
 		ChannelID id;
 		int16_t index;
+
+		inline bool operator==(const ChannelIDInfo& other) const
+		{
+			return (this->id == other.id && this->index == other.index);
+		}
 	};
 
 	
