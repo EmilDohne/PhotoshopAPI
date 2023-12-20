@@ -9,6 +9,7 @@
 #include <vector>
 #include <optional>
 #include <string>
+#include <memory>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -44,6 +45,44 @@ Layer<T>::Layer(const LayerRecord& layerRecord, const ChannelImageData& channelI
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
 	m_CenterX = (layerRecord.m_Left - layerRecord.m_Right) / 2;
 	m_CenterY = (layerRecord.m_Top - layerRecord.m_Bottom) / 2;
+
+	// Move the layer mask into our layerMask struct, for now this only does pixel masks
+	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
+	{
+		auto& channelInfo = layerRecord.m_ChannelInformation[i];
+		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
+		{
+			// Move the compressed image data into our LayerMask struct
+			LayerMask<T> lrMask{};
+			auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
+			ImageChannel<T>* imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get());
+			channelPtr = nullptr;
+
+			if (imageChannelPtr)
+			{
+				lrMask.maskData = std::move(*imageChannelPtr);
+			}
+			else
+			{
+				PSAPI_LOG_ERROR("Layer", "Unable to cast mask to ImageChannel")
+			}
+
+			// If no mask parameters are present we just use sensible defaults and skip
+			if (!layerRecord.m_LayerMaskData.has_value()) continue;
+			auto& maskParams = layerRecord.m_LayerMaskData.value();
+			if (!maskParams.m_LayerMask.has_value()) continue;
+
+			// Read the mask parameters
+			auto& layerMaskParams = maskParams.m_LayerMask.value();
+
+			lrMask.isDisabled = layerMaskParams.m_Disabled;
+			lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
+			lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
+
+			// Set the layer mask by moving our temporary struct
+			m_LayerMask = std::move(lrMask);
+		}
+	}
 }
 
 
@@ -204,6 +243,8 @@ LayerRecords::LayerBlendingRanges Layer<T>::generateBlendingRanges(const Enum::C
 	}
 	return blendingRanges;
 }
+
+
 
 
 

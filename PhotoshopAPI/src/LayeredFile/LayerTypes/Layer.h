@@ -15,7 +15,7 @@ template <typename T>
 struct LayerMask
 {
 	ImageChannel<T> maskData;
-	bool isDisabled;
+	bool isDisabled = false;
 	std::optional<uint8_t> maskDensity;
 	std::optional<float64_t> maskFeather;
 };
@@ -39,8 +39,8 @@ struct Layer
 	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
 	Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
 
-	// Each layer must implement a function that parses it to a global namespace
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode) = 0;
+	// Each layer must implement a function that parses it to a photoshop representation
+	virtual std::tuple<LayerRecord, std::vector<ChannelImageData>> toPhotoshop(Enum::ColorMode colorMode) = 0;
 	virtual ~Layer() = default;
 protected:
 
@@ -59,6 +59,9 @@ protected:
 	// The same holds true for other color modes where for greyscale e.g. it would be just grey and alpha (?)
 	// and cmyk would be grey, cyan, magenta, yellow, key and alpha (?)
 	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode);
+
+
+	std::unordered_map<
 };
 
 PSAPI_NAMESPACE_END
