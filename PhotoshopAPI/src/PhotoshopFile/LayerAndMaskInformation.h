@@ -192,6 +192,20 @@ struct ChannelImageData : public FileSection
 		return -1;
 	}
 
+	// Get an index to a specific channel based on the identifier
+	// returns -1 if no matching channel is found
+	int getChannelIndex(Enum::ChannelIDInfo channelIDInfo) const
+	{
+		for (int i = 0; i < m_ImageData.size(); ++i)
+		{
+			if (m_ImageData[i]->m_ChannelID == channelIDInfo)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
+
 	// Extract the size of a section ahead of time. This is used to get offsets into each of the different channelImageData 
 	// instances ahead of time for parallelization.
 	static uint64_t extractSectionSize(File& document, const uint64_t offset, const LayerRecord& layerRecord);
@@ -250,6 +264,22 @@ struct ChannelImageData : public FileSection
 			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
 			return std::vector<T>();			
 		}
+	}
+
+
+	// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
+	// we just return that silently and leave it up to the caller to check for this
+	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
+	{
+		const int index = this->getChannelIndex(channelIDInfo);
+		// Take ownership of and invalidate the current index
+		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		if (imageChannelPtr == nullptr)
+		{
+			return nullptr;
+		}
+		m_ImageData[index] = nullptr;
+		return std::move(imageChannelPtr);
 	}
 };
 
