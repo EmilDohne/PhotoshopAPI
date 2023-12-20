@@ -32,6 +32,10 @@ struct GroupLayer : public Layer<T>
 	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy);
 
 	GroupLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
+
+private:
+	// Generate an additional layer information section which holds information about the group state
+	AdditionalLayerInfo generateAdditionalLayerInfo();
 };
 
 
