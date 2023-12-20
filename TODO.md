@@ -5,6 +5,7 @@
 - [X] Generate CMake project for PhotoshopAPI
 - [X] Include blosc2 compression library
 - [X] Add README (initial)
+- [ ] Add examples on how to interact with the API (ideally cover as many cases as possible)
 
 ## Testing
 
@@ -28,6 +29,20 @@
     - [ ] Compress using blosc2
 
 ### Write
+
+#### Parsing from LayeredFile -> PhotoshopFile
+- [X] Parse File Header
+- [X] Parse ColorModeData
+- [X] Parse Image Resources
+- [ ] Parse Layer and Mask information
+    - [ ] Parse Global Layer Mask Info
+    - [ ] Parse Layer Records
+    - [ ] Parse Channel Image Data
+    - [ ] Parse Additional Layer Information
+- [ ] Parse Merged Image Data Section (?)
+
+
+#### Write the actual data
 - [ ] Write File Header
 - [ ] Write ColorModeData
 - [ ] Write Image Resources
@@ -37,9 +52,3 @@
     - [ ] Write Channel Image Data
     - [ ] Write Additional Layer Information
 - [ ] Write Merged Image Data Section (?)
-
-
-## LayeredFile
-
-- [x] Parse Read file
-- [ ] Write parsed file
