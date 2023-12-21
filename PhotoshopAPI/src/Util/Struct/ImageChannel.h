@@ -23,7 +23,9 @@ struct BaseImageChannel
 	Enum::Compression m_Compression = Enum::Compression::Raw;
 	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
 
-	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const uint32_t width, const uint32_t height, const uint32_t xcoord, const uint32_t ycoord)
+
+	BaseImageChannel() = default;
+	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord)
 	{
 		if (width > 300000u)
 		{
@@ -39,22 +41,24 @@ struct BaseImageChannel
 		m_Compression = compression;
 		m_Width = width;
 		m_Height = height;
+		m_XCoord = xcoord;
+		m_YCoord = ycoord;
 		m_ChannelID = channelID;
 	}
 
 	virtual ~BaseImageChannel() = default;
 
-	uint32_t getWidth() { return m_Width; };
-	uint32_t getHeight() { return m_Height; };
-	uint32_t getCenterX() { return m_XCoord; };
-	uint32_t getCenterY() { return m_YCoord; };
+	int32_t getWidth() { return m_Width; };
+	int32_t getHeight() { return m_Height; };
+	int32_t getCenterX() { return m_XCoord; };
+	int32_t getCenterY() { return m_YCoord; };
 
 protected:
 	// Photoshop stores their positions as a bounding rect but we instead store extents and center coordinates
-	uint32_t m_Width = 0u;
-	uint32_t m_Height = 0u;
-	uint32_t m_XCoord = 0u;
-	uint32_t m_YCoord = 0u;
+	int32_t m_Width = 0u;
+	int32_t m_Height = 0u;
+	int32_t m_XCoord = 0u;
+	int32_t m_YCoord = 0u;
 };
 
 
@@ -65,15 +69,19 @@ protected:
 template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
-	uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+	static const uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+	uint64_t m_OrigByteSize = 0u;	// The size of the original vector in bytes
 
+
+	ImageChannel() = default;
 	// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const uint32_t width, const uint32_t height, const uint32_t xcoord, const uint32_t ycoord) :
+	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord) :
 		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
 
 		PROFILE_FUNCTION();
 		m_OrigSize = static_cast<uint64_t>(width) * height;
+		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
@@ -128,8 +136,16 @@ struct ImageChannel : public BaseImageChannel
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
+
+	// Extract the data from the imagechannel and invalidate it (can only be called once). If the image data does not exist yet we simply return an empty vector<T>
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
+		// If dat
+		if (!m_Data)
+		{
+			return std::vector<T>();
+		}
+
 		std::vector<T> tmpData(m_OrigSize, 0);
 
 		uint64_t remainingSize = m_OrigSize;
@@ -155,9 +171,9 @@ struct ImageChannel : public BaseImageChannel
 	}
 
 private:
-	blosc2_schunk* m_Data;
-	uint32_t m_NumChunks;
-	uint64_t m_OrigSize;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
+	blosc2_schunk* m_Data = nullptr;
+	uint32_t m_NumChunks = 0u;
+	uint64_t m_OrigSize = 0u;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
 
 };
 

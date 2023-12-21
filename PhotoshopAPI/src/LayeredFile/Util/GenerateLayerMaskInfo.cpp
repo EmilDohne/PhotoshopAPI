@@ -3,6 +3,7 @@
 
 #include "Macros.h"
 #include "Struct/TaggedBlock.h"
+#include "LayeredFile/LayerTypes/Layer.h"
 
 #include <variant>
 #include <optional>
@@ -13,25 +14,10 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Since we split the declaration we must explicitly instantiate these template functions.
-// Fortunately the types are well known ahead of time
-template LayerInfo generateLayerInfo(const LayeredFile<uint8_t>& layeredFile);
-template LayerInfo generateLayerInfo(const LayeredFile<uint16_t>& layeredFile);
-template LayerInfo generateLayerInfo(const LayeredFile<float32_t>& layeredFile);
-
-template LayerRecord generateLayerRecord(const std::shared_ptr<Layer<uint8_t>> layer);
-template LayerRecord generateLayerRecord(const std::shared_ptr<Layer<uint16_t>> layer);
-template LayerRecord generateLayerRecord(const std::shared_ptr<Layer<float32_t>> layer);
-
-template ChannelImageData generateChannelImageData(const std::shared_ptr<Layer<uint8_t>> layer);
-template ChannelImageData generateChannelImageData(const std::shared_ptr<Layer<uint16_t>> layer);
-template ChannelImageData generateChannelImageData(const std::shared_ptr<Layer<float32_t>> layer);
-
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<T>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t")
 }
@@ -39,7 +25,7 @@ LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<T>& layeredFile)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<uint8_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile)
 {
 	LayerInfo lrInfo = generateLayerInfo<uint8_t>(layeredFile);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
@@ -52,7 +38,7 @@ LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<uint8_t>& layere
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<uint16_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generateLayerInfo<uint16_t>(layeredFile);
@@ -71,7 +57,7 @@ LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<uint16_t>& layer
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<float32_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFile)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generateLayerInfo<float32_t>(layeredFile);
@@ -90,7 +76,7 @@ LayerAndMaskInformation generateLayerMaskInfo(const LayeredFile<float32_t>& laye
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerInfo generateLayerInfo(const LayeredFile<T>& layeredFile)
+LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile)
 {
 	// We must first for each layer generate a layer records as well as channelImageData using the reversed flat layers
 	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.generateFlatLayers(std::nullopt, LayerOrder::reverse);
@@ -103,31 +89,27 @@ LayerInfo generateLayerInfo(const LayeredFile<T>& layeredFile)
 
 	for (const auto& layer : flatLayers)
 	{
-		LayerRecord lrRecord = generateLayerRecord<T>(layer);
-		ChannelImageData lrImageData = generateChannelImageData<T>(layer);
+		std::tuple<LayerRecord, ChannelImageData> lrData = generateLayerData<T>(layeredFile, layer);
+		LayerRecord lrRecord = std::move(std::get<0>(lrData));
+		ChannelImageData lrImageData = std::move(std::get<1>(lrData));
+
+		layerRecords.push_back(std::move(lrRecord));
+		imageData.push_back(std::move(lrImageData));
 	}
 
-	return LayerInfo(layerRecords, imageData);
+	return LayerInfo(std::move(layerRecords), std::move(imageData));
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerRecord generateLayerRecord(const std::shared_ptr<Layer<T>> layer)
+std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
 {
-
+	// We default to not copying here
+	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, false);
+	return lrData;
 }
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
-ChannelImageData generateChannelImageData(const std::shared_ptr<Layer<T>> layer)
-{
-
-}
-
 
 
 PSAPI_NAMESPACE_END

@@ -12,7 +12,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // Generate a ColorModeData section based on the options set by the layeredFile
 template <typename T>
-ImageResources generateImageResources(const LayeredFile<T>& layeredFile)
+ImageResources generateImageResources(LayeredFile<T>& layeredFile)
 {
 	// Initialize an empty image resource section, this might be interesting later for color management purposes (e.g. 
 	// setting an ICC profile on the data or specifying the print resolution

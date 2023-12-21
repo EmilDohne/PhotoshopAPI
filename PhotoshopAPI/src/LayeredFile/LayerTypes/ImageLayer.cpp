@@ -28,16 +28,16 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 	int32_t left = std::get<1>(extents);
 	int32_t bottom = std::get<2>(extents);
 	int32_t right = std::get<3>(extents);
-	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(m_LayerMask.has_value());
+	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 
 	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 	// the compression mode chosen on export and must therefore be updated later.
 	auto channelData = this->extractImageData(doCopy);
 	auto& channelInfoVec = std::get<0>(channelData);
-	auto channelImgData = std::move(std::get<1>(channelData));
+	ChannelImageData channelImgData = std::move(std::get<1>(channelData));
 
 	uint8_t clipping = 0u;	// No clipping mask for now
-	LayerRecords::BitFlags bitFlags(false, m_IsVisible, false);
+	LayerRecords::BitFlags bitFlags(false, Layer<T>::m_IsVisible, false);
 	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 	
@@ -49,8 +49,8 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 		right,
 		channelCount,
 		channelInfoVec,
-		m_BlendMode,
-		m_Opacity,
+		Layer<T>::m_BlendMode,
+		Layer<T>::m_Opacity,
 		clipping,
 		bitFlags,
 		lrMaskData,
@@ -58,14 +58,14 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 		std::nullopt	// We dont really need to pass any additional layer info in here
 	);
 
-	return std::make_tuple(lrRecord, channelImgData);
+	return std::make_tuple(std::move(lrRecord), std::move(channelImgData));
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData) : 
+ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : 
 	Layer<T>(layerRecord, channelImageData)
 {
 	// Move the layers into our own layer representation
@@ -77,9 +77,9 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, const ChannelImageData
 		if (!channelPtr) continue;
 
 		// Insert any valid pointers to channels we have
-		if (auto imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get())
+		if (auto imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get()))
 		{
-			m_ImageData[channelInfo.m_ChannelID] = std::move(*channelPtr);
+			m_ImageData[channelInfo.m_ChannelID] = std::move(*imageChannelPtr);
 		}
 	}
 }
@@ -105,17 +105,17 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 	// Extract all the channels next and push them into our data representation
 	for (const auto& it : m_ImageData)
 	{
-		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second.m_OrigSize });
+		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second.m_OrigByteSize });
 		if (doCopy)
-			ChannelDataVec.push_back(std::make_unique<BaseImageChannel>(it.second));
+			channelDataVec.push_back(std::make_unique<BaseImageChannel>(it.second));
 		else
-			ChannelDataVec.push_back(std::make_unique<BaseImageChannel>(std::move(it.second)));
+			channelDataVec.push_back(std::make_unique<BaseImageChannel>(std::move(it.second)));
 	}
 
 	// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
-	ChannelImageData channelData(channelDataVec);
+	ChannelImageData channelData(std::move(channelDataVec));
 
-	return std::make_tuple(channelInfoVec, channelData);
+	return std::make_tuple(channelInfoVec, std::move(channelData));
 }
 
 

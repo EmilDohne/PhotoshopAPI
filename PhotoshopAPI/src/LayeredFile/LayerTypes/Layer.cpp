@@ -23,7 +23,7 @@ template struct Layer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-Layer<T>::Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
+Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData)
 {
 	m_LayerName = layerRecord.m_LayerName.m_String;
 	// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
@@ -55,7 +55,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, const ChannelImageData& channelI
 		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
 		{
 			// Move the compressed image data into our LayerMask struct
-			LayerMask<T> lrMask{};
+			LayerMask<T> lrMask;
 			auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
 			ImageChannel<T>* imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get());
 			channelPtr = nullptr;
@@ -82,7 +82,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, const ChannelImageData& channelI
 			lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
 
 			// Set the layer mask by moving our temporary struct
-			m_LayerMask = std::move(lrMask);
+			m_LayerMask = std::optional(std::move(lrMask));
 		}
 	}
 }
@@ -106,10 +106,14 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 		LayerRecords::LayerMask lrMask = LayerRecords::LayerMask{};
 
 		int32_t top, left, bottom, right;
-		top		= m_LayerMask.value().maskData.m_CenterY - m_Height / 2;
-		left	= m_LayerMask.value().maskData.m_CenterX - m_Width / 2;
-		bottom	= m_LayerMask.value().maskData.m_CenterY + m_Height / 2;
-		right	= m_LayerMask.value().maskData.m_CenterX + m_Width / 2;
+		int32_t centerX = m_LayerMask.value().maskData.getCenterX();
+		int32_t centerY = m_LayerMask.value().maskData.getCenterY();
+		int32_t width = m_LayerMask.value().maskData.getWidth();
+		int32_t height = m_LayerMask.value().maskData.getHeight();
+		top		= centerY - height / 2;
+		left	= centerX - width / 2;
+		bottom	= centerY + height / 2;
+		right	= centerX + width / 2;
 		lrMaskData.m_Size += 16u;
 
 		uint8_t defaultColor = 0u;
@@ -123,7 +127,7 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 		uint8_t maskDensity = 0u;
 		if (hasMaskDensity)
 		{
-			maskFeather = m_LayerMask.value().maskDensity.value();
+			maskDensity = m_LayerMask.value().maskDensity.value();
 			lrMaskData.m_Size += 1u;
 		}
 
@@ -159,7 +163,7 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 
 	std::optional<LayerRecords::LayerMaskData> lrMaskDataOpt;
 	lrMaskDataOpt.emplace(lrMaskData);
-	if (!lrMaskData.m_LayerMask.has_value() && !lrMaskData.m_VectorMask(has_value()))
+	if (!lrMaskData.m_LayerMask.has_value() && !lrMaskData.m_VectorMask.has_value())
 	{
 		return std::nullopt;
 	}
@@ -259,17 +263,56 @@ std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseI
 
 	auto& maskImgChannel = m_LayerMask.value().maskData;
 	Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
-	LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel.m_OrigSize };
+	LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel.m_OrigByteSize };
 
 	// TODO this might not be doing much at all
 	if (doCopy)
-		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(channelImgData);
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> > data = std::make_tuple(channelInfo, std::move(imgData));
-		return std::make_optional(data);
+	{
+		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(maskImgChannel);
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> data = std::make_tuple(channelInfo, std::move(imgData));
+		return std::optional(std::move(data));
+	}
 	else
-		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(std::move(channelImgData));
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> > data = std::make_tuple(channelInfo, std::move(imgData));
-		return std::make_optional(data);
+	{
+		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(std::move(maskImgChannel));
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> data = std::make_tuple(channelInfo, std::move(imgData));
+		return std::optional(std::move(data));
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy)
+{
+	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
+	ChannelImageData channelData{};
+
+	auto extents = this->generateExtents();
+	int32_t top = std::get<0>(extents);
+	int32_t left = std::get<1>(extents);
+	int32_t bottom = std::get<2>(extents);
+	int32_t right = std::get<3>(extents);
+
+	LayerRecord lrRecord(
+		PascalString(m_LayerName, 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
+		top,
+		left,
+		bottom,
+		right,
+		0u,		// Number of channels, photoshop does appear to actually write out all the channels with 0 length, we will see later if that is a requirement
+		channelInfo,
+		m_BlendMode,
+		m_Opacity,
+		0u,		// Clipping
+		LayerRecords::BitFlags(false, m_IsVisible, false),
+		std::nullopt,	// LayerMaskData
+		Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
+		std::nullopt	// Additional layer information
+	);
+
+	return std::make_tuple(std::move(lrRecord), std::move(channelData));
 }
 
 

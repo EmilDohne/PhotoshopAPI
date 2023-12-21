@@ -25,9 +25,9 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 	int32_t left = std::get<1>(extents);
 	int32_t bottom = std::get<2>(extents);
 	int32_t right = std::get<3>(extents);
-	uint16_t channelCount = static_cast<uint16_t>(m_LayerMask.has_value());
+	uint16_t channelCount = static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 	uint8_t clipping = 0u;	// No clipping mask for now
-	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, m_IsVisible, false);
+	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, Layer<T>::m_IsVisible, false);
 	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 
@@ -55,22 +55,22 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 		right,
 		channelCount,
 		channelInfoVec,
-		m_BlendMode,
-		m_Opacity,
+		Layer<T>::m_BlendMode,
+		Layer<T>::m_Opacity,
 		clipping,
 		bitFlags,
 		lrMaskData,
 		blendingRanges,
 		this->generateAdditionalLayerInfo()
 	);
-	return std::make_tuple(lrRecord, ChannelImageData(channelDataVec));
+	return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
+GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
 {
 	// Because Photoshop stores the Passthrough blend mode on the layer section divider tagged block we must check if it present here
 	if (!layerRecord.m_AdditionalLayerInfo.has_value()) return;
@@ -78,11 +78,11 @@ GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, const ChannelImageData
 	const auto lrSectionBlockPtr = taggedBlocks.getTaggedBlockView<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
 	if (!lrSectionBlockPtr) return;
 
-	if (lrSectionBlockPtr.m_BlendMode.has_value())
+	if (lrSectionBlockPtr->m_BlendMode.has_value())
 	{
-		m_BlendMode = lrSectionBlockPtr.m_BlendMode.value();
+		Layer<T>::m_BlendMode = lrSectionBlockPtr->m_BlendMode.value();
 	}
-	if (lrSectionBlockPtr.m_Type == Enum::SectionDivider::ClosedFolder)
+	if (lrSectionBlockPtr->m_Type == Enum::SectionDivider::ClosedFolder)
 	{
 		m_isCollapsed = true;
 	}
@@ -97,7 +97,7 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 	LrSectionTaggedBlock sectionBlock;
 	if (m_isCollapsed)
 	{
-		if (m_BlendMode == Enum::BlendMode::Passthrough)
+		if (Layer<T>::m_BlendMode == Enum::BlendMode::Passthrough)
 		{
 			sectionBlock = LrSectionTaggedBlock(Enum::SectionDivider::ClosedFolder, std::make_optional(Enum::BlendMode::Passthrough));
 		}
@@ -108,7 +108,7 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 	}
 	else
 	{
-		if (m_BlendMode == Enum::BlendMode::Passthrough)
+		if (Layer<T>::m_BlendMode == Enum::BlendMode::Passthrough)
 		{
 			sectionBlock = LrSectionTaggedBlock(Enum::SectionDivider::OpenFolder, std::make_optional(Enum::BlendMode::Passthrough));
 		}

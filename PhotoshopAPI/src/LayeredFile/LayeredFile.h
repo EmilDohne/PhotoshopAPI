@@ -21,11 +21,14 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
+// Enumerator to easily switch between traversal directions
 enum class LayerOrder
 {
 	forward,
 	reverse
 };
+
 
 template <typename T>
 struct LayeredFile
@@ -40,17 +43,17 @@ struct LayeredFile
 
 	// Convert the current layeredFile into a PhotoshopFile, transferring all relevant information
 	// Note that this will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
-	// to create the layer structure
+	// to create the layer structure.
 	PhotoshopFile toPhotoshopFile();
 
 	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
 	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific
 	/// layer. If any of the keys are invalid the function will return nullopt and issue a warning, not an error
-	std::shared_ptr<Layer<T>> findLayer(std::string path);
+	std::shared_ptr<Layer<T>> findLayer(std::string path) const;
 
 	// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
 	// Use this function if you wish to get the most up to date flat layer stack that is in a correct order
-	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order);
+	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
 
 	// Generate a LayeredFile instance from a pointer to a photoshop file, taking ownership of it 
 	// and discarding it once we are done with it. This involves transferring from a flat layer hierarchy
@@ -88,8 +91,8 @@ namespace LayeredFileImpl
 	// See comments in buildLayerHierarchy on why we iterate in reverse
 	template <typename T>
 	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchyRecurse(
-		const std::vector<LayerRecord>& layerRecords,
-		const std::vector<ChannelImageData>& channelImageData,
+		std::vector<LayerRecord>& layerRecords,
+		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
 		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator);
 
@@ -98,7 +101,7 @@ namespace LayeredFileImpl
 	// initialized with the given layer record and corresponding channel image data.
 	// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
+	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData);
 
 
 	// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order

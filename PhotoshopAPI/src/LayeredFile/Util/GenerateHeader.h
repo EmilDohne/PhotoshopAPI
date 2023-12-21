@@ -12,7 +12,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // Generate a header section based on the options set by the layeredFile
 template <typename T>
-FileHeader generateHeader(const LayeredFile<T>& layeredFile)
+FileHeader generateHeader(LayeredFile<T>& layeredFile)
 {
 	FileHeader header(
 		layeredFile.getVersion(),

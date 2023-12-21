@@ -18,6 +18,8 @@ struct LayerMask
 	bool isDisabled = false;
 	std::optional<uint8_t> maskDensity;
 	std::optional<float64_t> maskFeather;
+
+	LayerMask() = default;
 };
 
 /// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.)
@@ -37,11 +39,12 @@ struct Layer
 	int32_t m_CenterX;
 	int32_t m_CenterY;
 
-	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
-	Layer(const LayerRecord& layerRecord, const ChannelImageData& channelImageData);
+	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
+	Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
 
-	// Each layer must implement a function that parses it to a photoshop representation
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy) = 0;
+	// Define a function for creating a PhotoshopFile from the layer. In the future the intention is to make this a pure virtual function
+	// but seeing as there are multiple miscellaneous layers not yet implemented for the initial release we have this function
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy);
 	virtual ~Layer() = default;
 protected:
 

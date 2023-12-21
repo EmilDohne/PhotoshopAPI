@@ -1,8 +1,8 @@
 #include "LayeredFile.h"
 
+#include "PhotoshopFile/PhotoshopFile.h"
 #include "Macros.h"
 #include "StringUtil.h"
-#include "PhotoshopFile/PhotoshopFile.h"
 #include "Struct/TaggedBlock.h"
 #include "LayerTypes/Layer.h"
 #include "LayerTypes/ImageLayer.h"
@@ -16,6 +16,8 @@
 
 #include "LayeredFile/Util/GenerateHeader.h"
 #include "LayeredFile/Util/GenerateColorModeData.h"
+#include "LayeredFile/Util/GenerateImageResources.h"
+#include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 
 
 #include <vector>
@@ -38,11 +40,12 @@ template struct LayeredFile<float32_t>;
 template <typename T>
 PhotoshopFile LayeredFile<T>::toPhotoshopFile()
 {
-	FileHeader header = generateHeader(this, m_Version);
-	ColorModeData colorModeData = generateColorModeData(this);
+	FileHeader header = generateHeader<T>(*this);
+	ColorModeData colorModeData = generateColorModeData<T>(*this);
+	ImageResources imageResources = generateImageResources<T>(*this);
+	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this);
 
-
-	PhotoshopFile file();
+	return PhotoshopFile(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }
 
 
@@ -104,7 +107,7 @@ LayeredFile<T>::LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
+std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 {
 	std::vector<std::string> segments = splitString(path, '/');
 	for (const auto layer : m_Layers)
@@ -129,7 +132,7 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order)
+std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const
 {
 	if (order == LayerOrder::forward)
 	{
@@ -151,11 +154,12 @@ std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::sha
 			std::reverse(flatLayers.begin(), flatLayers.end());
 			return flatLayers;
 		}
-		std::vector<std::shared_ptr<Layer<T>>> flatLayers LayeredFileImpl::generateFlatLayers(m_Layers);
+		std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers);
 		std::reverse(flatLayers.begin(), flatLayers.end());
 		return flatLayers;
 	}
 	PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse")
+		return std::vector<std::shared_ptr<Layer<T>>>();
 }
 
 
@@ -180,13 +184,13 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 		auto lr32TaggedBlock = additionalLayerInfo.getTaggedBlock<Lr32TaggedBlock>(Enum::TaggedBlockKey::Lr32);
 		if (lr16TaggedBlock.has_value())
 		{
-			auto block = lr16TaggedBlock.value();
+			auto& block = lr16TaggedBlock.value();
 			layerRecords = &block->m_Data.m_LayerRecords;
 			channelImageData = &block->m_Data.m_ChannelImageData;
 		}
 		else if (lr32TaggedBlock.has_value())
 		{
-			auto block = lr32TaggedBlock.value();
+			auto& block = lr32TaggedBlock.value();
 			layerRecords = &block->m_Data.m_LayerRecords;
 			channelImageData = &block->m_Data.m_ChannelImageData;
 		}
@@ -221,8 +225,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecurse(
-	const std::vector<LayerRecord>& layerRecords,
-	const std::vector<ChannelImageData>& channelImageData,
+	std::vector<LayerRecord>& layerRecords,
+	std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
 	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator)
 {
@@ -231,9 +235,9 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	// Iterate the layer records and channelImageData. These are always the same size
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
 	{
-		const auto& layerRecord = *layerRecordsIterator;
+		auto& layerRecord = *layerRecordsIterator;
 		// Get the variant of channelImageDatas and extract the type we have
-		const auto& channelImage = *channelImageDataIterator;
+		auto& channelImage = *channelImageDataIterator;
 
 		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
 
@@ -279,7 +283,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 	for (const auto& layer : nestedLayers)
 	{
 		// Recurse down if its a group layer
-		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			flatLayers.push_back(layer);
 			LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
@@ -298,7 +302,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& layerRecord, const ChannelImageData& channelImageData)
+std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData)
 {
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
@@ -314,13 +318,13 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& 
 			auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrArtboard);
 			if (artboardTaggedBlock.has_value())
 			{
-				return std::make_shared<ArtboardLayer<T>>(ArtboardLayer<T>());
+				return std::make_shared<ArtboardLayer<T>>();
 			}
-			return std::make_shared<GroupLayer<T>>(GroupLayer<T>(layerRecord, channelImageData));
+			return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData);
 		}
 		else if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::BoundingSection)
 		{
-			return std::make_shared<SectionDividerLayer<T>>(SectionDividerLayer<T>());
+			return std::make_shared<SectionDividerLayer<T>>();
 		}
 		// If it is Enum::SectionDivider::Any this is just any other type of layer
 		// we do not need to worry about checking for correctness here as the tagged block takes care of that 
@@ -330,14 +334,14 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& 
 	auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTypeTool);
 	if (typeToolTaggedBlock.has_value())
 	{
-		return std::make_shared<TextLayer<T>>(TextLayer<T>());
+		return std::make_shared<TextLayer<T>>();
 	}
 
 	// Check for Smart Object Layers
 	auto smartObjectTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrSmartObject);
 	if (typeToolTaggedBlock.has_value())
 	{
-		return std::make_shared<SmartObjectLayer<T>>(SmartObjectLayer<T>());
+		return std::make_shared<SmartObjectLayer<T>>();
 	}
 
 	// Check if it is one of many adjustment layers
@@ -388,7 +392,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& 
 			|| selectiveColorTaggedBlock.has_value()
 			)
 		{
-			return std::make_shared<AdjustmentLayer<T>>(AdjustmentLayer<T>());
+			return std::make_shared<AdjustmentLayer<T>>();
 		}
 #undef getGenericTaggedBlock
 	}
@@ -409,13 +413,13 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(const LayerRecord& 
 				|| vecStrokeContentDataTaggedBlock.has_value()
 				)
 			{
-				return std::make_shared<ShapeLayer<T>>(ShapeLayer<T>());
+				return std::make_shared<ShapeLayer<T>>();
 			}
 #undef getGenericTaggedBlock
 		}
 	}
 
-	return std::make_shared<ImageLayer<T>>(ImageLayer<T>(layerRecord, channelImageData));
+	return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData);
 }
 
 

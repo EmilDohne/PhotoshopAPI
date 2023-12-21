@@ -36,10 +36,12 @@ void LayerRecords::BitFlags::setFlags(const uint8_t flags)
 uint8_t LayerRecords::BitFlags::getFlags() const
 {
 	uint8_t result = 0u;
-	if (m_isTransparencyProtected) result & 1u << 0;
-	if (m_isVisible) result & 1u << 1;
-	if (m_isBit4Useful) result & 1u << 3;
-	if (m_isPixelDataIrrelevant) result & 1u << 4;
+	if (m_isTransparencyProtected) result = result & 1u << 0;
+	if (m_isVisible) result = result & 1u << 1;
+	if (m_isBit4Useful) result = result & 1u << 3;
+	if (m_isPixelDataIrrelevant) result = result & 1u << 4;
+
+	return result;
 }
 
 
@@ -254,6 +256,22 @@ void LayerRecords::LayerBlendingRanges::read(File& document)
 	}
 }
 
+LayerRecord::LayerRecord()
+{
+	m_LayerName = PascalString("", 4u);
+	m_Top = 0;
+	m_Left = 0;
+	m_Bottom = 0;
+	m_Right = 0;
+	m_ChannelCount = 0u;
+	m_BlendMode = Enum::BlendMode::Normal;
+	m_Opacity = 255u;
+	m_Clipping = 1u;
+	m_BitFlags = LayerRecords::BitFlags(false, true, false);
+	m_LayerMaskData = std::nullopt;
+	m_AdditionalLayerInfo = std::nullopt;
+}
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -400,7 +418,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 	}
 
-	// A single tagged block takes at least 12 (or 16) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
+	// A single tagged block takes at least 12 (or 16 for psb) bytes of memory. Therefore, if the remaining size is less than that we can ignore it
 	if (toRead >= 12u)
 	{
 		AdditionalLayerInfo layerInfo = {};
@@ -438,10 +456,10 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
 			uint64_t channelOffset = channelOffsets[index];
 
-			uint32_t width = layerRecord.m_Right - layerRecord.m_Left;
-			uint32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			uint32_t centerX = (layerRecord.m_Left + layerRecord.m_Right) / 2;
-			uint32_t centerY = (layerRecord.m_Top + layerRecord.m_Bottom) / 2;
+			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
+			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
+			int32_t centerX = (layerRecord.m_Left + layerRecord.m_Right) / 2;
+			int32_t centerY = (layerRecord.m_Top + layerRecord.m_Bottom) / 2;
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)

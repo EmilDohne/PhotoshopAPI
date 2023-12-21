@@ -18,6 +18,7 @@ template struct SectionDividerLayer<uint8_t>;
 template struct SectionDividerLayer<uint16_t>;
 template struct SectionDividerLayer<float32_t>;
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -29,8 +30,8 @@ std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(co
 	LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
 	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
 	blockVec.push_back(std::make_shared<TaggedBlock>(sectionBlock));
-	TaggedBlockStorage blockStorage(blockVec);
-	AdditionalLayerInfo lrInfo(blockStorage);
+	TaggedBlockStorage blockStorage = { blockVec };
+	std::optional<AdditionalLayerInfo> lrInfo(blockStorage);
 
 	LayerRecord lrRecord(
 		PascalString("", 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
@@ -46,10 +47,10 @@ std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(co
 		LayerRecords::BitFlags{},
 		std::nullopt,
 		Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
-		std::make_optional(lrInfo)
+		std::move(lrInfo)
 	);
 
-	return std::make_tuple(lrRecord, channelData);
+	return std::make_tuple(std::move(lrRecord), std::move(channelData));
 }
 
 

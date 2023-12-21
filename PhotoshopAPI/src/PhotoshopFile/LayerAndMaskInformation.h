@@ -147,16 +147,13 @@ struct LayerRecord : public FileSection
 	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
-	LayerRecord() :
-		m_Top(0u),
-		m_Left(0u),
-		m_Bottom(0u),
-		m_Right(0u),
-		m_ChannelCount(0u),
-		m_BlendMode(Enum::BlendMode::Normal),
-		m_Opacity(0u),
-		m_Clipping(0u),
-		m_BitFlags(LayerRecords::BitFlags{}) {};
+	// Explicitly delete any copy operators as we cannot copy AdditionalLayerInfo
+	LayerRecord(const LayerRecord&) = delete;
+	LayerRecord(LayerRecord&&) = default;
+	LayerRecord& operator=(const LayerRecord&) = delete;
+	LayerRecord& operator=(LayerRecord&&) = default;
+
+	LayerRecord();
 	// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
 	LayerRecord(
 		PascalString layerName,
@@ -174,8 +171,6 @@ struct LayerRecord : public FileSection
 		LayerRecords::LayerBlendingRanges layerBlendingRanges,
 		std::optional<AdditionalLayerInfo> additionalLayerInfo
 	);
-	
-
 
 	void read(File& document, const FileHeader& header, const uint64_t offset);
 };
@@ -318,7 +313,7 @@ struct LayerInfo : public FileSection
 	std::vector<LayerRecord> m_LayerRecords;
 	std::vector<ChannelImageData> m_ChannelImageData;
 
-	LayerInfo(){};
+	LayerInfo() = default;
 	LayerInfo(std::vector<LayerRecord> layerRecords, std::vector<ChannelImageData> imageData) : m_LayerRecords(std::move(layerRecords)), m_ChannelImageData(std::move(imageData)) {};
 
 	// Read the layer info section
@@ -338,8 +333,9 @@ struct LayerAndMaskInformation : public FileSection
 	GlobalLayerMaskInfo m_GlobalLayerMaskInfo;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
+	LayerAndMaskInformation() = default;
 	LayerAndMaskInformation(LayerInfo& layerInfo, GlobalLayerMaskInfo globalLayerMaskInfo, std::optional<AdditionalLayerInfo> additionalLayerInfo) :
-		m_LayerInfo(layerInfo), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
+		m_LayerInfo(std::move(layerInfo)), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
 
 	bool read(File& document, const FileHeader& header, const uint64_t offset);
 };

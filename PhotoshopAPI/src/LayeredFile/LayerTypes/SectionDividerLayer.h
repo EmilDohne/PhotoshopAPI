@@ -13,7 +13,7 @@ struct SectionDividerLayer : Layer<T>
 {
 	SectionDividerLayer() = default;
 
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy);
+	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy) override;
 private:
 
 };

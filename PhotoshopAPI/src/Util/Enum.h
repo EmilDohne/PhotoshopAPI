@@ -252,6 +252,16 @@ namespace Enum
 		}
 	};
 
+	// Define a custom hasher to allow us to use the above struct. As the indices are unique it is perfectly legal to have the indices define the hash
+	struct ChannelIDInfoHasher
+	{
+		std::size_t operator()(const ChannelIDInfo& k) const
+		{
+			using std::hash;
+
+			return (hash<int>()(k.index));
+		}
+	};
 	
 
 	inline ChannelIDInfo rgbIntToChannelID(const int16_t value)

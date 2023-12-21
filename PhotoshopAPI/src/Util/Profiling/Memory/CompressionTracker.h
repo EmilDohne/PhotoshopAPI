@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 
 #if PSAPI_PROFILING
 #define REGISTER_COMPRESSION_TRACK(compressedBytes, uncompressedBytes) NAMESPACE_PSAPI::CompressionTracker::Get().WriteProfile({compressedBytes, uncompressedBytes})
