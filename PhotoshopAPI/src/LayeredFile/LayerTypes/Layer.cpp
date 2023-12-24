@@ -45,8 +45,8 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	m_Opacity = layerRecord.m_Opacity;
 	m_Width = layerRecord.m_Right - layerRecord.m_Left;
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
-	m_CenterX = (layerRecord.m_Left - layerRecord.m_Right) / 2;
-	m_CenterY = (layerRecord.m_Top - layerRecord.m_Bottom) / 2;
+	m_CenterX = layerRecord.m_Left + m_Width / 2;
+	m_CenterY = layerRecord.m_Top + m_Height / 2;
 
 	// Move the layer mask into our layerMask struct, for now this only does pixel masks
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
