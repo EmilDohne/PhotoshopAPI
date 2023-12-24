@@ -46,24 +46,47 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 		channelDataVec.push_back(std::move(std::get<1>(maskData.value())));
 	}
 
-
-	LayerRecord lrRecord = LayerRecord(
-		lrName,
-		top,
-		left,
-		bottom,
-		right,
-		channelCount,
-		channelInfoVec,
-		Layer<T>::m_BlendMode,
-		Layer<T>::m_Opacity,
-		clipping,
-		bitFlags,
-		lrMaskData,
-		blendingRanges,
-		this->generateAdditionalLayerInfo()
-	);
-	return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
+	if (Layer<T>::m_BlendMode != Enum::BlendMode::Passthrough)
+	{
+		LayerRecord lrRecord = LayerRecord(
+			lrName,
+			top,
+			left,
+			bottom,
+			right,
+			channelCount,
+			channelInfoVec,
+			Layer<T>::m_BlendMode,
+			Layer<T>::m_Opacity,
+			clipping,
+			bitFlags,
+			lrMaskData,
+			blendingRanges,
+			this->generateAdditionalLayerInfo()
+		);
+		return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
+	}
+	else
+	{
+		// If the group has a blendMode of Passthrough we actually need to pass that in the LrSectionDivider tagged block while the layers blendmode is set to normal
+		LayerRecord lrRecord = LayerRecord(
+			lrName,
+			top,
+			left,
+			bottom,
+			right,
+			channelCount,
+			channelInfoVec,
+			Enum::BlendMode::Normal,
+			Layer<T>::m_Opacity,
+			clipping,
+			bitFlags,
+			lrMaskData,
+			blendingRanges,
+			this->generateAdditionalLayerInfo()
+		);
+		return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
+	}
 }
 
 
