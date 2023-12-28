@@ -57,7 +57,7 @@ namespace LayerRecords
 
 
 	// A singular layer mask as represented in the LayerMaskData section found in the layer records
-	struct LayerMask
+	struct LayerMask : public FileSection
 	{
 		int32_t m_Top = 0, m_Left = 0, m_Bottom = 0, m_Right = 0;
 		uint8_t m_DefaultColor = 0u;		// 0 or 255
@@ -77,6 +77,8 @@ namespace LayerRecords
 		std::optional<float64_t> m_UserMaskFeather;
 		std::optional<uint8_t> m_VectorMaskDensity;
 		std::optional<float64_t> m_VectorMaskFeather;
+
+		uint64_t calculateSize() const override;
 
 		void setFlags(const uint32_t bitFlag);
 		void setMaskParams(const uint32_t bitFlag);
@@ -101,29 +103,31 @@ namespace LayerRecords
 	// This section can hold either no mask, one mask or two masks depending on the size of the data in it.
 	// The layout is a bit confusing here as it reads the second mask in reverse order. The mask parameters
 	// exist only on one of the masks rather than both as they cover both cases
-	struct LayerMaskData
+	struct LayerMaskData : public FileSection
 	{
-		uint32_t m_Size = 4u;	// Includes the section length marker
 		std::optional<LayerMask> m_LayerMask;
 		std::optional<LayerMask> m_VectorMask;
 
 		LayerMaskData() = default;
 
+		uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
 		void read(File& document);
 	};
 
 
-	struct LayerBlendingRanges
+	struct LayerBlendingRanges : public FileSection
 	{
-		uint32_t m_Size = 4u;	// Includes the section length marker
-
 		// Blending ranges hold 2 low and 2 high values, if the marker wasnt split in photoshop 
 		// the low and high values are identical
 		using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
 		Data m_SourceRanges;
 		Data m_DestinationRanges;
 
-		LayerBlendingRanges() = default;
+		// Initialize blending ranges with defaults, this works for all color modes
+		LayerBlendingRanges();
+
+		uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
 
 		void read(File& document);
 	};
@@ -172,6 +176,8 @@ struct LayerRecord : public FileSection
 		std::optional<AdditionalLayerInfo> additionalLayerInfo
 	);
 
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
 	void read(File& document, const FileHeader& header, const uint64_t offset);
 };
 
@@ -180,6 +186,9 @@ struct LayerRecord : public FileSection
 struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
+
+	// We dont store anythin here so just an empty size marker will do
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override { return 4u; };
 
 	// Skip the contents of the Global Layer and Mask Info based on the length marker
 	void read(File& document, const uint64_t offset);
@@ -197,6 +206,8 @@ struct ChannelImageData : public FileSection
 
 	ChannelImageData() = default;
 	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) {};
+
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
 
 	// Read a single channel image data instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
@@ -221,17 +232,15 @@ struct ChannelImageData : public FileSection
 	{
 		for (int i = 0; i < m_ImageData.size(); ++i)
 		{
-			if (m_ImageData[i]->m_ChannelID == channelIDInfo)
+			// Check if the ptr is valid as well as comparing the channelInfo struct
+			auto& imgData = m_ImageData.at(i);
+			if (imgData && imgData->m_ChannelID == channelIDInfo)
 			{
 				return i;
 			}
 		}
 		return -1;
 	}
-
-	// Extract the size of a section ahead of time. This is used to get offsets into each of the different channelImageData 
-	// instances ahead of time for parallelization.
-	static uint64_t extractSectionSize(File& document, const uint64_t offset, const LayerRecord& layerRecord);
 
 	// Extract a channel from the given index and take ownership of the data. After this function is called the index will point to nullptr
 	// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
@@ -316,6 +325,8 @@ struct LayerInfo : public FileSection
 	LayerInfo() = default;
 	LayerInfo(std::vector<LayerRecord> layerRecords, std::vector<ChannelImageData> imageData) : m_LayerRecords(std::move(layerRecords)), m_ChannelImageData(std::move(imageData)) {};
 
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
 	// Read the layer info section
 	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 
@@ -337,7 +348,9 @@ struct LayerAndMaskInformation : public FileSection
 	LayerAndMaskInformation(LayerInfo& layerInfo, GlobalLayerMaskInfo globalLayerMaskInfo, std::optional<AdditionalLayerInfo> additionalLayerInfo) :
 		m_LayerInfo(std::move(layerInfo)), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
 
-	bool read(File& document, const FileHeader& header, const uint64_t offset);
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset);
 };
 
 

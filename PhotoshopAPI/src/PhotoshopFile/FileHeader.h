@@ -33,7 +33,10 @@ struct FileHeader : public FileSection
 		m_Depth(depth),
 		m_ColorMode(colorMode) {};
 
-	bool read(File& document);
+	// This section will always be 26 bytes
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override { return 26u; };
+
+	void read(File& document);
 	void write(File& document);
 };
 

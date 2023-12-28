@@ -15,10 +15,20 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+uint64_t ColorModeData::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	size += 4u;	// Size marker
+	size += m_Data.size();
+	return size;
+}
+
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-bool ColorModeData::read(File& document)
+void ColorModeData::read(File& document)
 {
 	PROFILE_FUNCTION();
 
@@ -36,8 +46,6 @@ bool ColorModeData::read(File& document)
 	{
 		m_Data = std::vector<uint8_t>(0);
 	}
-
-	return true;
 }
 
 

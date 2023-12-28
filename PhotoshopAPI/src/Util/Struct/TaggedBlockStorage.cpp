@@ -19,6 +19,20 @@ TaggedBlockStorage::TaggedBlockStorage(std::vector<std::shared_ptr<TaggedBlock>>
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+uint64_t TaggedBlockStorage::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	for (const auto& block : m_TaggedBlocks)
+	{
+		// Size gets initialized upon creation of the tagged block so we can just read the value back
+		size += block->getTotalSize();
+	}
+	return size;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::shared_ptr<T> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const
 {

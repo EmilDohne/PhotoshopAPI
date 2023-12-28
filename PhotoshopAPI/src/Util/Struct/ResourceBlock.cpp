@@ -9,6 +9,20 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t ResourceBlock::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	size += 4u;	// Signature
+	size += 2u; // ID of the resource
+	size += m_Name.calculateSize();
+	size += 4u;	// Size marker of data to follow
+	size += m_DataSize;	// Data size, already padded to 2u
+}
+
+
 // Sequential Read of a single Image Resource Block, in its current state it just dumps the 
 // data rather than parsing it.
 // ---------------------------------------------------------------------------------------------------------------------
@@ -16,6 +30,7 @@ PSAPI_NAMESPACE_BEGIN
 void ResourceBlock::read(File& document)
 {
 	PROFILE_FUNCTION();
+	m_Offset = document.getOffset();
 
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
 	if (signature != Signature("8BIM"))
@@ -28,11 +43,12 @@ void ResourceBlock::read(File& document)
 	}
 	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
 	m_Name.read(document, 2u);
-	m_Size = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
-	m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
+	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
+	m_Data = ReadBinaryArray<uint8_t>(document, m_DataSize);
 
-	m_BlockSize = 4u + 2u + m_Name.m_Size + 4u + m_Size;
+	m_Size = 4u + 2u + m_Name.m_Size + 4u + m_DataSize;
 }
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -45,7 +61,7 @@ void ResourceBlock::write(File& document)
 	
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
 	m_Name.write(document, 2u);
-	WriteBinaryData<uint32_t>(document, m_Size);	// This value is already padded
+	WriteBinaryData<uint32_t>(document, m_DataSize);	// This value is already padded
 	WriteBinaryArray<uint8_t>(document, m_Data);
 }
 

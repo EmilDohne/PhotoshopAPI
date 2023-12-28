@@ -116,5 +116,6 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
 };
 
+
 PSAPI_NAMESPACE_END
 

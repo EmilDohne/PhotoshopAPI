@@ -47,8 +47,22 @@ struct LrSectionTaggedBlock : TaggedBlock
 	std::optional<Enum::BlendMode> m_BlendMode;
 
 	LrSectionTaggedBlock() = default;
-	LrSectionTaggedBlock(Enum::SectionDivider sectionDivider, std::optional<Enum::BlendMode> blendMode) : m_Type(sectionDivider), m_BlendMode(blendMode) {};
-
+	LrSectionTaggedBlock(Enum::SectionDivider sectionDivider, std::optional<Enum::BlendMode> blendMode) : 
+		m_Type(sectionDivider), 
+		m_BlendMode(blendMode) 
+	{
+		m_Key = Enum::TaggedBlockKey::lrSectionDivider;
+		m_TotalLength = 4u;		// Signature
+		m_TotalLength += 4u;	// Key
+		m_TotalLength += 4u;	// Length marker
+		m_TotalLength += 4u;	// LrSection type
+		if (blendMode.has_value())
+		{
+			m_TotalLength += 4u;	// LrSection Signature
+			m_TotalLength += 4u;	// LrSection Blendmode Key
+		}
+	};
+	
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 
@@ -60,8 +74,12 @@ struct Lr16TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr16TaggedBlock() = default;
-	Lr16TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) {};
-
+	Lr16TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo))
+	{
+		// Calculate the length based on the lrInfo length, the variably sized size marker, and 8 bytes for signature and key
+		m_TotalLength = m_Data.calculateSize() + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version) + 4u + 4u;
+	};
+	
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 
@@ -74,8 +92,12 @@ struct Lr32TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr32TaggedBlock() = default;
-	Lr32TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) {};
-
+	Lr32TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo)) 
+	{
+		// Calculate the length based on the lrInfo length, the variably sized size marker, and 8 bytes for signature and key
+		m_TotalLength = m_Data.calculateSize() + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version) + 4u + 4u;
+	};
+	
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 };
 

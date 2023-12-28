@@ -20,7 +20,9 @@ struct ColorModeData : public FileSection
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
 
-	bool read(File& document);
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
+	void read(File& document);
 	// Write the colorModeData section, note that the m_Data field does not contain the length marker and we parse it explicitly
 	void write(File& document, FileHeader& header);
 };

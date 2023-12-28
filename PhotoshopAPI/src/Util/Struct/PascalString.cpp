@@ -7,6 +7,10 @@
 #include "Struct/File.h"
 
 #include <string>
+#include <limits>
+
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -18,6 +22,20 @@ PascalString::PascalString(std::string name, const uint8_t padding)
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
 	m_String = name;
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t PascalString::calculateSize(std::optional<FileHeader> header) const
+{
+	// We actually already take care of initializing the size in the constructor therefore it is valid
+	if (m_Size > std::numeric_limits<uint8_t>::max())
+	{
+		PSAPI_LOG_ERROR("PascalString", "Size of string exceeds the maximum for a uint8_t, expected a max of 255 but got %" PRIu64 " instead.", m_Size)
+	}
+	return m_Size;
+}
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -42,17 +60,14 @@ void PascalString::write(File& document, const uint8_t padding) const
 	{
 		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 253, got %u", m_String.size())
 	}
-	// Usually we would add 1 here to include the length marker itself in the padding, but as std::string
-	// always has a null termination char at the end which we explicitly do not want they cancel out
-	uint8_t stringLen = RoundUpToMultiple<uint8_t>(m_String.size(), padding);	
-	WriteBinaryData<uint8_t>(document, stringLen);
+	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(m_Size));
 
 	// Exclude the null termination char
 	std::vector<uint8_t> stringData(m_String.begin(), m_String.end() - 1u);
 	WriteBinaryArray<uint8_t>(document, stringData);
 
 	// Finally, write the padding bytes
-	for (int i = 0; i < stringLen - m_String.size(); ++i)
+	for (int i = 0; i < m_Size - m_String.size(); ++i)
 	{
 		WriteBinaryData<uint8_t>(document, 0u);
 	}

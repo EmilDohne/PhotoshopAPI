@@ -18,23 +18,35 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-ImageResources::ImageResources(std::vector<ResourceBlock> resourceBlocks)
+uint64_t ImageResources::calculateSize(std::optional<FileHeader> header) const
 {
-	m_Size = 4u;	// This is the length of the size marker which we include in our size
-	for (auto& imageResource : resourceBlocks)
+	uint64_t size = 0u;
+	size += 4u;	// Size marker
+
+	for (const auto& resource : m_ResourceBlocks)
 	{
-		m_Size += imageResource.m_BlockSize;	// This is the whole block size including all markers
+		size += resource.calculateSize();
 	}
-	m_ResourceBlocks = std::move(resourceBlocks);
+	return size;
 }
 
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-bool ImageResources::read(File& document, const uint64_t offset)
+ImageResources::ImageResources(std::vector<ResourceBlock> resourceBlocks)
+{
+	// Resource blocks are usually trivially copyable so we dont really need to worry
+	// about moving here
+	m_ResourceBlocks = resourceBlocks;
+	m_Size = this->calculateSize();
+}
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+void ImageResources::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
 	m_Offset = offset;
@@ -46,10 +58,9 @@ bool ImageResources::read(File& document, const uint64_t offset)
 	{
 		ResourceBlock resource;
 		resource.read(document);
-		toRead -= resource.m_BlockSize;
+		toRead -= resource.m_Size;
 		m_ResourceBlocks.emplace_back(resource);
 	}
-	return true;
 }
 
 

@@ -22,6 +22,7 @@ struct BaseImageChannel
 {
 	Enum::Compression m_Compression = Enum::Compression::Raw;
 	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
+	uint64_t m_OrigByteSize = 0u;	// The size of the original vector in bytes
 
 
 	BaseImageChannel() = default;
@@ -70,8 +71,6 @@ template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
 	static const uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
-	uint64_t m_OrigByteSize = 0u;	// The size of the original vector in bytes
-
 
 	ImageChannel() = default;
 	// Take a reference to a decompressed image vector stream and set the according member variables

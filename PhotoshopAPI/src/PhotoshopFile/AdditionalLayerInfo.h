@@ -28,6 +28,8 @@ struct AdditionalLayerInfo : public FileSection
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	AdditionalLayerInfo(TaggedBlockStorage& taggedBlocks) : m_TaggedBlocks(std::move(taggedBlocks)) {};
 
+	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
 	void read(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
 
 	// Get a tagged block from the key and try to cast it to T. If key cannot be found return nullptr

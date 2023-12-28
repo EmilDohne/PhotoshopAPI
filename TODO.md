@@ -12,6 +12,10 @@
 - [X] Add wide-range of test cases for testing based on photoshop files (both psd and psb)
 - [ ] Add unit testing for low-level components such as reading from a binary file
  
+## Nice to haves
+
+- [ ] An asynchronous/threaded function that allows us to quickly get the percentage read/write completion while that action is in course
+
 ## PhotoshopFile
 
 ### Read

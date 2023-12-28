@@ -75,6 +75,27 @@ LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerRecords::LayerMask::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	size += 16u;	// Enclosing rectangle
+	size += 1u;		// Default color
+	size += 1u;		// Flags
+	if (m_HasMaskParams)
+	{
+		size += 1u;	// Mask parameter bit flags
+		if (m_HasUserMaskDensity) size += 1u;
+		if (m_HasUserMaskFeather) size += 4u;
+		if (m_HasVectorMaskDensity) size += 1u;
+		if (m_HasVectorMaskFeather) size += 4u;
+	}
+
+	return size;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 {
 	m_PositionRelativeToLayer = (bitFlag & m_PositionRelativeToLayerMask) != 0;
@@ -97,6 +118,8 @@ void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
 
 // Read the mask parameters according to which mask parameter bit flags are set and return the total
 // length of all the bytes read
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 {
 	uint32_t bytesRead = 0u;
@@ -122,6 +145,34 @@ uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 	}
 
 	return bytesRead;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerRecords::LayerMaskData::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	size += 4u;	// Size marker
+
+	// Since we already take care of making sure only one of these has mask parameters
+	// during initialization/read we dont actually need to perform any checks here
+	if (m_VectorMask.has_value())
+	{
+		size += m_VectorMask.value().calculateSize();
+	}
+	if (m_LayerMask.has_value())
+	{
+		size += m_LayerMask.value().calculateSize();
+	}
+	
+	// xor as we only have padding bytes if exactly one of these exists
+	if (m_LayerMask.has_value() != m_VectorMask.has_value())
+	{ 
+		size += 2u;
+	}
+
+	return size;
 }
 
 
@@ -172,6 +223,8 @@ void LayerRecords::LayerMaskData::read(File& document)
 			toRead -= mask.readMaskParams(document);
 		}
 
+		mask.m_Size = mask.calculateSize();
+		// Depending on the flags this is either a vector or layer mask
 		if ((bitFlags & 1u << 3) != 0u)
 		{
 			m_VectorMask.emplace(mask);
@@ -214,6 +267,7 @@ void LayerRecords::LayerMaskData::read(File& document)
 			toRead -= layerMask.readMaskParams(document);
 		}
 
+		layerMask.m_Size = layerMask.calculateSize();
 		m_LayerMask.emplace(layerMask);
 	}
 
@@ -223,6 +277,44 @@ void LayerRecords::LayerMaskData::read(File& document)
 	}
 
 	document.skip(toRead);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LayerRecords::LayerBlendingRanges::LayerBlendingRanges()
+{
+	// For some reason no matter the color mode this section is always 40 bytes long (Photoshop 23.3.2). 5 channels
+	// Likely at some point it was decided that it was easiest to just hold the longest amount of possible combinations
+	// as the size is quite trivial. Blending ranges for any non-default channels (default channels would be rgb in rgb
+	// color mode or cmyk in cmyk color mode) cannot be blended and are therefore not considered.
+	m_Size = 40u;	
+	Data sourceRanges{};
+	Data destinationRanges{};
+	for (int i = 0; i < 5u; ++i)
+	{
+		// We just initialize defaults for no blending to take place
+		std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> range = std::make_tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u);
+		sourceRanges.push_back(range);
+		destinationRanges.push_back(range);
+	}
+	m_SourceRanges = sourceRanges;
+	m_DestinationRanges = destinationRanges;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerRecords::LayerBlendingRanges::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+
+	// The size should pretty much always evaluate to 44 but we do the calculations either way here in case that changes
+	size += 4u;	// Size marker
+	size += m_SourceRanges.size() * 4u;
+	size += m_DestinationRanges.size() * 4u;
+
+	return size;
 }
 
 
@@ -256,6 +348,9 @@ void LayerRecords::LayerBlendingRanges::read(File& document)
 	}
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 LayerRecord::LayerRecord()
 {
 	m_LayerName = PascalString("", 4u);
@@ -307,6 +402,32 @@ LayerRecord::LayerRecord(
 	m_LayerBlendingRanges = layerBlendingRanges;
 	if (additionalLayerInfo.has_value())
 		m_AdditionalLayerInfo.emplace(std::move(additionalLayerInfo.value()));
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerRecord::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+	size += 16u;	// Enclosing rect
+	size += 2u;		// Num of channels
+	size += m_ChannelInformation.size() * 6u;	// Channel Information size per channel
+	size += 4u;		// Blend mode signature
+	size += 4u;		// Blend mode 
+	size += 1u;		// Opacity
+	size += 1u;		// Clipping
+	size += 1u;		// Flags
+	size += 1u;		// Filler byte
+	size += 4u;		// Length of extra data 
+	if (m_LayerMaskData.has_value())
+		size += m_LayerMaskData.value().calculateSize();
+	size += m_LayerBlendingRanges.calculateSize();
+	size += m_LayerName.calculateSize();
+	if (m_AdditionalLayerInfo.has_value())
+		size += m_AdditionalLayerInfo.value().calculateSize();
+
+	return size;
 }
 
 
@@ -430,6 +551,21 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+uint64_t ChannelImageData::calculateSize(std::optional<FileHeader> header) const
+{
+	uint64_t size = 0u;
+
+	for (const auto& imgData : m_ImageData)
+	{
+		// TODO this implementation will need some more thinking as we dont know the size of the data until compressing it
+	}
+
+	return size;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
 	PROFILE_FUNCTION();
@@ -458,8 +594,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
 			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			int32_t centerX = (layerRecord.m_Left + layerRecord.m_Right) / 2;
-			int32_t centerY = (layerRecord.m_Top + layerRecord.m_Bottom) / 2;
+			int32_t centerX = layerRecord.m_Left + width / 2;
+			int32_t centerY = layerRecord.m_Top + height / 2;
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -469,8 +605,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 					width = mask.m_Right - mask.m_Left;
 					height = mask.m_Bottom - mask.m_Top;
-					centerX = (mask.m_Left + mask.m_Right) / 2;
-					centerY = (mask.m_Top + mask.m_Bottom) / 2;
+					centerX = mask.m_Left + width / 2;
+					centerY = mask.m_Top + height / 2;
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
@@ -499,6 +635,29 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerInfo::calculateSize(std::optional<FileHeader> header) const
+{
+	if (!header.has_value())
+		PSAPI_LOG_ERROR("LayerInfo", "FileHeader is required to calculate the size of the LayerInfo section")
+
+	uint64_t size = 0u;
+	size += SwapPsdPsb<uint32_t, uint64_t>(header.value().m_Version);	// Size marker
+	size += 2u;	// Layer count
+
+	for (const auto& lr : m_LayerRecords)
+	{
+		size += lr.calculateSize();
+	}
+	for (const auto& lr : m_ChannelImageData)
+	{
+		size += lr.calculateSize();
+	}
+	return size;
 }
 
 
@@ -632,10 +791,29 @@ void GlobalLayerMaskInfo::read(File& document, const uint64_t offset)
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LayerAndMaskInformation::calculateSize(std::optional<FileHeader> header) const
+{
+	if (!header.has_value())
+		PSAPI_LOG_ERROR("LayerAndMaskInformation", "FileHeader is required to calculate the size of the LayerAndMaskInformation section")
+	uint64_t size = 0u;
+	size += SwapPsdPsb<uint32_t, uint64_t>(header.value().m_Version);	// Size marker
+	
+	size += m_LayerInfo.calculateSize(header);
+	size += m_GlobalLayerMaskInfo.calculateSize();
+
+	if (m_AdditionalLayerInfo.has_value())
+		size += m_AdditionalLayerInfo.value().calculateSize();
+
+	return size;
+}
+
+
 // Extract the layer and mask information section
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-bool LayerAndMaskInformation::read(File& document, const FileHeader& header, const uint64_t offset)
+void LayerAndMaskInformation::read(File& document, const FileHeader& header, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
 
@@ -656,7 +834,6 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 			PSAPI_LOG_ERROR("LayerAndMaskInformation", "Layer Info read an incorrect amount of bytes from the document, expected an offset of %" PRIu64 ", but got %" PRIu64 " instead.",
 				m_Offset + m_LayerInfo.m_Size + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version),
 				document.getOffset())
-			return false;
 		}
 	}
 	// Parse Global Layer Mask Info
@@ -673,8 +850,6 @@ bool LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 		layerInfo.read(document, header, document.getOffset(), toRead, 4u);
 		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
 	}
-
-	return true;
 }
 
 

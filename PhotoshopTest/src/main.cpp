@@ -118,12 +118,34 @@ void sampleWrite()
 	document->write(file);
 }
 
+// Example of roundtripping from PhotoshopFile -> LayeredFile -> PhotoshopFile
+void sampleReadWrite()
+{
+	// First read the PhotoshopFile from disk
+	std::filesystem::path currentDirectory = std::filesystem::current_path();
+	std::filesystem::path combined_path = currentDirectory;
+	combined_path += R"(\documents\Groups\Groups_8bit.psd)";
+
+	NAMESPACE_PSAPI::File file(combined_path);
+	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+	bool didParse = document->read(file);
+
+	// Convert our PhotoshopFile to a LayeredFile
+	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
+
+	// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
+
+	// Back to a PhotoshopFile we go, we could now write this out
+	NAMESPACE_PSAPI::PhotoshopFile roundtrippedFile = layeredFile.toPhotoshopFile();
+
+}
+
 int main()
 {
 	// Profile and test our application all in one step
-	profile();
+	//profile();
 
-	//sampleWrite();
+	sampleReadWrite();
 
 
 	// Set up and run doctest tests
