@@ -10,6 +10,7 @@
 #include <vector>
 #include <thread>
 #include <memory>
+#include <random>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -104,7 +105,7 @@ struct ImageChannel : public BaseImageChannel
 		// TODO set this to hardware concurrency?
 		cparams.nthreads = 4;
 		dparams.nthreads = 4;
-		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
+		blosc2_storage storage = {.contiguous=true, .cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
@@ -136,10 +137,9 @@ struct ImageChannel : public BaseImageChannel
 	};
 
 
-	// Extract the data from the imagechannel and invalidate it (can only be called once). If the image data does not exist yet we simply return an empty vector<T>
+	// Extract the data from the image channel and invalidate it (can only be called once). If the image data does not exist yet we simply return an empty vector<T>
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
-		// If dat
 		if (!m_Data)
 		{
 			return std::vector<T>();
@@ -169,10 +169,34 @@ struct ImageChannel : public BaseImageChannel
 		return tmpData;
 	}
 
+	// Extract n amount of randomly selected chunks from the ImageChannel super chunk. This does not invalidate any data
+	std::vector<std::vector<T>> getRandomChunks(const FileHeader header, uint16_t numChunks) const
+	{
+		std::random_device rd;
+		std::mt19937 randomEngine(rd());
+		// We dont really want to deal with partial chunks so we simply ignore the last chunk.
+		// Since the range is inclusive we subtract 2
+		std::uniform_int_distribution<> dist(0, m_NumChunks - 2);
+
+		std::vector<std::vector<T>> outChunks;
+		outChunks.reserve(numChunks);
+
+		for (int i = 0; i < numChunks; ++i)
+		{
+			std::vector<T> decompressedChunk(m_ChunkSize, 0u);
+			void* ptr = reinterpret_cast<void*>(decompressedChunk.data());
+			// Decompress a random chunk into decompressedChunk
+			blosc2_schunk_decompress_chunk(m_Data, dist(randomEngine), ptr, m_ChunkSize);
+			outChunks.push_back(decompressedChunk);
+		}
+		// Note that we do not call blosc2_schunk_free() here to keep the data valid
+		return outChunks;
+	}
+
+
 private:
 	blosc2_schunk* m_Data = nullptr;
 	uint32_t m_NumChunks = 0u;
-	uint64_t m_OrigSize = 0u;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
 
 };
 
