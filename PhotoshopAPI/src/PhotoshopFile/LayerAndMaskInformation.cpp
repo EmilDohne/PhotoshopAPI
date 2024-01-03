@@ -555,12 +555,54 @@ uint64_t ChannelImageData::calculateSize(std::optional<FileHeader> header) const
 {
 	uint64_t size = 0u;
 
-	for (const auto& imgData : m_ImageData)
-	{
-		// TODO this implementation will need some more thinking as we dont know the size of the data until compressing it
-	}
+	PSAPI_LOG_WARNING("ChannelImageData", "Unable to compute size of channelImageData due to the size only being known at export time, please refrain from using this function")
 
 	return size;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t numSamples)
+{
+	uint64_t estimatedSize = 0u;
+
+	for (const auto& channel : m_ImageData)
+	{
+		ImageChannel<T>* imageChannel = dynamic_cast<ImageChannel<T>*>(channel.get());
+		if (!imageChannel)
+		{
+			continue;
+		}
+
+		if (imageChannel->m_Compression == Enum::Compression::Raw)
+		{
+			// We can just get the actual byte size making the estimate entirely accurate
+			estimatedSize += imageChannel->m_OrigByteSize;
+			continue;
+		}
+
+		// Extract a number of sample regions from the image that are chosen at random,
+		// we will now compress them according to the channels compression codec and add the size to 
+		auto channelData = imageChannel->getRandomChunks(header, numSamples);
+		for (const auto& sample : channelData)
+		{
+			if (imageChannel->m_Compression == Enum::Compression::Rle)
+			{
+
+			}
+			else if (imageChannel->m_Compression == Enum::Compression::Zip)
+			{
+
+			}
+			else if (imageChannel->m_Compression == Enum::Compression::ZipPrediction)
+			{
+
+			}
+		}
+
+	}
 }
 
 

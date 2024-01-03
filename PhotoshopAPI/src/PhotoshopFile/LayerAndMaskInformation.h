@@ -207,7 +207,14 @@ struct ChannelImageData : public FileSection
 	ChannelImageData() = default;
 	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) {};
 
+	// This function will raise a warning as we do not know the size of the compressed image data at this stage yet, only once we actually write this information 
+	// becomes available. To get an estimate of the size use the estimateSize() function instead
 	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+
+	// Estimate the size the of compressed data by compressing n amount of chunks from the data and averaging the compression ratio
+	// The chunks are chosen at random and have the size of m_ChunkSize in the ImageChannels. numSamples controls how many random chunks we choose
+	template <typename T>
+	uint64_t estimateSize(const FileHeader header, const uint16_t numSamples = 16u);
 
 	// Read a single channel image data instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
