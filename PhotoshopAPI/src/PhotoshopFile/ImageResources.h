@@ -19,7 +19,7 @@ struct ImageResources : public FileSection
 	ImageResources() { m_Size = 4u; };
 	ImageResources(std::vector<ResourceBlock> resourceBlocks);
 
-	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	void read(File& document, const uint64_t offset);
 	void write(File& document);

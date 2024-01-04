@@ -21,7 +21,7 @@ struct PascalString : public FileSection
 	PascalString(std::string name, const uint8_t padding);
 
 	// While we return a uint64_t here we actually make sure that the size does not exceed the size of uint8_t as that would be illegal
-	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	void read(File& document, const uint8_t padding);
 	void write(File& document, const uint8_t padding) const;

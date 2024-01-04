@@ -26,7 +26,7 @@ PascalString::PascalString(std::string name, const uint8_t padding)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t PascalString::calculateSize(std::optional<FileHeader> header) const
+uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	// We actually already take care of initializing the size in the constructor therefore it is valid
 	if (m_Size > std::numeric_limits<uint8_t>::max())

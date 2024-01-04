@@ -75,7 +75,7 @@ LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerMask::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerRecords::LayerMask::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	size += 16u;	// Enclosing rectangle
@@ -150,7 +150,7 @@ uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerMaskData::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerRecords::LayerMaskData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	size += 4u;	// Size marker
@@ -180,7 +180,7 @@ uint64_t LayerRecords::LayerMaskData::calculateSize(std::optional<FileHeader> he
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMaskData::read(File& document)
 {
-	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
+	m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
 	int64_t toRead = static_cast<int64_t>(m_Size) - 4u;
 
 	// Empty section;
@@ -305,7 +305,7 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges()
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerBlendingRanges::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerRecords::LayerBlendingRanges::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 
@@ -322,7 +322,7 @@ uint64_t LayerRecords::LayerBlendingRanges::calculateSize(std::optional<FileHead
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerBlendingRanges::read(File& document)
 {
-	m_Size = ReadBinaryData<uint32_t>(document) + 4u;
+	m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
 	int32_t toRead = m_Size - 4u;
 
 	// This appears to always be 5 different layer blending ranges. In photoshop (as of CC 23.3.2)
@@ -407,7 +407,7 @@ LayerRecord::LayerRecord(
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecord::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	size += 16u;	// Enclosing rect
@@ -551,7 +551,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t ChannelImageData::calculateSize(std::optional<FileHeader> header) const
+uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 
@@ -694,13 +694,13 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerInfo::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
-	if (!header.has_value())
+	if (!header)
 		PSAPI_LOG_ERROR("LayerInfo", "FileHeader is required to calculate the size of the LayerInfo section")
 
 	uint64_t size = 0u;
-	size += SwapPsdPsb<uint32_t, uint64_t>(header.value().m_Version);	// Size marker
+	size += SwapPsdPsb<uint32_t, uint64_t>(header->m_Version);	// Size marker
 	size += 2u;	// Layer count
 
 	for (const auto& lr : m_LayerRecords)
@@ -847,12 +847,12 @@ void GlobalLayerMaskInfo::read(File& document, const uint64_t offset)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerAndMaskInformation::calculateSize(std::optional<FileHeader> header) const
+uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
-	if (!header.has_value())
+	if (!header)
 		PSAPI_LOG_ERROR("LayerAndMaskInformation", "FileHeader is required to calculate the size of the LayerAndMaskInformation section")
 	uint64_t size = 0u;
-	size += SwapPsdPsb<uint32_t, uint64_t>(header.value().m_Version);	// Size marker
+	size += SwapPsdPsb<uint32_t, uint64_t>(header->m_Version);	// Size marker
 	
 	size += m_LayerInfo.calculateSize(header);
 	size += m_GlobalLayerMaskInfo.calculateSize();

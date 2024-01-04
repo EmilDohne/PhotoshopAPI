@@ -12,7 +12,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t ResourceBlock::calculateSize(std::optional<FileHeader> header) const
+uint64_t ResourceBlock::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	size += 4u;	// Signature
@@ -20,6 +20,7 @@ uint64_t ResourceBlock::calculateSize(std::optional<FileHeader> header) const
 	size += m_Name.calculateSize();
 	size += 4u;	// Size marker of data to follow
 	size += m_DataSize;	// Data size, already padded to 2u
+	return size;
 }
 
 
@@ -46,7 +47,7 @@ void ResourceBlock::read(File& document)
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
 	m_Data = ReadBinaryArray<uint8_t>(document, m_DataSize);
 
-	m_Size = 4u + 2u + m_Name.m_Size + 4u + m_DataSize;
+	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;
 }
 
 

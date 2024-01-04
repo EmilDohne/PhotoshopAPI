@@ -19,7 +19,7 @@ TaggedBlockStorage::TaggedBlockStorage(std::vector<std::shared_ptr<TaggedBlock>>
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t TaggedBlockStorage::calculateSize(std::optional<FileHeader> header) const
+uint64_t TaggedBlockStorage::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	for (const auto& block : m_TaggedBlocks)

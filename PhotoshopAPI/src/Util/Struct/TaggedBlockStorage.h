@@ -26,7 +26,7 @@ struct TaggedBlockStorage : public FileSection
 	template <typename T>
 	std::shared_ptr<T> getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
-	uint64_t calculateSize(std::optional<FileHeader> header = std::nullopt) const override;
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	// Read a tagged block into m_TaggedBlocks as well as returning a shared_ptr to it.
 	// The shared ptr should be used only to retrieve data, hence its markation as const

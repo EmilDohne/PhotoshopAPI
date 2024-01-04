@@ -17,7 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-uint64_t ColorModeData::calculateSize(std::optional<FileHeader> header) const
+uint64_t ColorModeData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
 	size += 4u;	// Size marker

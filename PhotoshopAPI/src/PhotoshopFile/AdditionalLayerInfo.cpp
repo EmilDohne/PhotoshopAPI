@@ -10,7 +10,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t AdditionalLayerInfo::calculateSize(std::optional<FileHeader> header) const
+uint64_t AdditionalLayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {	
 	uint64_t size = m_TaggedBlocks.calculateSize();
 	return size;
