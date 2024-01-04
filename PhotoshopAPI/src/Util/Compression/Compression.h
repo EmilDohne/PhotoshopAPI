@@ -36,28 +36,39 @@ inline std::vector<T> DecompressData(ByteStream& stream, uint64_t offset, const 
 	case Enum::Compression::Rle:
 		return DecompressRLE<T>(stream, offset, header, width, height, compressedSize);
 	case Enum::Compression::Zip:
-		return DecompressZIP<T>(stream, offset, header, width, height, compressedSize);
+		return DecompressZIP<T>(stream, offset, width, height, compressedSize);
 	case Enum::Compression::ZipPrediction:
-		return DecompressZIPPrediction<T>(stream, offset, header, width, height, compressedSize);
+		return DecompressZIPPrediction<T>(stream, offset, width, height, compressedSize);
 	default:
 		return ReadBinaryArray<T>(stream, offset, compressedSize);
 	}
 }
 
 
-// Compress an input datastream using the appropriate compression algorithm
-// Call this as well if your input is using RAW compression as it will handle this case
-/*template <typename T>
-inline std::vector<T> CompressData(std::vector<T>& uncompressedIn, const Enum::Compression& compression)
+// Compress an input datastream using the appropriate compression algorithm while encoding to BE order
+// The scanlineSizes parameter is only relevant for the RLE compression codec and can safely be left
+// at its default in all other cases
+template <typename T>
+inline std::vector<T> CompressData(std::vector<T>& uncompressedIn, const Enum::Compression& compression, const uint32_t width, const uint32_t height, std::shared_ptr<std::vector<uint32_t>> scanlineSizes = nullptr)
 {
+	// Perform the endian decoding in-place first as this step needs to happen before compressing either way
+	endianDecodeBEArray<T>(uncompressedIn);
 	switch (compression)
 	{
 	case Enum::Compression::Raw:
 		return std::move(uncompressedIn);
 	case Enum::Compression::Rle:
-		return 
+		if (!scanlineSizes)
+			PSAPI_LOG_ERROR("Compression", "RLE Compression requires the scanlineSizes parameter to be passed")
+		if (scanlineSizes->size() != 0)
+			PSAPI_LOG_ERROR("Compression", "scanlineSizes parameter must be of size zero and will be filled on execution")
+		return CompressRLE(uncompressedIn, width, height, scanlineSizes);
+	case Enum::Compression::Zip:
+		return CompressZIP(uncompressedIn, width, height);
+	case Enum::Compression::ZipPrediction:
+		return CompressZIPPrediction(uncompressedIn, width, height);
 	}
-}*/
+}
 
 
 
