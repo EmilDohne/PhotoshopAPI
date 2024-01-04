@@ -176,15 +176,64 @@ inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
 
 
 // Perform a endianEncode operation on an array (std::vector) of items in-place using an extremely fast SIMD + Parallelization
-// approach. Can decode ~100 million bytes of data in around a millisecond on a Ryzen 9 5950x. Note that this just calls
-// endianDecode as the idea is the same (byteswapping data on little endian systems)
+// approach. Can decode ~100 million bytes of data in around a millisecond (~95GB/s) on a Ryzen 9 5950x.
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
 std::vector<T> endianEncodeBEArray(std::vector<T>& data)
 {
-    endianDecodeBEArray<T>(data);
-    return std::move(data);
+	PROFILE_FUNCTION();
+	// We want to split up the vector into blocks that can easily fit into a L1 cache 
+	// that we process in parallel while the remaining data gets processed serially
+	// we assume L1 cache size to be >=64KB for most modern processors
+
+	// Additionally, we have to account for AVX2 SIMD size which is 256 bits or 32 bytes
+	// i.e. this means we want to split our data in blocks of 32B * 2KB (2048)
+	// TODO reset this to 2048
+	const uint32_t cacheSize = 2048 * 32 / sizeof(T);
+	const uint32_t blockSize = 2048;
+	uint32_t numVecs = data.size() / 32 / sizeof(T);
+	uint32_t numBlocks = numVecs / blockSize;
+
+	// Calculate the leftover data that we will compute serially
+	uint32_t remainderTotal = data.size() % cacheSize;
+
+	// Create spans of each of the cache blocks to decode them in-place
+	std::vector<std::span<T>> cacheTemporary(numBlocks);
+	{
+		for (uint32_t i = 0; i < numBlocks; ++i)
+		{
+			auto cacheAddress = data.data() + cacheSize * i;
+			std::span<T> tmpSpan(cacheAddress, cacheSize);
+			cacheTemporary[i] = tmpSpan;
+		}
+	}
+
+	// Iterate all the blocks and byteShuffle them in-place
+	std::for_each(std::execution::par, cacheTemporary.begin(), cacheTemporary.end(),
+		[](std::span<T>& cacheSpan)
+		{
+			for (uint32_t i = 0; i < blockSize; ++i)
+			{
+				uint8_t* vecMemoryAddress = reinterpret_cast<uint8_t*>(cacheSpan.data()) + i * 32;
+				if constexpr (is_little_endian)
+				{
+                    byteShuffleAVX2_BE<T>(vecMemoryAddress);
+				}
+				else
+				{
+					byteShuffleAVX2_LE<T>(vecMemoryAddress);
+				}
+			}
+		});
+
+	// Decode the remainder using just a regular endianDecode
+	uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
+	for (uint64_t i = 0; i < remainderTotal; ++i)
+	{
+		const uint8_t* memAddress = reinterpret_cast<uint8_t*>(data.data() + remainderIndex + i);
+		data[remainderIndex + i] = endianDecodeBE<T>(memAddress);
+	}
 }
 
 PSAPI_NAMESPACE_END

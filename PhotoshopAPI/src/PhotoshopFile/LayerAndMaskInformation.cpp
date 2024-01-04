@@ -573,6 +573,7 @@ uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t 
 		ImageChannel<T>* imageChannel = dynamic_cast<ImageChannel<T>*>(channel.get());
 		if (!imageChannel)
 		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Unable to read data from channel '%i'", channel->m_ChannelID.id)
 			continue;
 		}
 
@@ -585,24 +586,35 @@ uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t 
 
 		// Extract a number of sample regions from the image that are chosen at random,
 		// we will now compress them according to the channels compression codec and add the size to 
+		// the total size multiplying by the number of chunks divided by our number of samples
 		auto channelData = imageChannel->getRandomChunks(header, numSamples);
 		for (const auto& sample : channelData)
 		{
 			if (imageChannel->m_Compression == Enum::Compression::Rle)
 			{
-
+				std::shared_ptr<std::vector<uint32_t>> scanlineSizes = std::make_shared<std::vector<uint32_t>>({});
+				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
+				auto tmp = CompressData(sample, Enum::Compression::Rle, sample.size(), 1u, scanlineSizes);
+				estimatedSize += tmp.size() * sizeof(T) * (imageChannel->getNumChunks() / numSamples);
 			}
 			else if (imageChannel->m_Compression == Enum::Compression::Zip)
 			{
-
+				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
+				auto tmp = CompressData(sample, Enum::Compression::Zip, sample.size(), 1u);
+				// Subtract 5 bytes to remove any header information 
+				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
 			}
 			else if (imageChannel->m_Compression == Enum::Compression::ZipPrediction)
 			{
-
+				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
+				auto tmp = CompressData(sample, Enum::Compression::Zip, sample.size(), 1u);
+				// Subtract 5 bytes to remove any header information 
+				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
 			}
 		}
-
 	}
+
+	return estimatedSize;
 }
 
 

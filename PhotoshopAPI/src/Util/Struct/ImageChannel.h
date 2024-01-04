@@ -50,10 +50,10 @@ struct BaseImageChannel
 
 	virtual ~BaseImageChannel() = default;
 
-	int32_t getWidth() { return m_Width; };
-	int32_t getHeight() { return m_Height; };
-	int32_t getCenterX() { return m_XCoord; };
-	int32_t getCenterY() { return m_YCoord; };
+	int32_t getWidth() const { return m_Width; };
+	int32_t getHeight() const { return m_Height; };
+	int32_t getCenterX() const { return m_XCoord; };
+	int32_t getCenterY() const { return m_YCoord; };
 
 protected:
 	// Photoshop stores their positions as a bounding rect but we instead store extents and center coordinates
@@ -193,6 +193,7 @@ struct ImageChannel : public BaseImageChannel
 		return outChunks;
 	}
 
+	uint32_t getNumChunks() const  { return m_NumChunks };
 
 private:
 	blosc2_schunk* m_Data = nullptr;
