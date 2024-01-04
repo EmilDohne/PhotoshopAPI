@@ -99,7 +99,7 @@ std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanl
                 compressedData.push_back(nonRunLen - 1u);
                 for (int j = 0; j < nonRunLen - 1u; ++i)
                 {
-                    compressedData.push_back(uncompressedScanline.at(i - nonRunLen + j));
+                    compressedData.push_back(uncompressedScanline[i - nonRunLen + j]);
                 }
                 nonRunLen = 0;
             }
