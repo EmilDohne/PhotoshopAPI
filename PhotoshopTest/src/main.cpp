@@ -76,16 +76,7 @@ void profile()
 
 		NAMESPACE_PSAPI::File file(combined_path);
 		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-		bool didParse = document->read(file);
-
-		if (didParse)
-		{
-			PSAPI_LOG("PhotoshopTest", "Successfully finished parsing of file %s", path.string().c_str());
-		}
-		else
-		{
-			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
-		}
+		document->read(file);
 		// Generate our layeredFiles
 		if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_8)
 		{
@@ -128,7 +119,7 @@ void sampleReadWrite()
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
+	document->read(file);
 
 	// Convert our PhotoshopFile to a LayeredFile
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));

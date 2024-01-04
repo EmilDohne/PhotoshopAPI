@@ -184,12 +184,11 @@ void checkCompressionFile<uint8_t>(std::filesystem::path& inputPath, const doubl
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	bool didParse = document.read(file);
+	document.read(file);
 
 	// 8-bit file store their layerInfo normally
 	NAMESPACE_PSAPI::LayerInfo& layerInformation = document.m_LayerMaskInfo.m_LayerInfo;
 	checkCompressionFileImpl<uint8_t>(layerInformation, zero_val, val_128, one_val, red_zero_val);
-	CHECK(didParse);
 }
 
 
@@ -200,7 +199,7 @@ void checkCompressionFile<uint16_t>(std::filesystem::path& inputPath, const doub
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	bool didParse = document.read(file);
+	document.read(file);
 
 	// 16-bit files store their layerInformation in the additional tagged blocks
 	REQUIRE(document.m_LayerMaskInfo.m_AdditionalLayerInfo.has_value());
@@ -210,8 +209,6 @@ void checkCompressionFile<uint16_t>(std::filesystem::path& inputPath, const doub
 	NAMESPACE_PSAPI::LayerInfo& layerInformation = lr16TaggedBlock.value()->m_Data;
 
 	checkCompressionFileImpl<uint16_t>(layerInformation, zero_val, val_128, one_val, red_zero_val);
-
-	CHECK(didParse);
 }
 
 
@@ -222,7 +219,7 @@ void checkCompressionFile<float32_t>(std::filesystem::path& inputPath, const dou
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	bool didParse = document.read(file);
+	document.read(file);
 
 	// 16-bit files store their layerInformation in the additional tagged blocks
 	REQUIRE(document.m_LayerMaskInfo.m_AdditionalLayerInfo.has_value());
@@ -232,6 +229,4 @@ void checkCompressionFile<float32_t>(std::filesystem::path& inputPath, const dou
 	NAMESPACE_PSAPI::LayerInfo& layerInformation = lr32TaggedBlock.value()->m_Data;
 
 	checkCompressionFileImpl<float32_t>(layerInformation, zero_val, val_128, one_val, red_zero_val);
-
-	CHECK(didParse);
 }
