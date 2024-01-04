@@ -43,7 +43,7 @@ PhotoshopFile LayeredFile<T>::toPhotoshopFile()
 	FileHeader header = generateHeader<T>(*this);
 	ColorModeData colorModeData = generateColorModeData<T>(*this);
 	ImageResources imageResources = generateImageResources<T>(*this);
-	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this);
+	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this, header);
 
  	return PhotoshopFile(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }

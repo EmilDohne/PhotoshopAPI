@@ -17,7 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t")
 }
@@ -25,7 +25,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile, const FileHeader& header)
 {
 	LayerInfo lrInfo = generateLayerInfo<uint8_t>(layeredFile);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
@@ -38,7 +38,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile, const FileHeader& header)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generateLayerInfo<uint16_t>(layeredFile);
@@ -47,7 +47,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile
 	GlobalLayerMaskInfo maskInfo{};
 
 	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
+	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo, header));
 	TaggedBlockStorage blockStorage(blockPtrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
@@ -57,7 +57,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFile)
+LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFile, const FileHeader& header)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generateLayerInfo<float32_t>(layeredFile);
@@ -66,7 +66,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFil
 	GlobalLayerMaskInfo maskInfo{};
 
 	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
+	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo, header));
 	TaggedBlockStorage blockStorage(blockPtrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
