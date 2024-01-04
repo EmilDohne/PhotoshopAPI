@@ -4,6 +4,7 @@
 #include "Enum.h"
 #include "Profiling/Perf/Instrumentor.h"
 #include "Profiling/Memory/CompressionTracker.h"
+#include "PhotoshopFile/FileHeader.h"
 
 #include "blosc2.h"
 
@@ -80,7 +81,6 @@ struct ImageChannel : public BaseImageChannel
 	{
 
 		PROFILE_FUNCTION();
-		m_OrigSize = static_cast<uint64_t>(width) * height;
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
@@ -145,9 +145,9 @@ struct ImageChannel : public BaseImageChannel
 			return std::vector<T>();
 		}
 
-		std::vector<T> tmpData(m_OrigSize, 0);
+		std::vector<T> tmpData(m_OrigByteSize / sizeof(T), 0);
 
-		uint64_t remainingSize = m_OrigSize;
+		uint64_t remainingSize = m_OrigByteSize / sizeof(T);
 
 		for (uint32_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
@@ -193,7 +193,7 @@ struct ImageChannel : public BaseImageChannel
 		return outChunks;
 	}
 
-	uint32_t getNumChunks() const  { return m_NumChunks };
+	uint32_t getNumChunks() const { return m_NumChunks; };
 
 private:
 	blosc2_schunk* m_Data = nullptr;
