@@ -180,7 +180,7 @@ inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<T> endianEncodeBEArray(std::vector<T>& data)
+void endianEncodeBEArray(std::vector<T>& data)
 {
 	PROFILE_FUNCTION();
 	// We want to split up the vector into blocks that can easily fit into a L1 cache 

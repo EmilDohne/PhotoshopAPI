@@ -53,7 +53,7 @@ template <typename T>
 void WriteBinaryArray(File& document, std::vector<T> data)
 {
 	// Endian encode in-place
-	data = endianEncodeBEArray<T>(data);
+	endianEncodeBEArray<T>(data);
 	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
 	document.write(dataSpan);
 }
