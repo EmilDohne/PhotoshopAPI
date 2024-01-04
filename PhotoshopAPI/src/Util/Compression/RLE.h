@@ -19,6 +19,7 @@
 PSAPI_NAMESPACE_BEGIN
 
 // This is the packbits algorithm described here: https://en.wikipedia.org/wiki/PackBits we iterate byte by byte and decompress
+// a singular scanline at a time
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
@@ -59,6 +60,116 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
     }
 
     return decompressedData;
+}
+
+
+
+// This is the packbits algorithm described here: https://en.wikipedia.org/wiki/PackBits we iterate byte by byte and 
+// compress. The logic is heavily adapted from MolecularMatters and credit goes to them:
+// https://github.com/MolecularMatters/psd_sdk/blob/master/src/Psd/PsdDecompressRle.cpp
+// We assume a compression of a single scanline as they are all independant of each other
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanline, uint32_t& scanlineSize)
+{
+    PROFILE_FUNCTION();
+    // We assume a ~4x compression ratio for RLE to avoid continuously reserving more size
+    std::vector<uint8_t> compressedData;
+    compressedData.reserve(uncompressedScanline.size() / 4);
+
+    // Keep track of how long our run / no run is
+    uint8_t runLen = 0u;
+    uint8_t nonRunLen = 0u;
+
+	for (int i = 1; i < uncompressedScanline.size(); ++i)
+	{
+		const uint8_t prev = uncompressedScanline[i - 1];
+		const uint8_t curr = uncompressedScanline[i];
+
+        // We have a run of at least 2 bytes
+        if (prev == curr)
+        {
+            if (nonRunLen != 0)
+            {
+                // This is the first repeat of an item so we set the non run length to 0 and copy over the 
+                // all the non-run length bytes we have accumulated
+
+                // Write the amount of bytes that are in our non-run length. Note that we subtract one as the curr 
+                // value is part of a run
+                compressedData.push_back(nonRunLen - 1u);
+                for (int j = 0; j < nonRunLen - 1u; ++i)
+                {
+                    compressedData.push_back(uncompressedScanline.at(i - nonRunLen + j));
+                }
+                nonRunLen = 0;
+            }
+
+            ++runLen;
+
+            // runs cant be any longer than this due to the way that they are encoded so we are forced to terminate here
+            if (runLen == 128u)
+            {
+                compressedData.push_back(static_cast<uint8_t>(257u) - runLen);
+                compressedData.push_back(prev);
+                runLen = 0u;
+            }
+        }
+        else
+        {
+            // End the run if there is one going on
+            if (runLen != 0)
+            {
+                compressedData.push_back(static_cast<uint8_t>(256u) - runLen);
+                compressedData.push_back(prev);
+                runLen = 0u;
+            }
+            else
+            {
+                ++nonRunLen;
+            }
+
+            // Same as the termination condition on run lengths
+            if (nonRunLen == 128u)
+            {
+				compressedData.push_back(nonRunLen - 1u);
+				for (int j = 0; j < nonRunLen - 1u; ++i)
+				{
+					compressedData.push_back(uncompressedScanline[i - nonRunLen + j]);
+				}
+				nonRunLen = 0;
+            }
+        }
+	}
+
+    // After having iterated all the items we must now encode the last item
+    if (runLen != 0)
+    {
+        ++runLen;
+        // Push back the last element as the run
+        compressedData.push_back(static_cast<uint8_t>(257u) - runLen);
+        compressedData.push_back(uncompressedScanline[uncompressedScanline.size() - 1u]);
+    }
+    else
+    {
+        ++nonRunLen;
+		compressedData.push_back(nonRunLen - 1u);
+		for (int j = 0; j < nonRunLen - 1u; ++j)
+		{
+            compressedData.push_back(uncompressedScanline[uncompressedScanline.size() - nonRunLen + j]);
+		}
+		nonRunLen = 0;
+    }
+
+    // The section is padded to 2 bytes, if we need to insert a padding byte we use the no-op
+    // value of 128
+    if (compressedData.size() % 2 != 0)
+    {
+        compressedData.push_back(128u);
+    }
+
+    // Store and return
+    scanlineSize = compressedData.size();
+    return compressedData;
 }
 
 
@@ -124,5 +235,37 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 	return bitShiftedData;
 }
 
+
+// Compresses a single channel using the packbits algorithm into a binary array as well as big endian encoding it. Returns a binary vector of data
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::vector<uint8_t> CompressRLE(std::vector<T> uncompressedData, const uint32_t width, const uint32_t height, std::shared_ptr<std::vector<uint32_t>> scanlineSizes)
+{
+    endianEncodeBEArray(uncompressedData);
+
+    std::vector<std::span<uint8_t>> uncompressedDataViews;
+    for (int i = 0; i < height; ++i)
+    {
+        // Generate a span for each scanline
+        std::span<uint8_t> data(reinterpret_cast<uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));
+        uncompressedDataViews.push_back(data);
+    }
+
+    std::vector<uint8_t> compressedData;
+    // Compress each scanline of the uncompressed data individually and push it into the compressed data
+    // While also filling out the scanlineSizes vector
+    for (int i = 0; i < uncompressedDataViews.size(); ++i)
+    {
+        uint32_t scanlineSize = 0u;
+        auto data = CompressPackBits<T>(uncompressedDataViews[i], scanlineSize);
+        scanlineSizes->push_back(scanlineSize);
+
+        compressedData.insert(std::end(compressedData), std::begin(data), std::end(data));
+    }
+
+    
+    return compressedData;
+}
 
 PSAPI_NAMESPACE_END
