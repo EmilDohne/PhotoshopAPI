@@ -85,7 +85,7 @@ namespace {
 		// we copy the buffer to the compressedData vec
 		while (stream.avail_in != 0)
 		{
-			if(deflate(&stream, Z_NO_FLUSH) != Z_OK);
+			if(zng_deflate(&stream, Z_NO_FLUSH) != Z_OK);
 			{
 				PSAPI_LOG_ERROR("Zip", "Unable to call deflate with Z_NO_FLUSH on the input data")
 			}
@@ -98,7 +98,8 @@ namespace {
 		}
 
 		// Deal with the remaining chunks
-		while (int deflate_res == Z_OK)
+		int deflate_res = Z_OK;
+		while (deflate_res == Z_OK)
 		{
 			if (stream.avail_out == 0)
 			{
@@ -106,7 +107,7 @@ namespace {
 				stream.next_out = reinterpret_cast<uint8_t*>(buffer.data());
 				stream.avail_out = buffer.size();
 			}
-			deflate_res = deflate(&strm, Z_FINISH);
+			deflate_res = zng_deflate(&stream, Z_FINISH);
 		}
 
 		// Copy over the partial chunk
@@ -232,9 +233,9 @@ inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> de
 			// TODO this can be done with AVX2 as well but we need to make sure that we have a buffer
 			// per interleaved 4-scanline pair
 			buffer[3] = predictionDecodedData[y * width * sizeof(float32_t) + x];
-			buffer[2] = predictionDecodedData[y * width * sizeof(float32_t) + width + x];
-			buffer[1] = predictionDecodedData[y * width * sizeof(float32_t) + width * 2 + x];
-			buffer[0] = predictionDecodedData[y * width * sizeof(float32_t) + width * 3 + x];
+			buffer[2] = predictionDecodedData[y * width * sizeof(float32_t) + static_cast<uint64_t>(width) + x];
+			buffer[1] = predictionDecodedData[y * width * sizeof(float32_t) + static_cast<uint64_t>(width) * 2 + x];
+			buffer[0] = predictionDecodedData[y * width * sizeof(float32_t) + static_cast<uint64_t>(width) * 3 + x];
 
 			// Reinterpret the byte array to be a float32_t. This can be considered safe as we limit size of buffer to 4;
  			float32_t tmp = reinterpret_cast<float32_t&>(buffer[0]);
