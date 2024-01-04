@@ -21,8 +21,8 @@ namespace {
 	// Use zlib-ng to inflate the compressed input data to the expected output size
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	template<typename T>
-	inline std::vector<T> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
+	template <typename T>
+	std::vector<T> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
 	{
 		PROFILE_FUNCTION();
 		// Inflate the data
@@ -58,6 +58,69 @@ namespace {
 		return decompressedData;
 	}
 
+	// Use zlib-ng to deflate the uncompressed input data
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	template <typename T>
+	std::vector<uint8_t> Zip(const std::vector<T>& uncompressedData)
+	{
+		std::vector<uint8_t> compressedData;
+		std::vector<uint8_t> buffer(128 * 1024);
+
+		PROFILE_FUNCTION();
+		zng_stream stream{};
+		stream.zfree = Z_NULL;
+		stream.opaque = Z_NULL;
+		stream.avail_in = uncompressedData.size();
+		stream.next_in = uncompressedData.data();
+		stream.next_out = reinterpret_cast<uint8_t*>(buffer.data());
+		stream.avail_out = buffer.size();
+
+		if (zng_deflateInit(&stream, Z_DEFAULT_COMPRESSION) != Z_OK)
+		{
+			PSAPI_LOG_ERROR("Zip", "Deflate init failed")
+		}
+
+		// Continuously iterate the input stream and compress in chunks into our buffer after which
+		// we copy the buffer to the compressedData vec
+		while (stream.avail_in != 0)
+		{
+			if(deflate(&stream, Z_NO_FLUSH) != Z_OK);
+			{
+				PSAPI_LOG_ERROR("Zip", "Unable to call deflate with Z_NO_FLUSH on the input data")
+			}
+			if (stream.avail_out == 0)
+			{
+				compressedData.insert(compressedData.end(), std::begin(buffer), std::end(buffer));
+				stream.next_out = reinterpret_cast<uint8_t*>(buffer.data());
+				stream.avail_out = buffer.size();
+			}
+		}
+
+		// Deal with the remaining chunks
+		while (int deflate_res == Z_OK)
+		{
+			if (stream.avail_out == 0)
+			{
+				compressedData.insert(compressedData.end(), std::begin(buffer), std::end(buffer));
+				stream.next_out = reinterpret_cast<uint8_t*>(buffer.data());
+				stream.avail_out = buffer.size();
+			}
+			deflate_res = deflate(&strm, Z_FINISH);
+		}
+
+		// Copy over the partial chunk
+		size_t compressedSize = buffer.size() - stream.avail_out;
+		compressedData.insert(compressedData.end(), std::begin(buffer), std::begin(buffer) + compressedSize);
+
+		if (zng_deflateEnd(&stream) != Z_OK)
+		{
+			PSAPI_LOG_ERROR("Zip", "Deflate cleanup failed")
+		}
+
+		return compressedData;
+	}
+
 	// Creates two vectors that can be used as iterators for an image by height or width. 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -80,7 +143,7 @@ namespace {
 		return std::make_tuple(horizontalIter, verticalIter);
 	}
 
-	// Creates one vectors that can be used as iterators for an image by height.
+	// Creates one vector that can be used as iterators for an image by height.
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	inline std::vector<uint32_t> createVerticalImageIterator(const uint32_t height)
@@ -124,7 +187,7 @@ std::vector<T> RemovePredictionEncoding(std::vector<T> decompressedData, const u
 }
 
 
-// We need to specialize here as 32-bit files have their bytes interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
+// We need to specialize here as 32-bit files have their bytes de-interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
 // And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -165,7 +228,7 @@ inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> de
 		for (uint64_t x = 0; x < width; ++x)
 		{
 			// By specifying these in reverse we already take care of endian decoding
-			// Therefore no separate call is needed
+			// Therefore no separate call is needed. This should work platform independant on LE and BE platforms
 			// TODO this can be done with AVX2 as well but we need to make sure that we have a buffer
 			// per interleaved 4-scanline pair
 			buffer[3] = predictionDecodedData[y * width * sizeof(float32_t) + x];
@@ -190,10 +253,103 @@ inline std::vector<float32_t> RemovePredictionEncoding(std::vector<float32_t> de
 }
 
 
+// Prediction encode the data per scanline while also big endian converting it
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+std::vector<T> PredictionEncode(std::vector<T> data, const uint32_t width, const uint32_t height)
+{
+	PROFILE_FUNCTION();
+	// Here we must first prediction encode per scanline and then do the big endian conversion afterwards
+
+	std::vector<uint32_t> verticalIter = createVerticalImageIterator(height);
+
+	// This operation unfortunately cannot be done in-place but we can use a temporary buffer to avoid unnecessary memory overhead
+	std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
+		[&](uint32_t y)
+		{
+			std::vector<T> buffer(width);
+			// We must set the initial value manually as the prediction encoding goes from the first value
+			buffer[0] = data[static_cast<uint64_t>(width) * y];
+			for (uint32_t x = 1; x < width; ++x)
+			{
+				// Generate the difference between the current value and the next one and store it
+				buffer[x] = data[static_cast<uint64_t>(width) * y + x] - data[static_cast<uint64_t>(width) * y + x - 1];
+			}
+			std::memcpy(reinterpret_cast<void*>(data.data() + static_cast<uint64_t>(width) * y), reinterpret_cast<void*>(buffer.data()), width);
+		});
+
+	endianEncodeBEArray<T>(data);
+
+	return std::move(data);
+}
+
+
+// We need to specialize here as 32-bit files have their bytes de-interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
+// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <>
+inline std::vector<float32_t> PredictionEncode(std::vector<float32_t> data, const uint32_t width, const uint32_t height)
+{
+	PROFILE_FUNCTION();
+
+	std::span<uint8_t> byteDataView(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(float32_t));
+
+	// First de-interleave the data to planar byte order, i.e. going from 1234 1234 1234 1234 to 1111 2222 3333 4444
+	// We essentially split each scanline into 4 equal parts each holding the first, second, third and fourth of the original bytes
+	std::vector<uint32_t> verticalIter = createVerticalImageIterator(height);
+	std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
+		[&](uint32_t y)
+		{
+			// this buffer will hold the interleaved bytes of each scanline
+			std::vector<uint8_t> buffer(width * sizeof(float32_t));
+			std::span<uint8_t> firstRowView(buffer.data(), width);
+			std::span<uint8_t> secondRowView(buffer.data() + width, width);
+			std::span<uint8_t> thirdRowView(buffer.data() + width * 2, width);
+			std::span<uint8_t> fourthRowView(buffer.data() + width * 3, width);
+
+			for (uint64_t x = 0; x < width; ++x)
+			{
+				// While we loop over the items as if they were float32_t, we actually access 4 bytes at once allowing us to 
+				// simplify the loop. We first get the coordinate at the start of the row and then generate 
+				// the individual byte offsets
+				uint64_t rowCoord = static_cast<uint64_t>(y) * width * sizeof(float32_t);
+				firstRowView[x] = byteDataView[rowCoord + x * sizeof(float32_t)];		// Byte 0 
+				secondRowView[x] = byteDataView[rowCoord + x * sizeof(float32_t) + 1];	// Byte 1
+				thirdRowView[x] = byteDataView[rowCoord + x * sizeof(float32_t) + 2];	// Byte 2
+				fourthRowView[x] = byteDataView[rowCoord + x * sizeof(float32_t) + 3];	// Byte 3
+			}
+
+			// Copy the row back over, no need to lock here as the ranges are not overlapping
+			std::memcpy(reinterpret_cast<void*>(data.data() + y * width), reinterpret_cast<void*>(buffer.data()), buffer.size());
+		});
+
+	// Perform the prediction encoding of the data
+	std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
+		[&](uint32_t y)
+		{
+			std::vector<float32_t> buffer(width);
+			// We must set the initial value manually as the prediction encoding goes from the first value
+			buffer[0] = data[static_cast<uint64_t>(width) * y];
+			for (uint32_t x = 1; x < width; ++x)
+			{
+				// Generate the difference between the current value and the next one and store it
+				buffer[x] = data[static_cast<uint64_t>(width) * y + x] - data[static_cast<uint64_t>(width) * y + x - 1];
+			}
+			std::memcpy(reinterpret_cast<void*>(data.data() + static_cast<uint64_t>(width) * y), reinterpret_cast<void*>(buffer.data()), width);
+		});
+
+	// Finally, endian encode and return the data
+	endianEncodeBEArray(data);
+	return std::move(data);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
@@ -213,7 +369,23 @@ std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const FileHead
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn, const uint32_t width, const uint32_t height)
+{
+	PROFILE_FUNCTION();
+	// Convert uncompressed data to native endianness in-place
+	endianEncodeBEArray<T>(uncompressedIn);
+
+	// Compress using Deflate ZIP
+	std::vector<uint8_t> compressedData = Zip<T>(uncompressedIn);
+
+	return compressedData;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
@@ -228,5 +400,23 @@ std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, cons
 
 	return decodedData;
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<uint8_t> CompressZIPPrediction(std::vector<T>& uncompressedIn, const uint32_t width, const uint32_t height)
+{
+	PROFILE_FUNCTION();
+
+	// Prediction encode as well as byteswapping
+	std::vector<T> predictionEncodedData = PredictionEncode<T>(std::move(uncompressedIn), width, height);
+
+	// Compress using Deflate ZIP
+	std::vector<uint8_t> compressedData = Zip<T>(predictionEncodedData);
+
+	return compressedData;
+}
+
 
 PSAPI_NAMESPACE_END
