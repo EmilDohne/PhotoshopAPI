@@ -36,10 +36,16 @@ uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= null
 	return m_Size;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::string_view PascalString::getString() const noexcept
+{
+	return m_String;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void PascalString::read(File& document, const uint8_t padding)
+void PascalString::read(File& document, const uint8_t padding) noexcept
 {
 	uint8_t stringSize = ReadBinaryData<uint8_t>(document);
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
@@ -67,10 +73,9 @@ void PascalString::write(File& document, const uint8_t padding) const
 	WriteBinaryArray<uint8_t>(document, stringData);
 
 	// Finally, write the padding bytes
-	for (int i = 0; i < m_Size - m_String.size(); ++i)
-	{
-		WriteBinaryData<uint8_t>(document, 0u);
-	}
+	WritePadddingBytes(document, m_Size - m_String.size());
 }
+
+
 
 PSAPI_NAMESPACE_END

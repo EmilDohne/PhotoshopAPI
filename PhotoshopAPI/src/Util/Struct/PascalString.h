@@ -14,8 +14,6 @@ PSAPI_NAMESPACE_BEGIN
 // or 4 bytes depending on which section its read from
 struct PascalString : public FileSection
 {
-	std::string m_String;
-	
 	PascalString() { FileSection::m_Size = 0u; };
 	// Initialize a padded PascalString based on its size
 	PascalString(std::string name, const uint8_t padding);
@@ -23,8 +21,12 @@ struct PascalString : public FileSection
 	// While we return a uint64_t here we actually make sure that the size does not exceed the size of uint8_t as that would be illegal
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
-	void read(File& document, const uint8_t padding);
+	std::string_view getString() const noexcept;
+
+	void read(File& document, const uint8_t padding) noexcept;
 	void write(File& document, const uint8_t padding) const;
+private:
+	std::string m_String;
 };
 
 PSAPI_NAMESPACE_END
