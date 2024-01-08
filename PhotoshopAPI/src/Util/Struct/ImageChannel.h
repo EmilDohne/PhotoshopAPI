@@ -105,7 +105,7 @@ struct ImageChannel : public BaseImageChannel
 		// TODO set this to hardware concurrency?
 		cparams.nthreads = 4;
 		dparams.nthreads = 4;
-		blosc2_storage storage = {.contiguous=true, .cparams = &cparams, .dparams = &dparams };
+		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
