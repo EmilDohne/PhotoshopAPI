@@ -12,6 +12,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>
+#include <limits>
 
 #include <inttypes.h>
 
@@ -70,7 +71,7 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 // We assume a compression of a single scanline as they are all independant of each other
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanline, uint32_t& scanlineSize)
+inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanline, uint32_t& scanlineSize)
 {
     PROFILE_FUNCTION();
     // We assume a ~4x compression ratio for RLE to avoid continuously reserving more size
@@ -237,10 +238,11 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 
 
 // Compresses a single channel using the packbits algorithm into a binary array as well as big endian encoding it. Returns a binary vector of data
+// with the size of each scanline as either a 2- or 4-byte unsigned int preceding it
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> CompressRLE(std::vector<T> uncompressedData, const uint32_t width, const uint32_t height, std::shared_ptr<std::vector<uint32_t>> scanlineSizes)
+std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
     endianEncodeBEArray(uncompressedData);
 
@@ -252,15 +254,36 @@ std::vector<uint8_t> CompressRLE(std::vector<T> uncompressedData, const uint32_t
         uncompressedDataViews.push_back(data);
     }
 
-    std::vector<uint8_t> compressedData;
+    // Allocate the size required for all the scanline sizes ahead of time
+    std::vector<uint8_t> compressedData(SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, 0u);
     // Compress each scanline of the uncompressed data individually and push it into the compressed data
     // While also filling out the scanlineSizes vector
     for (int i = 0; i < uncompressedDataViews.size(); ++i)
     {
         uint32_t scanlineSize = 0u;
-        auto data = CompressPackBits<T>(uncompressedDataViews[i], scanlineSize);
-        scanlineSizes->push_back(scanlineSize);
+        std::vector<uint8_t> data = CompressPackBits(uncompressedDataViews[i], scanlineSize);
 
+        // Insert the scanline size at the start of the data in our pre-allocated buffer.
+        // For PSD we must shrink the value to uint16_t
+		const size_t scanlineIndex = i * SwapPsdPsb<uint16_t, uint32_t>(header.m_Version);
+        if (header.m_Version == Enum::Version::Psd)
+        {
+            if (scanlineSize > (std::numeric_limits<uint16_t>::max)()) [[unlikely]]
+			{
+				PSAPI_LOG_ERROR("CompressRLE", "Scanline sizes cannot exceed the numeric limits of 16-bit values when writing a PSD file")
+			}
+            uint16_t scanlineSizeu16 = static_cast<uint16_t>(scanlineSize);
+            scanlineSizeu16 = endianEncodeBE(scanlineSizeu16);
+            // Set the data at the correct index
+            std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSizeu16, sizeof(uint16_t));
+        }
+        else
+        {
+            scanlineSize = endianEncodeBE(scanlineSize);
+			std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSize, sizeof(uint32_t));
+        }
+
+        // Since our compressed data has the scanline sizes preallocated we can just insert at the end and that will be correct
         compressedData.insert(std::end(compressedData), std::begin(data), std::end(data));
     }
 

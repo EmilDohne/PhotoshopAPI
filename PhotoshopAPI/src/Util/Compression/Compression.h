@@ -46,27 +46,34 @@ inline std::vector<T> DecompressData(ByteStream& stream, uint64_t offset, const 
 
 
 // Compress an input datastream using the appropriate compression algorithm while encoding to BE order
-// The scanlineSizes parameter is only relevant for the RLE compression codec and can safely be left
-// at its default in all other cases
+// RLE compression will encode the scanline sizes at the start of the data as well. This would equals to 
+// 2/4 * height bytes of additional data (2 bytes for PSD and 4 for PSB)
 template <typename T>
-inline std::vector<T> CompressData(std::vector<T>& uncompressedIn, const Enum::Compression& compression, const uint32_t width, const uint32_t height, std::shared_ptr<std::vector<uint32_t>> scanlineSizes = nullptr)
+inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
 	// Perform the endian decoding in-place first as this step needs to happen before compressing either way
 	endianDecodeBEArray<T>(uncompressedIn);
-	switch (compression)
+	if (compression == Enum::Compression::Raw)
 	{
-	case Enum::Compression::Raw:
-		return std::move(uncompressedIn);
-	case Enum::Compression::Rle:
-		if (!scanlineSizes)
-			PSAPI_LOG_ERROR("Compression", "RLE Compression requires the scanlineSizes parameter to be passed")
-		if (scanlineSizes->size() != 0)
-			PSAPI_LOG_ERROR("Compression", "scanlineSizes parameter must be of size zero and will be filled on execution")
-		return CompressRLE(uncompressedIn, width, height, scanlineSizes);
-	case Enum::Compression::Zip:
+		std::vector<uint8_t> data(uncompressedIn.size() * sizeof(T));
+		std::memcpy(reinterpret_cast<void*>(data.data()), reinterpret_cast<void*>(uncompressedIn.data()), data.size());
+		return data;
+	}
+	else if (compression == Enum::Compression::Rle)
+	{
+		return CompressRLE(uncompressedIn, header, width, height);
+	}
+	else if (compression == Enum::Compression::Zip)
+	{
 		return CompressZIP(uncompressedIn, width, height);
-	case Enum::Compression::ZipPrediction:
+	}
+	else if (compression == Enum::Compression::ZipPrediction)
+	{
 		return CompressZIPPrediction(uncompressedIn, width, height);
+	}
+	else
+	{
+		return(std::vector<uint8_t>{});
 	}
 }
 
