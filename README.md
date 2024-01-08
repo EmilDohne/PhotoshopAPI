@@ -68,3 +68,8 @@ int main()
 ### Writing files
 
 TODO
+
+
+## Performance
+
+PhotoshopAPI intends to have both a lower memory footprint, as well as being faster than Photoshop in read and writes. Currently PhotoshopAPI is about ~2.5x faster in reads with a 3x lower memory footprint (2m01s -> 46s | ~30GB -> ~9.5GB)

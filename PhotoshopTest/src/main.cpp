@@ -62,7 +62,7 @@ std::vector<std::filesystem::path> relPaths =
 void profile()
 {
 	// Initialize our Instrumentor instance here to write out our profiling info
-	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "parallel_cblosc.json");
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "unlikely_attribute.json");
 	NAMESPACE_PSAPI::CompressionTracker::Get().BeginSession("PSAPI_Profile");
 
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
@@ -136,7 +136,7 @@ int main()
 	// Profile and test our application all in one step
 	//profile();
 
-	sampleReadWrite();
+	profile();
 
 
 	// Set up and run doctest tests
