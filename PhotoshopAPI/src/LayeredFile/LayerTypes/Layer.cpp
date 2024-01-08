@@ -25,7 +25,7 @@ template struct Layer<float32_t>;
 template <typename T>
 Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData)
 {
-	m_LayerName = layerRecord.m_LayerName.m_String;
+	m_LayerName = layerRecord.m_LayerName.getString();
 	// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
 	// blendmode if it is present
 	{
