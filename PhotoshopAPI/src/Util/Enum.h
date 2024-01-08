@@ -383,7 +383,7 @@ namespace Enum
 	}
 
 	template<>
-	inline std::optional<BlendMode> getBlendMode(std::string key)
+	inline std::optional<BlendMode> getBlendMode(const std::string key)
 	{
 		auto it = blendModeMap.find(key);
 
@@ -396,7 +396,7 @@ namespace Enum
 	}
 
 	template <>
-	inline std::optional<std::string> getBlendMode(BlendMode key)
+	inline std::optional<std::string> getBlendMode(const BlendMode key)
 	{
 		return findByValue(blendModeMap, key);
 	}
@@ -546,6 +546,7 @@ namespace Enum
 	inline std::optional<TValue> getTaggedBlockKey(TKey key)
 	{
 		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found")
+		return std::nullopt;
 	}
 
 	template<>
@@ -604,13 +605,39 @@ namespace Enum
 		ZipPrediction	// ZIP compression where 
 	};
 
-	inline std::unordered_map<uint16_t, Compression> compressionMap
+
+	namespace {
+		inline std::unordered_map<uint16_t, Compression> compressionMap
+		{
+			{static_cast<uint16_t>(0u), Compression::Raw},
+			{static_cast<uint16_t>(1u), Compression::Rle},
+			{static_cast<uint16_t>(2u), Compression::Zip},
+			{static_cast<uint16_t>(3u), Compression::ZipPrediction}
+		};
+	}
+
+	// Bidirectional mapping of Tagged block keys
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getCompression(TKey key)
 	{
-		{static_cast<uint16_t>(0u), Compression::Raw},
-		{static_cast<uint16_t>(1u), Compression::Rle},
-		{static_cast<uint16_t>(2u), Compression::Zip},
-		{static_cast<uint16_t>(3u), Compression::ZipPrediction}
-	};
+		PSAPI_LOG_ERROR("getCompression", "No overload for the specific search type found")
+	}
+
+	template<>
+	inline std::optional<Compression> getCompression(uint16_t key)
+	{
+		auto it = compressionMap.find(key);
+
+		if (it != compressionMap.end()) {
+			return std::optional<Compression>(it->second);
+		}
+	}
+
+	template <>
+	inline std::optional<uint16_t> getCompression(Compression key)
+	{
+		return findByValue(compressionMap, key);
+	}
 }
 
 
@@ -627,13 +654,42 @@ namespace Enum
 		BoundingSection
 	};
 
-	inline std::unordered_map<uint32_t, SectionDivider> sectionDividerMap
+	namespace
 	{
-		{static_cast<uint32_t>(0u), SectionDivider::Any},
-		{static_cast<uint32_t>(1u), SectionDivider::OpenFolder},
-		{static_cast<uint32_t>(2u), SectionDivider::ClosedFolder},
-		{static_cast<uint32_t>(3u), SectionDivider::BoundingSection}
-	};
+		inline std::unordered_map<uint32_t, SectionDivider> sectionDividerMap
+		{
+			{static_cast<uint32_t>(0u), SectionDivider::Any},
+			{static_cast<uint32_t>(1u), SectionDivider::OpenFolder},
+			{static_cast<uint32_t>(2u), SectionDivider::ClosedFolder},
+			{static_cast<uint32_t>(3u), SectionDivider::BoundingSection}
+		};
+	}
+
+	// Bidirectional mapping of Section divider values
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getSectionDivider(TKey key)
+	{
+		PSAPI_LOG_ERROR("getSectionDivider", "No overload for the specific search type found")
+	}
+
+	template<>
+	inline std::optional<SectionDivider> getSectionDivider(const uint32_t key)
+	{
+		auto it = sectionDividerMap.find(key);
+
+		if (it != sectionDividerMap.end()) {
+			return std::optional<SectionDivider>(it->second);
+		}
+		else {
+			return std::nullopt;
+		}
+	}
+
+	template <>
+	inline std::optional<uint32_t> getSectionDivider(const SectionDivider key)
+	{
+		return findByValue(sectionDividerMap, key);
+	}
 }
 
 
