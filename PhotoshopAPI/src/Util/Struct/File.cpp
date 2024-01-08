@@ -1,6 +1,7 @@
 #include "File.h"
 
 #include "Macros.h"
+#include "Profiling/Perf/Instrumentor.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -9,7 +10,7 @@ PSAPI_NAMESPACE_BEGIN
 void File::read(char* buffer, uint64_t size)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);
-	if (m_Offset + size > m_Size)
+	if (m_Offset + size > m_Size) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
 	}
