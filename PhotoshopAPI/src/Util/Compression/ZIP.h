@@ -72,7 +72,7 @@ namespace {
 		stream.zfree = Z_NULL;
 		stream.opaque = Z_NULL;
 		stream.avail_in = uncompressedData.size();
-		stream.next_in = uncompressedData.data();
+		stream.next_in = reinterpret_cast<const uint8_t*>(uncompressedData.data());
 		stream.next_out = reinterpret_cast<uint8_t*>(buffer.data());
 		stream.avail_out = buffer.size();
 
