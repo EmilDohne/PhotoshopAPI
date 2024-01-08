@@ -32,6 +32,7 @@ struct TaggedBlockStorage : public FileSection
 	// The shared ptr should be used only to retrieve data, hence its markation as const
 	const std::shared_ptr<TaggedBlock> readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding = 1u);
 
+	void write(File& document, const FileHeader& header, const uint16_t padding) const;
 private:
 	std::vector<std::shared_ptr<TaggedBlock>> m_TaggedBlocks;
 };

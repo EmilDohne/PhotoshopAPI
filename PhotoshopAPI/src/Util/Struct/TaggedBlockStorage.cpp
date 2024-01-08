@@ -2,6 +2,7 @@
 
 #include "Macros.h"
 #include "FileIO/Read.h"
+#include "FileIO/Write.h"
 #include "Logger.h"
 #include "StringUtil.h"
 #include "TaggedBlock.h"
@@ -107,6 +108,15 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 		PSAPI_LOG_ERROR("TaggedBlock", "Could not find tagged block from key '%s'", keyStr.c_str());
 		return nullptr;
 	}
+}
+
+void TaggedBlockStorage::write(File& document, const FileHeader& header, const uint16_t padding) const
+{
+	for (const auto& block : m_TaggedBlocks)
+	{
+		block->write(document, header, padding);
+	}
+	// Since the tagged blocks themselves are aligned to padding we dont need to pad the rest of this section manually
 }
 
 PSAPI_NAMESPACE_END

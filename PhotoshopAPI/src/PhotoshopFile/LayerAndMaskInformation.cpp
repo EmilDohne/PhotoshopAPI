@@ -3,6 +3,7 @@
 #include "FileHeader.h"
 #include "Macros.h"
 #include "FileIO/Read.h"
+#include "FileIO/Write.h"
 #include "FileIO/Util.h"
 #include "StringUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
@@ -10,6 +11,7 @@
 #include <variant>
 #include <algorithm>
 #include <execution>
+#include <limits>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -20,7 +22,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerRecords::BitFlags::setFlags(const uint8_t flags)
+void LayerRecords::BitFlags::setFlags(const uint8_t flags) noexcept
 {
 	m_isTransparencyProtected = (flags & m_transparencyProtectedMask) != 0;
 	m_isVisible = (flags & m_visibleMask) != 0;
@@ -33,7 +35,7 @@ void LayerRecords::BitFlags::setFlags(const uint8_t flags)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint8_t LayerRecords::BitFlags::getFlags() const
+uint8_t LayerRecords::BitFlags::getFlags() const noexcept
 {
 	uint8_t result = 0u;
 	if (m_isTransparencyProtected) result = result & 1u << 0;
@@ -96,7 +98,7 @@ uint64_t LayerRecords::LayerMask::calculateSize(std::shared_ptr<FileHeader> head
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
+void LayerRecords::LayerMask::setFlags(const uint8_t bitFlag)
 {
 	m_PositionRelativeToLayer = (bitFlag & m_PositionRelativeToLayerMask) != 0;
 	m_Disabled = (bitFlag & m_DisabledMask) != 0;
@@ -107,7 +109,27 @@ void LayerRecords::LayerMask::setFlags(const uint32_t bitFlag)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
+uint8_t LayerRecords::LayerMask::getFlags() const noexcept
+{
+	uint8_t bitFlags = 0u;
+
+	if (m_PositionRelativeToLayer) 
+		bitFlags |= m_PositionRelativeToLayerMask;
+	if (m_Disabled)
+		bitFlags |= m_DisabledMask;
+	if (m_IsVector)
+		bitFlags |= m_IsVectorMask;
+	if (m_HasMaskParams)
+		bitFlags |= m_HasMaskParamsMask;
+
+	return bitFlags;
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LayerRecords::LayerMask::setMaskParams(const uint8_t bitFlag)
 {
 	m_HasUserMaskDensity = (bitFlag & m_UserMaskDensityMask) != 0;
 	m_HasUserMaskFeather = (bitFlag & m_UserMaskFeatherMask) != 0;
@@ -116,8 +138,25 @@ void LayerRecords::LayerMask::setMaskParams(const uint32_t bitFlag)
 }
 
 
-// Read the mask parameters according to which mask parameter bit flags are set and return the total
-// length of all the bytes read
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint8_t LayerRecords::LayerMask::getMaskParams() const noexcept
+{
+	uint8_t bitFlags = 0u;
+
+	if (m_HasUserMaskDensity)
+		bitFlags |= m_UserMaskDensityMask;
+	if (m_HasUserMaskFeather)
+		bitFlags |= m_UserMaskFeatherMask;
+	if (m_HasVectorMaskDensity)
+		bitFlags |= m_VectorMaskDensityMask;
+	if (m_HasVectorMaskFeather)
+		bitFlags |= m_VectorMaskFeatherMask;
+
+	return bitFlags;
+}
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
@@ -150,6 +189,35 @@ uint32_t LayerRecords::LayerMask::readMaskParams(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+uint32_t LayerRecords::LayerMask::writeMaskParams(File& document) const noexcept
+{
+	uint32_t sizeWritten = 0u;
+	if (m_HasUserMaskDensity)
+	{
+		WriteBinaryData<uint8_t>(document, m_UserMaskDensity.value());
+		sizeWritten += 1u;
+	}
+	if (m_HasUserMaskFeather)
+	{
+		WriteBinaryData<float64_t>(document, m_UserMaskFeather.value());
+		sizeWritten += 8u;
+	}
+	if (m_HasVectorMaskDensity)
+	{
+		WriteBinaryData<uint8_t>(document, m_VectorMaskDensity.value());
+		sizeWritten += 1u;
+	}
+	if (m_HasVectorMaskFeather)
+	{
+		WriteBinaryData<float64_t>(document, m_VectorMaskFeather.value());
+		sizeWritten += 8u;
+	}
+	return sizeWritten;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 uint64_t LayerRecords::LayerMaskData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
@@ -166,11 +234,9 @@ uint64_t LayerRecords::LayerMaskData::calculateSize(std::shared_ptr<FileHeader> 
 		size += m_LayerMask.value().calculateSize();
 	}
 	
-	// xor as we only have padding bytes if exactly one of these exists
-	if (m_LayerMask.has_value() != m_VectorMask.has_value())
-	{ 
-		size += 2u;
-	}
+	// It appears as though this section is just padded to 4-bytes regardless of
+	// section lengths
+	RoundUpToMultiple<uint64_t>(size, 4u);
 
 	return size;
 }
@@ -282,9 +348,49 @@ void LayerRecords::LayerMaskData::read(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+void LayerRecords::LayerMaskData::write(File& document) const
+{
+	uint32_t size = this->calculateSize();
+	uint32_t sizeWritten = 0u;
+
+	// Section size marker
+	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(size - 4u));
+
+	
+	// When writing both types of masks we must actually generate 
+	if (m_LayerMask.has_value() && m_VectorMask.has_value())
+	{
+		PSAPI_LOG_WARNING("LayerMaskData", "Having two masks is currently unsupported by the PhotoshopAPI, currently only pixel masks are supported.")
+	}
+	else if (m_LayerMask.has_value())
+	{
+		const auto& lrMask = m_LayerMask.value();
+		WriteBinaryData<int32_t>(document, lrMask.m_Top);
+		WriteBinaryData<int32_t>(document, lrMask.m_Left);
+		WriteBinaryData<int32_t>(document, lrMask.m_Bottom);
+		WriteBinaryData<int32_t>(document, lrMask.m_Right);
+		sizeWritten += 16u;
+		WriteBinaryData<uint8_t>(document, lrMask.getFlags());
+		sizeWritten += 1u;
+		if (lrMask.m_HasMaskParams)
+		{
+			WriteBinaryData<uint8_t>(document, lrMask.getMaskParams());
+			sizeWritten += 1u;
+			sizeWritten += lrMask.writeMaskParams(document);
+		}
+	}
+
+	// Pad the section to 4 bytes
+	if (m_Size - 4u > sizeWritten)
+		WritePadddingBytes(document, m_Size - 4u - sizeWritten);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 LayerRecords::LayerBlendingRanges::LayerBlendingRanges()
 {
-	// For some reason no matter the color mode this section is always 40 bytes long (Photoshop 23.3.2). 5 channels
+	// For some reason no matter the color mode this section is always 40 bytes long (Photoshop 23.3.2) which is 5 channels
 	// Likely at some point it was decided that it was easiest to just hold the longest amount of possible combinations
 	// as the size is quite trivial. Blending ranges for any non-default channels (default channels would be rgb in rgb
 	// color mode or cmyk in cmyk color mode) cannot be blended and are therefore not considered.
@@ -335,18 +441,47 @@ void LayerRecords::LayerBlendingRanges::read(File& document)
 		uint8_t sourceHigh1 = ReadBinaryData<uint8_t>(document);
 		uint8_t sourceHigh2 = ReadBinaryData<uint8_t>(document);
 
-		m_SourceRanges.emplace_back(std::tuple(sourceLow1, sourceLow2, sourceHigh1, sourceHigh2));
+		m_SourceRanges.push_back(std::tuple(sourceLow1, sourceLow2, sourceHigh1, sourceHigh2));
 
 		uint8_t destinationLow1 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationLow2 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationHigh1 = ReadBinaryData<uint8_t>(document);
 		uint8_t destinationHigh2 = ReadBinaryData<uint8_t>(document);
 
-		m_DestinationRanges.emplace_back(std::tuple(destinationLow1, destinationLow2, destinationHigh1, destinationHigh2));
+		m_DestinationRanges.push_back(std::tuple(destinationLow1, destinationLow2, destinationHigh1, destinationHigh2));
 
 		toRead -= 8u;
 	}
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LayerRecords::LayerBlendingRanges::write(File& document) const
+{
+	// Write the size marker
+	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Size - 4u));
+
+	if (m_SourceRanges.size() != m_DestinationRanges.size()) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("LayerBlendingRanges", "Source and Destination ranges must have the exact same size, source range size : %i, destination range size : %i",
+			m_SourceRanges.size(), m_DestinationRanges.size())
+	}
+
+	for (int i = 0; i < m_SourceRanges.size(); ++i)
+	{
+		WriteBinaryData<uint8_t>(document, std::get<0>(m_SourceRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<1>(m_SourceRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<2>(m_SourceRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<3>(m_SourceRanges[i]));
+
+		WriteBinaryData<uint8_t>(document, std::get<0>(m_DestinationRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<1>(m_DestinationRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<2>(m_DestinationRanges[i]));
+		WriteBinaryData<uint8_t>(document, std::get<3>(m_DestinationRanges[i]));
+	}
+}
+
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -409,10 +544,15 @@ LayerRecord::LayerRecord(
 // ---------------------------------------------------------------------------------------------------------------------
 uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
+	if (!header)
+	{
+		PSAPI_LOG_ERROR("LayerRecord", "calculateSize() function requires the header to be passed")
+	}
+
 	uint64_t size = 0u;
 	size += 16u;	// Enclosing rect
 	size += 2u;		// Num of channels
-	size += m_ChannelInformation.size() * 6u;	// Channel Information size per channel
+	size += m_ChannelInformation.size() * (SwapPsdPsb<uint32_t, uint64_t>(header->m_Version) + 2u);	// Channel Information size per channel
 	size += 4u;		// Blend mode signature
 	size += 4u;		// Blend mode 
 	size += 1u;		// Opacity
@@ -551,6 +691,69 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+void LayerRecord::write(File& document, const FileHeader& header, std::vector<LayerRecords::ChannelInformation> channelInfos) const
+{
+	WriteBinaryData<uint32_t>(document, m_Top);
+	WriteBinaryData<uint32_t>(document, m_Left);
+	WriteBinaryData<uint32_t>(document, m_Bottom);
+	WriteBinaryData<uint32_t>(document, m_Right);
+
+	if (m_ChannelCount > 56)
+		PSAPI_LOG_ERROR("LayerRecord", "Maximum channel count is 56 for a given layer, got %i", m_ChannelCount);
+	WriteBinaryData<uint16_t>(document, m_ChannelCount);
+
+	if (channelInfos.size() != m_ChannelCount)
+		PSAPI_LOG_ERROR("LayerRecord", "The provided channelInfo vec does not have the same amount of channels as m_ChanneCount, expected %i but got %i instead",
+			m_ChannelCount, channelInfos.size())
+	for (const auto& info : channelInfos)
+	{
+		WriteBinaryData<int16_t>(document, info.m_ChannelID.index);
+		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, info.m_Size, header.m_Version);
+	}
+
+	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
+	std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode);
+	if (!blendModeStr.has_value())
+		PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key")
+	WriteBinaryData<uint32_t>(document, Signature(blendModeStr.value()).m_Value);
+
+
+	WriteBinaryData<uint8_t>(document, m_Opacity);
+	if (m_Clipping > 1)
+		PSAPI_LOG_ERROR("LayerRecord", "'Clipping' variable must be 0 or 1, not %u", m_Clipping)
+	WriteBinaryData<uint8_t>(document, m_Clipping);
+
+	WriteBinaryData<uint8_t>(document, m_BitFlags.getFlags());
+	WriteBinaryData<uint8_t>(document, 0u);	// Filler byte
+
+	// Write the extra data here which the official docs refer to as 5 sections but is in reality 4 (LayerMaskData, LayerBlendingRanges, LayerName, AdditionalLayerInfo)
+	{
+		// Keep in mind that these individual sections will already be padded to their respective size so we dont need to worry about padding
+		uint32_t extraDataSize = 0u;
+		{
+			if (m_LayerMaskData.has_value()) extraDataSize += m_LayerMaskData.value().calculateSize();
+			extraDataSize += m_LayerBlendingRanges.calculateSize();
+			extraDataSize += m_LayerName.calculateSize();
+			if (m_AdditionalLayerInfo.has_value()) extraDataSize += m_AdditionalLayerInfo.value().calculateSize();
+		}
+		WriteBinaryData<uint32_t>(document, extraDataSize);
+
+		if (m_LayerMaskData.has_value())
+		{
+			m_LayerMaskData.value().write(document);
+		}
+		m_LayerBlendingRanges.write(document);
+		m_LayerName.write(document, 4u);
+		if (m_AdditionalLayerInfo.has_value())
+		{
+			m_AdditionalLayerInfo.value().write(document, header);
+		}
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
@@ -564,7 +767,7 @@ uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t numSamples)
+uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t numSamples)
 {
 	uint64_t estimatedSize = 0u;
 
@@ -592,22 +795,22 @@ uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t 
 		{
 			if (imageChannel->m_Compression == Enum::Compression::Rle)
 			{
-				std::shared_ptr<std::vector<uint32_t>> scanlineSizes = std::make_shared<std::vector<uint32_t>>({});
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Rle, sample.size(), 1u, scanlineSizes);
-				estimatedSize += tmp.size() * sizeof(T) * (imageChannel->getNumChunks() / numSamples);
+				auto tmp = CompressData(sample, Enum::Compression::Rle, header, sample.size(), 1u);
+				// Subtract 2/4 bytes for the scanline size stored at the end of the data section
+				estimatedSize += (tmp.size() * sizeof(T) - SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * (imageChannel->getNumChunks() / numSamples);
 			}
 			else if (imageChannel->m_Compression == Enum::Compression::Zip)
 			{
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Zip, sample.size(), 1u);
+				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
 				// Subtract 5 bytes to remove any header information 
 				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
 			}
 			else if (imageChannel->m_Compression == Enum::Compression::ZipPrediction)
 			{
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Zip, sample.size(), 1u);
+				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
 				// Subtract 5 bytes to remove any header information 
 				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
 			}
@@ -617,6 +820,55 @@ uint64_t ChannelImageData::estimateSize(const FileHeader header, const uint16_t 
 	return estimatedSize;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression)
+{
+	PROFILE_FUNCTION();
+	std::vector<std::vector<uint8_t>> compressedData;
+	compressedData.reserve(m_ImageData.size());
+
+	for (int i = 0; i < m_ImageData.size(); ++i)
+	{
+		// Take ownership of and invalidate the current channel index
+		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
+		if (imageChannelPtr == nullptr) [[unlikely]]
+		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i)
+			auto emptyVec = std::vector<std::vector<uint8_t>>();
+			return emptyVec;
+		}
+		m_ImageData[i] = nullptr;
+
+		// Check that our channel can be cast to a valid ImageChannel instance
+		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr.get())) [[likely]]
+		{
+			const auto& width = imageChannel->getWidth();
+			const auto& height = imageChannel->getHeight();
+			const auto& compressionMode = imageChannel->m_Compression;
+			const auto& channelIdx = imageChannel->m_ChannelID;
+
+			// Compress the image data into a binary array and store it in our compressedData vec
+			std::vector<T> imgData = imageChannel->getData();
+			compressedData.push_back(CompressData(imgData, compressionMode, header, width, height));
+
+			// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
+			LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
+			lrChannelInfo.push_back(channelInfo);
+			lrCompression.push_back(compressionMode);
+		}
+		else [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", i)
+			auto emptyVec = std::vector<std::vector<uint8_t>>();
+			return emptyVec;
+		}
+	}
+
+	return compressedData;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -696,21 +948,10 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 // ---------------------------------------------------------------------------------------------------------------------
 uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
-	if (!header)
-		PSAPI_LOG_ERROR("LayerInfo", "FileHeader is required to calculate the size of the LayerInfo section")
-
 	uint64_t size = 0u;
-	size += SwapPsdPsb<uint32_t, uint64_t>(header->m_Version);	// Size marker
-	size += 2u;	// Layer count
 
-	for (const auto& lr : m_LayerRecords)
-	{
-		size += lr.calculateSize();
-	}
-	for (const auto& lr : m_ChannelImageData)
-	{
-		size += lr.calculateSize();
-	}
+	PSAPI_LOG_WARNING("LayerInfo", "Unable to compute size of LayerInfo due to the size only being known upon compressing of the image channels, please refrain from using this function")
+
 	return size;
 }
 
@@ -774,8 +1015,8 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		channelImageDataSizes.push_back(imageDataSize);
 	}
 
+	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	// Extract Channel Image Data in parallel. Note that we perform this insertion in 
 	std::for_each(m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
@@ -821,13 +1062,104 @@ int LayerInfo::getLayerIndex(const std::string& layerName)
 	int count = 0;
 	for (const LayerRecord& layer : m_LayerRecords)
 	{
-		if (layer.m_LayerName.m_String == layerName)
+		if (layer.m_LayerName.getString() == layerName)
 		{
 			return count;
 		}
 		++count;
 	}
 	return -1;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LayerInfo::write(File& document, const FileHeader& header, const uint16_t padding)
+{
+	PROFILE_FUNCTION();
+	// The writing of this section is a bit confusing as we must first compress all of our image data, then write the 
+	// section size and Layer Records with the size markers that we found. After this we finally write the compressed data to disk
+	// it is imperative that the layer order is consistent between the LayerRecords and the ChannelImageData as that is how photoshop
+	// maps these two together
+
+	if (m_LayerRecords.size() != m_ChannelImageData.size()) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size())
+	}
+	// The nesting here indicates Layers/Channels/ImgData
+	std::vector<std::vector<std::vector<uint8_t>>> compressedData;
+	std::vector<std::vector<LayerRecords::ChannelInformation>> channelInfos;
+	std::vector<std::vector<Enum::Compression>> channelCompression;
+	// Loop over the individual layers and compress them while also storing the channel information
+	for (auto& channel : m_ChannelImageData)
+	{
+		std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
+		std::vector<Enum::Compression> lrCompression;
+		if (header.m_Depth == Enum::BitDepth::BD_8)
+		{
+			compressedData.push_back(channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_16)
+		{
+			compressedData.push_back(channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_32)
+		{
+			compressedData.push_back(channel.compressData<float32_t>(header, lrChannelInfo, lrCompression));
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("LayerInfo", "Unsupported BitDepth encountered, currently only 8-, 16- and 32-bit files are supported")
+		}
+		channelInfos.push_back(lrChannelInfo);
+		channelCompression.push_back(lrCompression);
+	}
+
+	// Write the section size as well as the layer count
+	uint64_t dataSize = 0u;
+	{
+		for (const auto& lr : m_LayerRecords)
+		{
+			dataSize += lr.calculateSize(std::make_shared<FileHeader>(header));
+		}
+		for (int i = 0; i < compressedData.size(); ++i)
+		{
+			for (int j = 0; j < compressedData[i].size(); ++j)
+			{
+				dataSize += compressedData[i][j].size();
+			}
+		}
+		// The section size is padded to a multiple of 4 bytes
+		uint64_t dataSizePadded = RoundUpToMultiple<uint64_t>(dataSize, padding);
+		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, dataSizePadded, header.m_Version);
+		// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
+		// but we do not bother with that at this point
+		WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
+	}
+
+	// Write the layer records
+	for (int i = 0; i < m_LayerRecords.size(); ++i)
+	{
+		m_LayerRecords[i].write(document, header, channelInfos[i]);
+	}
+
+	// Write the ChannelImageData, as we already have all the data here we simplify by writing it right away instead of 
+	// calling a function on all of the channels
+	for (int i = 0; i < compressedData.size(); ++i)
+	{
+		for (int j = 0; j < compressedData[i].size(); ++j)
+		{
+			std::optional<uint16_t> compressionCode = Enum::getCompression<Enum::Compression, uint16_t>(channelCompression[i][j]);
+			if (!compressionCode.has_value()) [[unlikely]]
+				PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec")
+
+			WriteBinaryData<uint16_t>(document, compressionCode.value());
+			WriteBinaryArray<uint8_t>(document, compressedData[i][j]);
+		}
+	}
+
+	uint64_t paddingNeeded = RoundUpToMultiple<uint64_t>(dataSize, padding) - dataSize;
+	WritePadddingBytes(document, paddingNeeded);
 }
 
 
@@ -847,18 +1179,20 @@ void GlobalLayerMaskInfo::read(File& document, const uint64_t offset)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+void GlobalLayerMaskInfo::write(File& document, const FileHeader& header)
+{
+	// Write an empty section
+	WriteBinaryData<uint32_t>(document, 0u);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
-	if (!header)
-		PSAPI_LOG_ERROR("LayerAndMaskInformation", "FileHeader is required to calculate the size of the LayerAndMaskInformation section")
 	uint64_t size = 0u;
-	size += SwapPsdPsb<uint32_t, uint64_t>(header->m_Version);	// Size marker
-	
-	size += m_LayerInfo.calculateSize(header);
-	size += m_GlobalLayerMaskInfo.calculateSize();
 
-	if (m_AdditionalLayerInfo.has_value())
-		size += m_AdditionalLayerInfo.value().calculateSize();
+	PSAPI_LOG_WARNING("LayerAndMaskInformation", "Unable to compute size of LayerAndMaskInformation due to the size only being known upon compressing of the image channels, please refrain from using this function")
 
 	return size;
 }
@@ -906,5 +1240,29 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	}
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LayerAndMaskInformation::write(File& document, const FileHeader& header)
+{
+	PROFILE_FUNCTION();
+	// For the layer and mask information section, getting the size is a little bit awkward as we only know the size upon 
+	// writing the layer info and additional layer information sections. Therefore we will write an empty size marker,
+	// then write the contents after which we manually calculate the section size and replace the value
+	uint64_t sizeMarkerOffset = document.getOffset();
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
+
+	m_LayerInfo.write(document, header, 4u);
+	m_GlobalLayerMaskInfo.write(document, header);
+	if (m_AdditionalLayerInfo.has_value())
+		m_AdditionalLayerInfo.value().write(document, header, 4u);
+
+	uint64_t endOffset = document.getOffset();
+	uint64_t sectionSize = endOffset - sizeMarkerOffset;
+	document.setOffset(sizeMarkerOffset);
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize, header.m_Version);
+	// Set the offset back to the end to leave the document in a valid state
+	document.setOffset(endOffset);
+}
 
 PSAPI_NAMESPACE_END

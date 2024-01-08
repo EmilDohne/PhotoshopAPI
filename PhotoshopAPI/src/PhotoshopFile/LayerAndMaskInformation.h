@@ -33,9 +33,9 @@ namespace LayerRecords
 		bool m_isPixelDataIrrelevant = false;	// If m_isBit4Useful is set to false this will always also be false, no matter if the value itself would be true
 
 		// Set the internal flag states using the provided flag uint8_t
-		void setFlags(const uint8_t flags);
+		void setFlags(const uint8_t flags) noexcept;
 		// Return the current flag states as a uint8_t with the relevant bits set
-		uint8_t getFlags() const;
+		uint8_t getFlags() const noexcept;
 
 		BitFlags() = default;
 		BitFlags(const uint8_t flags);
@@ -80,9 +80,20 @@ namespace LayerRecords
 
 		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
-		void setFlags(const uint32_t bitFlag);
-		void setMaskParams(const uint32_t bitFlag);
+		// Set the boolean flags according to the data read from disk
+		void setFlags(const uint8_t bitFlag);
+		// Get the currently set flags as a uint8_t for writing
+		uint8_t getFlags() const noexcept;
+		// Set the boolean flags according to the data read from disk
+		void setMaskParams(const uint8_t bitFlag);
+		// Get the currently set flags as a uint8_t for writing
+		uint8_t getMaskParams() const noexcept;
+		// Read the mask parameters according to which mask parameter bit flags are set and return the total
+		// length of all the bytes read
 		uint32_t readMaskParams(File& document);
+		// Write the mask parameters according to which mask parameter bit flags are set 
+		// and return the amount of bytes written
+		uint32_t writeMaskParams(File& document) const noexcept;
 
 	private:
 		// Masks to perform bitwise & operations with to check if certain flags exist
@@ -113,6 +124,8 @@ namespace LayerRecords
 		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 		void read(File& document);
+		// Write the layer masks, currently only a single LayerMask is supported for this
+		void write(File& document) const;
 	};
 
 
@@ -130,6 +143,7 @@ namespace LayerRecords
 		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 		void read(File& document);
+		void write(File& document) const;
 	};
 }
 
@@ -179,6 +193,8 @@ struct LayerRecord : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	void read(File& document, const FileHeader& header, const uint64_t offset);
+	// Write the layer record to disk, requires the Image data to be compressed already and the size to be known
+	void write(File& document, const FileHeader& header, const std::vector<LayerRecords::ChannelInformation> channelInfos) const;
 };
 
 
@@ -192,6 +208,7 @@ struct GlobalLayerMaskInfo : public FileSection
 
 	// Skip the contents of the Global Layer and Mask Info based on the length marker
 	void read(File& document, const uint64_t offset);
+	void write(File& document, const FileHeader& header);
 };
 
 
@@ -214,7 +231,13 @@ struct ChannelImageData : public FileSection
 	// Estimate the size the of compressed data by compressing n amount of chunks from the data and averaging the compression ratio
 	// The chunks are chosen at random and have the size of m_ChunkSize in the ImageChannels. numSamples controls how many random chunks we choose
 	template <typename T>
-	uint64_t estimateSize(const FileHeader header, const uint16_t numSamples = 16u);
+	uint64_t estimateSize(const FileHeader& header, const uint16_t numSamples = 16u);
+
+	// Compress the data for the current layer and return the individual channels, invalidating the data as we go.
+	// This function must be called before writing the data for the LayerRecord as it reveals the size of the data
+	// required to write them. We fill out the lrChannelInfo and lrCompression vector as it goes.
+	template <typename T>
+	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression);
 
 	// Read a single channel image data instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
@@ -336,6 +359,8 @@ struct LayerInfo : public FileSection
 
 	// Read the layer info section
 	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+	// Write the layer info section to file
+	void write(File& document, const FileHeader& header, const uint16_t padding);
 
 	// Find the index to a layer based on a layer name that is given
 	// if no layer with the name is found, return -1. In the case of multiple name matches the last in the photoshop document
@@ -358,6 +383,7 @@ struct LayerAndMaskInformation : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	void read(File& document, const FileHeader& header, const uint64_t offset);
+	void write(File& document, const FileHeader& header);
 };
 
 

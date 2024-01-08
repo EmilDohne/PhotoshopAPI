@@ -31,6 +31,7 @@ struct AdditionalLayerInfo : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) const;
 
 	// Get a tagged block from the key and try to cast it to T. If key cannot be found return nullptr
 	template <typename T>

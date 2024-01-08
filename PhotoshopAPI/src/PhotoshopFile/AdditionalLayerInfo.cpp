@@ -46,4 +46,13 @@ void AdditionalLayerInfo::read(File& document, const FileHeader& header, const u
 	}
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void AdditionalLayerInfo::write(File& document, const FileHeader& header, const uint16_t padding /*= 1u*/) const
+{
+	m_TaggedBlocks.write(document, header, padding);
+}
+
+
 PSAPI_NAMESPACE_END
