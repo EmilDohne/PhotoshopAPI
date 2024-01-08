@@ -6,8 +6,10 @@
 #include "Endian/EndianByteSwap.h"
 #include "Endian/EndianByteSwapArr.h"
 
+
 #include <span>
 #include <variant>
+#include <limits>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -29,17 +31,19 @@ void WriteBinaryData(File& document, T data)
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename TPsd, typename TPsb>
-void WriteBinaryDataVariadic(File& document, std::variant<TPsd, TPsb> data, Enum::Version version)
+void WriteBinaryDataVariadic(File& document, TPsb data, Enum::Version version)
 {
-	if (std::holds_alternative<TPsd>(data))
+	if (version == Enum::Version::Psd)
 	{
-		TPsd psdData = endianEncodeBE<TPsd>(std::get<TPsd>(data));
+		if (data > (std::numeric_limits<TPsd>::max)()) [[unlikely]]
+			PSAPI_LOG_ERROR("WriteBinaryDataVariadic", "Value of data exceeds the numeric limits of the max value for type TPsd")
+		TPsd psdData = endianEncodeBE<TPsd>(static_cast<TPsd>(data));
 		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&psdData), sizeof(TPsd));
 		document.write(dataSpan);
 	}
-	else if (std::holds_alternative<TPsb>(data))
+	else
 	{
-		TPsb psbData = endianEncodeBE<TPsb>(std::get<TPsb>(data));
+		TPsb psbData = endianEncodeBE<TPsb>(data);
 		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&psbData), sizeof(TPsb));
 		document.write(dataSpan);
 	}
@@ -56,6 +60,16 @@ void WriteBinaryArray(File& document, std::vector<T> data)
 	endianEncodeBEArray<T>(data);
 	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
 	document.write(dataSpan);
+}
+
+
+// Write a given amount of padding bytes with explicit zeroes
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+inline void WritePadddingBytes(File& document, uint64_t numBytes)
+{
+	std::vector<uint8_t> padding(numBytes, 0);
+	WriteBinaryArray<uint8_t>(document, padding);
 }
 
 
