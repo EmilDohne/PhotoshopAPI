@@ -44,7 +44,7 @@ struct LayeredFile
 	// Convert the current layeredFile into a PhotoshopFile, transferring all relevant information
 	// Note that this will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
 	// to create the layer structure.
-	PhotoshopFile toPhotoshopFile();
+	std::unique_ptr<PhotoshopFile> toPhotoshopFile();
 
 	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
 	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific

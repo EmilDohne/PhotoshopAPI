@@ -38,14 +38,14 @@ template struct LayeredFile<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-PhotoshopFile LayeredFile<T>::toPhotoshopFile()
+std::unique_ptr<PhotoshopFile> LayeredFile<T>::toPhotoshopFile()
 {
 	FileHeader header = generateHeader<T>(*this);
 	ColorModeData colorModeData = generateColorModeData<T>(*this);
 	ImageResources imageResources = generateImageResources<T>(*this);
 	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this, header);
 
- 	return PhotoshopFile(header, colorModeData, imageResources, std::move(lrMaskInfo));
+ 	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }
 
 
@@ -289,7 +289,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 			LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
 			// If the layer is a group we actually want to insert a section divider at the end of it. This makes reconstructing the layer
 			// hierarchy much easier later on. We dont actually need to give this a name 
-			flatLayers.push_back(std::make_shared<Layer<T>>(SectionDividerLayer<T>{}));
+			flatLayers.push_back(std::make_shared<SectionDividerLayer<T>>(SectionDividerLayer<T>{}));
 		}
 		else
 		{
