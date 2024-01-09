@@ -101,6 +101,7 @@ void sampleWrite()
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 	std::filesystem::path combined_path = currentDirectory;
 	combined_path += "\\SampleWrite.psd";
+
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
 
@@ -126,8 +127,13 @@ void sampleReadWrite()
 
 	// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
 
-	// Back to a PhotoshopFile we go, we could now write this out
-	NAMESPACE_PSAPI::PhotoshopFile roundtrippedFile = layeredFile.toPhotoshopFile();
+	// Back to a PhotoshopFile we go
+	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
+
+	std::filesystem::path outPath = currentDirectory;
+	outPath += R"(\documents\Groups_8bit_export.psd)";
+	NAMESPACE_PSAPI::File exportFile(outPath);
+	roundtrippedFile->write(exportFile);
 
 }
 
@@ -136,7 +142,7 @@ int main()
 	// Profile and test our application all in one step
 	//profile();
 
-	profile();
+	sampleReadWrite();
 
 
 	// Set up and run doctest tests
