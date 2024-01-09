@@ -38,10 +38,15 @@ void LayerRecords::BitFlags::setFlags(const uint8_t flags) noexcept
 uint8_t LayerRecords::BitFlags::getFlags() const noexcept
 {
 	uint8_t result = 0u;
-	if (m_isTransparencyProtected) result = result & 1u << 0;
-	if (m_isVisible) result = result & 1u << 1;
-	if (m_isBit4Useful) result = result & 1u << 3;
-	if (m_isPixelDataIrrelevant) result = result & 1u << 4;
+
+	if (m_isTransparencyProtected)
+		result |= 1u << 0;
+	if (m_isVisible)
+		result |= 1u << 1;
+	if (m_isBit4Useful)
+		result |= 1u << 3;
+	if (m_isPixelDataIrrelevant)
+		result |= 1u << 4;
 
 	return result;
 }
@@ -354,10 +359,8 @@ void LayerRecords::LayerMaskData::write(File& document) const
 	uint32_t sizeWritten = 0u;
 
 	// Section size marker
-	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(size - 4u));
-
+	WriteBinaryData<uint32_t>(document, size - 4u);
 	
-	// When writing both types of masks we must actually generate 
 	if (m_LayerMask.has_value() && m_VectorMask.has_value())
 	{
 		PSAPI_LOG_WARNING("LayerMaskData", "Having two masks is currently unsupported by the PhotoshopAPI, currently only pixel masks are supported.")
@@ -394,7 +397,7 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges()
 	// Likely at some point it was decided that it was easiest to just hold the longest amount of possible combinations
 	// as the size is quite trivial. Blending ranges for any non-default channels (default channels would be rgb in rgb
 	// color mode or cmyk in cmyk color mode) cannot be blended and are therefore not considered.
-	m_Size = 40u;	
+	m_Size = 44u;	// Include the section marker	
 	Data sourceRanges{};
 	Data destinationRanges{};
 	for (int i = 0; i < 5u; ++i)
@@ -711,7 +714,7 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, info.m_Size, header.m_Version);
 	}
 
-	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode);
 	if (!blendModeStr.has_value())
 		PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key")
@@ -731,16 +734,28 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 		// Keep in mind that these individual sections will already be padded to their respective size so we dont need to worry about padding
 		uint32_t extraDataSize = 0u;
 		{
-			if (m_LayerMaskData.has_value()) extraDataSize += m_LayerMaskData.value().calculateSize();
+			if (m_LayerMaskData.has_value())
+			{
+				extraDataSize += m_LayerMaskData.value().calculateSize();
+			}
+			else
+			{
+				extraDataSize += 4u;	// Explicit size marker
+			}
 			extraDataSize += m_LayerBlendingRanges.calculateSize();
 			extraDataSize += m_LayerName.calculateSize();
 			if (m_AdditionalLayerInfo.has_value()) extraDataSize += m_AdditionalLayerInfo.value().calculateSize();
 		}
-		WriteBinaryData<uint32_t>(document, extraDataSize);
+		WriteBinaryData<uint32_t>(document, RoundUpToMultiple(extraDataSize, 2u));
 
+		// We must explicitly write an empty section size if this is not present
 		if (m_LayerMaskData.has_value())
 		{
 			m_LayerMaskData.value().write(document);
+		}
+		else
+		{
+			WriteBinaryData<uint32_t>(document, 0u);
 		}
 		m_LayerBlendingRanges.write(document);
 		m_LayerName.write(document, 4u);
@@ -748,6 +763,9 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 		{
 			m_AdditionalLayerInfo.value().write(document, header);
 		}
+
+		// The additional data is aligned to 2 bytes
+		WritePadddingBytes(document, RoundUpToMultiple(extraDataSize, 2u) - extraDataSize);
 	}
 }
 
@@ -1126,6 +1144,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		{
 			for (int j = 0; j < compressedData[i].size(); ++j)
 			{
+				dataSize += 2u;	// Compression code
 				dataSize += compressedData[i][j].size();
 			}
 		}
@@ -1260,9 +1279,11 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	uint64_t endOffset = document.getOffset();
 	uint64_t sectionSize = endOffset - sizeMarkerOffset;
 	document.setOffset(sizeMarkerOffset);
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize, header.m_Version);
+	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded, header.m_Version);
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
+	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
 }
 
 PSAPI_NAMESPACE_END

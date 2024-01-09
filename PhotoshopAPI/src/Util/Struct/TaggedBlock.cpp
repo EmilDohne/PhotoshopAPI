@@ -45,15 +45,21 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 void TaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /* = 1u */)
 {
+
 	// Signatures are specified as being either '8BIM' or '8B64'. However, it isnt specified when we use which one.
 	// For simplicity we will just write '8BIM' all the time and only write other signatures if we encounter them.
 	// The 'FMsk' and 'cinf' tagged blocks for example have '8B64' in PSB mode
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
-	std::optional<std::string> keyStr = Enum::getTaggedBlockKey<Enum::TaggedBlockKey, std::string>(m_Key);
+	std::optional<std::vector<std::string>> keyStr = Enum::getTaggedBlockKey<Enum::TaggedBlockKey, std::vector<std::string>>(m_Key);
 	if (!keyStr.has_value())
+	{
 		PSAPI_LOG_ERROR("TaggedBlock", "Was unable to extract a string from the tagged block key")
+	}
 	else
-		WriteBinaryData<uint32_t>(document, Signature(keyStr.value()).m_Value);
+	{
+		// We use the first found value from the key matches
+		WriteBinaryData<uint32_t>(document, Signature(keyStr.value()[0]).m_Value);
+	}
 
 	if (isTaggedBlockSizeUint64(m_Key) && header.m_Version == Enum::Version::Psb)
 	{
