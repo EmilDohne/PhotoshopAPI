@@ -58,8 +58,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			LayerMask<T> lrMask;
 			auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
 			ImageChannel<T>* imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get());
-			channelPtr = nullptr;
-
+			
 			if (imageChannelPtr)
 			{
 				lrMask.maskData = std::move(*imageChannelPtr);
@@ -68,6 +67,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			{
 				PSAPI_LOG_ERROR("Layer", "Unable to cast mask to ImageChannel")
 			}
+			channelPtr = nullptr;
 
 			// If no mask parameters are present we just use sensible defaults and skip
 			if (!layerRecord.m_LayerMaskData.has_value()) continue;
@@ -201,52 +201,6 @@ LayerRecords::LayerBlendingRanges Layer<T>::generateBlendingRanges(const Enum::C
 {
 	using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
 	LayerRecords::LayerBlendingRanges blendingRanges{};
-
-	// Note that all of these color modes seem to have an additional blending range for alpha which cannot be accessed
-	// through the photoshop ui. This might be for legacy reasons
-	if (colorMode == Enum::ColorMode::RGB)
-	{
-		Data sourceRanges;
-		Data destinationRanges;
-		for (int i = 0; i < 5u; ++i)
-		{
-			sourceRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			destinationRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			blendingRanges.m_Size += 8u;
-		}
-		blendingRanges.m_SourceRanges = sourceRanges;
-		blendingRanges.m_DestinationRanges = destinationRanges;
-	}
-	else if (colorMode == Enum::ColorMode::Grayscale)
-	{
-		Data sourceRanges;
-		Data destinationRanges;
-		for (int i = 0; i < 2u; ++i)
-		{
-			sourceRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			destinationRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			blendingRanges.m_Size += 8u;
-		}
-		blendingRanges.m_SourceRanges = sourceRanges;
-		blendingRanges.m_DestinationRanges = destinationRanges;
-	}
-	else if (colorMode == Enum::ColorMode::CMYK)
-	{
-		Data sourceRanges;
-		Data destinationRanges;
-		for (int i = 0; i < 6u; ++i)
-		{
-			sourceRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			destinationRanges.push_back(std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>(0u, 0u, 255u, 255u));
-			blendingRanges.m_Size += 8u;
-		}
-		blendingRanges.m_SourceRanges = sourceRanges;
-		blendingRanges.m_DestinationRanges = destinationRanges;
-	}
-	else
-	{
-		PSAPI_LOG_ERROR("Layer", "Currently only RGB, Grayscale and CMYK colormodes are supported for layer blending ranges")
-	}
 	return blendingRanges;
 }
 
@@ -268,14 +222,14 @@ std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseI
 	// TODO this might not be doing much at all
 	if (doCopy)
 	{
-		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(maskImgChannel);
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> data = std::make_tuple(channelInfo, std::move(imgData));
+		std::unique_ptr<ImageChannel<T>> imgData = std::make_unique<ImageChannel<T>>(maskImgChannel);
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel<T>>> data = std::make_tuple(channelInfo, std::move(imgData));
 		return std::optional(std::move(data));
 	}
 	else
 	{
-		std::unique_ptr<BaseImageChannel> imgData = std::make_unique<BaseImageChannel>(std::move(maskImgChannel));
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>> data = std::make_tuple(channelInfo, std::move(imgData));
+		std::unique_ptr<ImageChannel<T>> imgData = std::make_unique<ImageChannel<T>>(std::move(maskImgChannel));
+		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel<T>>> data = std::make_tuple(channelInfo, std::move(imgData));
 		return std::optional(std::move(data));
 	}
 }

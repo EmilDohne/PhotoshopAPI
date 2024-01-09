@@ -141,7 +141,7 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 		}
 	}
 	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
-	blockVec.push_back(std::make_shared<TaggedBlock>(sectionBlock));
+	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
 	TaggedBlockStorage blockStorage(blockVec);
 	AdditionalLayerInfo lrInfo(blockStorage);
 	return lrInfo;

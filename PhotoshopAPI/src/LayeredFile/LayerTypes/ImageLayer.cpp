@@ -107,9 +107,9 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 	{
 		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second.m_OrigByteSize });
 		if (doCopy)
-			channelDataVec.push_back(std::make_unique<BaseImageChannel>(it.second));
+			channelDataVec.push_back(std::make_unique<ImageChannel<T>>(it.second));
 		else
-			channelDataVec.push_back(std::make_unique<BaseImageChannel>(std::move(it.second)));
+			channelDataVec.push_back(std::make_unique<ImageChannel<T>>(std::move(it.second)));
 	}
 
 	// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor

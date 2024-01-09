@@ -29,7 +29,7 @@ std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(co
 	
 	LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
 	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
-	blockVec.push_back(std::make_shared<TaggedBlock>(sectionBlock));
+	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
 	TaggedBlockStorage blockStorage = { blockVec };
 	std::optional<AdditionalLayerInfo> lrInfo(blockStorage);
 
