@@ -16,6 +16,7 @@
 
 #include <variant>
 #include <vector>
+#include <set>
 #include <memory>
 
 
@@ -65,17 +66,21 @@ struct LayeredFile
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>;
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>;
 
-	inline std::vector<std::shared_ptr<Layer<T>>>& getFlatLayers() { return m_FlatLayers; };
 	inline Enum::Version getVersion() { return m_Version; };
-	inline uint16_t getNumChannels() { return m_NumChannels; };
+	inline uint16_t getNumChannels() { 
+		uint16_t numChannels = m_ChannelIndices.size();
+		// Photoshop doesnt consider mask channels for the total amount of channels
+		if (m_ChannelIndices.contains(-2))
+			numChannels -= 1u;
+		if (m_ChannelIndices.contains(-3))
+			numChannels -= 1u;
+		return numChannels;
+	};
 private:
-	// We also store pointers to the flat layer hierarchy here for easier traversal.
-	// This gets created on initialization and whenever we add a new layer we update
-	// it as well. Layer order is not guaranteed and may be random.
-	std::vector<std::shared_ptr<Layer<T>>> m_FlatLayers;
 
 	Enum::Version m_Version = Enum::Version::Psd;
-	uint16_t m_NumChannels = 0u;
+	// Store the indices of all the channels we encounter to quickly be able to extract the number of channels
+	std::set<int16_t> m_ChannelIndices = {};
 
 };
 
@@ -86,7 +91,7 @@ namespace LayeredFileImpl
 	// Build the layer hierarchy from a PhotoshopFile object using the Layer and Mask section with its LayerRecords and ChannelImageData subsections;
 	// Returns a vector of nested layer variants which can go to any depth
 	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file);
+	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file, std::set<int16_t>& channelIndices);
 	// Recursively build a layer hierarchy using the LayerRecords, ChannelImageData and their respective reverse iterators
 	// See comments in buildLayerHierarchy on why we iterate in reverse
 	template <typename T>
@@ -94,7 +99,8 @@ namespace LayeredFileImpl
 		std::vector<LayerRecord>& layerRecords,
 		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator);
+		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
+		std::set<int16_t>& channelIndices);
 
 
 	// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)

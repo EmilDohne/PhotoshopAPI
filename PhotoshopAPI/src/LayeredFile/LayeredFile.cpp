@@ -62,9 +62,7 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
 
-	// Build the layer hierarchy, both nested and flat for easy traversal
-	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
-	m_FlatLayers = LayeredFileImpl::generateFlatLayers<T>(m_Layers);
+	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document), m_ChannelIndices);
 }
 
 
@@ -166,7 +164,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::o
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
+std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file, std::set<int16_t>& channelIndices)
 {
 	auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
 	auto* channelImageData = &file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
@@ -215,7 +213,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
 	auto layerRecordsIterator = layerRecords->rbegin();
 	auto channelImageDataIterator = channelImageData->rbegin();
-	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator, channelIndices);
 
 	return root;
 }
@@ -228,7 +226,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	std::vector<LayerRecord>& layerRecords,
 	std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator)
+	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
+	std::set<int16_t>& channelIndices)
 {
 	std::vector<std::shared_ptr<Layer<T>>> root;
 
@@ -239,12 +238,18 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
+		// Store the number of channels present in the layer record
+		for (const auto& channelInfo : layerRecord.m_ChannelInformation)
+		{
+			channelIndices.insert(channelInfo.m_ChannelID.index);
+		}
+
 		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
 
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			// Recurse a level down
-			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
+			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, channelIndices);
 			root.push_back(groupLayerPtr);
 		}
 		else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))

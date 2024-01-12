@@ -116,7 +116,7 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 		right	= centerX + width / 2;
 		lrMaskData.m_Size += 16u;
 
-		uint8_t defaultColor = 0u;
+		uint8_t defaultColor = 255u;
 		lrMaskData.m_Size += 1u;
 
 		// This is the size for the mask bitflags
