@@ -25,6 +25,7 @@ struct PhotoshopFile
 	ColorModeData m_ColorModeData;
 	ImageResources m_ImageResources;
 	LayerAndMaskInformation m_LayerMaskInfo;
+	ImageData m_ImageData{};
 
 	PhotoshopFile() = default;
 	PhotoshopFile(FileHeader header, ColorModeData colorModeData, ImageResources imageResources, LayerAndMaskInformation layerMaskInfo) :
