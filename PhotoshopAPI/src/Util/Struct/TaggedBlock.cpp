@@ -138,7 +138,7 @@ void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const
 	// For some reason the blend mode has another 4 bytes for a 8BPS key
 	if (m_BlendMode.has_value())
 	{
-		WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
+		WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 		std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode.value());
 		if (!blendModeStr.has_value())
 			PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key")
