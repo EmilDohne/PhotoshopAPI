@@ -64,7 +64,6 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 }
 
 
-
 // This is the packbits algorithm described here: https://en.wikipedia.org/wiki/PackBits we iterate byte by byte and 
 // compress. The logic is heavily adapted from MolecularMatters and credit goes to them:
 // https://github.com/MolecularMatters/psd_sdk/blob/master/src/Psd/PsdDecompressRle.cpp
@@ -92,15 +91,11 @@ inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompress
         {
             if (nonRunLen != 0)
             {
-                // This is the first repeat of an item so we set the non run length to 0 and copy over the 
-                // all the non-run length bytes we have accumulated
-
-                // Write the amount of bytes that are in our non-run length. Note that we subtract one as the curr 
-                // value is part of a run
+                // End the non run len and store how long our non run length is in the header byte
                 compressedData.push_back(nonRunLen - 1u);
-                for (int j = 0; j < nonRunLen - 1u; ++i)
+                for (int j = 0; j < nonRunLen; ++j)
                 {
-                    compressedData.push_back(uncompressedScanline[i - nonRunLen + j]);
+                    compressedData.push_back(uncompressedScanline[i - nonRunLen - 1u + j]);
                 }
                 nonRunLen = 0;
             }
@@ -110,8 +105,8 @@ inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompress
             // runs cant be any longer than this due to the way that they are encoded so we are forced to terminate here
             if (runLen == 128u)
             {
-                compressedData.push_back(static_cast<uint8_t>(257u) - runLen);
-                compressedData.push_back(prev);
+                compressedData.push_back(static_cast<uint8_t>(257u - runLen));
+                compressedData.push_back(curr);
                 runLen = 0u;
             }
         }
@@ -120,7 +115,9 @@ inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompress
             // End the run if there is one going on
             if (runLen != 0)
             {
-                compressedData.push_back(static_cast<uint8_t>(256u) - runLen);
+                ++runLen;
+
+                compressedData.push_back(static_cast<uint8_t>(257u - runLen));
                 compressedData.push_back(prev);
                 runLen = 0u;
             }
@@ -133,7 +130,7 @@ inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompress
             if (nonRunLen == 128u)
             {
 				compressedData.push_back(nonRunLen - 1u);
-				for (int j = 0; j < nonRunLen - 1u; ++i)
+				for (int j = 0; j < nonRunLen; ++j)
 				{
 					compressedData.push_back(uncompressedScanline[i - nonRunLen + j]);
 				}
@@ -147,14 +144,14 @@ inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompress
     {
         ++runLen;
         // Push back the last element as the run
-        compressedData.push_back(static_cast<uint8_t>(257u) - runLen);
+        compressedData.push_back(static_cast<uint8_t>(257u - runLen));
         compressedData.push_back(uncompressedScanline[uncompressedScanline.size() - 1u]);
     }
     else
     {
         ++nonRunLen;
 		compressedData.push_back(nonRunLen - 1u);
-		for (int j = 0; j < nonRunLen - 1u; ++j)
+		for (int j = 0; j < nonRunLen; ++j)
 		{
             compressedData.push_back(uncompressedScanline[uncompressedScanline.size() - nonRunLen + j]);
 		}
