@@ -195,6 +195,9 @@ struct LayerRecord : public FileSection
 	void read(File& document, const FileHeader& header, const uint64_t offset);
 	// Write the layer record to disk, requires the Image data to be compressed already and the size to be known
 	void write(File& document, const FileHeader& header, const std::vector<LayerRecords::ChannelInformation> channelInfos) const;
+
+	uint32_t getWidth() const noexcept;
+	uint32_t getHeight() const noexcept;
 };
 
 
@@ -215,14 +218,14 @@ struct GlobalLayerMaskInfo : public FileSection
 // Channel Image Data for a single layer, there is at most 56 channels in a given layer
 struct ChannelImageData : public FileSection
 {
-
-	// We hold the image data for all of the channels in this vector.
-	// The image data gets compressed using blosc2 on creation allowing for a very small
-	// memory footprint
-	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
-
 	ChannelImageData() = default;
-	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) {};
+	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) 
+	{
+		for (const auto& item : m_ImageData)
+		{
+			m_ChannelCompression.push_back(item->m_Compression);
+		}
+	};
 
 	// This function will raise a warning as we do not know the size of the compressed image data at this stage yet, only once we actually write this information 
 	// becomes available. To get an estimate of the size use the estimateSize() function instead
@@ -239,8 +242,11 @@ struct ChannelImageData : public FileSection
 	template <typename T>
 	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression);
 
-	// Read a single channel image data instance from a pre-allocated bytestream
+	// Read a single layer instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+
+	// Write a single layer to disk, there is no need to write to a preallocated buffer here as we compress ahead of time
+	void write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
 
 	// Get an index to a specific channel based on the identifier
 	// returns -1 if no matching channel is found
@@ -328,7 +334,6 @@ struct ChannelImageData : public FileSection
 		}
 	}
 
-
 	// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
 	// we just return that silently and leave it up to the caller to check for this
 	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
@@ -343,6 +348,25 @@ struct ChannelImageData : public FileSection
 		m_ImageData[index] = nullptr;
 		return std::move(imageChannelPtr);
 	}
+
+	// Get the offsets and sizes for each of the channels, the order being the same as m_ImageData. Therefore indices
+	// gotten through e.g. getChannelIndex() are valid here as well. The offsets include the compression marker (2 bytes)
+	// so the actual data starts at offset + 2
+	std::vector<std::tuple<uint64_t, uint64_t>> getChannelOffsetsAndSizes() const noexcept { return m_ChannelOffsetsAndSizes; };
+
+	// Get the compression of a channel by logical index acquired by e.g. getChannelIndex
+	inline Enum::Compression getChannelCompression(int index) const noexcept {	return m_ChannelCompression.at(index); };
+private:
+	// Store the offset and size of each of the compressed channels. The offset starts at the channel compression marker
+	std::vector<std::tuple<uint64_t, uint64_t>> m_ChannelOffsetsAndSizes;
+
+	// Store the offset into 
+	std::vector<Enum::Compression> m_ChannelCompression;
+
+	// We hold the image data for all of the channels in this vector.
+	// The image data gets compressed using blosc2 on creation allowing for a very small
+	// memory footprint
+	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 };
 
 

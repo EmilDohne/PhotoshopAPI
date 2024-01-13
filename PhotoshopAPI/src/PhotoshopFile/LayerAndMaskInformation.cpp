@@ -373,6 +373,8 @@ void LayerRecords::LayerMaskData::write(File& document) const
 		WriteBinaryData<int32_t>(document, lrMask.m_Bottom);
 		WriteBinaryData<int32_t>(document, lrMask.m_Right);
 		sizeWritten += 16u;
+		WriteBinaryData<uint8_t>(document, lrMask.m_DefaultColor);
+		sizeWritten += 1u;
 		WriteBinaryData<uint8_t>(document, lrMask.getFlags());
 		sizeWritten += 1u;
 		if (lrMask.m_HasMaskParams)
@@ -384,8 +386,8 @@ void LayerRecords::LayerMaskData::write(File& document) const
 	}
 
 	// Pad the section to 4 bytes
-	if (m_Size - 4u > sizeWritten)
-		WritePadddingBytes(document, m_Size - 4u - sizeWritten);
+	if (size - 4u > sizeWritten)
+		WritePadddingBytes(document, size - 4u - sizeWritten);
 }
 
 
@@ -772,6 +774,22 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+uint32_t LayerRecord::getWidth() const noexcept
+{
+	return static_cast<uint32_t>(m_Right - m_Left);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint32_t LayerRecord::getHeight() const noexcept
+{
+	return static_cast<uint32_t>(m_Bottom - m_Top);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	uint64_t size = 0u;
@@ -888,6 +906,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	return compressedData;
 }
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
@@ -902,12 +921,14 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 	uint64_t countingOffset = 0;
 	for (const auto& channel : layerRecord.m_ChannelInformation)
 	{
+		m_ChannelOffsetsAndSizes.push_back(std::tuple<uint64_t, uint64_t>(offset + countingOffset, channel.m_Size));
 		channelOffsets.push_back(countingOffset);
 		countingOffset += channel.m_Size;
 	}
 
 	// Preallocate the ImageData vector as we need valid indices for the for each loop
 	m_ImageData.resize(layerRecord.m_ChannelInformation.size());
+	m_ChannelCompression.resize(layerRecord.m_ChannelInformation.size());
 
 	// Iterate the channels in parallel
 	std::for_each(std::execution::par, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
@@ -938,7 +959,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
 			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
 			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
-			this->m_Size += channel.m_Size;
+			m_ChannelCompression[index] = channelCompression;
+			m_Size += channel.m_Size;
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
@@ -959,6 +981,26 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void ChannelImageData::write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression)
+{
+	m_ChannelOffsetsAndSizes = {};
+	for (int i = 0; i < compressedChannelData.size(); ++i)
+	{
+		m_ChannelCompression.push_back(channelCompression[i]);
+		m_ChannelOffsetsAndSizes.push_back(std::tuple<uint64_t, uint64_t>(document.getOffset(), compressedChannelData[i].size() + 2u));
+
+		std::optional<uint16_t> compressionCode = Enum::getCompression<Enum::Compression, uint16_t>(channelCompression[i]);
+		if (!compressionCode.has_value()) [[unlikely]]
+			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec")
+
+		WriteBinaryData<uint16_t>(document, compressionCode.value());
+		WriteBinaryArray<uint8_t>(document, compressedChannelData[i]);
+	}
 }
 
 
@@ -1133,28 +1175,12 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		channelCompression.push_back(lrCompression);
 	}
 
-	// Write the section size as well as the layer count
-	uint64_t dataSize = 0u;
-	{
-		for (const auto& lr : m_LayerRecords)
-		{
-			dataSize += lr.calculateSize(std::make_shared<FileHeader>(header));
-		}
-		for (int i = 0; i < compressedData.size(); ++i)
-		{
-			for (int j = 0; j < compressedData[i].size(); ++j)
-			{
-				dataSize += 2u;	// Compression code
-				dataSize += compressedData[i][j].size();
-			}
-		}
-		// The section size is padded to a multiple of 4 bytes
-		uint64_t dataSizePadded = RoundUpToMultiple<uint64_t>(dataSize, padding);
-		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, dataSizePadded, header.m_Version);
-		// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
-		// but we do not bother with that at this point
-		WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
-	}
+	// Write an empty section size, we come back later and fill this out once written
+	uint64_t sizeMarkerOffset = document.getOffset();
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
+	// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
+	// but we do not bother with that at this point
+	WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
 
 	// Write the layer records
 	for (int i = 0; i < m_LayerRecords.size(); ++i)
@@ -1162,23 +1188,21 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		m_LayerRecords[i].write(document, header, channelInfos[i]);
 	}
 
-	// Write the ChannelImageData, as we already have all the data here we simplify by writing it right away instead of 
-	// calling a function on all of the channels
+	// Write the ChannelImageData to disk, 
 	for (int i = 0; i < compressedData.size(); ++i)
 	{
-		for (int j = 0; j < compressedData[i].size(); ++j)
-		{
-			std::optional<uint16_t> compressionCode = Enum::getCompression<Enum::Compression, uint16_t>(channelCompression[i][j]);
-			if (!compressionCode.has_value()) [[unlikely]]
-				PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec")
-
-			WriteBinaryData<uint16_t>(document, compressionCode.value());
-			WriteBinaryArray<uint8_t>(document, compressedData[i][j]);
-		}
+		m_ChannelImageData[i].write(document, compressedData[i], channelCompression[i]);
 	}
 
-	uint64_t paddingNeeded = RoundUpToMultiple<uint64_t>(dataSize, padding) - dataSize;
-	WritePadddingBytes(document, paddingNeeded);
+	// Count how many bytes we already wrote, go back to the size merker and write that information
+	uint64_t endOffset = document.getOffset();
+	uint64_t sectionSize = endOffset - sizeMarkerOffset;
+	document.setOffset(sizeMarkerOffset);
+	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded, header.m_Version);
+	// Set the offset back to the end to leave the document in a valid state
+	document.setOffset(endOffset);
+	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
 }
 
 

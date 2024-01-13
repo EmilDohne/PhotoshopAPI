@@ -114,26 +114,39 @@ void sampleWrite()
 void sampleReadWrite()
 {
 	// First read the PhotoshopFile from disk
-	std::filesystem::path currentDirectory = std::filesystem::current_path();
-	std::filesystem::path combined_path = currentDirectory;
-	combined_path += R"(\documents\Groups\Groups_8bit.psd)";
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups\Groups_8bit.psd)";
 
-	NAMESPACE_PSAPI::File file(combined_path);
-	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	document->read(file);
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
 
-	// Convert our PhotoshopFile to a LayeredFile
-	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
+		// Convert our PhotoshopFile to a LayeredFile
+		NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
 
-	// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
+		// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
 
-	// Back to a PhotoshopFile we go
-	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
+		// Back to a PhotoshopFile we go
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
 
-	std::filesystem::path outPath = currentDirectory;
-	outPath += R"(\documents\Groups_8bit_export.psd)";
-	NAMESPACE_PSAPI::File exportFile(outPath);
-	roundtrippedFile->write(exportFile);
+		std::filesystem::path outPath = currentDirectory;
+		outPath += R"(\documents\Groups_8bit_export.psd)";
+		NAMESPACE_PSAPI::File exportFile(outPath);
+		roundtrippedFile->write(exportFile);
+	}
+
+	// Read again to verify 
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups_8bit_export.psd)";
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+	}
 
 }
 
@@ -142,7 +155,7 @@ int main()
 	// Profile and test our application all in one step
 	//profile();
 
-	sampleReadWrite();
+	//sampleReadWrite();
 
 
 	// Set up and run doctest tests

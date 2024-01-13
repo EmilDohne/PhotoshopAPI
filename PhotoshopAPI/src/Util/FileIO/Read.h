@@ -27,6 +27,7 @@ ReadBinaryArray<T>						// Read a large amount of binary data into a std::vector
 
 PSAPI_NAMESPACE_BEGIN
 
+
 // Read a sizeof(T) amount of data from the given filestream and decode the data
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
@@ -102,7 +103,7 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(ByteStream& stream, const Enum::
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
-inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
+std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 {
 	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
 	if (size % sizeof(T) != 0)
@@ -113,10 +114,36 @@ inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 
 	std::vector<T> data(size / sizeof(T));
 	document.read(reinterpret_cast<char*>(data.data()), size);
-	for (T item : data)
+	endianEncodeBEArray<T>(data);
+
+	return data;
+}
+
+
+// Read a large amount of data into a std::vector, assumes the file is already open 
+// for reading. The size parameter indicates the amount of bytes and the offset 
+// parameter indicates where to read from. After the read is complete we set the offset
+// back to what it was before
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
+{
+	uint64_t initialOffset = document.getOffset();
+	document.setOffset(offset);
+
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
 	{
-		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T))
 	}
+
+	std::vector<T> data(size / sizeof(T));
+	document.read(reinterpret_cast<char*>(data.data()), size);
+	endianEncodeBEArray<T>(data);
+
+	document.setOffset(initialOffset);
 
 	return data;
 }
@@ -126,7 +153,7 @@ inline std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
-inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
+std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 {
 	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
 	if (size % sizeof(T) != 0)
@@ -146,12 +173,14 @@ inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 }
 
 
-// TODO this could be sped up using our AVX2 decoder for endian decoding
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
-inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
+std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
+	uint64_t initialOffset = stream.getOffset();
+	stream.setOffset(offset);
+
 	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
 	if (size % sizeof(T) != 0)
 	{
@@ -161,10 +190,10 @@ inline std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint6
 
 	std::vector<T> data(size / sizeof(T));
 	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
-	for (T item : data)
-	{
-		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
-	}
+	endianEncodeBEArray<T>(data);
+
+	stream.setOffset(initialOffset);
+
 
 	return data;
 }
@@ -190,6 +219,36 @@ inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<int8_t> data(size);
 	document.read(reinterpret_cast<char*>(data.data()), size);
+	return data;
+}
+
+
+// Specialization which just reads without endian decoding as it isnt necessary 
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template<>
+inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
+{
+	uint64_t initialOffset = document.getOffset();
+	document.setOffset(offset);
+	std::vector<uint8_t> data(size);
+	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.setOffset(initialOffset);
+	return data;
+}
+
+
+// Specialization which just reads without endian decoding as it isnt necessary 
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template<>
+inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
+{
+	uint64_t initialOffset = document.getOffset();
+	document.setOffset(offset);
+	std::vector<int8_t> data(size);
+	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.setOffset(initialOffset);
 	return data;
 }
 
@@ -225,7 +284,9 @@ template<>
 inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<uint8_t> data(size);
+	uint64_t initialOffset = stream.getOffset();
 	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.setOffset(initialOffset);
 	return data;
 }
 
@@ -237,7 +298,9 @@ template<>
 inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<int8_t> data(size);
+	uint64_t initialOffset = stream.getOffset();
 	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.setOffset(initialOffset);
 	return data;
 }
 
