@@ -11,6 +11,8 @@
 
 // This tests the sample provided in the wikipedia page for the packbits algorithm and this is the exact implementation used
 // by photoshop as well
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Test Wikipedia Packbits Example")
 {
 	// Equates to 'FE AA 02 80 00 2A FD AA 03 80 00 2A 22 F7 AA' in hexadecimal
@@ -33,18 +35,20 @@ TEST_CASE("Test Wikipedia Packbits Example")
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Decompress file with RLE compression")
 {
 	SUBCASE("PSD")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psd";
-		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
+		checkDecompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 	SUBCASE("PSB")
 	{
 		std::filesystem::path combined_path = std::filesystem::current_path();
 		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psb";
-		checkCompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
+		checkDecompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 }
