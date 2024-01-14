@@ -209,7 +209,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     {
         PSAPI_LOG_ERROR("DecompressRLE", "Size of compressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead",
             dataSize,
-            scanlineTotalSize)
+            scanlineTotalSize);
     }
 
 	// Read the data without converting from BE to native as we need to decompress first
@@ -225,9 +225,9 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 
     if (bitShiftedData.size() != static_cast<uint64_t>(width) * static_cast<uint64_t>(height))
     {
-        PSAPI_LOG_ERROR("DecompressRLE", "Size of decompressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead", 
+        PSAPI_LOG_ERROR("DecompressRLE", "Size of decompressed data is not what was expected. Expected: %" PRIu64 " but got %" PRIu64 " instead",
             static_cast<uint64_t>(width) * static_cast<uint64_t>(height),
-            bitShiftedData.size())
+            bitShiftedData.size());
     }
 	
 	return bitShiftedData;
@@ -267,7 +267,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
         {
             if (scanlineSize > (std::numeric_limits<uint16_t>::max)()) [[unlikely]]
 			{
-				PSAPI_LOG_ERROR("CompressRLE", "Scanline sizes cannot exceed the numeric limits of 16-bit values when writing a PSD file")
+                PSAPI_LOG_ERROR("CompressRLE", "Scanline sizes cannot exceed the numeric limits of 16-bit values when writing a PSD file");
 			}
             uint16_t scanlineSizeu16 = static_cast<uint16_t>(scanlineSize);
             scanlineSizeu16 = endianEncodeBE(scanlineSizeu16);

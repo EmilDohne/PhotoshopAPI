@@ -31,7 +31,7 @@ uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= null
 	// We actually already take care of initializing the size in the constructor therefore it is valid
 	if (m_Size > std::numeric_limits<uint8_t>::max())
 	{
-		PSAPI_LOG_ERROR("PascalString", "Size of string exceeds the maximum for a uint8_t, expected a max of 255 but got %" PRIu64 " instead.", m_Size)
+		PSAPI_LOG_ERROR("PascalString", "Size of string exceeds the maximum for a uint8_t, expected a max of 255 but got %" PRIu64 " instead.", m_Size);
 	}
 	return m_Size;
 }
@@ -64,7 +64,7 @@ void PascalString::write(File& document, const uint8_t padding) const
 	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities
 	if (m_String.size() >  254u - 254u % padding )
 	{
-		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 254, got %u", m_String.size())
+		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 254, got %u", m_String.size());
 	}
 	// The length marker only denotes the actual length of the data, not any padding
 	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(m_String.size()));

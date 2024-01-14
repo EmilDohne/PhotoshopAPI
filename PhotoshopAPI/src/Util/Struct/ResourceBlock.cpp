@@ -40,7 +40,7 @@ void ResourceBlock::read(File& document)
 			signature.m_Representation[0],
 			signature.m_Representation[1],
 			signature.m_Representation[2],
-			signature.m_Representation[3])
+			signature.m_Representation[3]);
 	}
 	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
 	m_Name.read(document, 2u);

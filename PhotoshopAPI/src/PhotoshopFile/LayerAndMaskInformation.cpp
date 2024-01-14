@@ -344,7 +344,7 @@ void LayerRecords::LayerMaskData::read(File& document)
 
 	if (toRead < 0 || toRead > 2)
 	{
-		PSAPI_LOG_WARNING("LayerMaskData", "Expected either 0 or 2 padding bytes, got %i instead", toRead)
+		PSAPI_LOG_WARNING("LayerMaskData", "Expected either 0 or 2 padding bytes, got %i instead", toRead);
 	}
 
 	document.skip(toRead);
@@ -363,7 +363,7 @@ void LayerRecords::LayerMaskData::write(File& document) const
 	
 	if (m_LayerMask.has_value() && m_VectorMask.has_value())
 	{
-		PSAPI_LOG_WARNING("LayerMaskData", "Having two masks is currently unsupported by the PhotoshopAPI, currently only pixel masks are supported.")
+		PSAPI_LOG_WARNING("LayerMaskData", "Having two masks is currently unsupported by the PhotoshopAPI, currently only pixel masks are supported.");
 	}
 	else if (m_LayerMask.has_value())
 	{
@@ -469,8 +469,8 @@ void LayerRecords::LayerBlendingRanges::write(File& document) const
 
 	if (m_SourceRanges.size() != m_DestinationRanges.size()) [[unlikely]]
 	{
-		PSAPI_LOG_ERROR("LayerBlendingRanges", "Source and Destination ranges must have the exact same size, source range size : %i, destination range size : %i",
-			m_SourceRanges.size(), m_DestinationRanges.size())
+			PSAPI_LOG_ERROR("LayerBlendingRanges", "Source and Destination ranges must have the exact same size, source range size : %i, destination range size : %i",
+				m_SourceRanges.size(), m_DestinationRanges.size());
 	}
 
 	for (int i = 0; i < m_SourceRanges.size(); ++i)
@@ -551,7 +551,7 @@ uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullp
 {
 	if (!header)
 	{
-		PSAPI_LOG_ERROR("LayerRecord", "calculateSize() function requires the header to be passed")
+		PSAPI_LOG_ERROR("LayerRecord", "calculateSize() function requires the header to be passed");
 	}
 
 	uint64_t size = 0u;
@@ -596,7 +596,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	m_ChannelCount = ReadBinaryData<uint16_t>(document);
 	if (m_ChannelCount > 56)
 	{
-		PSAPI_LOG_ERROR("LayerRecord", "A Photoshop document cannot have more than 56 channels at once")
+		PSAPI_LOG_ERROR("LayerRecord", "A Photoshop document cannot have more than 56 channels at once");
 	}
 	m_ChannelInformation.reserve(m_ChannelCount);
 
@@ -617,7 +617,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 			break;
 		default:
 			int16_t index = ReadBinaryData<uint16_t>(document);
-			PSAPI_LOG_WARNING("LayerRecord", "Currently unsupported ColorMode encountered, storing ChannelID::Custom")
+			PSAPI_LOG_WARNING("LayerRecord", "Currently unsupported ColorMode encountered, storing ChannelID::Custom");
 				channelInfo.m_ChannelID = { Enum::ChannelID::Custom, index };
 			break;
 		}
@@ -635,7 +635,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	if (signature != Signature("8BIM"))
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM', got '%s' instead",
-			uint32ToString(signature.m_Value).c_str())
+			uint32ToString(signature.m_Value).c_str());
 	}
 	m_Size += 4u;
 	
@@ -709,7 +709,7 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 
 	if (channelInfos.size() != m_ChannelCount)
 		PSAPI_LOG_ERROR("LayerRecord", "The provided channelInfo vec does not have the same amount of channels as m_ChanneCount, expected %i but got %i instead",
-			m_ChannelCount, channelInfos.size())
+			m_ChannelCount, channelInfos.size());
 	for (const auto& info : channelInfos)
 	{
 		WriteBinaryData<int16_t>(document, info.m_ChannelID.index);
@@ -719,13 +719,13 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode);
 	if (!blendModeStr.has_value())
-		PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key")
+		PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key");
 	WriteBinaryData<uint32_t>(document, Signature(blendModeStr.value()).m_Value);
 
 
 	WriteBinaryData<uint8_t>(document, m_Opacity);
 	if (m_Clipping > 1)
-		PSAPI_LOG_ERROR("LayerRecord", "'Clipping' variable must be 0 or 1, not %u", m_Clipping)
+		PSAPI_LOG_ERROR("LayerRecord", "'Clipping' variable must be 0 or 1, not %u", m_Clipping);
 	WriteBinaryData<uint8_t>(document, m_Clipping);
 
 	WriteBinaryData<uint8_t>(document, m_BitFlags.getFlags());
@@ -794,7 +794,7 @@ uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= 
 {
 	uint64_t size = 0u;
 
-	PSAPI_LOG_WARNING("ChannelImageData", "Unable to compute size of channelImageData due to the size only being known at export time, please refrain from using this function")
+	PSAPI_LOG_WARNING("ChannelImageData", "Unable to compute size of channelImageData due to the size only being known at export time, please refrain from using this function");
 
 	return size;
 }
@@ -812,7 +812,7 @@ uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t
 		ImageChannel<T>* imageChannel = dynamic_cast<ImageChannel<T>*>(channel.get());
 		if (!imageChannel)
 		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Unable to read data from channel '%i'", channel->m_ChannelID.id)
+			PSAPI_LOG_WARNING("ChannelImageData", "Unable to read data from channel '%i'", channel->m_ChannelID.id);
 			continue;
 		}
 
@@ -872,7 +872,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
 		if (imageChannelPtr == nullptr) [[unlikely]]
 		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i)
+				PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
 			auto emptyVec = std::vector<std::vector<uint8_t>>();
 			return emptyVec;
 		}
@@ -897,7 +897,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		}
 		else [[unlikely]]
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", i)
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", i);
 			auto emptyVec = std::vector<std::vector<uint8_t>>();
 			return emptyVec;
 		}
@@ -996,7 +996,7 @@ void ChannelImageData::write(File& document, const std::vector<std::vector<uint8
 
 		std::optional<uint16_t> compressionCode = Enum::getCompression<Enum::Compression, uint16_t>(channelCompression[i]);
 		if (!compressionCode.has_value()) [[unlikely]]
-			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec")
+			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec");
 
 		WriteBinaryData<uint16_t>(document, compressionCode.value());
 		WriteBinaryArray<uint8_t>(document, compressedChannelData[i]);
@@ -1010,7 +1010,7 @@ uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr
 {
 	uint64_t size = 0u;
 
-	PSAPI_LOG_WARNING("LayerInfo", "Unable to compute size of LayerInfo due to the size only being known upon compressing of the image channels, please refrain from using this function")
+	PSAPI_LOG_WARNING("LayerInfo", "Unable to compute size of LayerInfo due to the size only being known upon compressing of the image channels, please refrain from using this function");
 
 	return size;
 }
@@ -1108,7 +1108,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		// Check that the skipped bytes are within the amount needed to pad a LayerInfo section
 		if (toSkip < -4 || toSkip > 4)
 		{
-			PSAPI_LOG_ERROR("LayerInfo", "Tried skipping bytes larger than the padding of the section: %i", toSkip)
+			PSAPI_LOG_ERROR("LayerInfo", "Tried skipping bytes larger than the padding of the section: %i", toSkip);
 		}
 		document.setOffset(document.getOffset() + toSkip);
 	}
@@ -1144,7 +1144,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 
 	if (m_LayerRecords.size() != m_ChannelImageData.size()) [[unlikely]]
 	{
-		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size())
+			PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
 	}
 	// The nesting here indicates Layers/Channels/ImgData
 	std::vector<std::vector<std::vector<uint8_t>>> compressedData;
@@ -1169,7 +1169,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("LayerInfo", "Unsupported BitDepth encountered, currently only 8-, 16- and 32-bit files are supported")
+			PSAPI_LOG_ERROR("LayerInfo", "Unsupported BitDepth encountered, currently only 8-, 16- and 32-bit files are supported");
 		}
 		channelInfos.push_back(lrChannelInfo);
 		channelCompression.push_back(lrCompression);
@@ -1235,7 +1235,7 @@ uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> head
 {
 	uint64_t size = 0u;
 
-	PSAPI_LOG_WARNING("LayerAndMaskInformation", "Unable to compute size of LayerAndMaskInformation due to the size only being known upon compressing of the image channels, please refrain from using this function")
+	PSAPI_LOG_WARNING("LayerAndMaskInformation", "Unable to compute size of LayerAndMaskInformation due to the size only being known upon compressing of the image channels, please refrain from using this function");
 
 	return size;
 }
@@ -1264,7 +1264,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 		{
 			PSAPI_LOG_ERROR("LayerAndMaskInformation", "Layer Info read an incorrect amount of bytes from the document, expected an offset of %" PRIu64 ", but got %" PRIu64 " instead.",
 				m_Offset + m_LayerInfo.m_Size + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version),
-				document.getOffset())
+				document.getOffset());
 		}
 	}
 	// Parse Global Layer Mask Info

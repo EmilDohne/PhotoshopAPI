@@ -26,11 +26,11 @@ Signature::Signature(const std::string val)
 {
     if (val.length() < 4)
     {
-        PSAPI_LOG_ERROR("Signature", "Signature cannot get initialized with less than 4 characters, got %s", val.c_str())
+        PSAPI_LOG_ERROR("Signature", "Signature cannot get initialized with less than 4 characters, got %s", val.c_str());
     }
     if (val.length() > 4)
     {
-        PSAPI_LOG_WARNING("Signature", "Signature struct has a length of 4, the last %i characters of %s will be cut off", val.length() - 4, val.c_str())
+        PSAPI_LOG_WARNING("Signature", "Signature struct has a length of 4, the last %i characters of %s will be cut off", val.length() - 4, val.c_str());
     }
 
     m_Value = 0;

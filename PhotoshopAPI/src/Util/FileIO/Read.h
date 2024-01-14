@@ -109,7 +109,7 @@ std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 	if (size % sizeof(T) != 0)
 	{
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
-			size, sizeof(T))
+			size, sizeof(T));
 	}
 
 	std::vector<T> data(size / sizeof(T));
@@ -136,7 +136,7 @@ std::vector<T> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
 	if (size % sizeof(T) != 0)
 	{
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
-			size, sizeof(T))
+			size, sizeof(T));
 	}
 
 	std::vector<T> data(size / sizeof(T));
@@ -159,7 +159,7 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 	if (size % sizeof(T) != 0)
 	{
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
-			size, sizeof(T))
+			size, sizeof(T));
 	}
 
 	std::vector<T> data(size / sizeof(T));
@@ -185,7 +185,7 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t siz
 	if (size % sizeof(T) != 0)
 	{
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
-			size, sizeof(T))
+			size, sizeof(T));
 	}
 
 	std::vector<T> data(size / sizeof(T));

@@ -53,7 +53,7 @@ void TaggedBlock::write(File& document, const FileHeader& header, const uint16_t
 	std::optional<std::vector<std::string>> keyStr = Enum::getTaggedBlockKey<Enum::TaggedBlockKey, std::vector<std::string>>(m_Key);
 	if (!keyStr.has_value())
 	{
-		PSAPI_LOG_ERROR("TaggedBlock", "Was unable to extract a string from the tagged block key")
+		PSAPI_LOG_ERROR("TaggedBlock", "Was unable to extract a string from the tagged block key");
 	}
 	else
 	{
@@ -89,11 +89,11 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 	uint32_t type = ReadBinaryData<uint32_t>(document);
 	if (type < 0 || type > 3)
 	{
-		PSAPI_LOG_ERROR("TaggedBlock", "Layer Section Divider type has to be between 0 and 3, got %u instead", type)
+		PSAPI_LOG_ERROR("TaggedBlock", "Layer Section Divider type has to be between 0 and 3, got %u instead", type);
 	};
 	auto sectionDividerType = Enum::getSectionDivider<uint32_t, Enum::SectionDivider>(type);
 	if (!sectionDividerType.has_value())
-		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value")
+		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value");
 	m_Type = sectionDividerType.value();
 
 
@@ -104,7 +104,7 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 		if (sig != Signature("8BIM"))
 		{
 			PSAPI_LOG_ERROR("TaggedBlock", "Signature does not match '8BIM', got '%s' instead",
-				uint32ToString(sig.m_Value).c_str())
+				uint32ToString(sig.m_Value).c_str());
 		}
 
 		std::string blendModeStr = uint32ToString(ReadBinaryData<uint32_t>(document));
@@ -132,7 +132,7 @@ void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const
 
 	auto sectionDividerType = Enum::getSectionDivider<Enum::SectionDivider, uint32_t>(m_Type);
 	if (!sectionDividerType.has_value())
-		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value")
+		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value");
 	WriteBinaryData<uint32_t>(document, sectionDividerType.value());
 	
 	// For some reason the blend mode has another 4 bytes for a 8BPS key
@@ -141,7 +141,7 @@ void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const
 		WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 		std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode.value());
 		if (!blendModeStr.has_value())
-			PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key")
+			PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key");
 		else 
 			WriteBinaryData<uint32_t>(document, Signature(blendModeStr.value()).m_Value);
 	}

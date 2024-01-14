@@ -379,7 +379,7 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getBlendMode(TKey key)
 	{
-		PSAPI_LOG_ERROR("getBlendMode", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getBlendMode", "No overload for the specific search type found");
 	}
 
 	template<>
@@ -545,7 +545,7 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getTaggedBlockKey(TKey key)
 	{
-		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found");
 		return std::nullopt;
 	}
 
@@ -620,7 +620,7 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getCompression(TKey key)
 	{
-		PSAPI_LOG_ERROR("getCompression", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getCompression", "No overload for the specific search type found");
 	}
 
 	template<>
@@ -669,7 +669,7 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getSectionDivider(TKey key)
 	{
-		PSAPI_LOG_ERROR("getSectionDivider", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getSectionDivider", "No overload for the specific search type found");
 	}
 
 	template<>

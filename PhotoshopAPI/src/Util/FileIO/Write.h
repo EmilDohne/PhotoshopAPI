@@ -36,7 +36,7 @@ void WriteBinaryDataVariadic(File& document, TPsb data, Enum::Version version)
 	if (version == Enum::Version::Psd)
 	{
 		if (data > (std::numeric_limits<TPsd>::max)()) [[unlikely]]
-			PSAPI_LOG_ERROR("WriteBinaryDataVariadic", "Value of data exceeds the numeric limits of the max value for type TPsd")
+			PSAPI_LOG_ERROR("WriteBinaryDataVariadic", "Value of data exceeds the numeric limits of the max value for type TPsd");
 		TPsd psdData = endianEncodeBE<TPsd>(static_cast<TPsd>(data));
 		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&psdData), sizeof(TPsd));
 		document.write(dataSpan);

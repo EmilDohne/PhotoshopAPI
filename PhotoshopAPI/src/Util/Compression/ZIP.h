@@ -37,7 +37,7 @@ namespace {
 
 		if (zng_inflateInit(&stream) != Z_OK)
 		{
-			PSAPI_LOG_ERROR("UnZip", "Inflate initialization failed")
+			PSAPI_LOG_ERROR("UnZip", "Inflate initialization failed");
 		}
 
 		// The size being fixed to exactly what we expect the decompressed data to be sized
@@ -50,12 +50,12 @@ namespace {
 
 		if (zng_inflate(&stream, Z_FINISH) != Z_STREAM_END)
 		{
-			PSAPI_LOG_ERROR("UnZip", "Inflate decompression failed")
+			PSAPI_LOG_ERROR("UnZip", "Inflate decompression failed");
 		}
 
 		if (zng_inflateEnd(&stream) != Z_OK)
 		{
-			PSAPI_LOG_ERROR("UnZip", "Inflate cleanup failed")
+			PSAPI_LOG_ERROR("UnZip", "Inflate cleanup failed");
 		}
 
 		return decompressedData;
@@ -82,7 +82,7 @@ namespace {
 
 		if (zng_deflateInit(&stream, Z_DEFAULT_COMPRESSION) != Z_OK)
 		{
-			PSAPI_LOG_ERROR("Zip", "Deflate init failed")
+			PSAPI_LOG_ERROR("Zip", "Deflate init failed");
 			return compressedData;
 		}
 
@@ -104,7 +104,7 @@ namespace {
 				if (result == Z_STREAM_ERROR)
 				{
 					zng_deflateEnd(&stream);
-					PSAPI_LOG_ERROR("Zip", "Unable to call deflate on the input data")
+					PSAPI_LOG_ERROR("Zip", "Unable to call deflate on the input data");
 					return compressedData;
 				}
 				size_t bytesUsed = buffer.size() - stream.avail_out;
@@ -113,11 +113,11 @@ namespace {
 		} while (flushState != Z_FINISH);
 		if (result != Z_STREAM_END)
 		{
-			PSAPI_LOG_ERROR("Zip", "Did not compress the whole buffer, there is still %i bytes remaining", stream.avail_in)
+			PSAPI_LOG_ERROR("Zip", "Did not compress the whole buffer, there is still %i bytes remaining", stream.avail_in);
 		}
 		if (zng_deflateEnd(&stream) != Z_OK)
 		{
-			PSAPI_LOG_ERROR("Zip", "Deflate cleanup failed")
+			PSAPI_LOG_ERROR("Zip", "Deflate cleanup failed");
 		}
 
 		return compressedData;

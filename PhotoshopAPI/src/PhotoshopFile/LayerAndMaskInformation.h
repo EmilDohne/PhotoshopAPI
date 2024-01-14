@@ -288,7 +288,7 @@ struct ChannelImageData : public FileSection
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index)
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
 			auto emptyVec = std::vector<T>();
 			return emptyVec;
 		}
@@ -300,7 +300,7 @@ struct ChannelImageData : public FileSection
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
 			auto emptyVec = std::vector<T>();
 			return emptyVec;
 		}
@@ -329,7 +329,7 @@ struct ChannelImageData : public FileSection
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
 			return std::vector<T>();			
 		}
 	}
