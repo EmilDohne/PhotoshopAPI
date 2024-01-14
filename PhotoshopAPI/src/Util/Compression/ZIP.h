@@ -164,6 +164,7 @@ namespace {
 
 // Implementation of the Prediction encoding and decoding algorithms used for ZipPrediction
 namespace {
+
 	// Reverse the prediction encoding after having decompressed the zip compressed byte stream as well as converting from BE to native
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -342,6 +343,9 @@ namespace {
 	}
 }
 
+
+// Decompress an incoming filestream using the Inflate algorithm from the given offset into a buffer equivalent to the size of width * height 
+// and return it. 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -362,6 +366,8 @@ std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const uint32_t
 }
 
 
+// Decompress the given buffer using the Inflate algorithm into a buffer equivalent to the size of width * height 
+// and return it. 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -377,10 +383,11 @@ std::vector<T> DecompressZIP(std::vector<uint8_t>& compressedData, const uint32_
 }
 
 
+// Compress a vector using the Deflate algorithm with default compression level
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn, const uint32_t width, const uint32_t height)
+std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn)
 {
 	PROFILE_FUNCTION();
 	// Convert uncompressed data to native endianness in-place
@@ -393,6 +400,8 @@ std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn, const uint32_t 
 }
 
 
+// Decompress an incoming filestream using the Inflate algorithm with prediction decoding from the given offset into a buffer equivalent to the 
+// size of width * height and return it. 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -413,6 +422,8 @@ std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, cons
 }
 
 
+// Decompress the given buffer using the Inflate algorithm with prediction decoding into a buffer equivalent to the size  
+// of width * height and return it. 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -430,7 +441,7 @@ std::vector<T> DecompressZIPPrediction(std::vector<uint8_t>& compressedData, con
 }
 
 
-
+// Compress a vector using the Deflate algorithm with default compression level while prediction encoding the data
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>

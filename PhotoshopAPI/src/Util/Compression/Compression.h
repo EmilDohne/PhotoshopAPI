@@ -65,7 +65,7 @@ inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, const E
 	}
 	else if (compression == Enum::Compression::Zip)
 	{
-		return CompressZIP(uncompressedIn, width, height);
+		return CompressZIP(uncompressedIn);
 	}
 	else if (compression == Enum::Compression::ZipPrediction)
 	{
