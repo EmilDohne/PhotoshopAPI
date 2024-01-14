@@ -80,7 +80,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		// This check is mostly for internal checks as we declare the data here
 		if (data.size() != 112u)
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Data size was not 112")
+			PSAPI_LOG_ERROR("ChannelImageData", "Data size was not 112");
 		}
 		m_Data = data;
 		WriteBinaryData<uint32_t>(document, data.size());
@@ -93,7 +93,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		if (m_Data.size() > 0)
 		{
 			PSAPI_LOG_ERROR("ColorModeData", "Invalid size for ColorMode data detected, only indexed colours have data in this \
-				section (32-bit files get handled internally)")
+				section (32-bit files get handled internally)");
 		}
 		m_Size = 4u;
 		WriteBinaryData<uint32_t>(document, 0u);

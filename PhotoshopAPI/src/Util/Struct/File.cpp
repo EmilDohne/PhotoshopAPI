@@ -12,7 +12,7 @@ void File::read(char* buffer, uint64_t size)
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (m_Offset + size > m_Size) [[unlikely]]
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
 	}
 
 	m_Document.read(buffer, size);
@@ -42,7 +42,7 @@ void File::skip(int64_t size)
 	}
 	if (m_Offset + size > m_Size)
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
 	}
 	m_Document.ignore(size);
 	m_Offset += size;
@@ -86,7 +86,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 
 	if (m_Offset + size > m_Size)
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
 	}
 
 	m_Document.read(buffer, size);
@@ -109,7 +109,7 @@ File::File(const std::filesystem::path& file)
 	}
 	else
 	{
-		PSAPI_LOG("File", "Created file %s", file.string().c_str())
+		PSAPI_LOG("File", "Created file %s", file.string().c_str());
 		m_Document.open(file, std::ios::binary | std::fstream::in | std::fstream::out | std::fstream::trunc);
 	}
 

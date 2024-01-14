@@ -65,7 +65,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			}
 			else
 			{
-				PSAPI_LOG_ERROR("Layer", "Unable to cast mask to ImageChannel")
+				PSAPI_LOG_ERROR("Layer", "Unable to cast mask to ImageChannel");
 			}
 			channelPtr = nullptr;
 

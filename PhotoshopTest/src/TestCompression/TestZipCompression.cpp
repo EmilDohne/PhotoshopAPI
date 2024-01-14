@@ -24,7 +24,7 @@ TEST_CASE("Compress Flat Channel 16-bit")
 	std::vector<uint16_t> channel(width * height, (std::numeric_limits<uint16_t>::max)());
 	std::vector<uint16_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
 
-	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<uint16_t>(channel, width, height);
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<uint16_t>(channel);
 	std::vector<uint16_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<uint16_t>(compressedData, width, height);
 
 	CHECK(dataExpected == uncompressedData);
@@ -43,7 +43,7 @@ TEST_CASE("Compress Flat Channel 32-bit")
 	std::vector<float32_t> channel(width * height, 1.0f);
 	std::vector<float32_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
 
-	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<float32_t>(channel, width, height);
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<float32_t>(channel);
 	std::vector<float32_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<float32_t>(compressedData, width, height);
 
 	CHECK(dataExpected == uncompressedData);
@@ -62,7 +62,7 @@ TEST_CASE("Compress Large Flat Channel 16-bit")
 	std::vector<uint16_t> channel(width * height, (std::numeric_limits<uint16_t>::max)());
 	std::vector<uint16_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
 
-	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<uint16_t>(channel, width, height);
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<uint16_t>(channel);
 	std::vector<uint16_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<uint16_t>(compressedData, width, height);
 
 	CHECK(dataExpected == uncompressedData);
@@ -81,7 +81,7 @@ TEST_CASE("Compress Large Flat Channel 32-bit")
 	std::vector<float32_t> channel(width * height, 1.0f);
 	std::vector<float32_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
 
-	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<float32_t>(channel, width, height);
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<float32_t>(channel);
 	std::vector<float32_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<float32_t>(compressedData, width, height);
 
 	CHECK(dataExpected == uncompressedData);

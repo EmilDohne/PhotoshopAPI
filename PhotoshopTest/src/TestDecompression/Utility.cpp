@@ -154,7 +154,7 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 template <typename T>
 void checkDecompressionFile(std::filesystem::path& inputPath, const double zero_val, const double val_128, const double one_val, const double red_zero_val)
 {
-	PSAPI_LOG_ERROR("CheckCompressionFile", "Unimplemented template type")
+	PSAPI_LOG_ERROR("CheckCompressionFile", "Unimplemented template type");
 }
 
 

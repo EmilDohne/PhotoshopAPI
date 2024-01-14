@@ -67,7 +67,7 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	if (signature != Signature("8BIM") && signature != Signature("8B64"))
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM' or '8B64', got '%s' instead",
-			uint32ToString(signature.m_Value).c_str())
+			uint32ToString(signature.m_Value).c_str());
 	}
 	std::string keyStr = uint32ToString(ReadBinaryData<uint32_t>(document));
 	std::optional<Enum::TaggedBlockKey> taggedBlock = Enum::getTaggedBlockKey<std::string, Enum::TaggedBlockKey>(keyStr);

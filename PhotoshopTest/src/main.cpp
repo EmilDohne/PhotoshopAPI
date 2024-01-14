@@ -72,7 +72,7 @@ void profile()
 		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
 
-		PSAPI_LOG("Main", "Started Parsing of file %s", combined_path.string().c_str())
+		PSAPI_LOG_DEBUG("Main", "Started Parsing of file %s", combined_path.string().c_str());
 
 		NAMESPACE_PSAPI::File file(combined_path);
 		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();

@@ -129,7 +129,7 @@ void checkCompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, cons
 template <typename T>
 void checkCompressionFile(std::filesystem::path& inputPath)
 {
-	PSAPI_LOG_ERROR("CheckCompressionFile", "Unimplemented template type")
+	PSAPI_LOG_ERROR("CheckCompressionFile", "Unimplemented template type");
 }
 
 

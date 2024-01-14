@@ -122,7 +122,7 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 			return LayeredFileImpl::findLayerRecurse(layer, segments, 1);
 		}
 	}
-	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str())
+	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
 	return nullptr;
 }
 
@@ -156,8 +156,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::o
 		std::reverse(flatLayers.begin(), flatLayers.end());
 		return flatLayers;
 	}
-	PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse")
-		return std::vector<std::shared_ptr<Layer<T>>>();
+	PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse");
+	return std::vector<std::shared_ptr<Layer<T>>>();
 }
 
 
@@ -171,7 +171,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 
 	if (layerRecords->size() != channelImageData->size())
 	{
-		PSAPI_LOG_ERROR("LayeredFile", "LayerRecords Size does not match channelImageDataSize. File appears to be corrupted")
+		PSAPI_LOG_ERROR("LayeredFile", "LayerRecords Size does not match channelImageDataSize. File appears to be corrupted");
 	}
 
 	// 16 and 32 bit files store their layer records in the additional layer information section. We must therefore overwrite our previous results
@@ -194,7 +194,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("LayeredFile", "PhotoshopFile does not seem to contain a Lr16 or Lr32 Tagged block which would hold layer information")
+			PSAPI_LOG_ERROR("LayeredFile", "PhotoshopFile does not seem to contain a Lr16 or Lr32 Tagged block which would hold layer information");
 		}
 	}
 
@@ -449,10 +449,10 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 				return LayeredFileImpl::findLayerRecurse(layerPtr, path, index+1);
 			}
 		}
-		PSAPI_LOG_WARNING("LayeredFile", "Failed to find layer '%s' based on the path", path[index].c_str())
+		PSAPI_LOG_WARNING("LayeredFile", "Failed to find layer '%s' based on the path", path[index].c_str());
 		return nullptr;
 	}
-	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children")
+	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children");
 	return nullptr;
 }
 

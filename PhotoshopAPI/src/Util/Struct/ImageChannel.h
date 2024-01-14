@@ -33,12 +33,12 @@ struct BaseImageChannel
 		if (width > 300000u)
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid width parsed to image channel. Photoshop channels can be 300,000 pixels wide, got %" PRIu32 " instead",
-				width)
+				width);
 		}
 		if (height > 300000u)
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid height parsed to image channel. Photoshop channels can be 300,000 pixels high, got %" PRIu32 " instead",
-				height)
+				height);
 		}
 
 		m_Compression = compression;
@@ -128,7 +128,7 @@ struct ImageChannel : public BaseImageChannel
 			}
 			if (nchunks != nchunk + 1)
 			{
-				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks")
+				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
 			}
 		}
 
