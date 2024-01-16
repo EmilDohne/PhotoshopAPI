@@ -41,7 +41,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 		}
 	}
 	// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
-	m_IsVisible = layerRecord.m_BitFlags.m_isVisible;
+	m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
 	m_Opacity = layerRecord.m_Opacity;
 	m_Width = layerRecord.m_Right - layerRecord.m_Left;
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
@@ -174,12 +174,28 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents()
+std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents(const FileHeader& header)
 {
-	int32_t top		= m_CenterY - m_Height / 2;
-	int32_t left	= m_CenterX - m_Width / 2;
-	int32_t bottom	= m_CenterY + m_Height / 2;
-	int32_t right	= m_CenterX + m_Width / 2;
+	// The document always uses 0 based extents. so if a document is 64x64 pixels the extents would be 
+	// [0, 0, 64, 64] making our calculations much easier
+	int32_t documentTop = 0;
+	int32_t documentLeft = 0;
+	int32_t documentBottom = header.m_Height;
+	int32_t documentRight = header.m_Width;
+
+	// Our center coordinates are in the middle of the canvas, which means if continuing our 
+	// example they translate to 32, 32
+
+	int32_t translatedCenterX = documentRight / 2 + m_CenterX;
+	int32_t translatedCenterY = documentBottom / 2 + m_CenterY;
+
+	// Use our translated center variables to make Photoshop compliant coordinates. If the 
+	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
+
+	int32_t top		= translatedCenterX - m_Height / 2;
+	int32_t left	= translatedCenterY - m_Width / 2;
+	int32_t bottom	= translatedCenterX + m_Height / 2;
+	int32_t right	= translatedCenterY + m_Width / 2;
 
 	return std::make_tuple(top, left, bottom, right);
 }
@@ -238,12 +254,12 @@ std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseI
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy)
+std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 	ChannelImageData channelData{};
 
-	auto extents = this->generateExtents();
+	auto extents = this->generateExtents(header);
 	int32_t top = std::get<0>(extents);
 	int32_t left = std::get<1>(extents);
 	int32_t bottom = std::get<2>(extents);
@@ -260,7 +276,7 @@ std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::Colo
 		m_BlendMode,
 		m_Opacity,
 		0u,		// Clipping
-		LayerRecords::BitFlags(false, m_IsVisible, false),
+		LayerRecords::BitFlags(false, !m_IsVisible, false),
 		std::nullopt,	// LayerMaskData
 		Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
 		std::nullopt	// Additional layer information

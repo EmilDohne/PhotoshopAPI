@@ -29,7 +29,7 @@ struct GroupLayer : public Layer<T>
 	// invalidate our m_LayerMask since we perform move operations on them. If doCopy is 
 	// set to true we can safely keep using the GroupLayer instance. it is advised to only set doCopy to false on parsing of
 	// the whole layeredFile -> PhotoshopFile.
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy) override;
+	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header) override;
 
 	GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
 

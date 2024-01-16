@@ -44,16 +44,17 @@ struct Layer
 
 	// Define a function for creating a PhotoshopFile from the layer. In the future the intention is to make this a pure virtual function
 	// but seeing as there are multiple miscellaneous layers not yet implemented for the initial release we have this function
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy);
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
 	virtual ~Layer() = default;
+
 protected:
 
 	// Generates the LayerMaskData struct from the layer mask (if provided)
 	std::optional<LayerRecords::LayerMaskData> generateMaskData();
 
-	// Generate the channel extents from the width, height and center coordinates
-	// returns top, left, bottom, right in that order
-	std::tuple<int32_t, int32_t, int32_t, int32_t> generateExtents();
+	// Generate the channel extents from the width, height and center coordinates using the 
+	// headers coordinates as a reference frame returns top, left, bottom, right in that order
+	std::tuple<int32_t, int32_t, int32_t, int32_t> generateExtents(const FileHeader& header);
 
 	// Generate the layer name as a pascal string
 	PascalString generatePascalString();
@@ -63,7 +64,6 @@ protected:
 	// The same holds true for other color modes where for greyscale e.g. it would be just grey and alpha (?)
 	// and cmyk would be grey, cyan, magenta, yellow, key and alpha (?)
 	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode);
-
 
 	// Extract the layer mask into a tuple of channel information as well as the image data. If doCopy is
 	// set to false the mask can be considered invalidated and must no longer be accessed.

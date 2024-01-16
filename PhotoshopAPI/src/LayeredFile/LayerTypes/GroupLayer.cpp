@@ -17,17 +17,17 @@ template struct GroupLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy)
+std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
-	auto extents = Layer<T>::generateExtents();
+	auto extents = Layer<T>::generateExtents(header);
 	int32_t top = std::get<0>(extents);
 	int32_t left = std::get<1>(extents);
 	int32_t bottom = std::get<2>(extents);
 	int32_t right = std::get<3>(extents);
 	uint16_t channelCount = static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 	uint8_t clipping = 0u;	// No clipping mask for now
-	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, Layer<T>::m_IsVisible, false);
+	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
 	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 

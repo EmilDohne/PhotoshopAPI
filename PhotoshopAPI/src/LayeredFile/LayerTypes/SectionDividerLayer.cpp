@@ -22,11 +22,11 @@ template struct SectionDividerLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy)
+std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 	ChannelImageData channelData{};
-	
+
 	LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
 	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
 	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
