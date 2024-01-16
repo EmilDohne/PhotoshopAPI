@@ -25,7 +25,7 @@ PSAPI_NAMESPACE_BEGIN
 void LayerRecords::BitFlags::setFlags(const uint8_t flags) noexcept
 {
 	m_isTransparencyProtected = (flags & m_transparencyProtectedMask) != 0;
-	m_isVisible = (flags & m_visibleMask) != 0;
+	m_isHidden = (flags & m_hiddenMask) != 0;
 	// Bit 2 holds no relevant information
 	m_isBit4Useful = (flags & m_bit4UsefulMask) != 0;
 	m_isPixelDataIrrelevant = (flags & m_pixelDataIrrelevantMask) != 0 && m_isBit4Useful;
@@ -40,13 +40,13 @@ uint8_t LayerRecords::BitFlags::getFlags() const noexcept
 	uint8_t result = 0u;
 
 	if (m_isTransparencyProtected)
-		result |= 1u << 0;
-	if (m_isVisible)
-		result |= 1u << 1;
+		result |= m_transparencyProtectedMask;
+	if (m_isHidden)
+		result |= m_hiddenMask;
 	if (m_isBit4Useful)
-		result |= 1u << 3;
+		result |= m_bit4UsefulMask;
 	if (m_isPixelDataIrrelevant)
-		result |= 1u << 4;
+		result |= m_pixelDataIrrelevantMask;
 
 	return result;
 }
@@ -62,10 +62,10 @@ LayerRecords::BitFlags::BitFlags(const uint8_t flags)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool isVisible, const bool isPixelDataIrrelevant)
+LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool isHidden, const bool isPixelDataIrrelevant)
 {
 	m_isTransparencyProtected = isTransparencyProtected;
-	m_isVisible = isVisible;
+	m_isHidden = isHidden;
 	// TODO this approach of simplifying is probably fine but we need to test if it actually defaults to false or not
 	if (isPixelDataIrrelevant)
 	{
@@ -761,6 +761,7 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 		}
 		m_LayerBlendingRanges.write(document);
 		m_LayerName.write(document, 4u);
+
 		if (m_AdditionalLayerInfo.has_value())
 		{
 			m_AdditionalLayerInfo.value().write(document, header);
@@ -1142,9 +1143,23 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 	// it is imperative that the layer order is consistent between the LayerRecords and the ChannelImageData as that is how photoshop
 	// maps these two together
 
+	// If we are in 16- or 32-bit mode we just write an empty section marker and continue. We must additionally check
+	// that the layer size is 0 as this function gets called from both the 'Lr16' and 'Lr32'
+	// tagged block as well as the layer info section itself
+	if (m_LayerRecords.size() == 0u && (header.m_Depth == Enum::BitDepth::BD_16 || header.m_Depth == Enum::BitDepth::BD_32))
+	{
+		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
+		return;
+	}
+
+	if (m_LayerRecords.size() == 0u) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("LayerInfo", "Invalid Document encountered. Photoshop files must contain at least one layer");
+	}
+
 	if (m_LayerRecords.size() != m_ChannelImageData.size()) [[unlikely]]
 	{
-			PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
+		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
 	}
 	// The nesting here indicates Layers/Channels/ImgData
 	std::vector<std::vector<std::vector<uint8_t>>> compressedData;
@@ -1252,7 +1267,6 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	document.setOffset(offset);
 
 	// Read the layer mask info length marker which is 4 bytes in psd and 8 bytes in psb mode
-	// This value is
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 	m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
 
@@ -1300,8 +1314,9 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	if (m_AdditionalLayerInfo.has_value())
 		m_AdditionalLayerInfo.value().write(document, header, 4u);
 
+	// The section size does not include the size marker so we must subtract that
 	uint64_t endOffset = document.getOffset();
-	uint64_t sectionSize = endOffset - sizeMarkerOffset;
+	uint64_t sectionSize = endOffset - sizeMarkerOffset - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 	document.setOffset(sizeMarkerOffset);
 	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
 	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded, header.m_Version);

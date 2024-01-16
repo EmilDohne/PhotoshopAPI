@@ -28,7 +28,7 @@ namespace LayerRecords
 	struct BitFlags
 	{
 		bool m_isTransparencyProtected = false;
-		bool m_isVisible = false;
+		bool m_isHidden = false;
 		bool m_isBit4Useful = false;	// This bit simply tells us if the next section holds useful information and whether it should be considered
 		bool m_isPixelDataIrrelevant = false;	// If m_isBit4Useful is set to false this will always also be false, no matter if the value itself would be true
 
@@ -39,11 +39,11 @@ namespace LayerRecords
 
 		BitFlags() = default;
 		BitFlags(const uint8_t flags);
-		BitFlags(const bool isTransparencyProtected, const bool isVisible, const bool isPixelDataIrrelevant);
+		BitFlags(const bool isTransparencyProtected, const bool isHidden, const bool isPixelDataIrrelevant);
 
 	private:
 		const static uint8_t m_transparencyProtectedMask = 1u << 0;
-		const static uint8_t m_visibleMask = 1u << 1;
+		const static uint8_t m_hiddenMask = 1u << 1;
 		const static uint8_t m_bit4UsefulMask = 1u << 3;
 		const static uint8_t m_pixelDataIrrelevantMask = 1u << 4;
 	};
