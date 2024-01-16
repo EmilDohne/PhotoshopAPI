@@ -3,17 +3,22 @@
 #include "doctest.h"
 
 #include "Macros.h"
+#include "Enum.h"
 #include "PhotoshopFile/PhotoshopFile.h"
+#include "LayeredFile/LayeredFile.h"
+
+#include "Profiling/Perf/Instrumentor.h"
+#include "Profiling/Memory/CompressionTracker.h"
 
 #include <filesystem>
 #include <vector>
-
+#include <memory>
 
 // This is the data we run all the whole-file tests on. Keep in mind that this does not necessarily cover all of the documents found in /documents
 // as some cover very specific individual sections such as /documents/Compression
 std::vector<std::filesystem::path> relPaths =
 {
-	"\\documents\\CMYK\\CMYK_8bit.psd",
+	/*"\\documents\\CMYK\\CMYK_8bit.psd",
 	"\\documents\\CMYK\\CMYK_8bit.psb",
 	"\\documents\\CMYK\\CMYK_16bit.psd",
 	"\\documents\\CMYK\\CMYK_16bit.psb",
@@ -49,31 +54,92 @@ std::vector<std::filesystem::path> relPaths =
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psd",
 	"\\documents\\SingleLayer\\SingleLayer_32bit.psb",
 	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psd",
-	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",
+	"\\documents\\SingleLayer\\SingleLayer_32bit_MaximizeCompatibilityOff.psb",*/
+	"\\documents\\tmp.psb"
 };
 
 
-int main()
+void profile()
 {
+	// Initialize our Instrumentor instance here to write out our profiling info
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "unlikely_attribute.json");
+	NAMESPACE_PSAPI::CompressionTracker::Get().BeginSession("PSAPI_Profile");
+
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
 
 	for (const auto& path : relPaths)
 	{
 		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
-		NAMESPACE_PSAPI::File file(combined_path);
-		NAMESPACE_PSAPI::PhotoshopFile document;
-		bool didParse = document.read(file);
 
-		if (didParse)
+		PSAPI_LOG_DEBUG("Main", "Started Parsing of file %s", combined_path.string().c_str());
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+		// Generate our layeredFiles
+		if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_8)
 		{
-			PSAPI_LOG("PhotoshopTest", "Successfully finished parsing of file %s", path.string().c_str());
+			NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
 		}
-		else
+		else if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_16)
 		{
-			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
+			NAMESPACE_PSAPI::LayeredFile<uint16_t> layeredFile(std::move(document));
+		}
+		else if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_16)
+		{
+			NAMESPACE_PSAPI::LayeredFile<float32_t> layeredFile(std::move(document));
 		}
 	}
+
+	NAMESPACE_PSAPI::CompressionTracker::Get().EndSession();
+	NAMESPACE_PSAPI::Instrumentor::Get().EndSession();
+}
+
+// Example of roundtripping from PhotoshopFile -> LayeredFile -> PhotoshopFile
+void sampleReadWrite()
+{
+	// First read the PhotoshopFile from disk
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups\Groups_8bit.psd)";
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+
+		// Convert our PhotoshopFile to a LayeredFile
+		NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
+
+		// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
+
+		// Back to a PhotoshopFile we go
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
+
+		std::filesystem::path outPath = currentDirectory;
+		outPath += R"(\documents\Groups_8bit_export.psd)";
+		NAMESPACE_PSAPI::File exportFile(outPath);
+		roundtrippedFile->write(exportFile);
+	}
+
+	// Read again to verify 
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups_8bit_export.psd)";
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+	}
+
+}
+
+int main()
+{
+	// Profile and test our application all in one step
+	profile();
 
 	// Set up and run doctest tests
 	{

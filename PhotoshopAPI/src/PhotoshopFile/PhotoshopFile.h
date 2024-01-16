@@ -25,8 +25,14 @@ struct PhotoshopFile
 	ColorModeData m_ColorModeData;
 	ImageResources m_ImageResources;
 	LayerAndMaskInformation m_LayerMaskInfo;
+	ImageData m_ImageData{};
 
-	bool read(File& document);
+	PhotoshopFile() = default;
+	PhotoshopFile(FileHeader header, ColorModeData colorModeData, ImageResources imageResources, LayerAndMaskInformation layerMaskInfo) :
+		m_Header(header), m_ColorModeData(colorModeData), m_ImageResources(imageResources), m_LayerMaskInfo(std::move(layerMaskInfo)) {}
+
+	void read(File& document);
+	void write(File& document);
 };
 
 

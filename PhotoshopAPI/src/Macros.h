@@ -10,6 +10,8 @@
 
 #define PSAPI_UNUSED(x) (void)(x);
 
+#define PSAPI_PROFILING 1
+
 // Check that float and double are 32 and 64 bit wide respectively 
 static_assert(sizeof(float) == 4 && CHAR_BIT == 8 && std::numeric_limits<float>::is_iec559, "float type is not 32 bit wide, this is not currently supported");
 static_assert(sizeof(double) == 8 && CHAR_BIT == 8 && std::numeric_limits<double>::is_iec559, "double type is not 64 bit wide, this is not currently supported");

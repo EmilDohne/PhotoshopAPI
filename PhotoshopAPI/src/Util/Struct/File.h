@@ -4,76 +4,82 @@
 #include "Logger.h"
 
 #include <filesystem>
+#include <fstream>
+#include <mutex>
+#include <vector>
+#include <span>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
-#include <fstream>
 
 PSAPI_NAMESPACE_BEGIN
 
+
+// Thread-safe read and write by using a std::mutex to block any reading operations
 struct File
 {
+	// Use this mutex as well for locking throughout the application when IO functions
+	// are involved
+	std::mutex m_Mutex;
 
-	inline void read(char* buffer, uint64_t size)
-	{
-		if (m_Offset + size > m_Size)
-		{
-			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
-		}
+	// Read n bytes from the file into the input buffer, make sure the buffer is 
+	// properly allocated before running the function
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void read(char* buffer, uint64_t size);
+	
 
-		m_Document.read(buffer, size);
-		m_Offset += size;
-	}
-
-
-	inline void skip(int64_t size)
-	{
-		if (size <= 0)
-		{
-			return;
-		}
-		if (m_Offset + size > m_Size)
-		{
-			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size)
-		}
-		m_Document.ignore(size);
-		m_Offset += size;
-	}
+	// Write n bytes to the file from the input span.
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void write(std::span<uint8_t> buffer);
 
 
-	inline uint64_t getOffset()
-	{
-		return m_Offset;
-	}
+	// Skip n bytes in the file and increment our position marker, checks if the offset 
+	// is possible or if it would exceed the file size. Note: this is a uint64_t
+	// so skipping backwards is legal
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void skip(int64_t size);
 
 
-	inline void setOffset(const uint64_t offset)
-	{
-		if (offset == m_Offset)
-		{
-			return;
-		}
-		if (offset > m_Size)
-		{
-			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the file size of %" PRIu64 ".", offset, m_Size);
-			return;
-		}
-		m_Offset = offset;
-		m_Document.seekg(offset, std::ios::beg);
-	}
+	// Return the current offset from the file start
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	inline uint64_t getOffset() const { return m_Offset; }
 
 
-	inline uint64_t getSize()
-	{
-		return m_Size;
-	}
+	// Set the current offset to the specified value, checks if the offset is possible
+	// or if it would exceed the file size
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void setOffset(const uint64_t offset);
 
-	File(const std::filesystem::path& file);
+
+	// Set the offset and read into a buffer using a singular lock. 
+	// Use this if you need to skip to a section and read it in a multithreaded environment
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t size);
+
+
+	// Return the total size of the document
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	inline uint64_t getSize() const { return m_Size; }
+
+
+	// Initialize our File object from a path on disk. If doRead is true the file is only
+	// open for reading while if we set it to false it is only open for writing
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	File(const std::filesystem::path& file, const bool doRead = true, const bool forceOverwrite = false);
+
 
 private:
-	std::ifstream m_Document;
-	uint64_t m_Size;
-	uint64_t m_Offset;
+	std::fstream m_Document;	// The file stream that represents our document
+	uint64_t m_Size;			// The total size of the document
+	uint64_t m_Offset;			// The current document offset.
 };
 
 PSAPI_NAMESPACE_END

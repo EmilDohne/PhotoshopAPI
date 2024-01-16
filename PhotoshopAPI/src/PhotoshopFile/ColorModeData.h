@@ -16,7 +16,15 @@ struct ColorModeData : public FileSection
 {
 	std::vector<uint8_t> m_Data;
 
-	bool read(File& document);
+	ColorModeData() : m_Data({}) { m_Size = 4u; m_Offset = 26u; };
+	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
+	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
+
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	void read(File& document);
+	// Write the colorModeData section, note that the m_Data field does not contain the length marker and we parse it explicitly
+	void write(File& document, FileHeader& header);
 };
 
 PSAPI_NAMESPACE_END

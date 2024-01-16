@@ -3,11 +3,13 @@
 #include "Macros.h"
 
 #include <string>
+#include <sstream>
+#include <vector>
 
 
 PSAPI_NAMESPACE_BEGIN
 
-// Convert a big endian uint32_t to a std::string. For example
+// Convert a big endian uint32_t to a std::string
 inline std::string uint32ToString(const uint32_t value) {
     std::string charString;
 
@@ -18,6 +20,21 @@ inline std::string uint32ToString(const uint32_t value) {
     }
 
     return charString;
+}
+
+// Split a string based on the given separator and return a vector of strings
+inline std::vector<std::string> splitString(std::string toSplit, char separator)
+{
+    std::stringstream stream(toSplit);
+    std::string segment;
+    std::vector<std::string> segments;
+
+    while (std::getline(stream, segment, separator))
+    {
+        segments.push_back(segment);
+    }
+
+    return segments;
 }
 
 

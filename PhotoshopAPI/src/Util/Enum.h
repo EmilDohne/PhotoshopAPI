@@ -154,46 +154,60 @@ namespace Enum
 		PrintFlagsInfo
 	};
 
-
-	inline ImageResource intToImageResource(const uint16_t value)
-	{
-		switch (value)
+	namespace {
+		inline std::unordered_map<uint16_t, ImageResource> imageResourceMap = 
 		{
-		case 1005: return ImageResource::ResolutionInfo;
-		case 1006: return ImageResource::AlphaChannelNames;
-		case 1010: return ImageResource::BackgroundColor;
-		case 1011: return ImageResource::PrintFlags;
-		case 1013: return ImageResource::ColorHalftoningInfo;
-		case 1016: return ImageResource::ColorTransferFunctions;
-		case 1024: return ImageResource::LayerStateInformation;
-		case 1026: return ImageResource::LayerGroupInformation;
-		case 1028: return ImageResource::IPTCRecord;
-		case 1032: return ImageResource::GridAndGuidesInformation;
-		case 1036: return ImageResource::ThumbnailResource;
-		case 1037: return ImageResource::GlobalAngle;
-		case 1041: return ImageResource::ICCUntaggedProfile;
-		case 1043: return ImageResource::SpotHalftone;
-		case 1044: return ImageResource::IDSeed;
-		case 1045: return ImageResource::UnicodeAlphaNames;
-		case 1049: return ImageResource::GlobalAltitude;
-		case 1050: return ImageResource::Slices;
-		case 1053: return ImageResource::AlphaIdentifiers;
-		case 1054: return ImageResource::URLList;
-		case 1057: return ImageResource::VersionInfo;
-		case 1058: return ImageResource::ExifData1;
-		case 1060: return ImageResource::XMPMetadata;
-		case 1061: return ImageResource::CaptionDigest;
-		case 1062: return ImageResource::PrintScale;
-		case 1064: return ImageResource::PixelAspectRatio;
-		case 1067: return ImageResource::AlternateSpotColors;
-		case 1069: return ImageResource::LayerSelectionID;
-		case 1072: return ImageResource::LayerGroupEnabledID;
-		case 1077: return ImageResource::DisplayInfo;
-		case 1082: return ImageResource::PrintInformation;
-		case 1083: return ImageResource::PrintStyle;
-		case 10000: return ImageResource::PrintFlagsInfo;
-		default: return ImageResource::NotImplemented;
+			{1, ImageResource::NotImplemented},
+			{1005, ImageResource::ResolutionInfo},
+			{1006, ImageResource::AlphaChannelNames},
+			{1010, ImageResource::BackgroundColor},
+			{1011, ImageResource::PrintFlags},
+			{1013, ImageResource::ColorHalftoningInfo},
+			{1016, ImageResource::ColorTransferFunctions},
+			{1024, ImageResource::LayerStateInformation},
+			{1026, ImageResource::LayerGroupInformation},
+			{1028, ImageResource::IPTCRecord},
+			{1032, ImageResource::GridAndGuidesInformation},
+			{1036, ImageResource::ThumbnailResource},
+			{1037, ImageResource::GlobalAngle},
+			{1041, ImageResource::ICCUntaggedProfile},
+			{1043, ImageResource::SpotHalftone},
+			{1044, ImageResource::IDSeed},
+			{1045, ImageResource::UnicodeAlphaNames},
+			{1049, ImageResource::GlobalAltitude},
+			{1050, ImageResource::Slices},
+			{1053, ImageResource::AlphaIdentifiers},
+			{1054, ImageResource::URLList},
+			{1057, ImageResource::VersionInfo},
+			{1058, ImageResource::ExifData1},
+			{1060, ImageResource::XMPMetadata},
+			{1061, ImageResource::CaptionDigest},
+			{1062, ImageResource::PrintScale},
+			{1064, ImageResource::PixelAspectRatio},
+			{1067, ImageResource::AlternateSpotColors},
+			{1069, ImageResource::LayerSelectionID},
+			{1072, ImageResource::LayerGroupEnabledID},
+			{1077, ImageResource::DisplayInfo},
+			{1082, ImageResource::PrintInformation},
+			{1083, ImageResource::PrintStyle},
+			{10000, ImageResource::PrintFlagsInfo}
+
+		};
+	}
+
+	inline ImageResource intToImageResource(uint16_t key)
+	{
+		auto it = imageResourceMap.find(key);
+
+		if (it != imageResourceMap.end()) {
+			return it->second;
 		}
+		return ImageResource::NotImplemented;
+	}
+
+	inline uint16_t imageResourceToInt(ImageResource key)
+	{
+		return findByValue(imageResourceMap, key).value();
 	}
 }
 
@@ -217,49 +231,117 @@ namespace Enum
 		Black,		// Channel 3 in CMYK Mode
 		Gray,		// Channel 0 in Grayscale Mode
 		Custom,		// Any other channel
-		TransparencyMask,			// Alpha Channel
-		UserSuppliedLayerMask,		// Pixel Mask
+		Alpha,		// Alpha Channel
+		UserSuppliedLayerMask,		// Pixel Mask or Vector Mask
 		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
+
 	};
 
-	inline ChannelID rgbIntToChannelID(const int16_t value)
+	// Structure to hold both the unique identifier of a layer as well as its index 
+	// allowing for much easier handling later on
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	struct ChannelIDInfo
+	{
+		ChannelID id;
+		int16_t index;
+
+		inline bool operator==(const ChannelIDInfo& other) const
+		{
+			return (this->id == other.id && this->index == other.index);
+		}
+
+
+	};
+
+	// Define a custom hasher to allow us to use the above struct. As the indices are unique it is perfectly legal to have the indices define the hash
+	struct ChannelIDInfoHasher
+	{
+		std::size_t operator()(const ChannelIDInfo& k) const
+		{
+			using std::hash;
+
+			return (hash<int>()(k.index));
+		}
+	};
+	
+	inline ChannelIDInfo rgbChannelIDToChannelIDInfo(const Enum::ChannelID value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Red;
-		case 1: return ChannelID::Green;
-		case 2: return ChannelID::Blue;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case Enum::ChannelID::Red: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Green: return ChannelIDInfo{ value, 1 };
+		case Enum::ChannelID::Blue: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
 		}
 	}
 
-	inline ChannelID cmykIntToChannelID(const int16_t value)
+	inline ChannelIDInfo rgbIntToChannelID(const int16_t value) noexcept
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Cyan;
-		case 1: return ChannelID::Magenta;
-		case 2: return ChannelID::Yellow;
-		case 3: return ChannelID::Black;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case 0: return ChannelIDInfo{ ChannelID::Red, value };
+		case 1: return ChannelIDInfo{ ChannelID::Green, value };
+		case 2: return ChannelIDInfo{ ChannelID::Blue, value };
+		case -1: return ChannelIDInfo{ ChannelID::Alpha, value };
+		case -2: return ChannelIDInfo{ ChannelID::UserSuppliedLayerMask, value };
+		case -3: return ChannelIDInfo{ ChannelID::RealUserSuppliedLayerMask, value };
+		default: return ChannelIDInfo{ ChannelID::Custom, value };	// These are channels set by the user
 		}
 	}
 
-	inline ChannelID grayscaleIntToChannelID(const int16_t value)
+
+	inline ChannelIDInfo cmykChannelIDToChannelIDInfo(const Enum::ChannelID value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelID::Gray;
-		case -1: return ChannelID::TransparencyMask;
-		case -2: return ChannelID::UserSuppliedLayerMask;
-		case -3: return ChannelID::RealUserSuppliedLayerMask;
-		default: return ChannelID::Custom;	// These are channels set by the user
+		case Enum::ChannelID::Cyan: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Magenta: return ChannelIDInfo{ value, 1 };
+		case Enum::ChannelID::Yellow: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Black: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		}
+	}
+
+	inline ChannelIDInfo cmykIntToChannelID(const int16_t value) noexcept
+	{
+		switch (value)
+		{
+		case 0: return ChannelIDInfo{ ChannelID::Cyan, value };
+		case 1: return ChannelIDInfo{ChannelID::Magenta, value};
+		case 2: return ChannelIDInfo{ChannelID::Yellow, value};
+		case 3: return ChannelIDInfo{ ChannelID::Black, value };
+		case -1: return ChannelIDInfo{ChannelID::Alpha, value};
+		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
+		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
+		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
+		}
+	}
+
+	inline ChannelIDInfo grayscaleIntToChannelID(const int16_t value) noexcept
+	{
+		switch (value)
+		{
+		case 0: return ChannelIDInfo{ChannelID::Gray, value};
+		case -1: return ChannelIDInfo{ ChannelID::Alpha, value };
+		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
+		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
+		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
+		}
+	}
+
+	inline ChannelIDInfo grayscaleChannelIDToChannelIDInfo(const Enum::ChannelID value)
+	{
+		switch (value)
+		{
+		case Enum::ChannelID::Gray: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
 		}
 	}
 
@@ -337,11 +419,11 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getBlendMode(TKey key)
 	{
-		PSAPI_LOG_ERROR("getBlendMode", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getBlendMode", "No overload for the specific search type found");
 	}
 
 	template<>
-	inline std::optional<BlendMode> getBlendMode(std::string key)
+	inline std::optional<BlendMode> getBlendMode(const std::string key)
 	{
 		auto it = blendModeMap.find(key);
 
@@ -354,7 +436,7 @@ namespace Enum
 	}
 
 	template <>
-	inline std::optional<std::string> getBlendMode(BlendMode key)
+	inline std::optional<std::string> getBlendMode(const BlendMode key)
 	{
 		return findByValue(blendModeMap, key);
 	}
@@ -395,13 +477,15 @@ namespace Enum
 		lrUnicodeName,
 		lrId,
 		lrSectionDivider,	// This stores information about if it is a group layer and if its open or closed
+		lrArtboard,			// Whether or not the layer is an Artboard layer. May be the keys 'artb', 'artd' or 'abdd'
 		lrMetaData,
 		lrAnnotations,
 		// Non-Pixel layers
 		lrTypeTool,		// This is the superseeded version 'TySh', not 'tySh' as that was phased out in 2000
 		lrPatternData,
-		lrLinked,		// Probably Smart objects 
-		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide lenght field
+		lrLinked,
+		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide length field
+		lrSmartObject,	// Represents the keys 'SoLd' and 'SoLE', there is also 'PlLd' and 'plLd' which were phased out in CS3 which is why we wont support them
 		// Additional layer specific data
 		lrCompositorUsed,
 		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
@@ -423,7 +507,11 @@ namespace Enum
 		lrProtectedSetting,
 		lrSheetColorSetting,
 		lrReferencePoint,
-
+		// Shape Layer Tagged Blocks
+		vecOriginData,
+		vecMaskSettings,	// 'vmsk' for CS6 and up. We dont support the legacy 'vsms' option here 
+		vecStrokeData,
+		vecStrokeContentData,
 	};
 
 	namespace {
@@ -453,12 +541,18 @@ namespace Enum
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
+			{"artb", TaggedBlockKey::lrArtboard},
+			{"artd", TaggedBlockKey::lrArtboard},
+			{"abdd", TaggedBlockKey::lrArtboard},
 			{"shmd", TaggedBlockKey::lrMetaData},
 			{"Anno", TaggedBlockKey::lrAnnotations},
 			{"TySh", TaggedBlockKey::lrTypeTool},
 			{"shpa", TaggedBlockKey::lrPatternData},
 			{"lnkD", TaggedBlockKey::lrLinked},
 			{"lnk3", TaggedBlockKey::lrLinked},
+			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
+			{"SoLd", TaggedBlockKey::lrSmartObject},
+			{"SoLE", TaggedBlockKey::lrSmartObject},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
 			{"cinf", TaggedBlockKey::lrCompositorUsed},
 			{"Mtrn", TaggedBlockKey::lrSavingMergedTransparency},
@@ -479,6 +573,11 @@ namespace Enum
 			{"lspf", TaggedBlockKey::lrProtectedSetting},
 			{"lclr", TaggedBlockKey::lrSheetColorSetting},
 			{"fxrp", TaggedBlockKey::lrReferencePoint},
+			// Vector Data for shape Layers
+			{"vogk", TaggedBlockKey::vecOriginData},
+			{"vmsk", TaggedBlockKey::vecMaskSettings},
+			{"vstk", TaggedBlockKey::vecStrokeData},
+			{"vscg", TaggedBlockKey::vecStrokeContentData},
 		};
 	}
 
@@ -486,7 +585,8 @@ namespace Enum
 	template<typename TKey, typename TValue>
 	inline std::optional<TValue> getTaggedBlockKey(TKey key)
 	{
-		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found")
+		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found");
+		return std::nullopt;
 	}
 
 	template<>
@@ -545,13 +645,39 @@ namespace Enum
 		ZipPrediction	// ZIP compression where 
 	};
 
-	inline std::unordered_map<uint16_t, Compression> compressionMap
+
+	namespace {
+		inline std::unordered_map<uint16_t, Compression> compressionMap
+		{
+			{static_cast<uint16_t>(0u), Compression::Raw},
+			{static_cast<uint16_t>(1u), Compression::Rle},
+			{static_cast<uint16_t>(2u), Compression::Zip},
+			{static_cast<uint16_t>(3u), Compression::ZipPrediction}
+		};
+	}
+
+	// Bidirectional mapping of Tagged block keys
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getCompression(TKey key)
 	{
-		{static_cast<uint16_t>(0u), Compression::Raw},
-		{static_cast<uint16_t>(1u), Compression::Rle},
-		{static_cast<uint16_t>(2u), Compression::Zip},
-		{static_cast<uint16_t>(3u), Compression::ZipPrediction}
-	};
+		PSAPI_LOG_ERROR("getCompression", "No overload for the specific search type found");
+	}
+
+	template<>
+	inline std::optional<Compression> getCompression(uint16_t key)
+	{
+		auto it = compressionMap.find(key);
+
+		if (it != compressionMap.end()) {
+			return std::optional<Compression>(it->second);
+		}
+	}
+
+	template <>
+	inline std::optional<uint16_t> getCompression(Compression key)
+	{
+		return findByValue(compressionMap, key);
+	}
 }
 
 
@@ -568,13 +694,42 @@ namespace Enum
 		BoundingSection
 	};
 
-	inline std::unordered_map<uint32_t, SectionDivider> sectionDividerMap
+	namespace
 	{
-		{static_cast<uint32_t>(0u), SectionDivider::Any},
-		{static_cast<uint32_t>(1u), SectionDivider::OpenFolder},
-		{static_cast<uint32_t>(2u), SectionDivider::ClosedFolder},
-		{static_cast<uint32_t>(3u), SectionDivider::BoundingSection}
-	};
+		inline std::unordered_map<uint32_t, SectionDivider> sectionDividerMap
+		{
+			{static_cast<uint32_t>(0u), SectionDivider::Any},
+			{static_cast<uint32_t>(1u), SectionDivider::OpenFolder},
+			{static_cast<uint32_t>(2u), SectionDivider::ClosedFolder},
+			{static_cast<uint32_t>(3u), SectionDivider::BoundingSection}
+		};
+	}
+
+	// Bidirectional mapping of Section divider values
+	template<typename TKey, typename TValue>
+	inline std::optional<TValue> getSectionDivider(TKey key)
+	{
+		PSAPI_LOG_ERROR("getSectionDivider", "No overload for the specific search type found");
+	}
+
+	template<>
+	inline std::optional<SectionDivider> getSectionDivider(const uint32_t key)
+	{
+		auto it = sectionDividerMap.find(key);
+
+		if (it != sectionDividerMap.end()) {
+			return std::optional<SectionDivider>(it->second);
+		}
+		else {
+			return std::nullopt;
+		}
+	}
+
+	template <>
+	inline std::optional<uint32_t> getSectionDivider(const SectionDivider key)
+	{
+		return findByValue(sectionDividerMap, key);
+	}
 }
 
 

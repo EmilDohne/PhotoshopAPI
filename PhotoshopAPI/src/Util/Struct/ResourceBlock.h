@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Struct/PascalString.h"
+#include "Struct/Section.h"
 #include "Struct/File.h"
 #include "Struct/Signature.h"
 
@@ -14,17 +15,21 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-struct ResourceBlock
+struct ResourceBlock : public FileSection
 {
 	Enum::ImageResource m_UniqueId;
 	PascalString m_Name;
-	uint32_t m_Size = 0;				// Size of m_Data
-	uint32_t m_BlockSize = 0;			// Size of the whole block
+	uint32_t m_DataSize = 0;				// Size of m_Data, padded to 2 bytes
 
 	std::vector<uint8_t> m_Data;
 
-	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Size(0), m_BlockSize(0) {};
-	ResourceBlock(File& document);
+	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) { m_Data = {}; m_Size = this->calculateSize(); };
+	
+	// This calculates the size of m_Size only, not m_DataSize!
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	void read(File& document);
+	void write(File& document);
 };
 
 PSAPI_NAMESPACE_END
