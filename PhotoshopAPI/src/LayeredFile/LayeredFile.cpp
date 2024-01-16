@@ -52,6 +52,15 @@ std::unique_ptr<PhotoshopFile> LayeredFile<T>::toPhotoshopFile()
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+{
+	m_Layers.push_back(layer);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 {
 	// Take ownership of document
@@ -62,7 +71,7 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
 
-	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document), m_ChannelIndices);
+	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
 }
 
 
@@ -164,7 +173,31 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::o
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file, std::set<int16_t>& channelIndices)
+uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
+{
+	std::set<uint16_t> channelIndices = {};
+	for (const auto& layer : m_Layers)
+	{
+		LayeredFileImpl::getNumChannelsRecurse(layer, channelIndices);
+	}
+
+	uint16_t numChannels = channelIndices.size();
+	if (ignoreMaskChannels)
+	{
+		// Photoshop doesnt consider mask channels for the total amount of channels
+		if (channelIndices.contains(-2))
+			numChannels -= 1u;
+		if (channelIndices.contains(-3))
+			numChannels -= 1u;
+	}
+	return numChannels;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
 {
 	auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
 	auto* channelImageData = &file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
@@ -213,7 +246,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
 	auto layerRecordsIterator = layerRecords->rbegin();
 	auto channelImageDataIterator = channelImageData->rbegin();
-	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator, channelIndices);
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
 
 	return root;
 }
@@ -226,8 +259,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	std::vector<LayerRecord>& layerRecords,
 	std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
-	std::set<int16_t>& channelIndices)
+	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator
+)
 {
 	std::vector<std::shared_ptr<Layer<T>>> root;
 
@@ -238,18 +271,12 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
-		// Store the number of channels present in the layer record
-		for (const auto& channelInfo : layerRecord.m_ChannelInformation)
-		{
-			channelIndices.insert(channelInfo.m_ChannelID.index);
-		}
-
 		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
 
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			// Recurse a level down
-			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, channelIndices);
+			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
 			root.push_back(groupLayerPtr);
 		}
 		else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -455,6 +482,39 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 	PSAPI_LOG_WARNING("LayeredFile", "Provided parent layer is not a grouplayer and can therefore not have children");
 	return nullptr;
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices)
+{
+	// We must first check if we could recurse down another level. We dont check for masks on the 
+	// group here yet as we do that further down
+	if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+	{
+		for (const auto layerPtr : groupLayerPtr->m_Layers)
+		{
+			LayeredFileImpl::getNumChannelsRecurse(layerPtr, channelIndices);
+		}
+	}
+
+	// Check for a pixel mask
+	if (parentLayer->m_LayerMask.has_value())
+	{
+		channelIndices.insert(-2);
+	}
+
+	// Deal with Image channels
+	if (auto imageLayerPtr = std::dynamic_pointer_cast<ImageLayer<T>>(parentLayer))
+	{
+		for (const auto& pair : imageLayerPtr->m_ImageData)
+		{
+			channelIndices.insert(pair.first.index);
+		}
+	}
+}
+
 
 
 

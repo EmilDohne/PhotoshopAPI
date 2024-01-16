@@ -47,6 +47,10 @@ struct LayeredFile
 	// to create the layer structure.
 	std::unique_ptr<PhotoshopFile> toPhotoshopFile();
 
+	// Inser a layer into the scene root. If you instead wish to add a layer to a group you can call addLayer() on a group
+	// node retrieved by findLayer.
+	void addLayer(std::shared_ptr<Layer<T>> layer);
+
 	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
 	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific
 	/// layer. If any of the keys are invalid the function will return nullopt and issue a warning, not an error
@@ -67,31 +71,21 @@ struct LayeredFile
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>;
 
 	inline Enum::Version getVersion() { return m_Version; };
-	inline uint16_t getNumChannels() { 
-		uint16_t numChannels = m_ChannelIndices.size();
-		// Photoshop doesnt consider mask channels for the total amount of channels
-		if (m_ChannelIndices.contains(-2))
-			numChannels -= 1u;
-		if (m_ChannelIndices.contains(-3))
-			numChannels -= 1u;
-		return numChannels;
-	};
+	// Get the total number of channels in the document except for any mask channels as those are not counted 
+	// towards photoshops channelcount unless ignoreMaskChannels is set to false
+	uint16_t getNumChannels(bool ignoreMaskChannels = true);
 private:
-
 	Enum::Version m_Version = Enum::Version::Psd;
-	// Store the indices of all the channels we encounter to quickly be able to extract the number of channels
-	std::set<int16_t> m_ChannelIndices = {};
-
 };
+
 
 
 namespace LayeredFileImpl
 {
-
 	// Build the layer hierarchy from a PhotoshopFile object using the Layer and Mask section with its LayerRecords and ChannelImageData subsections;
 	// Returns a vector of nested layer variants which can go to any depth
 	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file, std::set<int16_t>& channelIndices);
+	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file);
 	// Recursively build a layer hierarchy using the LayerRecords, ChannelImageData and their respective reverse iterators
 	// See comments in buildLayerHierarchy on why we iterate in reverse
 	template <typename T>
@@ -99,9 +93,8 @@ namespace LayeredFileImpl
 		std::vector<LayerRecord>& layerRecords,
 		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
-		std::set<int16_t>& channelIndices);
-
+		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator
+	);
 
 	// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
 	// initialized with the given layer record and corresponding channel image data.
@@ -109,19 +102,22 @@ namespace LayeredFileImpl
 	template <typename T>
 	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData);
 
-
 	// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order
 	// is not guaranteed
 	template <typename T>
 	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers);
+	
 	// Recursively build a flat layer hierarchy
 	template <typename T>
 	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers);
 
-
 	// Find a layer based on a separated path and a parent layer. To be called by LayeredFile::findLayer
 	template <typename T>
 	std::shared_ptr<Layer<T>> findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index);
+
+	template <typename T>
+	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices);
+	
 }
 
 PSAPI_NAMESPACE_END
