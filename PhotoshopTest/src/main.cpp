@@ -141,7 +141,6 @@ int main()
 	// Profile and test our application all in one step
 	profile();
 
-
 	// Set up and run doctest tests
 	{
 		doctest::Context context;
