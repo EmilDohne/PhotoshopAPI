@@ -17,8 +17,6 @@ endif()
 
 project ("PhotoshopAPIBuild")
 
-# Add thirdparty libraries
-add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng")
 
 # Specify our own version of zlib-ng rather than the supplied one for blosc2.
 # Switch to the debug library if that is the build target
@@ -30,11 +28,14 @@ else()
 endif()
 set (ZLIB_NG_INCLUDE_DIR "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
 
-add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
+# Add thirdparty libraries
+add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng" EXCLUDE_FROM_ALL)
+add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2" EXCLUDE_FROM_ALL)
 
-# Include sub-projects.
+# Include PhotoshopAPI sub-projects.
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
+add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateSimpleDocument")
 
 # Set the test project (PhotoshopTest) as the default target
 add_custom_target(default_target ALL
