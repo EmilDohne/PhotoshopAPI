@@ -27,7 +27,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const
 template <>
 LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile, const FileHeader& header)
 {
-	LayerInfo lrInfo = generateLayerInfo<uint8_t>(layeredFile);
+	LayerInfo lrInfo = generateLayerInfo<uint8_t>(layeredFile, header);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
@@ -41,7 +41,7 @@ template <>
 LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile, const FileHeader& header)
 {
 	LayerInfo emptyLrInfo{};
-	LayerInfo lrInfo = generateLayerInfo<uint16_t>(layeredFile);
+	LayerInfo lrInfo = generateLayerInfo<uint16_t>(layeredFile, header);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
@@ -60,7 +60,7 @@ template <>
 LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFile, const FileHeader& header)
 {
 	LayerInfo emptyLrInfo{};
-	LayerInfo lrInfo = generateLayerInfo<float32_t>(layeredFile);
+	LayerInfo lrInfo = generateLayerInfo<float32_t>(layeredFile, header);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
@@ -76,7 +76,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFil
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile)
+LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
 {
 	// We must first for each layer generate a layer records as well as channelImageData using the reversed flat layers
 	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.generateFlatLayers(std::nullopt, LayerOrder::reverse);
@@ -89,7 +89,7 @@ LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile)
 
 	for (const auto& layer : flatLayers)
 	{
-		std::tuple<LayerRecord, ChannelImageData> lrData = generateLayerData<T>(layeredFile, layer);
+		std::tuple<LayerRecord, ChannelImageData> lrData = generateLayerData<T>(layeredFile, layer, header);
 		LayerRecord lrRecord = std::move(std::get<0>(lrData));
 		ChannelImageData lrImageData = std::move(std::get<1>(lrData));
 
@@ -104,10 +104,10 @@ LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
+std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header)
 {
 	// We default to not copying here
-	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, false);
+	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, false, header);
 	return lrData;
 }
 

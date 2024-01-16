@@ -16,12 +16,12 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const
 
 
 template <typename T>
-LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile);
+LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& header);
 
 
 // Generates the accompanying layer data (LayerRecord and ChannelImageData) for each of the layers in the scene
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer);
+std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header);
 
 
 PSAPI_NAMESPACE_END
