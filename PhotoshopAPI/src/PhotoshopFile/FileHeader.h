@@ -22,7 +22,22 @@ struct FileHeader : public FileSection
 	Enum::BitDepth m_Depth;			// Depth of the Document
 	Enum::ColorMode m_ColorMode;	// Color Mode of the File
 
-	bool read(File& document);
+	FileHeader() = default;
+	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
+	FileHeader(Enum::Version version, uint16_t numChannels, uint32_t width, uint32_t height, Enum::BitDepth depth, Enum::ColorMode colorMode) :
+		m_Signature(Signature("8BPS")),
+		m_Version(version),
+		m_NumChannels(numChannels),
+		m_Height(height),
+		m_Width(width),
+		m_Depth(depth),
+		m_ColorMode(colorMode) {};
+
+	// This section will always be 26 bytes
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override { return 26u; };
+
+	void read(File& document);
+	void write(File& document);
 };
 
 

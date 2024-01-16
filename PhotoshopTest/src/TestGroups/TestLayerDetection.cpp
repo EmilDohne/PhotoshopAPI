@@ -14,8 +14,7 @@ TEST_CASE("Find Image layer in hierarchy 8bit")
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
-	REQUIRE(didParse);
+	document->read(file);
 
 	// Build our layeredFile
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
@@ -34,8 +33,7 @@ TEST_CASE("Find Image layer in hierarchy 8bit PSB")
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
-	REQUIRE(didParse);
+	document->read(file);
 
 	// Build our layeredFile
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
@@ -54,8 +52,7 @@ TEST_CASE("Find Image layer in hierarchy 16bit")
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
-	REQUIRE(didParse);
+	document->read(file);
 
 	// Build our layeredFile
 	NAMESPACE_PSAPI::LayeredFile<uint16_t> layeredFile(std::move(document));
@@ -74,8 +71,7 @@ TEST_CASE("Find Image layer in hierarchy 32bit")
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
-	REQUIRE(didParse);
+	document->read(file);
 
 	// Build our layeredFile
 	NAMESPACE_PSAPI::LayeredFile<float32_t> layeredFile(std::move(document));
@@ -94,8 +90,7 @@ TEST_CASE("Find Group layer in hierarchy")
 
 	NAMESPACE_PSAPI::File file(combined_path);
 	std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-	bool didParse = document->read(file);
-	REQUIRE(didParse);
+	document->read(file);
 
 	// Build our layeredFile
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));

@@ -1,7 +1,8 @@
 #include "FileHeader.h"
 
 #include "Macros.h"
-#include "Read.h"
+#include "FileIO/Read.h"
+#include "FileIO/Write.h"
 
 #include "Profiling/Perf/Instrumentor.h"
 
@@ -10,8 +11,9 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-
-bool FileHeader::read(File& document)
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void FileHeader::read(File& document)
 {
 	PROFILE_FUNCTION();
 
@@ -20,10 +22,9 @@ bool FileHeader::read(File& document)
 
 	uint32_t signature = ReadBinaryData<uint32_t>(document);
 	m_Signature = Signature(signature);
-	if (m_Signature != Signature("8BPS"))
+	if (signature != Signature("8BPS").m_Value)
 	{
 		PSAPI_LOG_ERROR("FileHeader", "Signature does not match 8BPS, got '%s' instead", m_Signature.m_Representation);
-		return false;
 	}
 
 	uint16_t version = ReadBinaryData<uint16_t>(document);
@@ -33,9 +34,8 @@ bool FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		(void)oor;
+		PSAPI_UNUSED(oor)
 		PSAPI_LOG_ERROR("FileHeader", "Signature is not 1 or 2, got %" PRIu16 " instead", version);
-		return false;
 	}
 
 	// Skip reserved filler bytes
@@ -45,7 +45,6 @@ bool FileHeader::read(File& document)
 	if (m_NumChannels < 1u || m_NumChannels > 56u)
 	{
 		PSAPI_LOG_ERROR("FileHeader", "Number of channels is not between 1 and 56, got %" PRIu16 " instead", m_NumChannels);
-		return false;
 	}
 
 
@@ -55,7 +54,6 @@ bool FileHeader::read(File& document)
 		if (m_Height < 1u || m_Height > 300000u)
 		{
 			PSAPI_LOG_ERROR("FileHeader", "Height is not between 1 and 300,000, got %" PRIu32 " instead", m_Height);
-			return false;
 		}
 	}
 	else
@@ -63,7 +61,6 @@ bool FileHeader::read(File& document)
 		if (m_Height < 1u || m_Height > 30000u)
 		{
 			PSAPI_LOG_ERROR("FileHeader", "Height is not between 1 and 30,000, got %" PRIu32 " instead", m_Height);
-			return false;
 		}
 	}
 
@@ -73,7 +70,6 @@ bool FileHeader::read(File& document)
 		if (m_Width < 1u || m_Width > 300000u)
 		{
 			PSAPI_LOG_ERROR("FileHeader", "Width is not between 1 and 300,000, got %" PRIu32 " instead", m_Width);
-			return false;
 		}
 	}
 	else
@@ -81,7 +77,6 @@ bool FileHeader::read(File& document)
 		if (m_Width < 1u || m_Width > 30000u)
 		{
 			PSAPI_LOG_ERROR("FileHeader", "Width is not between 1 and 30,000, got %" PRIu32 " instead", m_Width);
-			return false;
 		}
 	}
 
@@ -93,9 +88,8 @@ bool FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		(void)oor;
+		PSAPI_UNUSED(oor)
 		PSAPI_LOG_ERROR("FileHeader", "Depth is invalid, got %" PRIu16, depth);
-		return false;
 	};
 
 	uint16_t colorMode = ReadBinaryData<uint16_t>(document);
@@ -105,12 +99,40 @@ bool FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		(void)oor;
+		PSAPI_UNUSED(oor)
 		PSAPI_LOG_ERROR("FileHeader", "ColorMode is invalid, got %" PRIu16, colorMode);
-		return false;
 	};
+}
 
-	return true;
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void FileHeader::write(File& document)
+{
+	PROFILE_FUNCTION();
+
+	m_Offset = 0;
+	m_Size = 26;
+
+	// Write the signature, must be 8BPS
+	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
+	
+	std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, m_Version);
+	WriteBinaryData<uint16_t>(document, versionVal.value());
+
+	// Filler bytes, must be explicitly set them to 0
+	WriteBinaryArray<uint8_t>(document, std::vector<uint8_t>(6u, 0u));
+
+	WriteBinaryData<uint16_t>(document, m_NumChannels);
+
+	WriteBinaryData<uint32_t>(document, m_Height);
+	WriteBinaryData<uint32_t>(document, m_Width);
+
+	std::optional<uint16_t> depthVal = findByValue(Enum::bitDepthMap, m_Depth);
+	WriteBinaryData<uint16_t>(document, depthVal.value());
+
+	std::optional<uint16_t> colorModeVal = findByValue(Enum::colorModeMap, m_ColorMode);
+	WriteBinaryData<uint16_t>(document, colorModeVal.value());
 }
 
 PSAPI_NAMESPACE_END

@@ -16,7 +16,13 @@ struct ImageResources : public FileSection
 {
 	std::vector<ResourceBlock> m_ResourceBlocks;
 
-	bool read(File& document, const uint64_t offset);
+	ImageResources() { m_Size = 4u; };
+	ImageResources(std::vector<ResourceBlock> resourceBlocks);
+
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	void read(File& document, const uint64_t offset);
+	void write(File& document);
 };
 
 

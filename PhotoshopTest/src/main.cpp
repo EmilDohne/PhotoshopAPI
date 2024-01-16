@@ -62,7 +62,7 @@ std::vector<std::filesystem::path> relPaths =
 void profile()
 {
 	// Initialize our Instrumentor instance here to write out our profiling info
-	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "parallel_cblosc.json");
+	NAMESPACE_PSAPI::Instrumentor::Get().BeginSession("PSAPI_Profile", "unlikely_attribute.json");
 	NAMESPACE_PSAPI::CompressionTracker::Get().BeginSession("PSAPI_Profile");
 
 	std::filesystem::path currentDirectory = std::filesystem::current_path();
@@ -72,20 +72,11 @@ void profile()
 		std::filesystem::path combined_path = currentDirectory;
 		combined_path += path;
 
-		PSAPI_LOG("Main", "Started Parsing of file %s", combined_path.string().c_str())
+		PSAPI_LOG_DEBUG("Main", "Started Parsing of file %s", combined_path.string().c_str());
 
 		NAMESPACE_PSAPI::File file(combined_path);
 		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
-		bool didParse = document->read(file);
-
-		if (didParse)
-		{
-			PSAPI_LOG("PhotoshopTest", "Successfully finished parsing of file %s", path.string().c_str());
-		}
-		else
-		{
-			PSAPI_LOG("PhotoshopTest", "Failed parsing of file %s", path.string().c_str());
-		}
+		document->read(file);
 		// Generate our layeredFiles
 		if (document->m_Header.m_Depth == NAMESPACE_PSAPI::Enum::BitDepth::BD_8)
 		{
@@ -103,6 +94,46 @@ void profile()
 
 	NAMESPACE_PSAPI::CompressionTracker::Get().EndSession();
 	NAMESPACE_PSAPI::Instrumentor::Get().EndSession();
+}
+
+// Example of roundtripping from PhotoshopFile -> LayeredFile -> PhotoshopFile
+void sampleReadWrite()
+{
+	// First read the PhotoshopFile from disk
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups\Groups_8bit.psd)";
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+
+		// Convert our PhotoshopFile to a LayeredFile
+		NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile(std::move(document));
+
+		// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
+
+		// Back to a PhotoshopFile we go
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
+
+		std::filesystem::path outPath = currentDirectory;
+		outPath += R"(\documents\Groups_8bit_export.psd)";
+		NAMESPACE_PSAPI::File exportFile(outPath);
+		roundtrippedFile->write(exportFile);
+	}
+
+	// Read again to verify 
+	{
+		std::filesystem::path currentDirectory = std::filesystem::current_path();
+		std::filesystem::path combined_path = currentDirectory;
+		combined_path += R"(\documents\Groups_8bit_export.psd)";
+
+		NAMESPACE_PSAPI::File file(combined_path);
+		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> document = std::make_unique<NAMESPACE_PSAPI::PhotoshopFile>();
+		document->read(file);
+	}
+
 }
 
 int main()

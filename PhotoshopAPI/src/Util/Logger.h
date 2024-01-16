@@ -11,21 +11,23 @@
 #include <stdexcept>
 
 
-#define PSAPI_LOG(task, format, ...)						NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Info, task, format, __VA_ARGS__);
-#define PSAPI_LOG_ERROR(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Error, task, format, __VA_ARGS__);
-#define PSAPI_LOG_WARNING(task, format, ...)				NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Warning, task, format, __VA_ARGS__);
-#define PSAPI_LOG_DEBUG(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Debug, task, format, __VA_ARGS__);
+#define PSAPI_LOG(task, format, ...)						NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Info, task, format, __VA_ARGS__)
+#define PSAPI_LOG_ERROR(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Error, task, format, __VA_ARGS__)
+#define PSAPI_LOG_WARNING(task, format, ...)				NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Warning, task, format, __VA_ARGS__)
+#define PSAPI_LOG_DEBUG(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Debug, task, format, __VA_ARGS__)
 
-#define PSAPI_SET_SEVERITY_INFO								NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Info);
-#define PSAPI_SET_SEVERITY_WARNING							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Warning);
-#define PSAPI_SET_SEVERITY_ERROR							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Error);
-#define PSAPI_SET_SEVERITY_DEBUG							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Debug);
-#define PSAPI_SET_SEVERITY_PROFILE							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Profile);
+#define PSAPI_SET_SEVERITY_INFO								NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Info)
+#define PSAPI_SET_SEVERITY_WARNING							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Warning)
+#define PSAPI_SET_SEVERITY_ERROR							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Error)
+#define PSAPI_SET_SEVERITY_DEBUG							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Debug)
+#define PSAPI_SET_SEVERITY_PROFILE							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Profile)
 
 
 PSAPI_NAMESPACE_BEGIN
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 namespace
 {
     std::string leftAlignString(const std::string str, int totalLength)
@@ -42,6 +44,8 @@ namespace
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 namespace Enum
 {
     enum class Severity
@@ -55,10 +59,13 @@ namespace Enum
 }
 
 
+// Singleton logger instance to be used by calling getInstance() followed by the relevant function to be accessed
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 class Logger {
 
 public:
-    // Function to get the logger instance
+    // Function to get the logger instance, there is only one per
     inline static Logger& getInstance() {
         static Logger instance; // This will be created only once
         return instance;

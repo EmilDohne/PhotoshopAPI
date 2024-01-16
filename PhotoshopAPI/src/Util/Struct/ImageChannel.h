@@ -4,12 +4,14 @@
 #include "Enum.h"
 #include "Profiling/Perf/Instrumentor.h"
 #include "Profiling/Memory/CompressionTracker.h"
+#include "PhotoshopFile/FileHeader.h"
 
 #include "blosc2.h"
 
 #include <vector>
 #include <thread>
 #include <memory>
+#include <random>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -17,35 +19,49 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 struct BaseImageChannel
 {
 	Enum::Compression m_Compression = Enum::Compression::Raw;
-	Enum::ChannelID m_ChannelID = Enum::ChannelID::Red;
+	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
+	uint64_t m_OrigByteSize = 0u;	// The size of the original vector in bytes
 
-	BaseImageChannel(Enum::Compression compression, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height)
+
+	BaseImageChannel() = default;
+	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord)
 	{
 		if (width > 300000u)
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid width parsed to image channel. Photoshop channels can be 300,000 pixels wide, got %" PRIu32 " instead",
-				width)
+				width);
 		}
 		if (height > 300000u)
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid height parsed to image channel. Photoshop channels can be 300,000 pixels high, got %" PRIu32 " instead",
-				height)
+				height);
 		}
 
 		m_Compression = compression;
 		m_Width = width;
 		m_Height = height;
+		m_XCoord = xcoord;
+		m_YCoord = ycoord;
 		m_ChannelID = channelID;
 	}
 
 	virtual ~BaseImageChannel() = default;
 
+	int32_t getWidth() const { return m_Width; };
+	int32_t getHeight() const { return m_Height; };
+	int32_t getCenterX() const { return m_XCoord; };
+	int32_t getCenterY() const { return m_YCoord; };
+
 protected:
-	uint32_t m_Width = 0u;
-	uint32_t m_Height = 0u;
+	// Photoshop stores their positions as a bounding rect but we instead store extents and center coordinates
+	int32_t m_Width = 0u;
+	int32_t m_Height = 0u;
+	int32_t m_XCoord = 0u;
+	int32_t m_YCoord = 0u;
 };
 
 
@@ -56,13 +72,16 @@ protected:
 template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
-	uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+	static const uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
 
+	ImageChannel() = default;
 	// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelID channelID, const uint32_t width, const uint32_t height) : BaseImageChannel(compression, channelID, width, height)
+	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord) :
+		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
+
 		PROFILE_FUNCTION();
-		m_OrigSize = static_cast<uint64_t>(width) * height;
+		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
@@ -83,9 +102,10 @@ struct ImageChannel : public BaseImageChannel
 		cparams.typesize = sizeof(T);
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
+		// TODO set this to hardware concurrency?
 		cparams.nthreads = 4;
 		dparams.nthreads = 4;
-		blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
+		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
@@ -108,7 +128,7 @@ struct ImageChannel : public BaseImageChannel
 			}
 			if (nchunks != nchunk + 1)
 			{
-				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks")
+				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
 			}
 		}
 
@@ -116,11 +136,18 @@ struct ImageChannel : public BaseImageChannel
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
+
+	// Extract the data from the image channel and invalidate it (can only be called once). If the image data does not exist yet we simply return an empty vector<T>
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
-		std::vector<T> tmpData(m_OrigSize, 0);
+		if (!m_Data)
+		{
+			return std::vector<T>();
+		}
 
-		uint64_t remainingSize = m_OrigSize;
+		std::vector<T> tmpData(m_OrigByteSize / sizeof(T), 0);
+
+		uint64_t remainingSize = m_OrigByteSize / sizeof(T);
 
 		for (uint32_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
@@ -142,11 +169,37 @@ struct ImageChannel : public BaseImageChannel
 		return tmpData;
 	}
 
+	// Extract n amount of randomly selected chunks from the ImageChannel super chunk. This does not invalidate any data
+	std::vector<std::vector<T>> getRandomChunks(const FileHeader header, uint16_t numChunks) const
+	{
+		std::random_device rd;
+		std::mt19937 randomEngine(rd());
+		// We dont really want to deal with partial chunks so we simply ignore the last chunk.
+		// Since the range is inclusive we subtract 2
+		std::uniform_int_distribution<> dist(0, m_NumChunks - 2);
+
+		std::vector<std::vector<T>> outChunks;
+		outChunks.reserve(numChunks);
+
+		for (int i = 0; i < numChunks; ++i)
+		{
+			std::vector<T> decompressedChunk(m_ChunkSize, 0u);
+			void* ptr = reinterpret_cast<void*>(decompressedChunk.data());
+			// Decompress a random chunk into decompressedChunk
+			blosc2_schunk_decompress_chunk(m_Data, dist(randomEngine), ptr, m_ChunkSize);
+			outChunks.push_back(decompressedChunk);
+		}
+		// Note that we do not call blosc2_schunk_free() here to keep the data valid
+		return outChunks;
+	}
+
+	uint32_t getNumChunks() const { return m_NumChunks; };
+
 private:
-	blosc2_schunk* m_Data;
-	uint32_t m_NumChunks;
-	uint64_t m_OrigSize;	// Original vector size, not in terms of bytes but in terms of elements. E.g. in a 64x64 pixel 16 bit file this would be 4,096, not 8192
+	blosc2_schunk* m_Data = nullptr;
+	uint32_t m_NumChunks = 0u;
 
 };
+
 
 PSAPI_NAMESPACE_END

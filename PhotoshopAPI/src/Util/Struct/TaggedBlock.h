@@ -21,12 +21,15 @@ struct TaggedBlock
 	uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
 	std::variant<uint32_t, uint64_t> m_Length;
 
-	uint64_t getTotalSize() const { return m_TotalLength; };
-	Enum::TaggedBlockKey getKey() const { return m_Key; };
+	uint64_t getTotalSize() const noexcept{ return m_TotalLength; };
+	Enum::TaggedBlockKey getKey() const noexcept{ return m_Key; };
 
 	virtual ~TaggedBlock() = default;
 	TaggedBlock() = default;
-	TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
+
+	// Read a TaggedBlock from a file
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
+	virtual void write(File& document, const FileHeader& header, const uint16_t padding = 1u);
 protected:
 	Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
 	// The length of the tagged block with all the the signature, key and length marker
@@ -44,7 +47,25 @@ struct LrSectionTaggedBlock : TaggedBlock
 	// on the layer itself and includes the blend mode over here. This is only present if the length is >= 12u
 	std::optional<Enum::BlendMode> m_BlendMode;
 
-	LrSectionTaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	LrSectionTaggedBlock() = default;
+	LrSectionTaggedBlock(Enum::SectionDivider sectionDivider, std::optional<Enum::BlendMode> blendMode) : 
+		m_Type(sectionDivider), 
+		m_BlendMode(blendMode) 
+	{
+		m_Key = Enum::TaggedBlockKey::lrSectionDivider;
+		m_TotalLength = 4u;		// Signature
+		m_TotalLength += 4u;	// Key
+		m_TotalLength += 4u;	// Length marker
+		m_TotalLength += 4u;	// LrSection type
+		if (blendMode.has_value())
+		{
+			m_TotalLength += 4u;	// LrSection Signature
+			m_TotalLength += 4u;	// LrSection Blendmode Key
+		}
+	};
+	
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
 };
 
 
@@ -54,7 +75,15 @@ struct Lr16TaggedBlock : TaggedBlock
 {
 	LayerInfo m_Data;
 
-	Lr16TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	Lr16TaggedBlock() = default;
+	Lr16TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo))
+	{
+		// We cant actually calculate the size of the tagged block here as that would require the channels to be compressed first
+		m_TotalLength = 0u;
+	};
+	
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
 };
 
 
@@ -65,7 +94,15 @@ struct Lr32TaggedBlock : TaggedBlock
 {
 	LayerInfo m_Data;
 
-	Lr32TaggedBlock(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	Lr32TaggedBlock() = default;
+	Lr32TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo)) 
+	{
+		// We cant actually calculate the size of the tagged block here as that would require the channels to be compressed first
+		m_TotalLength = 0u;
+	};
+	
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
 };
 
 

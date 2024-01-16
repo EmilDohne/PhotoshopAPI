@@ -2,30 +2,15 @@
 set (EXE PhotoshopTest)
 project(${EXE})
 
-add_executable(${EXE} 
-    "${PROJECT_SOURCE_DIR}/src/main.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/Utility.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestRLE.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestCompression/TestZIPPrediction.cpp"
-    "${PROJECT_SOURCE_DIR}/src/TestGroups/TestLayerDetection.cpp"
-)
+# Define MY_SOURCES to be a list of all the source files
+file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopTest/src/TestCompression")
-
+add_executable(${EXE} ${MY_SOURCES})
 
 # Unfortunately, Wall doesnt compile with blosc2 due to its use of getenv
 if(MSVC)
-	target_compile_options(${EXE} PRIVATE /MP /O2 /arch:AVX2 /GL)
-# 	target_compile_options(${EXE} PRIVATE /W4 /WX)
-else()
-	target_compile_options(${EXE} PRIVATE -O3 -march=native -mtune=native -flto)
-# 	target_compile_options(${EXE} PRIVATE -Wall -Wextra -Wpedantic -Werror)
+ 	target_compile_options(${EXE} PRIVATE /MP)
 endif()
-
-target_compile_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/Zi>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/DEBUG>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:REF>")
-target_link_options(${EXE} PRIVATE "$<$<CONFIG:Release>:/OPT:ICF>")
 
 # Include and link the PhotoshopAPI
 target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
@@ -39,15 +24,19 @@ target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blos
 target_link_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2")
 target_link_libraries(${EXE} PRIVATE blosc2_static)
 
-#include zlib-ng headers
+
+#include and link zlib-ng 
 target_include_directories(${EXE} PUBLIC "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
 target_include_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng")
-target_link_directories(${EXE} PUBLIC "${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng/Release")
-target_link_libraries(${EXE} PUBLIC zlibstatic-ng)
+target_link_directories(${EXE} PUBLIC "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_libraries(${EXE} PUBLIC zlibstatic-ng)
+else()
+    target_link_libraries(${EXE} PUBLIC zlibstatic-ngd)
+endif()
 
 
 # Copy the documents/ folder to the build dir
 add_custom_command(TARGET ${EXE} POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${PROJECT_SOURCE_DIR}/documents/ $<TARGET_FILE_DIR:${EXE}>/documents/)
-

@@ -22,15 +22,42 @@ PSAPI_NAMESPACE_BEGIN
 // Structs to hold the different types of data found in the layer records themselves
 namespace LayerRecords
 {
+
+	// Holds the bit flags found in each layer record instance, there are only 5 documented ones but the other 3 appear to also hold some information.
+	// However, this is mostly irrelevant for now
+	struct BitFlags
+	{
+		bool m_isTransparencyProtected = false;
+		bool m_isHidden = false;
+		bool m_isBit4Useful = false;	// This bit simply tells us if the next section holds useful information and whether it should be considered
+		bool m_isPixelDataIrrelevant = false;	// If m_isBit4Useful is set to false this will always also be false, no matter if the value itself would be true
+
+		// Set the internal flag states using the provided flag uint8_t
+		void setFlags(const uint8_t flags) noexcept;
+		// Return the current flag states as a uint8_t with the relevant bits set
+		uint8_t getFlags() const noexcept;
+
+		BitFlags() = default;
+		BitFlags(const uint8_t flags);
+		BitFlags(const bool isTransparencyProtected, const bool isHidden, const bool isPixelDataIrrelevant);
+
+	private:
+		const static uint8_t m_transparencyProtectedMask = 1u << 0;
+		const static uint8_t m_hiddenMask = 1u << 1;
+		const static uint8_t m_bit4UsefulMask = 1u << 3;
+		const static uint8_t m_pixelDataIrrelevantMask = 1u << 4;
+	};
+
+
 	struct ChannelInformation
 	{
-		Enum::ChannelID m_ChannelID;
+		Enum::ChannelIDInfo m_ChannelID;
 		uint64_t m_Size;	// This appears to include the length of the compression marker
 	};
 
 
 	// A singular layer mask as represented in the LayerMaskData section found in the layer records
-	struct LayerMask
+	struct LayerMask : public FileSection
 	{
 		int32_t m_Top = 0, m_Left = 0, m_Bottom = 0, m_Right = 0;
 		uint8_t m_DefaultColor = 0u;		// 0 or 255
@@ -51,9 +78,22 @@ namespace LayerRecords
 		std::optional<uint8_t> m_VectorMaskDensity;
 		std::optional<float64_t> m_VectorMaskFeather;
 
-		void setFlags(const uint32_t bitFlag);
-		void setMaskParams(const uint32_t bitFlag);
+		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+		// Set the boolean flags according to the data read from disk
+		void setFlags(const uint8_t bitFlag);
+		// Get the currently set flags as a uint8_t for writing
+		uint8_t getFlags() const noexcept;
+		// Set the boolean flags according to the data read from disk
+		void setMaskParams(const uint8_t bitFlag);
+		// Get the currently set flags as a uint8_t for writing
+		uint8_t getMaskParams() const noexcept;
+		// Read the mask parameters according to which mask parameter bit flags are set and return the total
+		// length of all the bytes read
 		uint32_t readMaskParams(File& document);
+		// Write the mask parameters according to which mask parameter bit flags are set 
+		// and return the amount of bytes written
+		uint32_t writeMaskParams(File& document) const noexcept;
 
 	private:
 		// Masks to perform bitwise & operations with to check if certain flags exist
@@ -74,29 +114,36 @@ namespace LayerRecords
 	// This section can hold either no mask, one mask or two masks depending on the size of the data in it.
 	// The layout is a bit confusing here as it reads the second mask in reverse order. The mask parameters
 	// exist only on one of the masks rather than both as they cover both cases
-	struct LayerMaskData
+	struct LayerMaskData : public FileSection
 	{
-		uint32_t m_Size = 4u;	// Includes the section length marker
 		std::optional<LayerMask> m_LayerMask;
 		std::optional<LayerMask> m_VectorMask;
 
-		LayerMaskData() {};
-		LayerMaskData(File& document);
+		LayerMaskData() = default;
+
+		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+		void read(File& document);
+		// Write the layer masks, currently only a single LayerMask is supported for this
+		void write(File& document) const;
 	};
 
 
-	struct LayerBlendingRanges
+	struct LayerBlendingRanges : public FileSection
 	{
-		uint32_t m_Size = 4u;	// Includes the section length marker
-
 		// Blending ranges hold 2 low and 2 high values, if the marker wasnt split in photoshop 
 		// the low and high values are identical
 		using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
 		Data m_SourceRanges;
 		Data m_DestinationRanges;
 
-		LayerBlendingRanges() {};
-		LayerBlendingRanges(File& document);
+		// Initialize blending ranges with defaults, this works for all color modes
+		LayerBlendingRanges();
+
+		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+		void read(File& document);
+		void write(File& document) const;
 	};
 }
 
@@ -106,29 +153,51 @@ struct LayerRecord : public FileSection
 {
 	PascalString m_LayerName;
 
-	uint32_t m_Top, m_Left, m_Bottom, m_Right;
+	int32_t m_Top, m_Left, m_Bottom, m_Right;
 	uint16_t m_ChannelCount;
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
 	Enum::BlendMode m_BlendMode;
-	uint8_t m_Opacity; // 0 - 255
+	uint8_t m_Opacity;	// 0 - 255
 	uint8_t m_Clipping;	// 0 or 1
-	uint8_t m_BitFlags;
+	LayerRecords::BitFlags m_BitFlags;
 
 	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
 	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
-	LayerRecord() :
-		m_Top(0u),
-		m_Left(0u),
-		m_Bottom(0u),
-		m_Right(0u),
-		m_ChannelCount(0u),
-		m_BlendMode(Enum::BlendMode::Normal),
-		m_Opacity(0u),
-		m_Clipping(0u),
-		m_BitFlags(0u) {};
-	LayerRecord(File& document, const FileHeader& header, const uint64_t offset);
+	// Explicitly delete any copy operators as we cannot copy AdditionalLayerInfo
+	LayerRecord(const LayerRecord&) = delete;
+	LayerRecord(LayerRecord&&) = default;
+	LayerRecord& operator=(const LayerRecord&) = delete;
+	LayerRecord& operator=(LayerRecord&&) = default;
+
+	LayerRecord();
+	// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
+	LayerRecord(
+		PascalString layerName,
+		int32_t top,
+		int32_t left,
+		int32_t bottom,
+		int32_t right,
+		uint16_t channelCount,
+		std::vector<LayerRecords::ChannelInformation> channelInfo,
+		Enum::BlendMode blendMode,
+		uint8_t opacity,
+		uint8_t clipping,
+		LayerRecords::BitFlags bitFlags,
+		std::optional<LayerRecords::LayerMaskData> layerMaskData,
+		LayerRecords::LayerBlendingRanges layerBlendingRanges,
+		std::optional<AdditionalLayerInfo> additionalLayerInfo
+	);
+
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset);
+	// Write the layer record to disk, requires the Image data to be compressed already and the size to be known
+	void write(File& document, const FileHeader& header, const std::vector<LayerRecords::ChannelInformation> channelInfos) const;
+
+	uint32_t getWidth() const noexcept;
+	uint32_t getHeight() const noexcept;
 };
 
 
@@ -136,19 +205,48 @@ struct LayerRecord : public FileSection
 struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
-	GlobalLayerMaskInfo(File& document, const uint64_t offset);
+
+	// We dont store anythin here so just an empty size marker will do
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override { return 4u; };
+
+	// Skip the contents of the Global Layer and Mask Info based on the length marker
+	void read(File& document, const uint64_t offset);
+	void write(File& document, const FileHeader& header);
 };
 
 
 // Channel Image Data for a single layer, there is at most 56 channels in a given layer
 struct ChannelImageData : public FileSection
 {
+	ChannelImageData() = default;
+	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) 
+	{
+		for (const auto& item : m_ImageData)
+		{
+			m_ChannelCompression.push_back(item->m_Compression);
+		}
+	};
 
-	// TODO add blosc2 compression to this data
-	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
+	// This function will raise a warning as we do not know the size of the compressed image data at this stage yet, only once we actually write this information 
+	// becomes available. To get an estimate of the size use the estimateSize() function instead
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
-	ChannelImageData() {};
-	ChannelImageData(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+	// Estimate the size the of compressed data by compressing n amount of chunks from the data and averaging the compression ratio
+	// The chunks are chosen at random and have the size of m_ChunkSize in the ImageChannels. numSamples controls how many random chunks we choose
+	template <typename T>
+	uint64_t estimateSize(const FileHeader& header, const uint16_t numSamples = 16u);
+
+	// Compress the data for the current layer and return the individual channels, invalidating the data as we go.
+	// This function must be called before writing the data for the LayerRecord as it reveals the size of the data
+	// required to write them. We fill out the lrChannelInfo and lrCompression vector as it goes.
+	template <typename T>
+	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression);
+
+	// Read a single layer instance from a pre-allocated bytestream
+	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
+
+	// Write a single layer to disk, there is no need to write to a preallocated buffer here as we compress ahead of time
+	void write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
 
 	// Get an index to a specific channel based on the identifier
 	// returns -1 if no matching channel is found
@@ -156,7 +254,7 @@ struct ChannelImageData : public FileSection
 	{
 		for (int i = 0; i < m_ImageData.size(); ++i)
 		{
-			if (m_ImageData[i]->m_ChannelID == channelID)
+			if (m_ImageData[i]->m_ChannelID.id == channelID)
 			{
 				return i;
 			}
@@ -164,9 +262,21 @@ struct ChannelImageData : public FileSection
 		return -1;
 	}
 
-	// Extract the size of a section ahead of time. This is used to get offsets into each of the different channelImageData 
-	// instances ahead of time for parallelization.
-	static uint64_t extractSectionSize(File& document, const uint64_t offset, const LayerRecord& layerRecord);
+	// Get an index to a specific channel based on the identifier
+	// returns -1 if no matching channel is found
+	int getChannelIndex(Enum::ChannelIDInfo channelIDInfo) const
+	{
+		for (int i = 0; i < m_ImageData.size(); ++i)
+		{
+			// Check if the ptr is valid as well as comparing the channelInfo struct
+			auto& imgData = m_ImageData.at(i);
+			if (imgData && imgData->m_ChannelID == channelIDInfo)
+			{
+				return i;
+			}
+		}
+		return -1;
+	}
 
 	// Extract a channel from the given index and take ownership of the data. After this function is called the index will point to nullptr
 	// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
@@ -178,7 +288,7 @@ struct ChannelImageData : public FileSection
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index)
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
 			auto emptyVec = std::vector<T>();
 			return emptyVec;
 		}
@@ -190,7 +300,7 @@ struct ChannelImageData : public FileSection
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
 			auto emptyVec = std::vector<T>();
 			return emptyVec;
 		}
@@ -219,10 +329,44 @@ struct ChannelImageData : public FileSection
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index)
+			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
 			return std::vector<T>();			
 		}
 	}
+
+	// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
+	// we just return that silently and leave it up to the caller to check for this
+	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
+	{
+		const int index = this->getChannelIndex(channelIDInfo);
+		// Take ownership of and invalidate the current index
+		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		if (imageChannelPtr == nullptr)
+		{
+			return nullptr;
+		}
+		m_ImageData[index] = nullptr;
+		return std::move(imageChannelPtr);
+	}
+
+	// Get the offsets and sizes for each of the channels, the order being the same as m_ImageData. Therefore indices
+	// gotten through e.g. getChannelIndex() are valid here as well. The offsets include the compression marker (2 bytes)
+	// so the actual data starts at offset + 2
+	std::vector<std::tuple<uint64_t, uint64_t>> getChannelOffsetsAndSizes() const noexcept { return m_ChannelOffsetsAndSizes; };
+
+	// Get the compression of a channel by logical index acquired by e.g. getChannelIndex
+	inline Enum::Compression getChannelCompression(int index) const noexcept {	return m_ChannelCompression.at(index); };
+private:
+	// Store the offset and size of each of the compressed channels. The offset starts at the channel compression marker
+	std::vector<std::tuple<uint64_t, uint64_t>> m_ChannelOffsetsAndSizes;
+
+	// Store the offset into 
+	std::vector<Enum::Compression> m_ChannelCompression;
+
+	// We hold the image data for all of the channels in this vector.
+	// The image data gets compressed using blosc2 on creation allowing for a very small
+	// memory footprint
+	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
 };
 
 
@@ -232,8 +376,15 @@ struct LayerInfo : public FileSection
 	std::vector<LayerRecord> m_LayerRecords;
 	std::vector<ChannelImageData> m_ChannelImageData;
 
-	LayerInfo(){};
-	LayerInfo(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+	LayerInfo() = default;
+	LayerInfo(std::vector<LayerRecord> layerRecords, std::vector<ChannelImageData> imageData) : m_LayerRecords(std::move(layerRecords)), m_ChannelImageData(std::move(imageData)) {};
+
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	// Read the layer info section
+	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+	// Write the layer info section to file
+	void write(File& document, const FileHeader& header, const uint16_t padding);
 
 	// Find the index to a layer based on a layer name that is given
 	// if no layer with the name is found, return -1. In the case of multiple name matches the last in the photoshop document
@@ -249,7 +400,14 @@ struct LayerAndMaskInformation : public FileSection
 	GlobalLayerMaskInfo m_GlobalLayerMaskInfo;
 	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
 
-	bool read(File& document, const FileHeader& header, const uint64_t offset);
+	LayerAndMaskInformation() = default;
+	LayerAndMaskInformation(LayerInfo& layerInfo, GlobalLayerMaskInfo globalLayerMaskInfo, std::optional<AdditionalLayerInfo> additionalLayerInfo) :
+		m_LayerInfo(std::move(layerInfo)), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
+
+	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+
+	void read(File& document, const FileHeader& header, const uint64_t offset);
+	void write(File& document, const FileHeader& header);
 };
 
 

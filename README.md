@@ -32,7 +32,9 @@ Unit and Integration testing of the PhotoshopAPI that builds to an executable, p
 > [!WARNING]
 > This section will likely heavily change in the near future
 
-The intended usage of the PhotoshopAPI is through the LayeredFile struct. See a minimal reproducible example below:
+The intended usage of the PhotoshopAPI is through the LayeredFile struct. See a minimal reproducible example below.
+
+For more detailed documentation on design decisions as well as general architecture and examples of how to use please refer to the [docs/](/docs/DOCS.md) directory of this repository
 
 ### Reading files
 ```cpp
@@ -66,3 +68,8 @@ int main()
 ### Writing files
 
 TODO
+
+
+## Performance
+
+PhotoshopAPI intends to have both a lower memory footprint, as well as being faster than Photoshop in read and writes. Currently PhotoshopAPI is about ~2.5x faster in reads with a 3x lower memory footprint (2m01s -> 46s | ~30GB -> ~9.5GB)

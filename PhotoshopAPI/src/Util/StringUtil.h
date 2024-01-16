@@ -9,7 +9,7 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// Convert a big endian uint32_t to a std::string. For example
+// Convert a big endian uint32_t to a std::string
 inline std::string uint32ToString(const uint32_t value) {
     std::string charString;
 

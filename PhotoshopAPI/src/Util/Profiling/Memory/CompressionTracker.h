@@ -6,6 +6,8 @@
 #include <vector>
 #include <string>
 
+#define __STDC_FORMAT_MACROS 1
+#include <inttypes.h>
 
 #if PSAPI_PROFILING
 #define REGISTER_COMPRESSION_TRACK(compressedBytes, uncompressedBytes) NAMESPACE_PSAPI::CompressionTracker::Get().WriteProfile({compressedBytes, uncompressedBytes})
@@ -23,10 +25,12 @@ struct CompressionResults
     uint64_t uncompressedSize;
 };
 
+
 struct CompressionTrackerSession
 {
     std::string Name;
 };
+
 
 class CompressionTracker
 {
@@ -48,8 +52,8 @@ public:
 
     void EndSession()
     {
-        PSAPI_LOG("CompressionTracker", "Total size compressed %" PRIu64 " Megabytes", m_CompressedSize / 1024 / 1024)
-        PSAPI_LOG("CompressionTracker", "Total size uncompressed %" PRIu64 " Megabytes", m_UncompressedSize / 1024 / 1024)
+        PSAPI_LOG_DEBUG("CompressionTracker", "Total size compressed %" PRIu64 " Megabytes", m_CompressedSize / 1024 / 1024);
+        PSAPI_LOG_DEBUG("CompressionTracker", "Total size uncompressed %" PRIu64 " Megabytes", m_UncompressedSize / 1024 / 1024);
         delete m_CurrentSession;
         m_CurrentSession = nullptr;
     }
