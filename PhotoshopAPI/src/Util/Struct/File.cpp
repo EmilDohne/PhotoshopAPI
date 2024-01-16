@@ -96,21 +96,40 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-File::File(const std::filesystem::path& file)
+File::File(const std::filesystem::path& file, const bool doRead, const bool forceOverwrite)
 {
 	m_Offset = 0;
 	m_Size = 0;
 
-
 	// Check if the file exists and otherwise create it
-	if (std::filesystem::exists(file))
+	if (doRead == true)
 	{
-		m_Document.open(file, std::ios::binary | std::fstream::in | std::fstream::out);
+		if (std::filesystem::exists(file))
+		{
+			m_Document.open(file, std::ios::binary | std::fstream::in);
+		}
+		else
+		{
+			PSAPI_LOG_WARNING("File", "File %s does not exist, aborting parsing", file.string().c_str());
+		}
 	}
 	else
 	{
-		PSAPI_LOG("File", "Created file %s", file.string().c_str());
-		m_Document.open(file, std::ios::binary | std::fstream::in | std::fstream::out | std::fstream::trunc);
+		if (std::filesystem::exists(file))
+		{
+			if (forceOverwrite)
+			{
+				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
+				std::filesystem::remove(file);
+			}
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
+			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+		}
+		else
+		{
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
+			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+		}
 	}
 
 	if (m_Document.is_open())

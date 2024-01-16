@@ -69,10 +69,11 @@ struct File
 	inline uint64_t getSize() const { return m_Size; }
 
 
-	// Initialize our File object from a path on disk
+	// Initialize our File object from a path on disk. If doRead is true the file is only
+	// open for reading while if we set it to false it is only open for writing
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	File(const std::filesystem::path& file);
+	File(const std::filesystem::path& file, const bool doRead = true, const bool forceOverwrite = false);
 
 
 private:
