@@ -159,7 +159,7 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Offset = offset;
 	m_Signature = signature;
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
-	length = RoundUpToMultiple<uint64_t>((length), padding);
+	length = RoundUpToMultiple<uint64_t>(length, padding);
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
@@ -173,7 +173,9 @@ void Lr16TaggedBlock::write(File& document, const FileHeader& header, const uint
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr16").m_Value);
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, m_TotalLength - (SwapPsdPsb<uint32_t, uint64_t>(header.m_Version) + 4u + 4u), header.m_Version);
+
+	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
+	// care of that
 	m_Data.write(document, header, padding);
 }
 
@@ -186,7 +188,7 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Offset = offset;
 	m_Signature = signature;
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
-	length = RoundUpToMultiple<uint64_t>((length), padding);
+	length = RoundUpToMultiple<uint64_t>(length, padding);
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
@@ -200,11 +202,12 @@ void Lr32TaggedBlock::write(File& document, const FileHeader& header, const uint
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr32").m_Value);
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, m_TotalLength - (SwapPsdPsb<uint32_t, uint64_t>(header.m_Version) + 4u + 4u), header.m_Version);
+
+	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
+	// care of that
 	m_Data.write(document, header, padding);
 }
 
 
 
 PSAPI_NAMESPACE_END
-
