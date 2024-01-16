@@ -141,8 +141,6 @@ int main()
 	// Profile and test our application all in one step
 	profile();
 
-	//sampleReadWrite();
-
 
 	// Set up and run doctest tests
 	{

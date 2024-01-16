@@ -30,7 +30,7 @@ void checkLayerIsSame(NAMESPACE_PSAPI::LayerInfo& layerInformation, const NAMESP
 	int channel_r_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
 	int channel_g_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Green);
 	int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
-	int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
+	int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Alpha);
 
 	REQUIRE(channel_r_index != -1);
 	REQUIRE(channel_g_index != -1);

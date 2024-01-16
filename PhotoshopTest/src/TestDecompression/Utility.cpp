@@ -41,7 +41,7 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		int channel_r_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
 		int channel_g_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Green);
 		int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
-		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
+		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Alpha);
 
 		REQUIRE(channel_r_index != -1);
 		REQUIRE(channel_g_index != -1);
@@ -76,7 +76,7 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		int channel_r_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
 		int channel_g_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Green);
 		int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
-		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
+		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Alpha);
 
 		REQUIRE(channel_r_index != -1);
 		REQUIRE(channel_g_index != -1);
@@ -120,7 +120,7 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		int channel_r_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Red);
 		int channel_g_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Green);
 		int channel_b_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Blue);
-		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::TransparencyMask);
+		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Alpha);
 
 		// We could also extract directly using this signature and skip the step above
 		// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)

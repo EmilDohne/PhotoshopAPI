@@ -231,8 +231,8 @@ namespace Enum
 		Black,		// Channel 3 in CMYK Mode
 		Gray,		// Channel 0 in Grayscale Mode
 		Custom,		// Any other channel
-		TransparencyMask,			// Alpha Channel
-		UserSuppliedLayerMask,		// Pixel Mask
+		Alpha,		// Alpha Channel
+		UserSuppliedLayerMask,		// Pixel Mask or Vector Mask
 		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
 
 	};
@@ -250,6 +250,8 @@ namespace Enum
 		{
 			return (this->id == other.id && this->index == other.index);
 		}
+
+
 	};
 
 	// Define a custom hasher to allow us to use the above struct. As the indices are unique it is perfectly legal to have the indices define the hash
@@ -263,45 +265,83 @@ namespace Enum
 		}
 	};
 	
+	inline ChannelIDInfo rgbChannelIDToChannelIDInfo(const Enum::ChannelID value)
+	{
+		switch (value)
+		{
+		case Enum::ChannelID::Red: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Green: return ChannelIDInfo{ value, 1 };
+		case Enum::ChannelID::Blue: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		}
+	}
 
-	inline ChannelIDInfo rgbIntToChannelID(const int16_t value)
+	inline ChannelIDInfo rgbIntToChannelID(const int16_t value) noexcept
 	{
 		switch (value)
 		{
 		case 0: return ChannelIDInfo{ ChannelID::Red, value };
 		case 1: return ChannelIDInfo{ ChannelID::Green, value };
 		case 2: return ChannelIDInfo{ ChannelID::Blue, value };
-		case -1: return ChannelIDInfo{ ChannelID::TransparencyMask, value };
+		case -1: return ChannelIDInfo{ ChannelID::Alpha, value };
 		case -2: return ChannelIDInfo{ ChannelID::UserSuppliedLayerMask, value };
 		case -3: return ChannelIDInfo{ ChannelID::RealUserSuppliedLayerMask, value };
 		default: return ChannelIDInfo{ ChannelID::Custom, value };	// These are channels set by the user
 		}
 	}
 
-	inline ChannelIDInfo cmykIntToChannelID(const int16_t value)
+
+	inline ChannelIDInfo cmykChannelIDToChannelIDInfo(const Enum::ChannelID value)
 	{
 		switch (value)
 		{
-		case 0: return ChannelIDInfo{ ChannelID::Red, value };
+		case Enum::ChannelID::Cyan: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Magenta: return ChannelIDInfo{ value, 1 };
+		case Enum::ChannelID::Yellow: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Black: return ChannelIDInfo{ value, 2 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		}
+	}
+
+	inline ChannelIDInfo cmykIntToChannelID(const int16_t value) noexcept
+	{
+		switch (value)
+		{
+		case 0: return ChannelIDInfo{ ChannelID::Cyan, value };
 		case 1: return ChannelIDInfo{ChannelID::Magenta, value};
 		case 2: return ChannelIDInfo{ChannelID::Yellow, value};
 		case 3: return ChannelIDInfo{ ChannelID::Black, value };
-		case -1: return ChannelIDInfo{ChannelID::TransparencyMask, value};
+		case -1: return ChannelIDInfo{ChannelID::Alpha, value};
 		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
 		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
 		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
 		}
 	}
 
-	inline ChannelIDInfo grayscaleIntToChannelID(const int16_t value)
+	inline ChannelIDInfo grayscaleIntToChannelID(const int16_t value) noexcept
 	{
 		switch (value)
 		{
 		case 0: return ChannelIDInfo{ChannelID::Gray, value};
-		case -1: return ChannelIDInfo{ ChannelID::TransparencyMask, value };
+		case -1: return ChannelIDInfo{ ChannelID::Alpha, value };
 		case -2: return ChannelIDInfo{ChannelID::UserSuppliedLayerMask, value};
 		case -3: return ChannelIDInfo{ChannelID::RealUserSuppliedLayerMask, value};
 		default: return ChannelIDInfo{ChannelID::Custom, value};	// These are channels set by the user
+		}
+	}
+
+	inline ChannelIDInfo grayscaleChannelIDToChannelIDInfo(const Enum::ChannelID value)
+	{
+		switch (value)
+		{
+		case Enum::ChannelID::Gray: return ChannelIDInfo{ value, 0 };
+		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
+		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
 		}
 	}
 
