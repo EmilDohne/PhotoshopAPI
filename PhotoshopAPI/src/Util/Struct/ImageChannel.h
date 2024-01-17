@@ -72,7 +72,7 @@ protected:
 template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
-	static const uint32_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+	static const uint64_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
 
 	ImageChannel() = default;
 	// Take a reference to a decompressed image vector stream and set the according member variables
@@ -86,7 +86,7 @@ struct ImageChannel : public BaseImageChannel
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
-		int numChunks = ceil((static_cast<uint64_t>(width) * height * sizeof(T)) / m_ChunkSize);
+		uint64_t numChunks = ceil((static_cast<uint64_t>(width) * height * sizeof(T)) / m_ChunkSize);
 		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
 		if (numChunks == 0)
 		{
@@ -149,10 +149,10 @@ struct ImageChannel : public BaseImageChannel
 
 		uint64_t remainingSize = m_OrigByteSize / sizeof(T);
 
-		for (uint32_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
+		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
-			void* ptr = reinterpret_cast<void*>(tmpData.data() + nchunk * m_ChunkSize);
-			if (remainingSize < m_ChunkSize)
+			void* ptr = reinterpret_cast<uint8_t*>(tmpData.data()) + nchunk * m_ChunkSize;
+			if (remainingSize > m_ChunkSize)
 			{
 				blosc2_schunk_decompress_chunk(m_Data, nchunk, ptr, m_ChunkSize);
 				remainingSize -= m_ChunkSize;
@@ -193,11 +193,11 @@ struct ImageChannel : public BaseImageChannel
 		return outChunks;
 	}
 
-	uint32_t getNumChunks() const { return m_NumChunks; };
+	uint64_t getNumChunks() const { return m_NumChunks; };
 
 private:
 	blosc2_schunk* m_Data = nullptr;
-	uint32_t m_NumChunks = 0u;
+	uint64_t m_NumChunks = 0u;
 
 };
 
