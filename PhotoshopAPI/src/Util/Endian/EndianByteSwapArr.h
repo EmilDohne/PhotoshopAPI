@@ -1,7 +1,9 @@
 #pragma once
 
 #include "Macros.h"
+#include "Profiling/Perf/Instrumentor.h"
 #include "AVX2EndianByteSwap.h"
+#include "EndianByteSwap.h"
 
 #include <algorithm>
 #include <execution>
@@ -218,11 +220,11 @@ void endianEncodeBEArray(std::vector<T>& data)
 				uint8_t* vecMemoryAddress = reinterpret_cast<uint8_t*>(cacheSpan.data()) + i * 32;
 				if constexpr (is_little_endian)
 				{
-                    byteShuffleAVX2_BE<T>(vecMemoryAddress);
+                    byteShuffleAVX2_LE<T>(vecMemoryAddress);
 				}
 				else
 				{
-					byteShuffleAVX2_LE<T>(vecMemoryAddress);
+                    byteShuffleAVX2_BE<T>(vecMemoryAddress);
 				}
 			}
 		});
@@ -231,9 +233,18 @@ void endianEncodeBEArray(std::vector<T>& data)
 	uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 	for (uint64_t i = 0; i < remainderTotal; ++i)
 	{
-		const uint8_t* memAddress = reinterpret_cast<uint8_t*>(data.data() + remainderIndex + i);
-		data[remainderIndex + i] = endianDecodeBE<T>(memAddress);
+		data[remainderIndex + i] = endianEncodeBE<T>(data.at(remainderIndex + i));
 	}
 }
+
+
+// Do nothing as no byteswap is necessary
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <>
+inline void endianEncodeBEArray(std::vector<uint8_t>& data)
+{
+}
+
 
 PSAPI_NAMESPACE_END
