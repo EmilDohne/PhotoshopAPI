@@ -267,8 +267,15 @@ inline int64_t endianEncodeBE<int64_t>(const int64_t src)
 template<>
 inline float32_t endianEncodeBE<float32_t>(const float32_t src)
 {
-    uint32_t val = endianEncodeBE<uint32_t>(src);
-    return reinterpret_cast<float32_t&>(val);
+    // This is unfortunately a bit awkward but we cant reinterpret_cast to uint32_t to do the byteswap
+    uint32_t tmp = 0u;
+    float32_t res = 0.0f;
+
+    std::memcpy(&tmp, &src, sizeof(float32_t));
+    uint32_t val = endianEncodeBE<uint32_t>(tmp);
+	std::memcpy(&res, &val, sizeof(float32_t));
+
+    return res;
 }
 
 
@@ -278,8 +285,15 @@ inline float32_t endianEncodeBE<float32_t>(const float32_t src)
 template<>
 inline float64_t endianEncodeBE<float64_t>(const float64_t src)
 {
-    uint64_t val = endianEncodeBE<uint64_t>(src);
-    return reinterpret_cast<float64_t&>(val);
+    // This is unfortunately a bit awkward but we cant reinterpret_cast to uint64_t to do the byteswap
+	uint64_t tmp = 0u;
+	float64_t res = 0.0f;
+
+	std::memcpy(&tmp, &src, sizeof(float64_t));
+    uint64_t val = endianEncodeBE<uint64_t>(tmp);
+	std::memcpy(&res, &val, sizeof(float64_t));
+
+	return res;
 }
 
 
