@@ -45,6 +45,7 @@ template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<float32_t>(Layere
 template <typename T>
 std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile)
 {
+	PROFILE_FUNCTION();
 	FileHeader header = generateHeader<T>(layeredFile);
 	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
 	ImageResources imageResources = generateImageResources<T>(layeredFile);

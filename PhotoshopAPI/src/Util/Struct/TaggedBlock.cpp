@@ -174,6 +174,8 @@ void Lr16TaggedBlock::write(File& document, const FileHeader& header, const uint
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr16").m_Value);
 
+	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
+	// care of that
 	m_Data.write(document, header, padding);
 }
 

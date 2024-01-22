@@ -873,7 +873,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
 		if (imageChannelPtr == nullptr) [[unlikely]]
 		{
-				PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
 			auto emptyVec = std::vector<std::vector<uint8_t>>();
 			return emptyVec;
 		}
@@ -884,8 +884,16 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		{
 			const auto& width = imageChannel->getWidth();
 			const auto& height = imageChannel->getHeight();
-			const auto& compressionMode = imageChannel->m_Compression;
+			auto& compressionMode = imageChannel->m_Compression;
 			const auto& channelIdx = imageChannel->m_ChannelID;
+
+			// In 32-bit mode Photoshop insists on the data being prediction encoded even if the compression mode is set to zip
+			// to probably get better compression. We warn the user of this and switch to ZipPrediction
+			if (std::is_same_v<T, float32_t> && compressionMode == Enum::Compression::Zip)
+			{
+				PSAPI_LOG("ChannelImageData", "Photoshop insists on ZipPrediction encoded data rather than Zip for 32-bit, switching to ZipPrediction");
+				compressionMode = Enum::Compression::ZipPrediction;
+			}
 
 			// Compress the image data into a binary array and store it in our compressedData vec
 			std::vector<T> imgData = imageChannel->getData();
