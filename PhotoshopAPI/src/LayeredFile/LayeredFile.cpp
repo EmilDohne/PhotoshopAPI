@@ -19,7 +19,6 @@
 #include "LayeredFile/Util/GenerateImageResources.h"
 #include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 
-
 #include <vector>
 #include <span>
 #include <variant>
@@ -35,19 +34,24 @@ template struct LayeredFile<uint16_t>;
 template struct LayeredFile<float32_t>;
 
 
+// Instantiate the template types for LayeredToPhotoshopFile
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint8_t>(LayeredFile<uint8_t>&& layeredFile);
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint16_t>(LayeredFile<uint16_t>&& layeredFile);
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<float32_t>(LayeredFile<float32_t>&& layeredFile);
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::unique_ptr<PhotoshopFile> LayeredFile<T>::toPhotoshopFile()
+std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile)
 {
-	FileHeader header = generateHeader<T>(*this);
-	ColorModeData colorModeData = generateColorModeData<T>(*this);
-	ImageResources imageResources = generateImageResources<T>(*this);
-	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this, header);
+	FileHeader header = generateHeader<T>(layeredFile);
+	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
+	ImageResources imageResources = generateImageResources<T>(layeredFile);
+	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
 
- 	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
+	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------

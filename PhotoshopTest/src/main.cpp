@@ -115,7 +115,7 @@ void sampleReadWrite()
 		// Here we could modify the file, insert layers, reshuffle the layer structure etc. 
 
 		// Back to a PhotoshopFile we go
-		std::unique_ptr<NAMESPACE_PSAPI::PhotoshopFile> roundtrippedFile = layeredFile.toPhotoshopFile();
+		auto roundtrippedFile = LayeredToPhotoshopFile(std::move(layeredFile));
 
 		std::filesystem::path outPath = currentDirectory;
 		outPath += R"(\documents\Groups_8bit_export.psd)";
@@ -139,7 +139,7 @@ void sampleReadWrite()
 int main()
 {
 	// Profile and test our application all in one step
-	profile();
+	//profile();
 
 	// Set up and run doctest tests
 	{

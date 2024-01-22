@@ -233,7 +233,7 @@ void endianEncodeBEArray(std::vector<T>& data)
 	uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 	for (uint64_t i = 0; i < remainderTotal; ++i)
 	{
-		data[remainderIndex + i] = endianEncodeBE<T>(data.at(remainderIndex + i));
+		data[remainderIndex + i] = endianEncodeBE<T>(data[remainderIndex + i]);
 	}
 }
 

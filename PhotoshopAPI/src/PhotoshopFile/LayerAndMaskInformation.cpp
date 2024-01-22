@@ -1031,7 +1031,12 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
 		// (note, this section is padded to 4 bytes which means we might have some padding bytes at the end)
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
+		// We add the size of the length marker as it isnt included in the size 
 		m_Size = ExtractWidestValue<uint32_t, uint64_t>(size) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		if (ExtractWidestValue<uint32_t, uint64_t>(size) == 0u)
+		{
+			return;
+		}
 	}
 	else if (isFromAdditionalLayerInfo && sectionSize.has_value())
 	{
@@ -1151,20 +1156,27 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
 		return;
 	}
-
 	if (m_LayerRecords.size() == 0u) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("LayerInfo", "Invalid Document encountered. Photoshop files must contain at least one layer");
 	}
-
 	if (m_LayerRecords.size() != m_ChannelImageData.size()) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
 	}
+	
 	// The nesting here indicates Layers/Channels/ImgData
 	std::vector<std::vector<std::vector<uint8_t>>> compressedData;
 	std::vector<std::vector<LayerRecords::ChannelInformation>> channelInfos;
 	std::vector<std::vector<Enum::Compression>> channelCompression;
+
+	// Write an empty section size, we come back later and fill this out once written
+	uint64_t sizeMarkerOffset = document.getOffset();
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
+	// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
+	// but we do not bother with that at this point
+	WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
+
 	// Loop over the individual layers and compress them while also storing the channel information
 	for (auto& channel : m_ChannelImageData)
 	{
@@ -1190,13 +1202,6 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		channelCompression.push_back(lrCompression);
 	}
 
-	// Write an empty section size, we come back later and fill this out once written
-	uint64_t sizeMarkerOffset = document.getOffset();
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
-	// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
-	// but we do not bother with that at this point
-	WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
-
 	// Write the layer records
 	for (int i = 0; i < m_LayerRecords.size(); ++i)
 	{
@@ -1209,12 +1214,13 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		m_ChannelImageData[i].write(document, compressedData[i], channelCompression[i]);
 	}
 
-	// Count how many bytes we already wrote, go back to the size merker and write that information
+	// Count how many bytes we already wrote, go back to the size marker and write that information
 	uint64_t endOffset = document.getOffset();
 	uint64_t sectionSize = endOffset - sizeMarkerOffset;
 	document.setOffset(sizeMarkerOffset);
 	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded, header.m_Version);
+	// Subtract the section size marker from the total length as it isnt counted
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);

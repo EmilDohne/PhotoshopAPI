@@ -27,6 +27,21 @@ struct LayerMask
 template <typename T>
 struct Layer
 {
+	// Layer Parameters for initialization of a generic layer type
+	struct Params
+	{
+		std::string layerName = "";
+		Enum::BlendMode blendMode = Enum::BlendMode::Normal;
+		int32_t posX = 0;
+		int32_t posY = 0;
+		uint32_t width = 0u;
+		uint32_t height = 0u;
+		uint8_t opacity = 255u;
+		Enum::Compression compression = Enum::Compression::ZipPrediction; 
+		Enum::ColorMode colorMode = Enum::ColorMode::RGB;
+	};
+
+
 	std::string m_LayerName;
 	std::optional<LayerMask<T>> m_LayerMask;
 	Enum::BlendMode m_BlendMode;

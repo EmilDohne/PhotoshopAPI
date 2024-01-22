@@ -29,57 +29,11 @@ struct ImageLayer : public Layer<T>
 	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
 
 
-	/// <summary>
-	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	/// </summary>
-	/// <param name="imageData">The actual image data for the layer. If custom channels are to be used please use the Constructor with uint16_t as key instead</param>
-	/// <param name="maskData">An optional layer mask. currently only Pixel masks are supported</param>
-	/// <param name="layerName">The name of the layer. This parameter will not automatically insert groups if separated by </param>
-	/// <param name="blendMode"></param>
-	/// <param name="posX">The position of the center of the Image. 0 equals to the image center</param>
-	/// <param name="posY">The position of the center of the Image. 0 equals to the image center</param>
-	/// <param name="width">The absolute width of the image.</param>
-	/// <param name="height">The absolute height of the image.</param>
-	/// <param name="compression">The compression mode with which the file gets saved to disk, keep at default for best compression</param>
-	/// <param name="colorMode">The colorMode the layeredFile is in</param>
-	ImageLayer(
-		std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData,
-		std::optional<std::vector<T>>&& maskData,
-		const std::string layerName,
-		const Enum::BlendMode blendMode,
-		const int32_t posX,
-		const int32_t posY,
-		const uint32_t width,
-		const uint32_t height,
-		const Enum::Compression compression = Enum::Compression::ZipPrediction,
-		const Enum::ColorMode colorMode = Enum::ColorMode::RGB
-	);
+	// Generate an ImageLayer instance ready to be used in a LayeredFile document.
+	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, std::optional<std::vector<T>>&& maskData, const Layer<T>::Params& layerParameters);
 
-	/// <summary>
-	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	/// </summary>
-	/// <param name="imageData">The actual image data for the layer</param>
-	/// <param name="maskData">An optional layer mask. currently only Pixel masks are supported</param>
-	/// <param name="layerName">The name of the layer. This parameter will not automatically insert groups if separated by </param>
-	/// <param name="blendMode"></param>
-	/// <param name="posX">The position of the center of the Image. 0 equals to the image center</param>
-	/// <param name="posY">The position of the center of the Image. 0 equals to the image center</param>
-	/// <param name="width">The absolute width of the image.</param>
-	/// <param name="height">The absolute height of the image.</param>
-	/// <param name="compression">The compression mode with which the file gets saved to disk, keep at default for best compression</param>
-	/// <param name="colorMode">The colorMode the layeredFile is in</param>
-	ImageLayer(
-		std::unordered_map<uint16_t, std::vector<T>>&& imageData,
-		std::optional<std::vector<T>>&& maskData,
-		const std::string layerName,
-		const Enum::BlendMode blendMode,
-		const int32_t posX,
-		const int32_t posY,
-		const uint32_t width,
-		const uint32_t height,
-		const Enum::Compression compression = Enum::Compression::ZipPrediction,
-		const Enum::ColorMode colorMode = Enum::ColorMode::RGB
-	);
+	// Generate an ImageLayer instance ready to be used in a LayeredFile document.
+	ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, std::optional<std::vector<T>>&& maskData, const Layer<T>::Params& layerParameters);
 
 private:
 	// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 

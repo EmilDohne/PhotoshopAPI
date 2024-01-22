@@ -147,8 +147,7 @@ struct ImageChannel : public BaseImageChannel
 
 		std::vector<T> tmpData(m_OrigByteSize / sizeof(T), 0);
 
-		uint64_t remainingSize = m_OrigByteSize / sizeof(T);
-
+		uint64_t remainingSize = m_OrigByteSize;
 		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
 			void* ptr = reinterpret_cast<uint8_t*>(tmpData.data()) + nchunk * m_ChunkSize;

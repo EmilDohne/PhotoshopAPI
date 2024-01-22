@@ -639,10 +639,10 @@ namespace Enum
 {
 	enum class Compression
 	{
-		Raw,
+		Raw,			// Raw bytes with no compression
 		Rle,			// Run-length encoded data using the PackBits algorithm
 		Zip,			// Regular ZIP compression
-		ZipPrediction	// ZIP compression where 
+		ZipPrediction	// ZIP compression with the difference encoded per scanline
 	};
 
 

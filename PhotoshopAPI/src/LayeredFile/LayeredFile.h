@@ -42,12 +42,7 @@ struct LayeredFile
 	uint64_t m_Width = 0u;
 	uint64_t m_Height = 0u;
 
-	// Convert the current layeredFile into a PhotoshopFile, transferring all relevant information
-	// Note that this will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
-	// to create the layer structure.
-	std::unique_ptr<PhotoshopFile> toPhotoshopFile();
-
-	// Inser a layer into the scene root. If you instead wish to add a layer to a group you can call addLayer() on a group
+	// Insert a layer into the scene root. If you instead wish to add a layer to a group you can call addLayer() on a group
 	// node retrieved by findLayer.
 	void addLayer(std::shared_ptr<Layer<T>> layer);
 
@@ -78,6 +73,12 @@ private:
 	Enum::Version m_Version = Enum::Version::Psd;
 };
 
+
+// Convert a layeredFile into a PhotoshopFile, transferring all relevant information
+// Note that this will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
+// to create the layer structure.
+template <typename T>
+std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile);
 
 
 namespace LayeredFileImpl
