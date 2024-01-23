@@ -17,6 +17,15 @@ template struct GroupLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+void GroupLayer<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+{
+	m_Layers.push_back(layer);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
@@ -145,6 +154,34 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 	TaggedBlockStorage blockStorage(blockVec);
 	AdditionalLayerInfo lrInfo(blockStorage);
 	return lrInfo;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
+{
+	PROFILE_FUNCTION();
+	Layer<T>::m_LayerName = layerParameters.layerName;
+	Layer<T>::m_BlendMode = layerParameters.blendMode;
+	Layer<T>::m_Opacity = layerParameters.opacity;
+	Layer<T>::m_IsVisible = true;
+	Layer<T>::m_CenterX = layerParameters.posX;
+	Layer<T>::m_CenterY = layerParameters.posY;
+	Layer<T>::m_Width = layerParameters.width;
+	Layer<T>::m_Height = layerParameters.height;
+
+
+	// Set the layer mask if present
+	if (layerParameters.layerMask.has_value())
+	{
+		LayerMask<T> mask{};
+		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		mask.maskData = std::move(maskChannel);
+		Layer<T>::m_LayerMask = mask;
+	}
 }
 
 
