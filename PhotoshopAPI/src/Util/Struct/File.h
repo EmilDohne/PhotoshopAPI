@@ -18,6 +18,12 @@ PSAPI_NAMESPACE_BEGIN
 // Thread-safe read and write by using a std::mutex to block any reading operations
 struct File
 {
+	struct FileParams
+	{
+		bool doRead = true;
+		bool forceOverwrite = false;
+	};
+
 	// Use this mutex as well for locking throughout the application when IO functions
 	// are involved
 	std::mutex m_Mutex;
@@ -73,7 +79,7 @@ struct File
 	// open for reading while if we set it to false it is only open for writing
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	File(const std::filesystem::path& file, const bool doRead = true, const bool forceOverwrite = false);
+	File(const std::filesystem::path& file, const FileParams& params = {});
 
 
 private:
