@@ -30,6 +30,7 @@ struct Layer
 	// Layer Parameters for initialization of a generic layer type
 	struct Params
 	{
+		std::optional<std::vector<T>> layerMask = std::nullopt;
 		std::string layerName = "";
 		Enum::BlendMode blendMode = Enum::BlendMode::Normal;
 		int32_t posX = 0;

@@ -148,7 +148,7 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, std::optional<std::vector<T>>&& maskData, const Layer<T>::Params& layerParameters)
+ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
 	Layer<T>::m_LayerName = layerParameters.layerName;
@@ -179,7 +179,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 			info = Enum::grayscaleChannelIDToChannelIDInfo(pair.first);
 		else
-			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMY and Grayscale ColorMode");
+			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
 		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
@@ -232,11 +232,11 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 	
 
 	// Set the layer mask
-	if (maskData.has_value())
+	if (layerParameters.layerMask.has_value())
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(maskData.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
@@ -246,7 +246,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, std::optional<std::vector<T>>&& maskData, const Layer<T>::Params& layerParameters)
+ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
 	Layer<T>::m_LayerName = layerParameters.layerName;
@@ -277,7 +277,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 			info = Enum::grayscaleIntToChannelID(pair.first);
 		else
-			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMY and Grayscale ColorMode");
+			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
 		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
@@ -330,11 +330,11 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 
 
 	// Set the layer mask
-	if (maskData.has_value())
+	if (layerParameters.layerMask.has_value())
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(maskData.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
