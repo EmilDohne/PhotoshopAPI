@@ -35,7 +35,12 @@ add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2" EXCLUDE_FROM_ALL)
 # Include PhotoshopAPI sub-projects.
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
+
+# Add our Example directories
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateSimpleDocument")
+add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateGroups")
+add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/AddLayerMasks")
+add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/ModifyLayerStructure")
 
 # Set the test project (PhotoshopTest) as the default target
 add_custom_target(default_target ALL
