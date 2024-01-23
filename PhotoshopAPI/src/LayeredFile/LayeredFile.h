@@ -65,6 +65,8 @@ struct LayeredFile
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>;
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>;
 
+	inline void setVersion(Enum::Version version) { m_Version = version; };
+
 	inline Enum::Version getVersion() { return m_Version; };
 	// Get the total number of channels in the document except for any mask channels as those are not counted 
 	// towards photoshops channelcount unless ignoreMaskChannels is set to false
