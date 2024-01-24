@@ -26,3 +26,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "Release")
 else()
     target_link_libraries(${EXE} PUBLIC zlibstatic-ngd)
 endif()
+
+
+# Copy the LayeredFile.psd to our binary directory
+add_custom_command(TARGET ${EXE} POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy
+                       ${PROJECT_SOURCE_DIR}/LayeredFile.psd $<TARGET_FILE_DIR:${EXE}>/LayeredFile.psd)
