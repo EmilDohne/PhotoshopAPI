@@ -54,19 +54,6 @@ std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFi
 	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }
 
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
-void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
-{
-	if (isLayerInDocument(layer))
-	{
-		PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
-		return;
-	}
-	m_Layers.push_back(layer);
-}
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -126,6 +113,7 @@ LayeredFile<T>::LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t 
 template <typename T>
 std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 {
+	PROFILE_FUNCTION();
 	std::vector<std::string> segments = splitString(path, '/');
 	for (const auto layer : m_Layers)
 	{
@@ -143,6 +131,87 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 	}
 	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
 	return nullptr;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+{
+	if (isLayerInDocument(layer))
+	{
+		PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+		return;
+	}
+	m_Layers.push_back(layer);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer /*= nullptr */)
+{
+	PROFILE_FUNCTION();
+	// We must first check that we are not trying to move a layer higher in the hierarchy to lower in the hierarchy 
+	// as that would be undefined behaviour. E.g. if we want to move /Group/ to /Group/NestedGroup that wouldnt work
+	// since the down stream nodes are dependant on the upstream nodes
+	if (parentLayer && isMovingToInvalidHierarchy(layer, parentLayer))
+	{
+		PSAPI_LOG_WARNING("LayeredFile", "Cannot move layer '%s' under '%s' as that would represent an illegal move operation",
+			layer->m_LayerName.c_str(), parentLayer->m_LayerName.c_str());
+		return;
+	}
+
+
+	// First we must remove the layer from the hierarchy and then reappend it in a different place
+	removeLayer(layer);
+
+	// Insert the layer back, either under the provided parent layer or under the scene root
+	if (parentLayer)
+	{
+		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+		{
+			groupLayerPtr->addLayer(*this, layer);
+		}
+		else
+		{
+			PSAPI_LOG_WARNING("LayeredFile", "Parent layer '%s' provided is not a group layer, can only move layers under groups", 
+				parentLayer->m_LayerName.c_str());
+			return;
+		}
+	}
+	else
+	{
+		addLayer(layer);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
+{
+	PROFILE_FUNCTION();
+	int index = 0;
+	for (auto& sceneLayer : m_Layers)
+	{
+		// Check if the layers directly in the scene root is the layer we are looking for and remove the layer if that is the case 
+		if (sceneLayer == layer)
+		{
+			m_Layers.erase(m_Layers.begin() + index);
+			return;
+		}
+
+		// Recurse down and short circuit if we find a match
+		if (LayeredFileImpl::removeLayerRecurse(sceneLayer, layer))
+		{
+			return;
+		}
+		++index;
+	}
 }
 
 
@@ -207,8 +276,9 @@ uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>>& layer) const
+bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const
 {
+	PROFILE_FUNCTION();
 	for (const auto& documentLayer : m_Layers)
 	{
 		if (documentLayer == layer)
@@ -223,6 +293,17 @@ bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>>& layer) c
 	return false;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFile<T>::isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer)
+{
+	// Check if the layer would be moving to one of its descendants which is illegal. Therefore the argument order is reversed
+	bool isDescendantOf = LayeredFileImpl::isLayerInDocumentRecurse(parentLayer, layer);
+	// We additionally check if the layer is the same as the parent layer as that would also not be allowed
+	return isDescendantOf || layer == parentLayer;
+}
 
 
 // LayeredFileImpl
@@ -552,8 +633,10 @@ void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLaye
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-bool LayeredFileImpl::isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>>& parentLayer, const std::shared_ptr<Layer<T>>& layer)
+bool LayeredFileImpl::isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer)
 {
 	// We must first check that the parent layer passed in is actually a group layer
 	if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
@@ -573,6 +656,32 @@ bool LayeredFileImpl::isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>>& 
 	return false;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFileImpl::removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer)
+{
+	// We must first check that the parent layer passed in is actually a group layer
+	if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+	{
+		int index = 0;
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			if (layerPtr == layer)
+			{
+				groupLayerPtr->removeLayer(index);
+				return true;
+			}
+			if (removeLayerRecurse(layerPtr, layer))
+			{
+				return true;
+			}
+			++index;
+		}
+	}
+	return false;
+}
 
 
 

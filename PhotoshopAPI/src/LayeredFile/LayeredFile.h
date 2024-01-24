@@ -42,20 +42,25 @@ struct LayeredFile
 	uint64_t m_Width = 0u;
 	uint64_t m_Height = 0u;
 
+
+	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
+	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific
+	/// layer. If any of the keys are invalid the function will return a nullptr and issue a warning, not an error
+	std::shared_ptr<Layer<T>> findLayer(std::string path) const;
+
 	// Insert a layer into the scene root. If you instead wish to add a layer to a group you can call addLayer() on a group
 	// node retrieved by findLayer. 
 	void addLayer(std::shared_ptr<Layer<T>> layer);
 
-	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
-	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific
-	/// layer. If any of the keys are invalid the function will return nullopt and issue a warning, not an error
-	std::shared_ptr<Layer<T>> findLayer(std::string path) const;
+	// Move a layer from its current parent to a new parent node, the parent node must be a group and if none is provided
+	// it moves the layer to the root instead
+	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr);
 
-	// Check if a layer already exists in our nested structure
-	bool isLayerInDocument(const std::shared_ptr<Layer<T>>& layer) const;
+	// Recursively iterate the layer structure until the given node is found and then remove it from the tree
+	void removeLayer(std::shared_ptr<Layer<T>> layer);
 
 	// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
-	// Use this function if you wish to get the most up to date flat layer stack that is in a correct order
+	// Use this function if you wish to get the most up to date flat layer stack that is in the given
 	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
 
 	// Generate a LayeredFile instance from a pointer to a photoshop file, taking ownership of it 
@@ -74,7 +79,15 @@ struct LayeredFile
 	// Get the total number of channels in the document except for any mask channels as those are not counted 
 	// towards photoshops channelcount unless ignoreMaskChannels is set to false
 	uint16_t getNumChannels(bool ignoreMaskChannels = true);
+
 private:
+
+	// Check if a layer already exists in our nested structure
+	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const;
+
+	// Check if the provided child layer would move to an illegal parent layer. This would include either both layers being the
+	// same or if the child layer is above the parent layer in hierarchy
+	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer);
 
 	Enum::Version m_Version = Enum::Version::Psd;
 };
@@ -127,7 +140,11 @@ namespace LayeredFileImpl
 	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices);
 
 	template <typename T>
-	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>>& parentLayer, const std::shared_ptr<Layer<T>>& layer);
+	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer);
+
+	// Remove a layer from the hierarchy recursively, if a match is found we short circuit and return early
+	template <typename T>
+	bool removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer);
 }
 
 
