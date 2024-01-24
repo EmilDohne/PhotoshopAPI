@@ -43,13 +43,16 @@ struct LayeredFile
 	uint64_t m_Height = 0u;
 
 	// Insert a layer into the scene root. If you instead wish to add a layer to a group you can call addLayer() on a group
-	// node retrieved by findLayer.
+	// node retrieved by findLayer. 
 	void addLayer(std::shared_ptr<Layer<T>> layer);
 
 	/// Find a layer based on the given path, the path has to be separated by forwards slashes, an example path might look
 	/// like this "Group1/GroupNested/ImageLayer". You can retrieve any layers this way and it returns a reference to the specific
 	/// layer. If any of the keys are invalid the function will return nullopt and issue a warning, not an error
 	std::shared_ptr<Layer<T>> findLayer(std::string path) const;
+
+	// Check if a layer already exists in our nested structure
+	bool isLayerInDocument(const std::shared_ptr<Layer<T>>& layer) const;
 
 	// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
 	// Use this function if you wish to get the most up to date flat layer stack that is in a correct order
@@ -72,8 +75,10 @@ struct LayeredFile
 	// towards photoshops channelcount unless ignoreMaskChannels is set to false
 	uint16_t getNumChannels(bool ignoreMaskChannels = true);
 private:
+
 	Enum::Version m_Version = Enum::Version::Psd;
 };
+
 
 
 // Convert a layeredFile into a PhotoshopFile, transferring all relevant information
@@ -120,7 +125,11 @@ namespace LayeredFileImpl
 
 	template <typename T>
 	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices);
-	
+
+	template <typename T>
+	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>>& parentLayer, const std::shared_ptr<Layer<T>>& layer);
 }
+
+
 
 PSAPI_NAMESPACE_END

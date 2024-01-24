@@ -59,6 +59,11 @@ std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFi
 template <typename T>
 void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
 {
+	if (isLayerInDocument(layer))
+	{
+		PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+		return;
+	}
 	m_Layers.push_back(layer);
 }
 
@@ -197,6 +202,32 @@ uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
 	}
 	return numChannels;
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>>& layer) const
+{
+	for (const auto& documentLayer : m_Layers)
+	{
+		if (documentLayer == layer)
+		{
+			return true;
+		}
+		if (LayeredFileImpl::isLayerInDocumentRecurse(documentLayer, layer))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+
+// LayeredFileImpl
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -520,6 +551,27 @@ void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLaye
 	}
 }
 
+
+template <typename T>
+bool LayeredFileImpl::isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>>& parentLayer, const std::shared_ptr<Layer<T>>& layer)
+{
+	// We must first check that the parent layer passed in is actually a group layer
+	if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
+	{
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			if (layerPtr == layer)
+			{
+				return true;
+			}
+			if (isLayerInDocumentRecurse(layerPtr, layer))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
 
 
 

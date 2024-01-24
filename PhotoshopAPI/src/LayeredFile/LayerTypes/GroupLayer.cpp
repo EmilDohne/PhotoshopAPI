@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Struct/TaggedBlock.h"
 #include "Struct/TaggedBlockStorage.h"
+#include "LayeredFile/LayeredFile.h"
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -17,8 +18,13 @@ template struct GroupLayer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-void GroupLayer<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+void GroupLayer<T>::addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
 {
+	if (layeredFile.isLayerInDocument(layer))
+	{
+		PSAPI_LOG_WARNING("GroupLayer", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+		return;
+	}
 	m_Layers.push_back(layer);
 }
 
@@ -183,6 +189,5 @@ GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollap
 		Layer<T>::m_LayerMask = mask;
 	}
 }
-
 
 PSAPI_NAMESPACE_END

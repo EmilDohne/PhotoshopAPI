@@ -15,8 +15,12 @@
 #include <variant>
 #include <memory>
 
-
 PSAPI_NAMESPACE_BEGIN
+
+// Forward declare LayeredFile here
+template <typename T>
+struct LayeredFile;
+
 
 // A layer representing a group of 0 or more other layers. This may be nested 
 template <typename T>
@@ -26,7 +30,7 @@ struct GroupLayer : public Layer<T>
 	bool m_isCollapsed = false;		// Specifies whether or not the layer is collapsed or open
 
 	// Insert a layer under the GroupLayer
-	void addLayer(std::shared_ptr<Layer<T>> layer);
+	void addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer);
 
 	// Generate a photoshop layerRecords and imageData based on the current layer. if doCopy is set to false this will likely
 	// invalidate our m_LayerMask since we perform move operations on them. If doCopy is 
