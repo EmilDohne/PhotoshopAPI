@@ -42,7 +42,6 @@ struct Layer
 		Enum::ColorMode colorMode = Enum::ColorMode::RGB;
 	};
 
-
 	std::string m_LayerName;
 	std::optional<LayerMask<T>> m_LayerMask;
 	Enum::BlendMode m_BlendMode;

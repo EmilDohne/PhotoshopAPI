@@ -32,6 +32,40 @@ void GroupLayer<T>::addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+void GroupLayer<T>::removeLayer(const int index)
+{
+	if (index >= m_Layers.size())
+	{
+		PSAPI_LOG_WARNING("GroupLayer", "Cannot remove index %i from the group as it would exceed the amount of layers in the group", index);
+		return;
+	}
+	m_Layers.erase(m_Layers.begin() + index);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void GroupLayer<T>::removeLayer(std::shared_ptr<Layer<T>>& layer)
+{
+	int index = 0;
+	for (auto& sceneLayer : m_Layers)
+	{
+		if (layer == sceneLayer)
+		{
+			m_Layers.erase(m_Layers.begin() + index);
+			return;
+		}
+		++index;
+	}
+	PSAPI_LOG_WARNING("GroupLayer", "Cannot remove layer %s from the group as it doesnt appear to be a child of the group", layer->m_LayerName.c_str());
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();

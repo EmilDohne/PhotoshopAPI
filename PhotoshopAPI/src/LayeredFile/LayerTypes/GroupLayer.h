@@ -29,8 +29,14 @@ struct GroupLayer : public Layer<T>
 	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
 	bool m_isCollapsed = false;		// Specifies whether or not the layer is collapsed or open
 
-	// Insert a layer under the GroupLayer
+	// Insert a layer under the GroupLayer while also checking whether the layer already exists in the layer stack
 	void addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer);
+
+	// Remove the given layer index from the groups children
+	void removeLayer(const int index);
+
+	// Remove the given layer from the groups children
+	void removeLayer(std::shared_ptr<Layer<T>>& layer);
 
 	// Generate a photoshop layerRecords and imageData based on the current layer. if doCopy is set to false this will likely
 	// invalidate our m_LayerMask since we perform move operations on them. If doCopy is 
@@ -47,6 +53,7 @@ private:
 	// Generate an additional layer information section which holds information about the group state
 	AdditionalLayerInfo generateAdditionalLayerInfo();
 };
+
 
 
 PSAPI_NAMESPACE_END
