@@ -132,7 +132,7 @@ private:
         time = leftAlignString(time, 22);
 
         task = "[" + task + "]";
-        task = leftAlignString(task, 25);
+        task = leftAlignString(task, 15);
 
         std::string joinedMessage = time + task + message;
 
