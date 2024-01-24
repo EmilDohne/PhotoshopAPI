@@ -43,8 +43,9 @@ int main()
 			std::move(channelMap),
 			layerParams
 		);
-		groupLayer->addLayer(layer);
-		document.addLayer(layer);
+		// Adding the layer twice would be invalid and would raise a warning as each layer needs to be created uniquely
+		// document.addLayer(layer);
+		groupLayer->addLayer(document, layer);
 	}
 
 	// Convert to PhotoshopDocument and write to disk. Note that from this point onwards 
