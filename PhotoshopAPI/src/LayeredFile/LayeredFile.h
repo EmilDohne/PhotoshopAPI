@@ -80,10 +80,10 @@ struct LayeredFile
 	// towards photoshops channelcount unless ignoreMaskChannels is set to false
 	uint16_t getNumChannels(bool ignoreMaskChannels = true);
 
-private:
-
 	// Check if a layer already exists in our nested structure
 	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const;
+
+private:
 
 	// Check if the provided child layer would move to an illegal parent layer. This would include either both layers being the
 	// same or if the child layer is above the parent layer in hierarchy
