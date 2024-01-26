@@ -35,6 +35,7 @@ void PhotoshopFile::write(File& document)
 	m_ImageResources.write(document);
 	m_LayerMaskInfo.write(document, m_Header);
 	// This unfortunately appears to be required which inflates files by quite a bit
+	// but still significantly less than photoshop itself
 	m_ImageData.write(document, m_Header);
 }
 
