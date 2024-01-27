@@ -144,6 +144,8 @@ File::File(const std::filesystem::path& file, const FileParams& params)
 		// Handle file open error
 		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.string().c_str());
 	}
+
+	m_FilePath = file;
 }
 
 
