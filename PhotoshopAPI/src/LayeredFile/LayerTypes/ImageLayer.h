@@ -26,7 +26,7 @@ struct ImageLayer : public Layer<T>
 
 	// Initialize our imageLayer by first parsing the base Layer instance and then moving
 	// the additional channels into our representation
-	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
+	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	// Generate an ImageLayer instance ready to be used in a LayeredFile document.
 	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters);

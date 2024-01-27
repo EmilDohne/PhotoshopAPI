@@ -67,6 +67,7 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_ColorMode = document->m_Header.m_ColorMode;
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
+	m_Version = document->m_Header.m_Version;
 
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
 }
@@ -363,7 +364,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
 	auto layerRecordsIterator = layerRecords->rbegin();
 	auto channelImageDataIterator = channelImageData->rbegin();
-	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator, file->m_Header);
 
 	return root;
 }
@@ -376,7 +377,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	std::vector<LayerRecord>& layerRecords,
 	std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator
+	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
+	const FileHeader& header
 )
 {
 	std::vector<std::shared_ptr<Layer<T>>> root;
@@ -388,12 +390,12 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
-		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
+		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
 
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			// Recurse a level down
-			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
+			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header);
 			root.push_back(groupLayerPtr);
 		}
 		else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -451,7 +453,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData)
+std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
@@ -469,7 +471,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerR
 			{
 				return std::make_shared<ArtboardLayer<T>>();
 			}
-			return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData);
+			return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData, header);
 		}
 		else if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::BoundingSection)
 		{
@@ -568,7 +570,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerR
 		}
 	}
 
-	return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData);
+	return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData, header);
 }
 
 

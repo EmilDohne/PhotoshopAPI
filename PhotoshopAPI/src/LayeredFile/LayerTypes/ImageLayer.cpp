@@ -90,8 +90,8 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : 
-	Layer<T>(layerRecord, channelImageData)
+ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) :
+	Layer<T>(layerRecord, channelImageData, header)
 {
 	// Move the layers into our own layer representation
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)

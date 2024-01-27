@@ -142,7 +142,7 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
+GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) : Layer<T>(layerRecord, channelImageData, header)
 {
 	// Because Photoshop stores the Passthrough blend mode on the layer section divider tagged block we must check if it present here
 	if (!layerRecord.m_AdditionalLayerInfo.has_value()) return;

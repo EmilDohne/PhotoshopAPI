@@ -23,7 +23,7 @@ template struct Layer<float32_t>;
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData)
+Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
 	m_LayerName = layerRecord.m_LayerName.getString();
 	// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
@@ -43,10 +43,23 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 	m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
 	m_Opacity = layerRecord.m_Opacity;
+
+	// Generate our coordinates from the layer extents, for the x and y coordinates we calculate the offset of the centers
+	// and use that 
 	m_Width = layerRecord.m_Right - layerRecord.m_Left;
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
-	m_CenterX = layerRecord.m_Left + m_Width / 2;
-	m_CenterY = layerRecord.m_Top + m_Height / 2;
+
+	// Documents start at 0, 0 and goes to width, height
+	int32_t documentCenterX = header.m_Width / 2;
+	int32_t documentCenterY = header.m_Height / 2;
+
+	// Calculate our layer coordinates by adding half the width to the left
+	int32_t layerCenterX = layerRecord.m_Left + m_Width / 2;
+	int32_t layerCenterY = layerRecord.m_Top + m_Height / 2;
+
+	// Finally just calculate the difference between these two
+	m_CenterX = documentCenterX - layerCenterX;
+	m_CenterY = documentCenterY - layerCenterY;
 
 	// Move the layer mask into our layerMask struct, for now this only does pixel masks
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
@@ -192,10 +205,10 @@ std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents(const F
 	// Use our translated center variables to make Photoshop compliant coordinates. If the 
 	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
 
-	int32_t top		= translatedCenterX - m_Height / 2;
-	int32_t left	= translatedCenterY - m_Width / 2;
-	int32_t bottom	= translatedCenterX + m_Height / 2;
-	int32_t right	= translatedCenterY + m_Width / 2;
+	int32_t top		= translatedCenterY - m_Height / 2;
+	int32_t left	= translatedCenterX - m_Width / 2;
+	int32_t bottom	= translatedCenterY + m_Height / 2;
+	int32_t right	= translatedCenterX + m_Width / 2;
 
 	return std::make_tuple(top, left, bottom, right);
 }

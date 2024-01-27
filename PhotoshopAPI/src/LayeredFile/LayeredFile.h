@@ -114,14 +114,15 @@ namespace LayeredFileImpl
 		std::vector<LayerRecord>& layerRecords,
 		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator
+		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
+		const FileHeader& header
 	);
 
 	// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
 	// initialized with the given layer record and corresponding channel image data.
 	// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData);
+	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order
 	// is not guaranteed

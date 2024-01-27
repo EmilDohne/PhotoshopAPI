@@ -44,7 +44,7 @@ struct GroupLayer : public Layer<T>
 	// the whole layeredFile -> PhotoshopFile.
 	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header) override;
 
-	GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
+	GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	// Generate a Group Layer instance with the given layer parameters. isCollapsed specifies whether the group is to be shown as open or closed
 	GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed = false);

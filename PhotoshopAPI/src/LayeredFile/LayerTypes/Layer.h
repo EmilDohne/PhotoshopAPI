@@ -55,7 +55,7 @@ struct Layer
 	int32_t m_CenterY;
 
 	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
-	Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData);
+	Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	// Define a function for creating a PhotoshopFile from the layer. In the future the intention is to make this a pure virtual function
 	// but seeing as there are multiple miscellaneous layers not yet implemented for the initial release we have this function
