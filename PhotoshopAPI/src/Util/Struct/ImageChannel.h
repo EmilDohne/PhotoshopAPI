@@ -103,8 +103,8 @@ struct ImageChannel : public BaseImageChannel
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
 		// TODO set this to hardware concurrency?
-		cparams.nthreads = 4;
-		dparams.nthreads = 4;
+		cparams.nthreads = 1;
+		dparams.nthreads = 1;
 		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk

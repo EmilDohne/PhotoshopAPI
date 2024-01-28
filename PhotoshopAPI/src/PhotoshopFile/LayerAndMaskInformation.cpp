@@ -864,6 +864,12 @@ template <typename T>
 std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression)
 {
 	PROFILE_FUNCTION();
+
+	if (lrChannelInfo.size() != 0 || lrCompression.size() != 0) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("ChannelImage", "lrChannelInfo and lrCompression vectors must both be empty as allocation occurs in compressData()");
+	}
+
 	std::vector<std::vector<uint8_t>> compressedData;
 	compressedData.reserve(m_ImageData.size());
 
