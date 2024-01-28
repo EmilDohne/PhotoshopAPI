@@ -18,8 +18,14 @@ endif()
 project ("PhotoshopAPIBuild")
 
 
+# Add the cmake folder so the FindSphinx module is found
+# --------------------------------------------------------------------------
+set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+
+
 # Specify our own version of zlib-ng rather than the supplied one for blosc2.
 # Switch to the debug library if that is the build target
+# --------------------------------------------------------------------------
 set(PREFER_EXTERNAL_ZLIB ON)
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     set (ZLIB_NG_LIBRARY "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng/zlibstatic-ng.lib")
@@ -28,21 +34,41 @@ else()
 endif()
 set (ZLIB_NG_INCLUDE_DIR "${CMAKE_BINARY_DIR}/thirdparty/zlib-ng")
 
+
 # Add thirdparty libraries
+# --------------------------------------------------------------------------
+
+# Modify zlib-ng to only build libs
+set(ZLIB_ENABLE_TESTS OFF)
+set(ZLIBNG_ENABLE_TESTS OFF)
+set(WITH_GZFILEOP OFF)
 add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/zlib-ng" EXCLUDE_FROM_ALL)
+
+# Modify c-blosc2 to only build libs
+set(BUILD_TESTS OFF)
+set(BUILD_FUZZERS OFF)
+set(BUILD_BENCHMARKS OFF)
+set(BUILD_EXAMPLES OFF)
 add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2" EXCLUDE_FROM_ALL)
 
 # Include PhotoshopAPI sub-projects.
+# --------------------------------------------------------------------------
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
 
+# Add our documentation dir
+# --------------------------------------------------------------------------
+add_subdirectory ("${CMAKE_SOURCE_DIR}/docs/doxygen")
+
 # Add our Example directories
+# --------------------------------------------------------------------------
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateSimpleDocument")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateGroups")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/AddLayerMasks")
 add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/ModifyLayerStructure")
 
 # Set the test project (PhotoshopTest) as the default target
+# --------------------------------------------------------------------------
 add_custom_target(default_target ALL
     DEPENDS PhotoshopTest
     COMMENT "Building the default target: PhotoshopTest"
