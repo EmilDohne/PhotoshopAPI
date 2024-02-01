@@ -50,9 +50,30 @@ struct FixedFloat4
 	}
 
 	/// Get the Fixed Float4 as two uint16_t ready to be written out to disk
-	inline std::tuple<uint16_t, uint16_t> getNumbers() const
+	inline std::tuple<uint16_t, uint16_t> getNumbers()
 	{
-		return std::make_tuple<uint16_t, uint16_t>(m_Number, m_Fraction);
+		return std::make_tuple(m_Number, m_Fraction);
+	}
+
+	/// Override the *= operator as we need to multiply the FixedFloat4 sometimes
+	/// e.g. when converting from DPCM -> DPI. To achieve this we convert to and 
+	/// from float
+	inline FixedFloat4 operator*=(float other)
+	{
+		float floatNum = this->getFloat();
+		floatNum *= other;
+
+		if (floatNum > (std::numeric_limits<uint16_t>::max)()) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("FixedFloat4", "Input number cannot exceed 65536, got %f", floatNum);
+		}
+		// This will be truncated which is correct
+		m_Number = static_cast<uint16_t>(floatNum);
+
+		// Calculate the fractional component
+		float remainder = floatNum - m_Number;
+		remainder *= (std::numeric_limits<uint16_t>::max)();
+		m_Fraction = static_cast<uint16_t>(remainder);
 	}
 
 private:

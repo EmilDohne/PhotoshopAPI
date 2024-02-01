@@ -44,6 +44,13 @@ ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit 
 	m_DataSize = 16u;	// 8-bytes for each horizontal and vertical
 	m_Size = ResourceBlock::calculateSize();
 	
+	// Since Photoshop internally stores this as DPI either way we need to multiply the resolution by
+	// the conversion value of inch -> cm
+	if (resolutionUnit == Enum::ResolutionUnit::PixelsPerCm)
+	{
+		resolution *= 2.54;
+	}
+
 	m_HorizontalRes = { resolution };
 	m_HorizontalResUnit = resolutionUnit;
 	m_WidthUnit = displayUnit;
