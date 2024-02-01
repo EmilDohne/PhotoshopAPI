@@ -29,7 +29,7 @@ uint64_t ResourceBlock::calculateSize(std::shared_ptr<FileHeader> header /*= nul
 ResolutionInfoBlock::ResolutionInfoBlock()
 {
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
-	m_Name = {};
+	m_Name = {"", 2u};
 	m_DataSize = 16u;	// 8-bytes for each horizontal and vertical
 	m_Size = ResourceBlock::calculateSize();
 }
@@ -40,7 +40,7 @@ ResolutionInfoBlock::ResolutionInfoBlock()
 ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit resolutionUnit /*= Enum::ResolutionUnit::PixelsPerInch*/, Enum::DisplayUnit displayUnit /*= Enum::DisplayUnit::Cm*/)
 {
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
-	m_Name = {};
+	m_Name = { "", 2u };
 	m_DataSize = 16u;	// 8-bytes for each horizontal and vertical
 	m_Size = ResourceBlock::calculateSize();
 	
@@ -94,7 +94,7 @@ void ResolutionInfoBlock::write(File& document)
 {
 	PROFILE_FUNCTION();
 
-	Signature sig = Signature("8BPS");
+	Signature sig = Signature("8BIM");
 	WriteBinaryData<uint32_t>(document, sig.m_Value);
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
@@ -121,7 +121,7 @@ void ResolutionInfoBlock::write(File& document)
 ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 {
 	m_UniqueId = Enum::ImageResource::ICCProfile;
-	m_Name = {};
+	m_Name = { "", 2u };
 	m_DataSize = RoundUpToMultiple<uint32_t>(iccProfile.size(), 2u);
 	m_Size = ResourceBlock::calculateSize();
 
@@ -149,7 +149,7 @@ void ICCProfileBlock::write(File& document)
 {
 	PROFILE_FUNCTION();
 
-	Signature sig = Signature("8BPS");
+	Signature sig = Signature("8BIM");
 	WriteBinaryData<uint32_t>(document, sig.m_Value);
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
