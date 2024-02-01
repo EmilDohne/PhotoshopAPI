@@ -1,6 +1,4 @@
-﻿# CMakeList.txt : Top-level CMake project file, do global configuration
-# and include sub-projects here.
-#
+﻿# PhotoshopAPI Requires C++ 20
 cmake_minimum_required (VERSION 3.20)
 set (CMAKE_CXX_STANDARD 20)
 
@@ -15,13 +13,36 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
+# --------------------------------------------------------------------------
+# CMake Build Setup for the PhotoshopAPI
+# --------------------------------------------------------------------------
+#
+# A list of available options can be found below:
+#
+# PSAPI_BUILD_STATIC: default ON
+#   Build a static library version of the PhotoshopAPI
+# PSAPI_BUILD_TESTS: default ON
+#   Build the tests associated with the PhotoshopAPI
+# PSAPI_BUILD_EXAMPLES: default ON
+#   Build the examples associated with the PhotoshopAPI
+# PSAPI_BUILD_BENCHMARKS: default ON
+#   Build the benchmarks associated with the PhotoshopAPI
+# PSAPI_BUILD_DOCS: default ON
+#   Builds the documentation, requires some external installs which are documented in the README.md
+#
 project ("PhotoshopAPIBuild")
 
+# Initialize our options
+option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
+option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
 
-# Add the cmake folder so the FindSphinx module is found
+
+# Add the cmake/ folder so the FindSphinx module is found
 # --------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
 
 # Specify our own version of zlib-ng rather than the supplied one for blosc2.
 # Switch to the debug library if that is the build target
@@ -53,19 +74,28 @@ add_subdirectory ("${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2" EXCLUDE_FROM_ALL)
 
 # Include PhotoshopAPI sub-projects.
 # --------------------------------------------------------------------------
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
-
-# Add our documentation dir
-# --------------------------------------------------------------------------
-add_subdirectory ("${CMAKE_SOURCE_DIR}/docs/doxygen")
+if(PSAPI_BUILD_STATIC)
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopAPI")
+endif()
+if(PSAPI_BUILD_TESTS)
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
+endif()
 
 # Add our Example directories
 # --------------------------------------------------------------------------
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateSimpleDocument")
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateGroups")
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/AddLayerMasks")
-add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/ModifyLayerStructure")
+if(PSAPI_BUILD_EXAMPLES)
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateSimpleDocument")
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/CreateGroups")
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/AddLayerMasks")
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopExamples/ModifyLayerStructure")
+endif()
+
+# Add our documentation dir
+# --------------------------------------------------------------------------
+if(PSAPI_BUILD_DOCS)
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/docs/doxygen")
+endif()
+
 
 # Set the test project (PhotoshopTest) as the default target
 # --------------------------------------------------------------------------
