@@ -478,6 +478,11 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 template <typename T>
 std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
+	// Short ciruit here as we have an image layer for sure
+	if (!layerRecord.m_AdditionalLayerInfo.has_value())
+	{
+		return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData, header);
+	}
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
 	// Check for GroupLayer, ArtboardLayer or SectionDividerLayer

@@ -29,15 +29,23 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
 	// blendmode if it is present
 	{
-		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
-		auto sectionDivider = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
-		if (sectionDivider.has_value() && sectionDivider.value()->m_BlendMode.has_value())
+		// Short circuit if no additional layer info is present
+		if (!layerRecord.m_AdditionalLayerInfo.has_value())
 		{
-			m_BlendMode = sectionDivider.value()->m_BlendMode.value();
+			m_BlendMode = layerRecord.m_BlendMode;
 		}
 		else
 		{
-			m_BlendMode = layerRecord.m_BlendMode;
+			auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
+			auto sectionDivider = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
+			if (sectionDivider.has_value() && sectionDivider.value()->m_BlendMode.has_value())
+			{
+				m_BlendMode = sectionDivider.value()->m_BlendMode.value();
+			}
+			else
+			{
+				m_BlendMode = layerRecord.m_BlendMode;
+			}
 		}
 	}
 	// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
@@ -85,9 +93,9 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			// If no mask parameters are present we just use sensible defaults and skip
 			if (!layerRecord.m_LayerMaskData.has_value()) continue;
 			auto& maskParams = layerRecord.m_LayerMaskData.value();
-			if (!maskParams.m_LayerMask.has_value()) continue;
 
 			// Read the mask parameters
+			if (!maskParams.m_LayerMask.has_value()) continue;
 			auto& layerMaskParams = maskParams.m_LayerMask.value();
 
 			lrMask.isDisabled = layerMaskParams.m_Disabled;
