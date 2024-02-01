@@ -19,19 +19,27 @@ struct ImageResources : public FileSection
 {
 	/// We store our ResourceBlocks here, most of them we do not parse as they hold
 	/// irrelevant information to keep memory usage low
-	std::vector<ResourceBlock> m_ResourceBlocks;
+	std::vector<std::unique_ptr<ResourceBlock>> m_ResourceBlocks;
 
 	ImageResources() { m_Size = 4u; };
-	ImageResources(std::vector<ResourceBlock> resourceBlocks);
+	ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& resourceBlocks);
 
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read the ImageResources from disk, any ImageResources without an implementation 
-	/// are not parsed but stored as a generic ResourceBlock
+	/// are not parsed and skipped
 	void read(File& document, const uint64_t offset);
 
 	/// Write the ImageResources to disk using the given document
 	void write(File& document);
+
+private:
+	/// Parse a singular resource block, if the type is unkown to us we read until the size 
+	/// marker and skip it. Otherwise we push back into m_ResourceBlocks.
+	/// This function advances the File pointer
+	/// 
+	/// \return the amount of bytes read (the size of the block)
+	uint32_t parseResourceBlock(File& document);
 };
 
 

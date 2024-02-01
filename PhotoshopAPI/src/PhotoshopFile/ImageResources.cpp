@@ -25,9 +25,9 @@ uint64_t ImageResources::calculateSize(std::shared_ptr<FileHeader> header /*= nu
 	uint64_t size = 0u;
 	size += 4u;	// Size marker
 
-	for (const auto& resource : m_ResourceBlocks)
+	for (const auto& resourcePtr : m_ResourceBlocks)
 	{
-		size += resource.calculateSize();
+		size += resourcePtr->calculateSize();
 	}
 	return size;
 }
@@ -35,11 +35,11 @@ uint64_t ImageResources::calculateSize(std::shared_ptr<FileHeader> header /*= nu
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-ImageResources::ImageResources(std::vector<ResourceBlock> resourceBlocks)
+ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& resourceBlocks)
 {
 	// Resource blocks are usually trivially copyable so we dont really need to worry
 	// about moving here
-	m_ResourceBlocks = resourceBlocks;
+	m_ResourceBlocks = std::move(resourceBlocks);
 	m_Size = this->calculateSize();
 }
 
@@ -56,10 +56,9 @@ void ImageResources::read(File& document, const uint64_t offset)
 	uint32_t toRead = static_cast<uint32_t>(m_Size) - 4u;
 	while (toRead > 0)
 	{
-		ResourceBlock resource;
-		resource.read(document);
-		toRead -= resource.m_Size;
-		m_ResourceBlocks.emplace_back(resource);
+		// Parse the resource block which will only read blocks we 
+		// have a parser for and skip the rest.
+		toRead -= parseResourceBlock(document);
 	}
 }
 
@@ -69,12 +68,59 @@ void ImageResources::read(File& document, const uint64_t offset)
 void ImageResources::write(File& document)
 {
 	m_Offset = document.getOffset();
-	m_Size = RoundUpToMultiple<uint32_t>(m_Size - 4u, 2u) + 4u;
+	m_Size = RoundUpToMultiple<uint32_t>(m_Size, 2u);
 	WriteBinaryData<uint32_t>(document, m_Size - 4u);
 
-	for (auto& block : m_ResourceBlocks)
+	for (auto& blockPtr : m_ResourceBlocks)
 	{
-		block.write(document);
+		blockPtr->write(document);
+	}
+}
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+uint32_t ImageResources::parseResourceBlock(File& document)
+{
+	uint64_t blockOffset = document.getOffset();
+
+	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
+	if (signature != Signature("8BIM"))
+	{
+		PSAPI_LOG_ERROR("ResourceBlock", "Signature does not match '8BIM', got '%c%c%c%c' instead",
+			signature.m_Representation[0],
+			signature.m_Representation[1],
+			signature.m_Representation[2],
+			signature.m_Representation[3]);
+	}
+	auto uniqueID = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
+
+	// Add more resources here as we implement more
+	if (uniqueID == Enum::ImageResource::ResolutionInfo)
+	{
+		auto blockPtr = std::make_unique<ResolutionInfoBlock>();
+		blockPtr->read(document, blockOffset);
+		m_ResourceBlocks.emplace_back(blockPtr);
+		return blockPtr->m_Size;
+	}
+	else if (uniqueID == Enum::ImageResource::ICCProfile)
+	{
+		auto blockPtr = std::make_unique<ICCProfileBlock>();
+		blockPtr->read(document, blockOffset);
+		m_ResourceBlocks.emplace_back(blockPtr);
+		return blockPtr->m_Size;
+	}
+	else
+	{
+		// Skip the block
+		PascalString name;
+		name.read(document, 2u);
+		uint32_t dataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
+		document.skip(dataSize);
+		
+		// Calculate the size of the block and return it
+		uint32_t size = 4u + 2u + name.m_Size + 4u + dataSize;
+		return size;
 	}
 }
 
