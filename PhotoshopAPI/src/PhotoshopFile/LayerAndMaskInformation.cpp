@@ -1001,7 +1001,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ChannelImageData::write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression)
+void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& compressedChannelData, const std::vector<Enum::Compression>& channelCompression)
 {
 	m_ChannelOffsetsAndSizes = {};
 	for (int i = 0; i < compressedChannelData.size(); ++i)

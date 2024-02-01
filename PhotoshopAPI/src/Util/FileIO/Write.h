@@ -54,7 +54,7 @@ void WriteBinaryDataVariadic(File& document, TPsb data, Enum::Version version)
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
-void WriteBinaryArray(File& document, std::vector<T> data)
+void WriteBinaryArray(File& document, std::vector<T>& data)
 {
 	// Endian encode in-place
 	endianEncodeBEArray<T>(data);

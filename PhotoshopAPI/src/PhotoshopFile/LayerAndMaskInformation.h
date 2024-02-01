@@ -274,7 +274,7 @@ struct ChannelImageData : public FileSection
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 
 	/// Write a single layer to disk, there is no need to write to a preallocated buffer here as we compress ahead of time
-	void write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
+	void write(File& document, std::vector<std::vector<uint8_t>>& compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
 
 	/// Get an index to a specific channel based on the identifier
 	/// returns -1 if no matching channel is found
