@@ -5,8 +5,8 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// This struct holds no data, we just use it to identify its type
-// We could hold references here 
+/// This struct holds no data, we just use it to identify its type.
+/// We could hold references here 
 template <typename T>
 struct SmartObjectLayer : Layer<T>
 {
