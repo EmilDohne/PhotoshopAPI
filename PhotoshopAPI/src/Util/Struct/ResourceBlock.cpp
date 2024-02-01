@@ -24,48 +24,6 @@ uint64_t ResourceBlock::calculateSize(std::shared_ptr<FileHeader> header /*= nul
 }
 
 
-// Sequential Read of a single Image Resource Block, in its current state it just skips the 
-// data rather than parsing it.
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-void ResourceBlock::read(File& document)
-{
-	PROFILE_FUNCTION();
-	m_Offset = document.getOffset();
-
-	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
-	if (signature != Signature("8BIM"))
-	{
-		PSAPI_LOG_ERROR("ResourceBlock", "Signature does not match '8BIM', got '%c%c%c%c' instead",
-			signature.m_Representation[0],
-			signature.m_Representation[1],
-			signature.m_Representation[2],
-			signature.m_Representation[3]);
-	}
-	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
-	m_Name.read(document, 2u);
-	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
-	document.skip(m_DataSize);
-
-	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-void ResourceBlock::write(File& document)
-{
-	PROFILE_FUNCTION();
-
-	Signature sig = Signature("8BPS");
-	WriteBinaryData<uint32_t>(document, sig.m_Value);
-	
-	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
-	m_Name.write(document, 2u);
-	WriteBinaryData<uint32_t>(document, 0u);
-}
-
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 ResolutionInfoBlock::ResolutionInfoBlock()
@@ -98,21 +56,11 @@ ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ResolutionInfoBlock::read(File& document)
+void ResolutionInfoBlock::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	m_Offset = document.getOffset();
-
-	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
-	if (signature != Signature("8BIM"))
-	{
-		PSAPI_LOG_ERROR("ResourceBlock", "Signature does not match '8BIM', got '%c%c%c%c' instead",
-			signature.m_Representation[0],
-			signature.m_Representation[1],
-			signature.m_Representation[2],
-			signature.m_Representation[3]);
-	}
-	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
+	m_Offset = offset;
+	m_UniqueId = Enum::ImageResource::ResolutionInfo;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
 	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;
@@ -175,21 +123,11 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ICCProfileBlock::read(File& document)
+void ICCProfileBlock::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	m_Offset = document.getOffset();
-
-	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
-	if (signature != Signature("8BIM"))
-	{
-		PSAPI_LOG_ERROR("ResourceBlock", "Signature does not match '8BIM', got '%c%c%c%c' instead",
-			signature.m_Representation[0],
-			signature.m_Representation[1],
-			signature.m_Representation[2],
-			signature.m_Representation[3]);
-	}
-	m_UniqueId = Enum::intToImageResource(ReadBinaryData<uint16_t>(document));
+	m_Offset = offset;
+	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
 	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;

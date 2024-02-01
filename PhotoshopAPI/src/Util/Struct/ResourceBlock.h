@@ -30,8 +30,11 @@ struct ResourceBlock : public FileSection
 	// This calculates the size of m_Size only, not m_DataSize!
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
-	void read(File& document);
-	void write(File& document);
+	/// Force an override for the write function as we do not store
+	/// ResourceBlocks when roundtripping so we only have what we want here
+	virtual void write(File& document) = 0;
+
+	virtual ~ResourceBlock() = default;
 };
 
 
@@ -57,8 +60,8 @@ struct ResolutionInfoBlock : public ResourceBlock
 	ResolutionInfoBlock();
 	ResolutionInfoBlock(float resolution, Enum::ResolutionUnit resolutionUnit = Enum::ResolutionUnit::PixelsPerInch, Enum::DisplayUnit displayUnit = Enum::DisplayUnit::Cm);
 
-	void read(File& document);
-	void write(File& document);
+	void read(File& document, const uint64_t offset);
+	void write(File& document) override;
 };
 
 
@@ -73,9 +76,9 @@ struct ICCProfileBlock : public ResourceBlock
 	// We dont overwrite calculateSize here since we read m_DataSize which gives us all the info to know the size
 
 	ICCProfileBlock(std::vector<uint8_t>&& iccProfile);
-
-	void read(File& document);
-	void write(File& document);
+	 
+	void read(File& document, const uint64_t offset);
+	void write(File& document) override;
 };
 
 PSAPI_NAMESPACE_END
