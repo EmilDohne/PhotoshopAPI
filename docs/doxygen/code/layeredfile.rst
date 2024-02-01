@@ -95,6 +95,13 @@ Conversion Functions
 
 .. doxygenfunction:: LayeredToPhotoshopFile
 
+ICC Profile Struct
+--------------------
+
+.. doxygenstruct:: ICCProfile
+	:members:
+
+
 LayeredFile Struct
 ------------------
 
