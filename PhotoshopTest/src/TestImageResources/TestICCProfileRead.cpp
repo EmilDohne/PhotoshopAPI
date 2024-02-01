@@ -22,7 +22,7 @@ TEST_CASE("Read AdobeRGB1998")
 	std::filesystem::path icc_path = std::filesystem::current_path();
 	icc_path += "\\documents\\ICCProfiles\\AdobeRGB1998.icc";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
@@ -48,7 +48,7 @@ TEST_CASE("Read AppleRGB")
 	std::filesystem::path icc_path = std::filesystem::current_path();
 	icc_path += "\\documents\\ICCProfiles\\AppleRGB.icc";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
@@ -74,7 +74,7 @@ TEST_CASE("Read CIERGB")
 	std::filesystem::path icc_path = std::filesystem::current_path();
 	icc_path += "\\documents\\ICCProfiles\\CIERGB.icc";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };

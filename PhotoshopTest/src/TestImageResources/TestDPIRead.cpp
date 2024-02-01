@@ -13,7 +13,7 @@ TEST_CASE("Read 300 DPI")
 	std::filesystem::path psb_path = std::filesystem::current_path();
 	psb_path += "\\documents\\DPI\\300dpi.psd";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
@@ -31,7 +31,7 @@ TEST_CASE("Read 300.5 DPI")
 	std::filesystem::path psb_path = std::filesystem::current_path();
 	psb_path += "\\documents\\DPI\\300_point_5_dpi.psd";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
@@ -49,7 +49,7 @@ TEST_CASE("Read 700 DPI")
 	std::filesystem::path psb_path = std::filesystem::current_path();
 	psb_path += "\\documents\\DPI\\700dpi.psd";
 
-	auto inputFile = PhotoshopAPI::File(psb_path);
+	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 	psDocumentPtr->read(inputFile);
 	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
