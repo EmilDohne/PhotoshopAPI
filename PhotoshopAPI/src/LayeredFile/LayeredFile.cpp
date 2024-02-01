@@ -23,6 +23,7 @@
 #include <span>
 #include <variant>
 #include <memory>
+#include <filesystem>
 #include <algorithm>
 
 
@@ -38,6 +39,22 @@ template struct LayeredFile<float32_t>;
 template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint8_t>(LayeredFile<uint8_t>&& layeredFile);
 template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint16_t>(LayeredFile<uint16_t>&& layeredFile);
 template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<float32_t>(LayeredFile<float32_t>&& layeredFile);
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ICCProfile::ICCProfile(const std::filesystem::path& pathToICCFile)
+{
+	if (pathToICCFile.extension() != ".icc") [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("ICCProfile", "Must pass a valid .icc file into the ctor. Got a %s", pathToICCFile.extension().string().c_str());
+	}
+	// Open a File object and read the raw bytes of the ICC file
+	File iccFile = { pathToICCFile };
+	m_Data = ReadBinaryArray<uint8_t>(iccFile, iccFile.getSize());
+}
+
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -68,6 +85,12 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
 	m_Version = document->m_Header.m_Version;
+
+	// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
+	m_ICCProfile = LayeredFileImpl::readICCProfile(document.get());
+
+	// Extract the DPI from the document, default to 72
+	m_DotsPerInch = LayeredFileImpl::readDPI(document.get());
 
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
 }
@@ -686,5 +709,32 @@ bool LayeredFileImpl::removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, 
 }
 
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ICCProfile LayeredFileImpl::readICCProfile(const PhotoshopFile* file)
+{
+	const auto blockPtr = file->m_ImageResources.getResourceBlockView<ICCProfileBlock>(Enum::ImageResource::ICCProfile);
+	if (blockPtr)
+	{
+		return ICCProfile{ blockPtr->m_RawICCProfile };
+	}
+	return ICCProfile{};
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+float LayeredFileImpl::readDPI(const PhotoshopFile* file)
+{
+	const auto blockPtr = file->m_ImageResources.getResourceBlockView<ResolutionInfoBlock>(Enum::ImageResource::ResolutionInfo);
+	if (blockPtr)
+	{
+		// We dont actually have to do any back and forth conversions here since the value is always stored as DPI and never as 
+		// DPCM
+		return blockPtr->m_HorizontalRes.getFloat();
+	}
+	return 72.0f;
+}
 
 PSAPI_NAMESPACE_END
