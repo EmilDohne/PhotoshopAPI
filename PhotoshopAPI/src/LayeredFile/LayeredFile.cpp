@@ -193,6 +193,38 @@ void LayeredFile<T>::moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+void LayeredFile<T>::moveLayer(const std::string layer, const std::string parentLayer /* = "" */)
+{
+	PROFILE_FUNCTION();
+	if (parentLayer == "")
+	{
+		auto layerPtr = findLayer(layer);
+		if (!layerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+		}
+		moveLayer(layerPtr);
+	}
+	else
+	{
+		auto layerPtr = findLayer(layer);
+		auto parentLayerPtr = findLayer(parentLayer);
+		if (!layerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+		}
+		if (!parentLayerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the parentlayer %s for moveLayer()", parentLayer.c_str());
+		}
+		moveLayer(layerPtr, parentLayerPtr);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
 {
 	PROFILE_FUNCTION();
@@ -213,6 +245,21 @@ void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
 		}
 		++index;
 	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::removeLayer(const std::string layer)
+{
+	PROFILE_FUNCTION();
+	auto layerPtr = findLayer(layer);
+	if (!layerPtr) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for removeLayer()", layer.c_str());
+	}
+	moveLayer(layerPtr);
 }
 
 

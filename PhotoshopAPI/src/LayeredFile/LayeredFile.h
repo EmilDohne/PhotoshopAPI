@@ -119,12 +119,29 @@ struct LayeredFile
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
 	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr);
 
+	/// \brief Moves a layer from its current parent to a new parent node.
+	///
+	/// If no parentLayer is provided, moves the layer to the root. If the parentLayer is found to be under
+	/// the layer it will issue a warning and stop the insertion. I.e. if moving "/Group" to "/Group/GroupNested/"
+	/// that would be an illegal move operation as well as moving a layer to itself
+	///
+	/// \param layer The layer to be moved.
+	/// \param parentLayer The new parent layer (if not provided, moves to the root).
+	void moveLayer(const std::string layer, const std::string parentLayer = "");
+
 	/// \brief Recursively removes a layer from the layer structure.
 	///
 	/// Iterates the layer structure until the given node is found and then removes it from the tree.
 	///
 	/// \param layer The layer to be removed.
 	void removeLayer(std::shared_ptr<Layer<T>> layer);
+
+	/// \brief Recursively removes a layer from the layer structure.
+	///
+	/// Iterates the layer structure until the given node is found and then removes it from the tree.
+	///
+	/// \param layer The layer to be removed.
+	void removeLayer(const std::string layer);
 	
 	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
 	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
