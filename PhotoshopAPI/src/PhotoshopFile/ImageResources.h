@@ -25,6 +25,11 @@ struct ImageResources : public FileSection
 	ImageResources() { m_Size = 4u; };
 	ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& resourceBlocks);
 
+	ImageResources(const ImageResources&) = delete;
+	ImageResources(ImageResources&&) = default;
+	ImageResources& operator=(const ImageResources&) = delete;
+	ImageResources& operator=(ImageResources&&) = default;
+
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read the ImageResources from disk, any ImageResources without an implementation 
@@ -39,7 +44,17 @@ struct ImageResources : public FileSection
 	/// \return a non owning ptr to the block or nullptr if the resource block is not found
 	template <typename T>
 	requires std::is_base_of_v<ResourceBlock, T>
-	const T* getResourceBlockView(const Enum::ImageResource key) const;
+	const T* getResourceBlockView(const Enum::ImageResource key) const
+	{
+		for (const auto& blockPtr : m_ResourceBlocks)
+		{
+			if (blockPtr->m_UniqueId == key)
+			{
+				return dynamic_cast<const T*>(blockPtr.get());
+			}
+		}
+		return nullptr;
+	}
 
 private:
 	/// Parse a singular resource block, if the type is unkown to us we read until the size 

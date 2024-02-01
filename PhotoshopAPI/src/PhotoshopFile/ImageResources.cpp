@@ -80,22 +80,6 @@ void ImageResources::write(File& document)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-template <typename T>
-requires std::is_base_of_v<ResourceBlock, T>
-const T* ImageResources::getResourceBlockView(const Enum::ImageResource key) const
-{
-	for (const auto& blockPtr : m_ResourceBlocks)
-	{
-		if (blockPtr->m_UniqueId == key)
-		{
-			return dynamic_cast<const T*>(blockPtr);
-		}
-	}
-}
-
-
-// --------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------
 uint32_t ImageResources::parseResourceBlock(File& document)
 {
 	uint64_t blockOffset = document.getOffset();
@@ -116,15 +100,17 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 	{
 		auto blockPtr = std::make_unique<ResolutionInfoBlock>();
 		blockPtr->read(document, blockOffset);
-		m_ResourceBlocks.emplace_back(blockPtr);
-		return blockPtr->m_Size;
+		uint32_t blockSize = blockPtr->m_Size;
+		m_ResourceBlocks.emplace_back(std::move(blockPtr));
+		return blockSize;
 	}
 	else if (uniqueID == Enum::ImageResource::ICCProfile)
 	{
 		auto blockPtr = std::make_unique<ICCProfileBlock>();
 		blockPtr->read(document, blockOffset);
-		m_ResourceBlocks.emplace_back(blockPtr);
-		return blockPtr->m_Size;
+		uint32_t blockSize = blockPtr->m_Size;
+		m_ResourceBlocks.emplace_back(std::move(blockPtr));
+		return blockSize;
 	}
 	else
 	{

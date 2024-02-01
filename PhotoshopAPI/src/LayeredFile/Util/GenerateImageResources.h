@@ -16,7 +16,7 @@ template <typename T>
 ImageResources generateImageResources(LayeredFile<T>& layeredFile)
 {
 	// Currently there is only 2 Image Resources we parse which is either an ICC profile or DPI
-	std::vector<std::unique_ptr<ImageResource>> blockVec;
+	std::vector<std::unique_ptr<ResourceBlock>> blockVec;
 
 	// Only store the ICC Profile if we actually have data stored on it
 	if (layeredFile.m_ICCProfile.getDataSize() > 0)

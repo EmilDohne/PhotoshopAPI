@@ -59,10 +59,10 @@ struct ICCProfile
 	ICCProfile(const std::filesystem::path& pathToICCFile);
 
 	/// Return a copy of the ICC profile data
-	std::vector<uint8_t> getData() const noexcept;
+	std::vector<uint8_t> getData() const noexcept { return m_Data; };
 
 	/// Return the absolute size of the data
-	uint32_t getDataSize() const noexcept { return m_Data.size() };
+	uint32_t getDataSize() const noexcept { return m_Data.size(); };
 
 private:
 	std::vector<uint8_t> m_Data;

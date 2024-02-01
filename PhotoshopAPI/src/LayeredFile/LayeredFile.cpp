@@ -68,7 +68,7 @@ std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFi
 	ImageResources imageResources = generateImageResources<T>(layeredFile);
 	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
 
-	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
+	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo));
 }
 
 

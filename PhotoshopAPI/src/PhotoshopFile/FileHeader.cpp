@@ -137,7 +137,7 @@ void FileHeader::write(File& document)
 	}
 
 	// Filler bytes, must be explicitly set them to 0
-	WriteBinaryArray<uint8_t>(document, std::vector<uint8_t>(6u, 0u));
+	WritePadddingBytes(document, 6u);
 
 	WriteBinaryData<uint16_t>(document, m_NumChannels);
 

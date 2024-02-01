@@ -35,8 +35,8 @@ struct PhotoshopFile
 	PhotoshopFile() = default;
 
 	/// \brief Initialize a PhotoshopFile struct from the individual sections
-	PhotoshopFile(FileHeader header, ColorModeData colorModeData, ImageResources imageResources, LayerAndMaskInformation layerMaskInfo) :
-		m_Header(header), m_ColorModeData(colorModeData), m_ImageResources(imageResources), m_LayerMaskInfo(std::move(layerMaskInfo)) {}
+	PhotoshopFile(FileHeader header, ColorModeData colorModeData, ImageResources&& imageResources, LayerAndMaskInformation&& layerMaskInfo) :
+		m_Header(header), m_ColorModeData(colorModeData), m_ImageResources(std::move(imageResources)), m_LayerMaskInfo(std::move(layerMaskInfo)) {}
 
 	/// \brief Read and Initialize this struct from a File
 	///
