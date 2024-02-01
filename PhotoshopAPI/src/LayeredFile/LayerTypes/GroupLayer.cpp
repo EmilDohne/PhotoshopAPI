@@ -3,6 +3,7 @@
 #include "Macros.h"
 #include "Struct/TaggedBlock.h"
 #include "Struct/TaggedBlockStorage.h"
+#include "LayeredFile/LayeredFile.h"
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -12,6 +13,54 @@ PSAPI_NAMESPACE_BEGIN
 template struct GroupLayer<uint8_t>;
 template struct GroupLayer<uint16_t>;
 template struct GroupLayer<float32_t>;
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void GroupLayer<T>::addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
+{
+	if (layeredFile.isLayerInDocument(layer))
+	{
+		PSAPI_LOG_WARNING("GroupLayer", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+		return;
+	}
+	m_Layers.push_back(layer);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void GroupLayer<T>::removeLayer(const int index)
+{
+	if (index >= m_Layers.size())
+	{
+		PSAPI_LOG_WARNING("GroupLayer", "Cannot remove index %i from the group as it would exceed the amount of layers in the group", index);
+		return;
+	}
+	m_Layers.erase(m_Layers.begin() + index);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void GroupLayer<T>::removeLayer(std::shared_ptr<Layer<T>>& layer)
+{
+	int index = 0;
+	for (auto& sceneLayer : m_Layers)
+	{
+		if (layer == sceneLayer)
+		{
+			m_Layers.erase(m_Layers.begin() + index);
+			return;
+		}
+		++index;
+	}
+	PSAPI_LOG_WARNING("GroupLayer", "Cannot remove layer %s from the group as it doesnt appear to be a child of the group", layer->m_LayerName.c_str());
+}
+
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -93,7 +142,7 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : Layer<T>(layerRecord, channelImageData)
+GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) : Layer<T>(layerRecord, channelImageData, header)
 {
 	// Because Photoshop stores the Passthrough blend mode on the layer section divider tagged block we must check if it present here
 	if (!layerRecord.m_AdditionalLayerInfo.has_value()) return;
@@ -147,5 +196,32 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 	return lrInfo;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
+{
+	PROFILE_FUNCTION();
+	Layer<T>::m_LayerName = layerParameters.layerName;
+	Layer<T>::m_BlendMode = layerParameters.blendMode;
+	Layer<T>::m_Opacity = layerParameters.opacity;
+	Layer<T>::m_IsVisible = true;
+	Layer<T>::m_CenterX = layerParameters.posX;
+	Layer<T>::m_CenterY = layerParameters.posY;
+	Layer<T>::m_Width = layerParameters.width;
+	Layer<T>::m_Height = layerParameters.height;
+
+
+	// Set the layer mask if present
+	if (layerParameters.layerMask.has_value())
+	{
+		LayerMask<T> mask{};
+		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		mask.maskData = std::move(maskChannel);
+		Layer<T>::m_LayerMask = mask;
+	}
+}
 
 PSAPI_NAMESPACE_END

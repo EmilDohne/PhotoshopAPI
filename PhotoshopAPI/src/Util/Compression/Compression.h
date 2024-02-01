@@ -9,6 +9,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 
 
+#include <type_traits>
 #include <vector>
 
 
@@ -51,10 +52,9 @@ inline std::vector<T> DecompressData(ByteStream& stream, uint64_t offset, const 
 template <typename T>
 inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
-	// Perform the endian decoding in-place first as this step needs to happen before compressing either way
-	endianDecodeBEArray<T>(uncompressedIn);
 	if (compression == Enum::Compression::Raw)
 	{
+		endianEncodeBEArray(uncompressedIn);
 		std::vector<uint8_t> data(uncompressedIn.size() * sizeof(T));
 		std::memcpy(reinterpret_cast<void*>(data.data()), reinterpret_cast<void*>(uncompressedIn.data()), data.size());
 		return data;

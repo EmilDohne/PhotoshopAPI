@@ -1,6 +1,7 @@
 #include "FileHeader.h"
 
 #include "Macros.h"
+#include "Logger.h"
 #include "FileIO/Read.h"
 #include "FileIO/Write.h"
 
@@ -116,9 +117,24 @@ void FileHeader::write(File& document)
 
 	// Write the signature, must be 8BPS
 	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
-	
-	std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, m_Version);
-	WriteBinaryData<uint16_t>(document, versionVal.value());
+
+	// We automatically detect and write the version based on which extension our document has for simplicity's sake
+	auto filePath = document.getPath();
+	auto extension = filePath.extension();
+	if (extension == ".psb")
+	{
+		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psb);
+		WriteBinaryData<uint16_t>(document, versionVal.value());
+	}
+	else if (extension == ".psd")
+	{
+		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psd);
+		WriteBinaryData<uint16_t>(document, versionVal.value());
+	}
+	else [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("FileHeader", "Unable to deduce header version from extension, expected '.psb' or '.psd' but instead got %s", extension.string().c_str());
+	}
 
 	// Filler bytes, must be explicitly set them to 0
 	WriteBinaryArray<uint8_t>(document, std::vector<uint8_t>(6u, 0u));

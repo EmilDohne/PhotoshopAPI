@@ -222,18 +222,30 @@ namespace Enum
 	// --------------------------------------------------------------------------------
 	enum class ChannelID
 	{
-		Red,		// Channel 0 in RGB Mode
-		Green,		// Channel 1 in RGB Mode
-		Blue,		// Channel 2 in RGB Mode
-		Cyan,		// Channel 0 in CMYK Mode
-		Magenta,	// Channel 1 in CMYK Mode
-		Yellow,		// Channel 2 in CMYK Mode
-		Black,		// Channel 3 in CMYK Mode
-		Gray,		// Channel 0 in Grayscale Mode
-		Custom,		// Any other channel
-		Alpha,		// Alpha Channel
-		UserSuppliedLayerMask,		// Pixel Mask or Vector Mask
-		RealUserSuppliedLayerMask,	// Vector and Pixel mask combined
+		/// Channel 0 in RGB Mode
+		Red,
+		/// Channel 1 in RGB Mode
+		Green,
+		/// Channel 2 in RGB Mode
+		Blue,
+		/// Channel 0 in CMYK Mode
+		Cyan,		
+		/// Channel 1 in CMYK Mode
+		Magenta,	
+		/// Channel 2 in CMYK Mode
+		Yellow,		
+		/// Channel 3 in CMYK Mode
+		Black,	
+		/// Channel 0 in Grayscale Mode
+		Gray,		
+		/// Any other channel
+		Custom,		
+		/// Alpha Channel
+		Alpha,		
+		/// Pixel Mask or Vector Mask
+		UserSuppliedLayerMask,		
+		/// Vector and Pixel mask combined
+		RealUserSuppliedLayerMask,	
 
 	};
 
@@ -346,11 +358,12 @@ namespace Enum
 	}
 
 
-	// Blend mode information
+	// This Enum represents an exact mapping of all of Photoshop blendmodes
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	enum class BlendMode
 	{
+		/// Only available on group layers
 		Passthrough,
 		Normal,
 		Dissolve,
@@ -639,10 +652,14 @@ namespace Enum
 {
 	enum class Compression
 	{
+		/// Raw bytes with no compression
 		Raw,
-		Rle,			// Run-length encoded data using the PackBits algorithm
-		Zip,			// Regular ZIP compression
-		ZipPrediction	// ZIP compression where 
+		/// Run-length encoded data using the PackBits algorithm
+		Rle,
+		/// Regular ZIP compression
+		Zip,
+		/// ZIP compression with the difference encoded per scanline
+		ZipPrediction	
 	};
 
 

@@ -96,13 +96,13 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-File::File(const std::filesystem::path& file, const bool doRead, const bool forceOverwrite)
+File::File(const std::filesystem::path& file, const FileParams& params)
 {
 	m_Offset = 0;
 	m_Size = 0;
 
 	// Check if the file exists and otherwise create it
-	if (doRead == true)
+	if (params.doRead == true)
 	{
 		if (std::filesystem::exists(file))
 		{
@@ -117,7 +117,7 @@ File::File(const std::filesystem::path& file, const bool doRead, const bool forc
 	{
 		if (std::filesystem::exists(file))
 		{
-			if (forceOverwrite)
+			if (params.forceOverwrite)
 			{
 				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
 				std::filesystem::remove(file);
@@ -144,6 +144,8 @@ File::File(const std::filesystem::path& file, const bool doRead, const bool forc
 		// Handle file open error
 		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.string().c_str());
 	}
+
+	m_FilePath = file;
 }
 
 

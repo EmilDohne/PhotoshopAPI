@@ -19,7 +19,6 @@
 #include "LayeredFile/Util/GenerateImageResources.h"
 #include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 
-
 #include <vector>
 #include <span>
 #include <variant>
@@ -35,26 +34,24 @@ template struct LayeredFile<uint16_t>;
 template struct LayeredFile<float32_t>;
 
 
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
-std::unique_ptr<PhotoshopFile> LayeredFile<T>::toPhotoshopFile()
-{
-	FileHeader header = generateHeader<T>(*this);
-	ColorModeData colorModeData = generateColorModeData<T>(*this);
-	ImageResources imageResources = generateImageResources<T>(*this);
-	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(*this, header);
-
- 	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
-}
+// Instantiate the template types for LayeredToPhotoshopFile
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint8_t>(LayeredFile<uint8_t>&& layeredFile);
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint16_t>(LayeredFile<uint16_t>&& layeredFile);
+template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<float32_t>(LayeredFile<float32_t>&& layeredFile);
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile)
 {
-	m_Layers.push_back(layer);
+	PROFILE_FUNCTION();
+	FileHeader header = generateHeader<T>(layeredFile);
+	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
+	ImageResources imageResources = generateImageResources<T>(layeredFile);
+	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
+
+	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
 }
 
 
@@ -70,6 +67,7 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_ColorMode = document->m_Header.m_ColorMode;
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
+	m_Version = document->m_Header.m_Version;
 
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
 }
@@ -116,6 +114,7 @@ LayeredFile<T>::LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t 
 template <typename T>
 std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 {
+	PROFILE_FUNCTION();
 	std::vector<std::string> segments = splitString(path, '/');
 	for (const auto layer : m_Layers)
 	{
@@ -133,6 +132,87 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 	}
 	PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
 	return nullptr;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::addLayer(std::shared_ptr<Layer<T>> layer)
+{
+	if (isLayerInDocument(layer))
+	{
+		PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+		return;
+	}
+	m_Layers.push_back(layer);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer /*= nullptr */)
+{
+	PROFILE_FUNCTION();
+	// We must first check that we are not trying to move a layer higher in the hierarchy to lower in the hierarchy 
+	// as that would be undefined behaviour. E.g. if we want to move /Group/ to /Group/NestedGroup that wouldnt work
+	// since the down stream nodes are dependant on the upstream nodes
+	if (parentLayer && isMovingToInvalidHierarchy(layer, parentLayer))
+	{
+		PSAPI_LOG_WARNING("LayeredFile", "Cannot move layer '%s' under '%s' as that would represent an illegal move operation",
+			layer->m_LayerName.c_str(), parentLayer->m_LayerName.c_str());
+		return;
+	}
+
+
+	// First we must remove the layer from the hierarchy and then reappend it in a different place
+	removeLayer(layer);
+
+	// Insert the layer back, either under the provided parent layer or under the scene root
+	if (parentLayer)
+	{
+		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+		{
+			groupLayerPtr->addLayer(*this, layer);
+		}
+		else
+		{
+			PSAPI_LOG_WARNING("LayeredFile", "Parent layer '%s' provided is not a group layer, can only move layers under groups", 
+				parentLayer->m_LayerName.c_str());
+			return;
+		}
+	}
+	else
+	{
+		addLayer(layer);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
+{
+	PROFILE_FUNCTION();
+	int index = 0;
+	for (auto& sceneLayer : m_Layers)
+	{
+		// Check if the layers directly in the scene root is the layer we are looking for and remove the layer if that is the case 
+		if (sceneLayer == layer)
+		{
+			m_Layers.erase(m_Layers.begin() + index);
+			return;
+		}
+
+		// Recurse down and short circuit if we find a match
+		if (LayeredFileImpl::removeLayerRecurse(sceneLayer, layer))
+		{
+			return;
+		}
+		++index;
+	}
 }
 
 
@@ -197,6 +277,44 @@ uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const
+{
+	PROFILE_FUNCTION();
+	for (const auto& documentLayer : m_Layers)
+	{
+		if (documentLayer == layer)
+		{
+			return true;
+		}
+		if (LayeredFileImpl::isLayerInDocumentRecurse(documentLayer, layer))
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFile<T>::isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer)
+{
+	// Check if the layer would be moving to one of its descendants which is illegal. Therefore the argument order is reversed
+	bool isDescendantOf = LayeredFileImpl::isLayerInDocumentRecurse(parentLayer, layer);
+	// We additionally check if the layer is the same as the parent layer as that would also not be allowed
+	return isDescendantOf || layer == parentLayer;
+}
+
+
+// LayeredFileImpl
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file)
 {
 	auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
@@ -246,7 +364,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchy(std:
 	// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
 	auto layerRecordsIterator = layerRecords->rbegin();
 	auto channelImageDataIterator = channelImageData->rbegin();
-	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator);
+	std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator, file->m_Header);
 
 	return root;
 }
@@ -259,7 +377,8 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	std::vector<LayerRecord>& layerRecords,
 	std::vector<ChannelImageData>& channelImageData,
 	std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator
+	std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
+	const FileHeader& header
 )
 {
 	std::vector<std::shared_ptr<Layer<T>>> root;
@@ -271,12 +390,12 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
-		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage);
+		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
 
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
 			// Recurse a level down
-			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator);
+			groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header);
 			root.push_back(groupLayerPtr);
 		}
 		else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -334,7 +453,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData)
+std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
@@ -352,7 +471,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerR
 			{
 				return std::make_shared<ArtboardLayer<T>>();
 			}
-			return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData);
+			return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData, header);
 		}
 		else if (sectionDividerTaggedBlock.value()->m_Type == Enum::SectionDivider::BoundingSection)
 		{
@@ -451,7 +570,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerR
 		}
 	}
 
-	return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData);
+	return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData, header);
 }
 
 
@@ -516,6 +635,55 @@ void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLaye
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFileImpl::isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer)
+{
+	// We must first check that the parent layer passed in is actually a group layer
+	if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
+	{
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			if (layerPtr == layer)
+			{
+				return true;
+			}
+			if (isLayerInDocumentRecurse(layerPtr, layer))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+bool LayeredFileImpl::removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer)
+{
+	// We must first check that the parent layer passed in is actually a group layer
+	if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+	{
+		int index = 0;
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			if (layerPtr == layer)
+			{
+				groupLayerPtr->removeLayer(index);
+				return true;
+			}
+			if (removeLayerRecurse(layerPtr, layer))
+			{
+				return true;
+			}
+			++index;
+		}
+	}
+	return false;
+}
 
 
 

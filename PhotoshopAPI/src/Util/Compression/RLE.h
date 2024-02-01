@@ -288,4 +288,81 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
     return compressedData;
 }
 
+
+
+// Compress a channel of the ImageData section at the end of the file using PackBits and storing the size of the individual scanlines 
+// in the scanlineSizes parameter. 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
+{
+	endianEncodeBEArray(uncompressedData);
+
+	std::vector<std::span<uint8_t>> uncompressedDataViews;
+	for (int i = 0; i < height; ++i)
+	{
+		// Generate a span for each scanline
+		std::span<uint8_t> data(reinterpret_cast<uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));
+		uncompressedDataViews.push_back(data);
+	}
+
+	std::vector<uint8_t> compressedData = {};
+	// Compress each scanline of the uncompressed data individually and push it into the compressed data
+	// While also filling out the scanlineSizes vector
+	for (int i = 0; i < uncompressedDataViews.size(); ++i)
+	{
+		uint32_t scanlineSize = 0u;
+		std::vector<uint8_t> data = CompressPackBits(uncompressedDataViews[i], scanlineSize);
+
+        if (scanlineSize > (std::numeric_limits<uint16_t>::max)()) [[unlikely]]
+        {
+            PSAPI_LOG_ERROR("CompressRLE", "Scanline size would exceed the size of a uint16_t, this is not valid");
+        }
+        scanlineSizes.push_back(static_cast<uint16_t>(scanlineSize));
+
+		// Since our compressed data has the scanline sizes preallocated we can just insert at the end and that will be correct
+		compressedData.insert(std::end(compressedData), std::begin(data), std::end(data));
+	}
+
+	return compressedData;
+}
+
+
+
+// Compress a channel of the ImageData section at the end of the file using PackBits and storing the size of the individual scanlines 
+// in the scanlineSizes parameter. 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template<typename T>
+std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
+{
+	endianEncodeBEArray(uncompressedData);
+
+	std::vector<std::span<uint8_t>> uncompressedDataViews;
+	for (int i = 0; i < height; ++i)
+	{
+		// Generate a span for each scanline
+		std::span<uint8_t> data(reinterpret_cast<uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));
+		uncompressedDataViews.push_back(data);
+	}
+
+    std::vector<uint8_t> compressedData = {};
+	// Compress each scanline of the uncompressed data individually and push it into the compressed data
+	// While also filling out the scanlineSizes vector
+	for (int i = 0; i < uncompressedDataViews.size(); ++i)
+	{
+		uint32_t scanlineSize = 0u;
+		std::vector<uint8_t> data = CompressPackBits(uncompressedDataViews[i], scanlineSize);
+
+		scanlineSizes.push_back(scanlineSize);
+
+		// Since our compressed data has the scanline sizes preallocated we can just insert at the end and that will be correct
+		compressedData.insert(std::end(compressedData), std::begin(data), std::end(data));
+	}
+
+	return compressedData;
+}
+
+
 PSAPI_NAMESPACE_END

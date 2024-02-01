@@ -5,7 +5,7 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// This struct holds no data, we just use it to identify its type
+/// This struct holds no data, we just use it to identify its type
 template <typename T>
 struct TextLayer : Layer<T>
 {

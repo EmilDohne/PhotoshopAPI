@@ -864,6 +864,12 @@ template <typename T>
 std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression)
 {
 	PROFILE_FUNCTION();
+
+	if (lrChannelInfo.size() != 0 || lrCompression.size() != 0) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("ChannelImage", "lrChannelInfo and lrCompression vectors must both be empty as allocation occurs in compressData()");
+	}
+
 	std::vector<std::vector<uint8_t>> compressedData;
 	compressedData.reserve(m_ImageData.size());
 
@@ -873,7 +879,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
 		if (imageChannelPtr == nullptr) [[unlikely]]
 		{
-				PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
+			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
 			auto emptyVec = std::vector<std::vector<uint8_t>>();
 			return emptyVec;
 		}
@@ -884,8 +890,16 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		{
 			const auto& width = imageChannel->getWidth();
 			const auto& height = imageChannel->getHeight();
-			const auto& compressionMode = imageChannel->m_Compression;
+			auto& compressionMode = imageChannel->m_Compression;
 			const auto& channelIdx = imageChannel->m_ChannelID;
+
+			// In 32-bit mode Photoshop insists on the data being prediction encoded even if the compression mode is set to zip
+			// to probably get better compression. We warn the user of this and switch to ZipPrediction
+			if (std::is_same_v<T, float32_t> && compressionMode == Enum::Compression::Zip)
+			{
+				PSAPI_LOG("ChannelImageData", "Photoshop insists on ZipPrediction encoded data rather than Zip for 32-bit, switching to ZipPrediction");
+				compressionMode = Enum::Compression::ZipPrediction;
+			}
 
 			// Compress the image data into a binary array and store it in our compressedData vec
 			std::vector<T> imgData = imageChannel->getData();
@@ -955,32 +969,32 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 					centerY = mask.m_Top + height / 2;
 				}
 			}
-      // Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
-      uint16_t compressionNum = 0;
-      stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
-      compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
-      Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
-      m_ChannelCompression[index] = channelCompression;
-      m_Size += channel.m_Size;
+			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
+			uint16_t compressionNum = 0;
+			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
+			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
+			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
+			m_ChannelCompression[index] = channelCompression;
+			m_Size += channel.m_Size;
 
-      if (header.m_Depth == Enum::BitDepth::BD_8)
-      {
-					std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-					std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
-          m_ImageData[index] = std::move(channelPtr);
-      }
-      else if (header.m_Depth == Enum::BitDepth::BD_16)
-      {
-          std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-          std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
-          m_ImageData[index] = std::move(channelPtr);
-      }
-      if (header.m_Depth == Enum::BitDepth::BD_32)
-      {
-          std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-          std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
-          m_ImageData[index] = std::move(channelPtr);
-      }
+			if (header.m_Depth == Enum::BitDepth::BD_8)
+			{
+			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+			std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+			m_ImageData[index] = std::move(channelPtr);
+			}
+			else if (header.m_Depth == Enum::BitDepth::BD_16)
+			{
+				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				m_ImageData[index] = std::move(channelPtr);
+			}
+			if (header.m_Depth == Enum::BitDepth::BD_32)
+			{
+				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				m_ImageData[index] = std::move(channelPtr);
+			}
 		});
 }
 
@@ -1031,7 +1045,12 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		// Read the layer info length marker which is 4 bytes in psd and 8 bytes in psb mode 
 		// (note, this section is padded to 4 bytes which means we might have some padding bytes at the end)
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
+		// We add the size of the length marker as it isnt included in the size 
 		m_Size = ExtractWidestValue<uint32_t, uint64_t>(size) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		if (ExtractWidestValue<uint32_t, uint64_t>(size) == 0u)
+		{
+			return;
+		}
 	}
 	else if (isFromAdditionalLayerInfo && sectionSize.has_value())
 	{
@@ -1078,7 +1097,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 
 	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	std::for_each(m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
@@ -1151,44 +1170,19 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
 		return;
 	}
-
 	if (m_LayerRecords.size() == 0u) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("LayerInfo", "Invalid Document encountered. Photoshop files must contain at least one layer");
 	}
-
 	if (m_LayerRecords.size() != m_ChannelImageData.size()) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
 	}
-	// The nesting here indicates Layers/Channels/ImgData
-	std::vector<std::vector<std::vector<uint8_t>>> compressedData;
-	std::vector<std::vector<LayerRecords::ChannelInformation>> channelInfos;
-	std::vector<std::vector<Enum::Compression>> channelCompression;
-	// Loop over the individual layers and compress them while also storing the channel information
-	for (auto& channel : m_ChannelImageData)
-	{
-		std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
-		std::vector<Enum::Compression> lrCompression;
-		if (header.m_Depth == Enum::BitDepth::BD_8)
-		{
-			compressedData.push_back(channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression));
-		}
-		else if (header.m_Depth == Enum::BitDepth::BD_16)
-		{
-			compressedData.push_back(channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression));
-		}
-		else if (header.m_Depth == Enum::BitDepth::BD_32)
-		{
-			compressedData.push_back(channel.compressData<float32_t>(header, lrChannelInfo, lrCompression));
-		}
-		else
-		{
-			PSAPI_LOG_ERROR("LayerInfo", "Unsupported BitDepth encountered, currently only 8-, 16- and 32-bit files are supported");
-		}
-		channelInfos.push_back(lrChannelInfo);
-		channelCompression.push_back(lrCompression);
-	}
+	
+	// The nesting here indicates Layers/Channels/ImgData. We reserve the top level as we access these members in parallel
+	std::vector<std::vector<std::vector<uint8_t>>> compressedData(m_ChannelImageData.size());
+	std::vector<std::vector<LayerRecords::ChannelInformation>> channelInfos(m_ChannelImageData.size());
+	std::vector<std::vector<Enum::Compression>> channelCompression(m_ChannelImageData.size());
 
 	// Write an empty section size, we come back later and fill this out once written
 	uint64_t sizeMarkerOffset = document.getOffset();
@@ -1196,6 +1190,34 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 	// The layer count could be written as a negative value to indicate that the first alpha channel in the file is the merged image data alpha
 	// but we do not bother with that at this point
 	WriteBinaryData(document, static_cast<int16_t>(m_LayerRecords.size()));
+
+	// Loop over the individual layers and compress them while also storing the channel information
+	std::for_each(std::execution::par, m_ChannelImageData.begin(), m_ChannelImageData.end(),
+		[&](ChannelImageData& channel)
+		{
+			// Get a unique index for each of the layers to compress them in random order
+			const uint32_t index = &channel - &m_ChannelImageData[0];
+			std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
+			std::vector<Enum::Compression> lrCompression;
+			if (header.m_Depth == Enum::BitDepth::BD_8)
+			{
+				compressedData[index] = channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression);
+			}
+			else if (header.m_Depth == Enum::BitDepth::BD_16)
+			{
+				compressedData[index] = channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression);
+			}
+			else if (header.m_Depth == Enum::BitDepth::BD_32)
+			{
+				compressedData[index] = channel.compressData<float32_t>(header, lrChannelInfo, lrCompression);
+			}
+			else
+			{
+				PSAPI_LOG_ERROR("LayerInfo", "Unsupported BitDepth encountered, currently only 8-, 16- and 32-bit files are supported");
+			}
+			channelInfos[index] = lrChannelInfo;
+			channelCompression[index] = lrCompression;
+		});
 
 	// Write the layer records
 	for (int i = 0; i < m_LayerRecords.size(); ++i)
@@ -1209,12 +1231,13 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		m_ChannelImageData[i].write(document, compressedData[i], channelCompression[i]);
 	}
 
-	// Count how many bytes we already wrote, go back to the size merker and write that information
+	// Count how many bytes we already wrote, go back to the size marker and write that information
 	uint64_t endOffset = document.getOffset();
 	uint64_t sectionSize = endOffset - sizeMarkerOffset;
 	document.setOffset(sizeMarkerOffset);
 	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded, header.m_Version);
+	// Subtract the section size marker from the total length as it isnt counted
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);

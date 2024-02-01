@@ -90,8 +90,8 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData) : 
-	Layer<T>(layerRecord, channelImageData)
+ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) :
+	Layer<T>(layerRecord, channelImageData, header)
 {
 	// Move the layers into our own layer representation
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
@@ -148,65 +148,53 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(
-	std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData,
-	std::optional<std::vector<T>>&& maskData,
-	const std::string layerName,
-	const Enum::BlendMode blendMode,
-	const int32_t posX, 
-	const int32_t posY, 
-	const uint32_t width, 
-	const uint32_t height,
-	const Enum::Compression compression, /*= Enum::Compression::ZipPrediction*/
-	const Enum::ColorMode colorMode /*= Enum::ColorMode::RGB*/
-	)
+ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
-	Layer<T>::m_LayerName = layerName;
-	if (blendMode == Enum::BlendMode::Passthrough)
+	Layer<T>::m_LayerName = layerParameters.layerName;
+	if (layerParameters.blendMode == Enum::BlendMode::Passthrough)
 	{
 		PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
 		Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
 	}
 	else
 	{
-		Layer<T>::m_BlendMode = blendMode;
+		Layer<T>::m_BlendMode = layerParameters.blendMode;
 	}
-	Layer<T>::m_BlendMode = blendMode;
-	Layer<T>::m_Opacity = 255u;
+	Layer<T>::m_Opacity = layerParameters.opacity;
 	Layer<T>::m_IsVisible = true;
-	Layer<T>::m_CenterX = posX;
-	Layer<T>::m_CenterY = posY;
-	Layer<T>::m_Width = width;
-	Layer<T>::m_Height = height;
+	Layer<T>::m_CenterX = layerParameters.posX;
+	Layer<T>::m_CenterY = layerParameters.posY;
+	Layer<T>::m_Width = layerParameters.width;
+	Layer<T>::m_Height = layerParameters.height;
 
 	// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
 	for (auto& pair : imageData)
 	{
-		Enum::ChannelIDInfo info;
-		if (colorMode == Enum::ColorMode::RGB)
+		Enum::ChannelIDInfo info = {};
+		if (layerParameters.colorMode == Enum::ColorMode::RGB)
 			info = Enum::rgbChannelIDToChannelIDInfo(pair.first);
-		else if (colorMode == Enum::ColorMode::CMYK)
+		else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
 			info = Enum::cmykChannelIDToChannelIDInfo(pair.first);
-		else if (colorMode == Enum::ColorMode::Grayscale)
+		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 			info = Enum::grayscaleChannelIDToChannelIDInfo(pair.first);
 		else
-			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMY and Grayscale ColorMode");
+			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
-		if (static_cast<uint64_t>(width) * height > pair.second.size())
+		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
 		{
-			PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".", 
-				pair.second.size(), 
-				static_cast<uint64_t>(width) * height);
+			PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
+				pair.second.size(),
+				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
 
-		ImageChannel<T> channel = ImageChannel<T>(compression, std::move(pair.second), info, width, height, posX, posY);
-		m_ImageData[info] = std::move(channel);
+			ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(pair.second), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+			m_ImageData[info] = std::move(channel);
 	}
 
 	// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
-	if (colorMode == Enum::ColorMode::RGB)
+	if (layerParameters.colorMode == Enum::ColorMode::RGB)
 	{
 		Enum::ChannelIDInfo channelR = { .id = Enum::ChannelID::Red, .index = 0 };
 		Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Green, .index = 1 };
@@ -218,7 +206,7 @@ ImageLayer<T>::ImageLayer(
 			PSAPI_LOG_ERROR("ImageLayer", "For RGB ColorMode R, G and B channels need to be specified");
 		}
 	}
-	else if (colorMode == Enum::ColorMode::CMYK)
+	else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
 	{
 		Enum::ChannelIDInfo channelC = { .id = Enum::ChannelID::Cyan, .index = 0 };
 		Enum::ChannelIDInfo channelM = { .id = Enum::ChannelID::Magenta, .index = 1 };
@@ -231,7 +219,7 @@ ImageLayer<T>::ImageLayer(
 			PSAPI_LOG_ERROR("ImageLayer", "For CMYK ColorMode C, M, Y and K channels need to be specified");
 		}
 	}
-	else if (colorMode == Enum::ColorMode::Grayscale)
+	else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 	{
 		Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Gray, .index = 0 };
 		std::vector<Enum::ChannelIDInfo> channelVec = { channelG };
@@ -244,11 +232,11 @@ ImageLayer<T>::ImageLayer(
 	
 
 	// Set the layer mask
-	if (maskData.has_value())
+	if (layerParameters.layerMask.has_value())
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(compression, std::move(maskData.value()), info, width, height, posX, posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
@@ -258,64 +246,53 @@ ImageLayer<T>::ImageLayer(
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(
-	std::unordered_map<uint16_t, std::vector<T>>&& imageData,
-	std::optional<std::vector<T>>&& maskData,
-	const std::string layerName,
-	const Enum::BlendMode blendMode,
-	const int32_t posX,
-	const int32_t posY,
-	const uint32_t width,
-	const uint32_t height,
-	const Enum::Compression compression, /*= Enum::Compression::ZipPrediction*/
-	const Enum::ColorMode colorMode /*= Enum::ColorMode::RGB*/
-)
+ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
-	Layer<T>::m_LayerName = layerName;
-	if (blendMode == Enum::BlendMode::Passthrough)
+	Layer<T>::m_LayerName = layerParameters.layerName;
+	if (layerParameters.blendMode == Enum::BlendMode::Passthrough)
 	{
 		PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
 		Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
 	}
 	else
 	{
-		Layer<T>::m_BlendMode = blendMode;
+		Layer<T>::m_BlendMode = layerParameters.blendMode;
 	}
-	Layer<T>::m_Opacity = 255u;
+	Layer<T>::m_Opacity = layerParameters.opacity;
 	Layer<T>::m_IsVisible = true;
-	Layer<T>::m_CenterX = posX;
-	Layer<T>::m_CenterY = posY;
-	Layer<T>::m_Width = width;
-	Layer<T>::m_Height = height;
+	Layer<T>::m_CenterX = layerParameters.posX;
+	Layer<T>::m_CenterY = layerParameters.posY;
+	Layer<T>::m_Width = layerParameters.width;
+	Layer<T>::m_Height = layerParameters.height;
 
 	// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
 	for (auto& pair : imageData)
 	{
-		Enum::ChannelIDInfo info;
-		if (colorMode == Enum::ColorMode::RGB)
+		Enum::ChannelIDInfo info = {};
+		if (layerParameters.colorMode == Enum::ColorMode::RGB)
 			info = Enum::rgbIntToChannelID(pair.first);
-		else if (colorMode == Enum::ColorMode::CMYK)
+		else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
 			info = Enum::cmykIntToChannelID(pair.first);
-		else if (colorMode == Enum::ColorMode::Grayscale)
+		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 			info = Enum::grayscaleIntToChannelID(pair.first);
 		else
-			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMY and Grayscale ColorMode");
+			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
-		if (static_cast<uint64_t>(width) * height > pair.second.size())
+		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
 				pair.second.size(),
-				static_cast<uint64_t>(width) * height);
+				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
 
-		ImageChannel<T> channel = ImageChannel<T>(compression, std::move(pair.second), info, width, height, posX, posY);
+		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(pair.second), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		m_ImageData[info] = std::move(channel);
 	}
 
 	// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
-	if (colorMode == Enum::ColorMode::RGB)
+	if (layerParameters.colorMode == Enum::ColorMode::RGB)
 	{
 		Enum::ChannelIDInfo channelR = { .id = Enum::ChannelID::Red, .index = 0 };
 		Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Green, .index = 1 };
@@ -327,7 +304,7 @@ ImageLayer<T>::ImageLayer(
 			PSAPI_LOG_ERROR("ImageLayer", "For RGB ColorMode R, G and B channels need to be specified");
 		}
 	}
-	else if (colorMode == Enum::ColorMode::CMYK)
+	else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
 	{
 		Enum::ChannelIDInfo channelC = { .id = Enum::ChannelID::Cyan, .index = 0 };
 		Enum::ChannelIDInfo channelM = { .id = Enum::ChannelID::Magenta, .index = 1 };
@@ -340,7 +317,7 @@ ImageLayer<T>::ImageLayer(
 			PSAPI_LOG_ERROR("ImageLayer", "For CMYK ColorMode C, M, Y and K channels need to be specified");
 		}
 	}
-	else if (colorMode == Enum::ColorMode::Grayscale)
+	else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
 	{
 		Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Gray, .index = 0 };
 		std::vector<Enum::ChannelIDInfo> channelVec = { channelG };
@@ -353,11 +330,11 @@ ImageLayer<T>::ImageLayer(
 
 
 	// Set the layer mask
-	if (maskData.has_value())
+	if (layerParameters.layerMask.has_value())
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(compression, std::move(maskData.value()), info, width, height, posX, posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}

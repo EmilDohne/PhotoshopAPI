@@ -86,3 +86,41 @@ TEST_CASE("Compress Large Flat Channel 32-bit")
 
 	CHECK(dataExpected == uncompressedData);
 }
+
+
+// Check if the compression performs well on channels that are bigger than the buffer size specified in the Zip() function
+// which is currently 16*1024 bytes
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Compress Very Large Flat Channel 16-bit")
+{
+	uint32_t width = 4096;
+	uint32_t height = 4096;
+
+	std::vector<uint16_t> channel(width * height, (std::numeric_limits<uint16_t>::max)());
+	std::vector<uint16_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
+
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<uint16_t>(channel);
+	std::vector<uint16_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<uint16_t>(compressedData, width, height);
+
+	CHECK(dataExpected == uncompressedData);
+}
+
+
+// Check if the compression performs well on channels that are bigger than the buffer size specified in the Zip() function
+// which is currently 16*1024 bytes
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Compress Very Large Flat Channel 32-bit")
+{
+	uint32_t width = 4096;
+	uint32_t height = 4096;
+
+	std::vector<float32_t> channel(width * height, 1.0f);
+	std::vector<float32_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
+
+	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIP<float32_t>(channel);
+	std::vector<float32_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIP<float32_t>(compressedData, width, height);
+
+	CHECK(dataExpected == uncompressedData);
+}
