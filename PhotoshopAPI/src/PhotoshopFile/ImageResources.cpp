@@ -80,6 +80,22 @@ void ImageResources::write(File& document)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
+template <typename T>
+requires std::is_base_of_v<ResourceBlock, T>
+const T* ImageResources::getResourceBlockView(const Enum::ImageResource key) const
+{
+	for (const auto& blockPtr : m_ResourceBlocks)
+	{
+		if (blockPtr->m_UniqueId == key)
+		{
+			return dynamic_cast<const T*>(blockPtr);
+		}
+	}
+}
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 uint32_t ImageResources::parseResourceBlock(File& document)
 {
 	uint64_t blockOffset = document.getOffset();
@@ -123,5 +139,6 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 		return size;
 	}
 }
+
 
 PSAPI_NAMESPACE_END

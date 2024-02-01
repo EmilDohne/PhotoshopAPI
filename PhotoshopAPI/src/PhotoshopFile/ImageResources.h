@@ -7,6 +7,7 @@
 #include "Struct/ResourceBlock.h"
 
 #include <vector>
+#include <type_traits>
 
 #include <cstdint>
 
@@ -33,6 +34,13 @@ struct ImageResources : public FileSection
 	/// Write the ImageResources to disk using the given document
 	void write(File& document);
 
+	/// Retrieve a resource block view as the given template argument using a key as index to the block
+	/// 
+	/// \return a non owning ptr to the block or nullptr if the resource block is not found
+	template <typename T>
+	requires std::is_base_of_v<ResourceBlock, T>
+	const T* getResourceBlockView(const Enum::ImageResource key) const;
+
 private:
 	/// Parse a singular resource block, if the type is unkown to us we read until the size 
 	/// marker and skip it. Otherwise we push back into m_ResourceBlocks.
@@ -41,6 +49,7 @@ private:
 	/// \return the amount of bytes read (the size of the block)
 	uint32_t parseResourceBlock(File& document);
 };
+
 
 
 PSAPI_NAMESPACE_END
