@@ -22,9 +22,13 @@ PSAPI_NAMESPACE_BEGIN
 
 struct BaseImageChannel
 {
+	/// This does not indicate the compression method of the channel in memory 
+	/// but rather the compression method it writes the PhotoshopFile with
 	Enum::Compression m_Compression = Enum::Compression::Raw;
+	/// Information about what channel this actually is
 	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
-	uint64_t m_OrigByteSize = 0u;	// The size of the original vector in bytes
+	/// The size of the original (uncompressed) data in bytes
+	uint64_t m_OrigByteSize = 0u;	
 
 
 	BaseImageChannel() = default;
@@ -65,17 +69,20 @@ protected:
 };
 
 
-// A generic Image Channel that could either be part of the Channel Image Data section or Image Data section
-// It is entirely valid to have each channel have a different compression method, width and height. We only
-// store the image data in here but do not deal with reading or writing it. Ownership of the image data belongs
-// to this struct
+/// A generic Image Channel that is used by both the PhotoshopFile and LayeredFile, being moved between these two
+/// It is entirely valid to have each channel have a different compression method, width and height. We only
+/// store the image data in here but do not deal with reading or writing it. Ownership of the image data belongs
+/// to this struct
 template <typename T>
 struct ImageChannel : public BaseImageChannel
 {
-	static const uint64_t m_ChunkSize = 1024 * 1024;	// Size of each individual chunk in the schunk
+	/// The size of each sub-chunk in the super-chunk. For more information about what a chunk and super-chunk is
+	/// please refer to the c-blosc2 documentation
+	static const uint64_t m_ChunkSize = 1024 * 1024;	
 
 	ImageChannel() = default;
-	// Take a reference to a decompressed image vector stream and set the according member variables
+
+	/// Take a reference to a decompressed image vector stream and set the according member variables
 	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord) :
 		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
@@ -136,8 +143,8 @@ struct ImageChannel : public BaseImageChannel
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
-
-	// Extract the data from the image channel and invalidate it (can only be called once). If the image data does not exist yet we simply return an empty vector<T>
+	/// Extract the data from the image channel and invalidate it (can only be called once). 
+	/// If the image data does not exist (yet) we simply return an empty vector<T>
 	std::vector<T> getData() {
 		PROFILE_FUNCTION();
 		if (!m_Data)
@@ -168,7 +175,8 @@ struct ImageChannel : public BaseImageChannel
 		return tmpData;
 	}
 
-	// Extract n amount of randomly selected chunks from the ImageChannel super chunk. This does not invalidate any data
+	/// Extract n amount of randomly selected chunks from the ImageChannel super chunk. This does not invalidate any data
+	/// and is useful to e.g. compress these chunks using photoshops compression methods to estimate the final size on disk
 	std::vector<std::vector<T>> getRandomChunks(const FileHeader header, uint16_t numChunks) const
 	{
 		std::random_device rd;
@@ -196,6 +204,7 @@ struct ImageChannel : public BaseImageChannel
 
 private:
 	blosc2_schunk* m_Data = nullptr;
+	/// Total number of chunks in the super-chunk
 	uint64_t m_NumChunks = 0u;
 
 };

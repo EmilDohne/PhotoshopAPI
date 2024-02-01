@@ -12,18 +12,22 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+/// The ColorModeData section holds information for e.g. how the image is tonemapped in 32-bit mode as well as mapping of indexed and duotone
+/// colours.
 struct ColorModeData : public FileSection
 {
+	/// The raw bytes held by this section excluding the section marker. This should only hold data for 32-bit files and Duotone/Indexed
+	/// color mode. For the time being we do not interpret this data in any way and defaults are written automatically
 	std::vector<uint8_t> m_Data;
 
 	ColorModeData() : m_Data({}) { m_Size = 4u; m_Offset = 26u; };
-	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
 
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
+	/// Read the ColorModeData section as is without interpreting anything
 	void read(File& document);
-	// Write the colorModeData section, note that the m_Data field does not contain the length marker and we parse it explicitly
+	/// Write the ColorModeData section, note that the m_Data field does not contain the length marker and we write it explicitly
 	void write(File& document, FileHeader& header);
 };
 

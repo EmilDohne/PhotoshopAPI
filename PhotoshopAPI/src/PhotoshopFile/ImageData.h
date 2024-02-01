@@ -49,12 +49,16 @@ namespace ImageDataImpl
 }
 
 
+/// \brief This section is for interoperability with different software such as lightroom and holds a composite of all the layers
+///
+/// When writing out data we fill it with empty pixels using Rle compression, this is due to Photoshop unfortunately requiring
+/// it to be present. Due to this compression step we can usually save lots of data over what Photoshop writes out
 struct ImageData : public FileSection
 {
-	
+
 	inline uint64_t calculateSize(std::shared_ptr<FileHeader> header /* = nullptr */) const override { return 0; };
 
-	// Write out an empty image data section from the number of channels. This section is unfortunately required
+	/// Write out an empty image data section from the number of channels. This section is unfortunately required
 	inline void write(File& document, const FileHeader& header)
 	{
 		// Compression marker, we default to RLE compression to reduce the size significantly. The way in which the scanlines are stored
