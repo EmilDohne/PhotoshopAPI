@@ -954,8 +954,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
 			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			int32_t centerX = layerRecord.m_Left + width / 2;
-			int32_t centerY = layerRecord.m_Top + height / 2;
+			float centerX = static_cast<float>(layerRecord.m_Left + width) / 2;
+			float centerY = static_cast<float>(layerRecord.m_Top + height) / 2;
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -965,8 +965,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 					width = mask.m_Right - mask.m_Left;
 					height = mask.m_Bottom - mask.m_Top;
-					centerX = mask.m_Left + width / 2;
-					centerY = mask.m_Top + height / 2;
+					centerX = static_cast<float>(mask.m_Left + width) / 2;
+					centerY = static_cast<float>(mask.m_Top + height) / 2;
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
