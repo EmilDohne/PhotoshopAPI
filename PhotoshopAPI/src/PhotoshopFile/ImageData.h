@@ -46,6 +46,12 @@ namespace ImageDataImpl
 			}
 		}
 	}
+
+	template <typename T>
+	void writeRawData(File& document, const FileHeader& header, std::vector<T>&& uncompressedData)
+	{
+		WriteBinaryArray<T>(document, uncompressedData);
+	}
 }
 
 
