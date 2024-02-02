@@ -199,11 +199,13 @@ struct LayeredFile
 
 	/// \brief Gets the total number of channels in the document.
 	///
-	/// Excludes mask channels unless ignoreMaskChannels is set to false.
+	/// Excludes mask channels unless ignoreMaskChannels is set to false. Same goes 
+	/// for ignoreAlphaChannel
 	///
 	/// \param ignoreMaskChannels Flag to exclude mask channels from the count.
+	/// \param ignoreMaskChannel Flag to exclude the transparency alpha channel from the count.
 	/// \return The total number of channels in the document.
-	uint16_t getNumChannels(bool ignoreMaskChannels = true);
+	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true);
 
 	/// \brief Checks if a layer already exists in the nested structure.
 	///
@@ -265,13 +267,13 @@ namespace LayeredFileImpl
 	/// Recursively build a flat layer hierarchy
 	template <typename T>
 	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers);
-
+	
 	/// Find a layer based on a separated path and a parent layer. To be called by LayeredFile::findLayer
 	template <typename T>
 	std::shared_ptr<Layer<T>> findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index);
 
 	template <typename T>
-	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices);
+	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices);
 
 	template <typename T>
 	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer);

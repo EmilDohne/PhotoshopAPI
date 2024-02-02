@@ -67,8 +67,9 @@ std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFi
 	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
 	ImageResources imageResources = generateImageResources<T>(layeredFile);
 	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
+	ImageData imageData = ImageData(layeredFile.getNumChannels(true, true));	// Ignore any mask or alpha channels
 
-	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo));
+	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }
 
 
@@ -323,9 +324,9 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::o
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
+uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/, bool ignoreAlphaChannel /* = false */)
 {
-	std::set<uint16_t> channelIndices = {};
+	std::set<int16_t> channelIndices = {};
 	for (const auto& layer : m_Layers)
 	{
 		LayeredFileImpl::getNumChannelsRecurse(layer, channelIndices);
@@ -338,6 +339,12 @@ uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
 		if (channelIndices.contains(-2))
 			numChannels -= 1u;
 		if (channelIndices.contains(-3))
+			numChannels -= 1u;
+	}
+	if (ignoreAlphaChannel)
+	{
+		// Photoshop doesnt store the alpha channels in the merged image data section so we must not count it
+		if (channelIndices.contains(-1))
 			numChannels -= 1u;
 	}
 	return numChannels;
@@ -681,7 +688,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices)
+void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices)
 {
 	// We must first check if we could recurse down another level. We dont check for masks on the 
 	// group here yet as we do that further down
