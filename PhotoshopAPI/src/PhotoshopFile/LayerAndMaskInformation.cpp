@@ -1086,9 +1086,10 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		PSAPI_LOG_ERROR("LayerInfo", "LayerInfo() expects an explicit section size if the call is from the additional layer information section");
 	}
 
-	// If this value is negative the first alpha channel of the layer records holds the merged image result (Image Data Section) alpha channel
-	// TODO this isnt yet implemented
+	// If this value is negative the first alpha channel of the layer records would hold the merged image result (Image Data Section) alpha channel
+	// which we do not care about
 	uint16_t layerCount = static_cast<uint16_t>(std::abs(ReadBinaryData<int16_t>(document)));
+
 	m_LayerRecords.reserve(layerCount);
 	m_ChannelImageData.reserve(layerCount);
 

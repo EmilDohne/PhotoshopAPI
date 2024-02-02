@@ -89,11 +89,14 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 
 	// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
 	m_ICCProfile = LayeredFileImpl::readICCProfile(document.get());
-
 	// Extract the DPI from the document, default to 72
 	m_DotsPerInch = LayeredFileImpl::readDPI(document.get());
 
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
+	if (m_Layers.size() == 0)
+	{
+		PSAPI_LOG_ERROR("LayeredFile", "Read an invalid PhotoshopFile as it does not contain any layers. Is the only layer in the scene locked? This is not supported by the PhotoshopAPI");
+	}
 }
 
 
