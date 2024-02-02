@@ -123,11 +123,13 @@ void FileHeader::write(File& document)
 	auto extension = filePath.extension();
 	if (extension == ".psb")
 	{
+		m_Version = Enum::Version::Psb;
 		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psb);
 		WriteBinaryData<uint16_t>(document, versionVal.value());
 	}
 	else if (extension == ".psd")
 	{
+		m_Version = Enum::Version::Psd;
 		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psd);
 		WriteBinaryData<uint16_t>(document, versionVal.value());
 	}
