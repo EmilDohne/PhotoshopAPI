@@ -1237,7 +1237,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 	document.setOffset(sizeMarkerOffset);
 	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
 	// Subtract the section size marker from the total length as it isnt counted
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
@@ -1337,6 +1337,7 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	if (m_AdditionalLayerInfo.has_value())
 		m_AdditionalLayerInfo.value().write(document, header, 4u);
 
+	
 	// The section size does not include the size marker so we must subtract that
 	uint64_t endOffset = document.getOffset();
 	uint64_t sectionSize = endOffset - sizeMarkerOffset - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
@@ -1346,6 +1347,12 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
+
+	// I genuinely have no idea why this is required but when we dont add this the files wont open in Photoshop
+	if (header.m_Version == Enum::Version::Psb)
+	{
+		WritePadddingBytes(document, 2u);	// 4 also appears to be a valid number here
+	}
 }
 
 PSAPI_NAMESPACE_END
