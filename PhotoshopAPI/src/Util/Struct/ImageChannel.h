@@ -86,6 +86,11 @@ struct ImageChannel : public BaseImageChannel
 	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord) :
 		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
+		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
+		}
+
 
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
