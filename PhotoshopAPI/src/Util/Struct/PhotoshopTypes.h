@@ -74,6 +74,8 @@ struct FixedFloat4
 		float remainder = floatNum - m_Number;
 		remainder *= (std::numeric_limits<uint16_t>::max)();
 		m_Fraction = static_cast<uint16_t>(remainder);
+
+		return *this;
 	}
 
 private:
