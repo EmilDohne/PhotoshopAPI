@@ -598,7 +598,6 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "A Photoshop document cannot have more than 56 channels at once");
 	}
-	m_ChannelInformation.reserve(m_ChannelCount);
 
 	// Read the Channel Information, there is one of these for each channel in the layer record
 	for (int i = 0; i < m_ChannelCount; i++)
@@ -624,10 +623,10 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
-		m_ChannelInformation.emplace_back(channelInfo);
 
 		// Size of one channel information section is 6 or 10 bytes
 		m_Size += static_cast<uint64_t>(2u) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		m_ChannelInformation.push_back(channelInfo);
 	}
 
 	// Perform a signature check but do not store it as it isnt required
@@ -979,18 +978,42 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-			std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
-			m_ImageData[index] = std::move(channelPtr);
+				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
+				{
+					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
+					std::vector<uint8_t> decompressedData = {};
+					auto channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
+					m_ImageData[index] = std::move(channelPtr);
+					return;
+				}
+				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
+				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
+				{
+					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
+					std::vector<uint16_t> decompressedData = {};
+					auto channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
+					m_ImageData[index] = std::move(channelPtr);
+					return;
+				}
 				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
+				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
+				{
+					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
+					std::vector<float32_t> decompressedData = {};
+					auto channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
+					m_ImageData[index] = std::move(channelPtr);
+					return;
+				}
 				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
