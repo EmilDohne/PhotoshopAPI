@@ -57,13 +57,14 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	m_Width = layerRecord.m_Right - layerRecord.m_Left;
 	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
 
-	// Documents start at 0, 0 and goes to width, height
-	int32_t documentCenterX = header.m_Width / 2;
-	int32_t documentCenterY = header.m_Height / 2;
+	// Documents start at 0, 0 and goes to width, height.
+	// We need floats here as when dividing by 2 we would otherwise truncate
+	float documentCenterX = static_cast<float>(header.m_Width) / 2;
+	float documentCenterY = static_cast<float>(header.m_Height) / 2;
 
 	// Calculate our layer coordinates by adding half the width to the left
-	int32_t layerCenterX = layerRecord.m_Left + m_Width / 2;
-	int32_t layerCenterY = layerRecord.m_Top + m_Height / 2;
+	float layerCenterX = static_cast<float>(layerRecord.m_Left + m_Width) / 2;
+	float layerCenterY = static_cast<float>(layerRecord.m_Top + m_Height) / 2;
 
 	// Finally just calculate the difference between these two
 	m_CenterX = documentCenterX - layerCenterX;
@@ -207,16 +208,16 @@ std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents(const F
 	// Our center coordinates are in the middle of the canvas, which means if continuing our 
 	// example they translate to 32, 32
 
-	int32_t translatedCenterX = documentRight / 2 + m_CenterX;
-	int32_t translatedCenterY = documentBottom / 2 + m_CenterY;
+	float translatedCenterX = static_cast<float>(documentRight) / 2 + m_CenterX;
+	float translatedCenterY = static_cast<float>(documentBottom) / 2 + m_CenterY;
 
 	// Use our translated center variables to make Photoshop compliant coordinates. If the 
 	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
 
-	int32_t top		= translatedCenterY - m_Height / 2;
-	int32_t left	= translatedCenterX - m_Width / 2;
-	int32_t bottom	= translatedCenterY + m_Height / 2;
-	int32_t right	= translatedCenterX + m_Width / 2;
+	int32_t top	= static_cast<int32_t>(translatedCenterY - static_cast<float>(m_Height) / 2);
+	int32_t left = static_cast<int32_t>(translatedCenterX - static_cast<float>(m_Width) / 2);
+	int32_t bottom = static_cast<int32_t>(translatedCenterY + static_cast<float>(m_Height) / 2);
+	int32_t right = static_cast<int32_t>(translatedCenterX + static_cast<float>(m_Width) / 2);
 
 	return std::make_tuple(top, left, bottom, right);
 }

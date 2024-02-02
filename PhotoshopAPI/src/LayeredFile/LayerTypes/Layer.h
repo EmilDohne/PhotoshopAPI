@@ -70,9 +70,9 @@ struct Layer
 
 	uint32_t m_Height;
 
-	int32_t m_CenterX;
+	float m_CenterX;
 
-	int32_t m_CenterY;
+	float m_CenterY;
 
 	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
 
