@@ -4,7 +4,8 @@
 
 [![Documentation Status](https://readthedocs.org/projects/photoshopapi/badge/?version=latest)](https://photoshopapi.readthedocs.io/en/latest/?badge=latest)
 
-
+> [!NOTE]
+> The PhotoshopAPI is still in early development status which means it is subject to change and will likely include bugs. If you find any please report them to the issues page
 
 About
 =========
@@ -39,6 +40,7 @@ Supported:
 - Pixel Masks
 - Modifying layer attributes (name, blend mode etc.)
 - Setting the Display ICC Profile
+- Setting the DPI of the document
 - 8-, 16- and 32-bit files
 - RGB Color Mode
 - All compression modes known to Photoshop
