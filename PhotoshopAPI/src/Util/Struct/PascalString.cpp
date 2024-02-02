@@ -66,6 +66,11 @@ void PascalString::write(File& document, const uint8_t padding) const
 	{
 		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 254, got %u", m_String.size());
 	}
+	if (m_Size == 0)
+	{
+		PSAPI_LOG_ERROR("PascalString", "Size field is 0 which is not allowed since it will always be at least 1, was the PascalString initialized correctly?");
+	}
+
 	// The length marker only denotes the actual length of the data, not any padding
 	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(m_String.size()));
 

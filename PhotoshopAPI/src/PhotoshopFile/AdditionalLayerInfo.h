@@ -42,6 +42,7 @@ struct AdditionalLayerInfo : public FileSection
 
 	/// Get a tagged block from the key and try to cast it to T. If the key cannot be found return nullptr
 	template <typename T>
+	requires std::is_base_of_v<TaggedBlock, T>
 	std::optional<std::shared_ptr<T>> getTaggedBlock(const Enum::TaggedBlockKey key) const
 	{
 		// If it is a nullptr we return nullopt

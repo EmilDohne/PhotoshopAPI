@@ -17,6 +17,7 @@
 #include <variant>
 #include <vector>
 #include <set>
+#include <filesystem>
 #include <memory>
 
 
@@ -46,6 +47,28 @@ enum class LayerOrder
 };
 
 
+/// Helper Structure for loading an ICC profile from memory of disk. Photoshop will then store
+/// the raw bytes of the ICC profile in their ICCProfile ResourceBlock (ID 1039)
+struct ICCProfile
+{
+	/// Initialize an empty ICCProfile
+	ICCProfile() : m_Data({}) {};
+	/// Initialize the ICCProfile by passing in a raw byte array of an ICC profile
+	ICCProfile(std::vector<uint8_t> data) : m_Data(data) {};
+	/// Initialize the ICCProfile by loading the path contents from disk
+	ICCProfile(const std::filesystem::path& pathToICCFile);
+
+	/// Return a copy of the ICC profile data
+	std::vector<uint8_t> getData() const noexcept { return m_Data; };
+
+	/// Return the absolute size of the data
+	uint32_t getDataSize() const noexcept { return m_Data.size(); };
+
+private:
+	std::vector<uint8_t> m_Data;
+};
+
+
 /// \brief Represents a layered file structure.
 /// 
 /// This struct defines a layered file structure, where each file contains a hierarchy
@@ -59,6 +82,13 @@ struct LayeredFile
 	/// The root layers in the file, they may contain multiple levels of sub-layers
 	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
 	
+	/// The ICC Profile associated with the file, this may be empty in which case there will be no colour
+	/// profile associated with the file
+	ICCProfile m_ICCProfile;
+
+	/// The DPI of the document, this will only change the display unit and wont resize any data
+	float m_DotsPerInch = 72.0f;
+
 	/// The bit depth of the file
 	Enum::BitDepth m_BitDepth = Enum::BitDepth::BD_8;
 
@@ -249,6 +279,17 @@ namespace LayeredFileImpl
 	/// Remove a layer from the hierarchy recursively, if a match is found we short circuit and return early
 	template <typename T>
 	bool removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer);
+
+	// Util functions
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+
+	/// Read the ICC profile from the PhotoshopFile, if it doesnt exist we simply initialize an
+	/// empty ICC profile
+	ICCProfile readICCProfile(const PhotoshopFile* file);
+
+	/// Read the document DPI, default to 72 if we cannot read it.
+	float readDPI(const PhotoshopFile* file);
 }
 
 
