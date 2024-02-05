@@ -149,7 +149,7 @@ void ICCProfileBlock::write(File& document)
 	m_Name.write(document, 2u);
 	WriteBinaryData<uint32_t>(document, m_DataSize);	// This value is already padded
 
-	WriteBinaryArray<uint8_t>(document, m_RawICCProfile);
+	WriteBinaryArray<uint8_t>(document, std::move(m_RawICCProfile));
 
 	// Check that we didnt initialize m_DataSize incorrectly
 	if (static_cast<int>(m_DataSize) - m_RawICCProfile.size() < 0) [[unlikely]]
