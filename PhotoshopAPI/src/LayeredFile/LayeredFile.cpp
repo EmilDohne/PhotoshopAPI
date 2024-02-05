@@ -85,7 +85,6 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_ColorMode = document->m_Header.m_ColorMode;
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
-	m_Version = document->m_Header.m_Version;
 
 	// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
 	m_ICCProfile = LayeredFileImpl::readICCProfile(document.get());
@@ -287,6 +286,19 @@ void LayeredFile<T>::removeLayer(const std::string layer)
 		PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for removeLayer()", layer.c_str());
 	}
 	moveLayer(layerPtr);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::setCompression(const Enum::Compression compCode)
+{
+	for (const auto& documentLayer : m_Layers)
+	{
+		documentLayer->setCompression(compCode);
+		LayeredFileImpl::setCompressionRecurse(documentLayer, compCode);
+	}
 }
 
 
@@ -719,6 +731,23 @@ void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLaye
 	}
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFileImpl::setCompressionRecurse(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode)
+{
+	// We must first check if we could recurse down another level. We dont check for masks on the 
+	// group here yet as we do that further down
+	if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
+	{
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			layerPtr->setCompression(compCode);
+			setCompressionRecurse(layerPtr, compCode);
+		}
+	}
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------

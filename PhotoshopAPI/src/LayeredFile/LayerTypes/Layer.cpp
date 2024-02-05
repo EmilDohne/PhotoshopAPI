@@ -312,4 +312,17 @@ std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::Colo
 
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void Layer<T>::setCompression(const Enum::Compression compCode)
+{
+	if (m_LayerMask.has_value())
+	{
+		m_LayerMask.value().maskData.m_Compression = compCode;
+	}
+}
+
+
+
 PSAPI_NAMESPACE_END

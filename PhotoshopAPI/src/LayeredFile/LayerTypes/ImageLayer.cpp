@@ -39,6 +39,7 @@ namespace
 		}
 		return true;
 	}
+
 }
 
 
@@ -343,5 +344,21 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 		Layer<T>::m_LayerMask = mask;
 	}
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void ImageLayer<T>::setCompression(const Enum::Compression compCode)
+{
+	// Change the mask channels' compression codec
+	Layer<T>::setCompression(compCode);
+	// Change the image channel compression codecs
+	for (const auto& [key, val] : m_ImageData)
+	{
+		m_ImageData[key].m_Compression = compCode;
+	}
+}
+
 
 PSAPI_NAMESPACE_END

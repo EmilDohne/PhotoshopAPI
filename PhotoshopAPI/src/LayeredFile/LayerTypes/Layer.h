@@ -57,6 +57,7 @@ struct Layer
 
 	std::string m_LayerName;
 
+	/// A pixel layer mask
 	std::optional<LayerMask<T>> m_LayerMask;
 
 	Enum::BlendMode m_BlendMode;
@@ -101,6 +102,9 @@ struct Layer
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
 	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
 	
+	/// Changes the compression mode of all channels in this layer to the given compression mode
+	virtual void setCompression(const Enum::Compression compCode);
+
 	virtual ~Layer() = default;
 
 protected:
@@ -141,5 +145,6 @@ protected:
 	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to BaseImageChannel.
 	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> extractLayerMask(bool doCopy);
 };
+
 
 PSAPI_NAMESPACE_END

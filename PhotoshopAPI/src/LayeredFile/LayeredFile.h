@@ -175,6 +175,15 @@ struct LayeredFile
 	/// \param layer The layer to be removed.
 	void removeLayer(const std::string layer);
 	
+	/// \brief change the compression codec across all layers and channels
+	///
+	/// Iterates the layer structure and changes the compression codec for write on all layers.
+	/// This is especially useful for e.g. 8-bit files which from Photoshop write with RLE compression
+	/// but ZipCompression gives us better ratios
+	/// 
+	/// \param compCode the compression codec to apply
+	void setCompression(const Enum::Compression compCode);
+
 	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
 	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
 	/// \brief Generates a flat layer stack from either the current root or a given layer.
@@ -185,19 +194,6 @@ struct LayeredFile
 	/// \param order The order in which layers should be stacked.
 	/// \return The flat layer tree with automatic \ref SectionDividerLayer inserted to mark section ends
 	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
-
-	/// \brief Sets the version of the layered file.
-	///
-	/// By version Psd or Psb is meant. This is however also automatically detected on write depending on the 
-	/// extension we write out
-	/// 
-	/// \param version The version to set.
-	inline void setVersion(Enum::Version version) { m_Version = version; };
-
-	/// \brief Gets the version of the layered file.
-	///
-	/// \return The version of the layered file.
-	inline Enum::Version getVersion() { return m_Version; };
 
 	/// \brief Gets the total number of channels in the document.
 	///
@@ -225,9 +221,8 @@ private:
 	/// \param parentLayer The new parent layer.
 	/// \return True if the move is valid, false otherwise.
 	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer);
-
-	Enum::Version m_Version = Enum::Version::Psd;
 };
+
 
 
 /// \brief Converts a layeredFile into a PhotoshopFile, taking ownership of and invalidating any data
@@ -276,6 +271,9 @@ namespace LayeredFileImpl
 
 	template <typename T>
 	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices);
+
+	template <typename T>
+	void setCompressionRecurse(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode);
 
 	template <typename T>
 	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer);
