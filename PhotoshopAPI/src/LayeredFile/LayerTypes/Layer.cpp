@@ -101,6 +101,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			auto& layerMaskParams = maskParams.m_LayerMask.value();
 
 			lrMask.isDisabled = layerMaskParams.m_Disabled;
+			lrMask.defaultColor = layerMaskParams.m_DefaultColor;
 			lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
 			lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
 
@@ -139,7 +140,7 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 		right	= centerX + width / 2;
 		lrMaskData.m_Size += 16u;
 
-		uint8_t defaultColor = 255u;
+		// Default color
 		lrMaskData.m_Size += 1u;
 
 		// This is the size for the mask bitflags
@@ -167,6 +168,7 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 		lrMask.m_Left = left;
 		lrMask.m_Bottom = bottom;
 		lrMask.m_Right = right;
+		lrMask.m_DefaultColor = m_LayerMask.value().defaultColor;
 		lrMask.m_Disabled = m_LayerMask.value().isDisabled;
 		lrMask.m_HasMaskParams = hasMaskDensity || hasMaskFeather;
 		lrMask.m_HasUserMaskDensity = hasMaskDensity;

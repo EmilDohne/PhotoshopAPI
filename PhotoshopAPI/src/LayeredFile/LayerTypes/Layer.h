@@ -16,6 +16,7 @@ struct LayerMask
 {
 	ImageChannel<T> maskData;
 	bool isDisabled = false;
+	uint8_t defaultColor = 255u;
 	std::optional<uint8_t> maskDensity;
 	std::optional<float64_t> maskFeather;
 

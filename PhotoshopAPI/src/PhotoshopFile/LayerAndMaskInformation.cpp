@@ -273,12 +273,13 @@ void LayerRecords::LayerMaskData::read(File& document)
 		mask.m_Right = ReadBinaryData<int32_t>(document);
 		toRead -= 16u;
 
-		const uint8_t defaultColor = ReadBinaryData<uint8_t>(document);
-		toRead -= 1u;
-		if (defaultColor != 0 && defaultColor != 255)
+		mask.m_DefaultColor = ReadBinaryData<uint8_t>(document);
+		if (mask.m_DefaultColor != 0 && mask.m_DefaultColor != 255)
 		{
-			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", defaultColor);
+			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", mask.m_DefaultColor);
 		}
+		toRead -= 1u;
+
 
 		const uint8_t bitFlags = ReadBinaryData<uint8_t>(document);
 		mask.setFlags(bitFlags);
@@ -978,42 +979,18 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<uint8_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
 				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<uint16_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
 				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<float32_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
 				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
 				m_ImageData[index] = std::move(channelPtr);

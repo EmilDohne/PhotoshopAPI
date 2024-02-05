@@ -367,6 +367,11 @@ struct ChannelImageData : public FileSection
 	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
 	{
 		const int index = this->getChannelIndex(channelIDInfo);
+		if (index == -1)
+		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Unable to retrieve index %i from the ChannelImageData", channelIDInfo.index);
+			return nullptr;
+		}
 		// Take ownership of and invalidate the current index
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
