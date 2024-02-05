@@ -101,6 +101,8 @@ struct LayeredFile
 	/// The height of the file in pixels. Can be up to 30,000 for PSD and up to 300,000 for PSB
 	uint64_t m_Height = 0u;
 
+	LayeredFile() = default;
+
 	/// \ingroup Constructors
 	/// \brief Constructs a LayeredFile instance from a Photoshop file.
 	///

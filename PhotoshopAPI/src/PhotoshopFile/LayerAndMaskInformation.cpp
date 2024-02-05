@@ -1037,7 +1037,7 @@ void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& 
 			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec");
 
 		WriteBinaryData<uint16_t>(document, compressionCode.value());
-		WriteBinaryArray<uint8_t>(document, compressedChannelData[i]);
+		WriteBinaryArray<uint8_t>(document, std::move(compressedChannelData[i]));
 	}
 }
 
@@ -1371,12 +1371,6 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
-
-	// I genuinely have no idea why this is required but when we dont add this the files wont open in Photoshop
-	if (header.m_Version == Enum::Version::Psb)
-	{
-		WritePadddingBytes(document, 2u);	// 4 also appears to be a valid number here
-	}
 }
 
 PSAPI_NAMESPACE_END
