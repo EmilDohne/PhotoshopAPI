@@ -97,8 +97,12 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
 	{
 		auto& channelInfo = layerRecord.m_ChannelInformation[i];
+
+		// We already extract masks ahead of time and skip them here to avoid raising warnings
+		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
+
 		auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
-		// Pointers might have already been invalidated such as extracting masks beforehand
+		// Pointers might have already been
 		if (!channelPtr) continue;
 
 		// Insert any valid pointers to channels we have. We move to avoid having 
