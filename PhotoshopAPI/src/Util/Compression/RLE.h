@@ -26,7 +26,6 @@ PSAPI_NAMESPACE_BEGIN
 template<typename T>
 std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
 {
-    PROFILE_FUNCTION();
     std::vector<uint8_t> decompressedData;
     decompressedData.reserve((sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height)));
 
@@ -74,7 +73,6 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 // ---------------------------------------------------------------------------------------------------------------------
 inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanline, uint32_t& scanlineSize)
 {
-    PROFILE_FUNCTION();
     // We assume a ~4x compression ratio for RLE to avoid continuously reserving more size
     std::vector<uint8_t> compressedData;
     compressedData.reserve(uncompressedScanline.size() / 4);
@@ -243,6 +241,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
+    PROFILE_FUNCTION();
     endianEncodeBEArray(uncompressedData);
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -299,6 +298,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
+    PROFILE_FUNCTION();
 	endianEncodeBEArray(uncompressedData);
 
 	std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -339,6 +339,7 @@ std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, c
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
+    PROFILE_FUNCTION();
 	endianEncodeBEArray(uncompressedData);
 
 	std::vector<std::span<uint8_t>> uncompressedDataViews;
