@@ -13,7 +13,7 @@ if(MSVC)
 endif()
 
 # Include and link the PhotoshopAPI
-target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/src")
+target_include_directories(${EXE} PRIVATE "${CMAKE_SOURCE_DIR}/PhotoshopAPI/include")
 target_link_libraries(${EXE} PRIVATE PhotoshopAPI)
 
 # include doctest v2.4.11 library
