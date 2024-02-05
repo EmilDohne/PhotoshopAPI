@@ -63,8 +63,9 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	float documentCenterY = static_cast<float>(header.m_Height) / 2;
 
 	// Calculate our layer coordinates by adding half the width to the left
-	float layerCenterX = static_cast<float>(layerRecord.m_Left + m_Width) / 2;
-	float layerCenterY = static_cast<float>(layerRecord.m_Top + m_Height) / 2;
+	float layerCenterX = static_cast<float>(layerRecord.m_Left) + static_cast<float>(m_Width) / 2;
+	float layerCenterY = static_cast<float>(layerRecord.m_Top) + static_cast<float>(m_Height) / 2;
+
 
 	// Finally just calculate the difference between these two
 	m_CenterX = documentCenterX - layerCenterX;
@@ -208,8 +209,8 @@ std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents(const F
 	// Our center coordinates are in the middle of the canvas, which means if continuing our 
 	// example they translate to 32, 32
 
-	float translatedCenterX = static_cast<float>(documentRight) / 2 + m_CenterX;
-	float translatedCenterY = static_cast<float>(documentBottom) / 2 + m_CenterY;
+	float translatedCenterX = static_cast<float>(documentRight) / 2 - m_CenterX;
+	float translatedCenterY = static_cast<float>(documentBottom) / 2 - m_CenterY;
 
 	// Use our translated center variables to make Photoshop compliant coordinates. If the 
 	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
