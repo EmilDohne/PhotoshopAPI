@@ -31,10 +31,11 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
     decompressedData.reserve((sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height)));
 
     uint64_t i = 0;
-    while (i < compressedData.size()) {
+    const auto dataSize = compressedData.size();
+    while (i < dataSize) {
         uint8_t value = compressedData[i];
 
-        if (value == 128) 
+        if (value == 128) [[unlikely]]
         {
             // Do nothing, nop. Equivalent to 0 in int8_t
         }
@@ -42,10 +43,11 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
         {
             // Repeat the next byte after this n times
             value = 256 - value;
-            for (int j = 0; j <= value; ++j)
-            {
-                decompressedData.push_back(compressedData.at(i + 1));
-            }
+
+			for (int j = 0; j <= value; ++j)
+			{
+				decompressedData.push_back(compressedData[i + 1]);
+			}
             ++i;
         }
         else 
@@ -53,7 +55,7 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
             // Header byte indicates the next n bytes are to be read as values
             for (int j = 0; j <= value; ++j)
             {
-                decompressedData.push_back(compressedData.at(i + j + 1));
+                decompressedData.push_back(compressedData[i + j + 1]);
             }
             i += static_cast<uint64_t>(value) + 1;
         }
