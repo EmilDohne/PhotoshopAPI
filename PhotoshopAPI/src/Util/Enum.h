@@ -603,6 +603,7 @@ namespace Enum
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
+			{"lsdk", TaggedBlockKey::lrSectionDivider},
 			{"artb", TaggedBlockKey::lrArtboard},
 			{"artd", TaggedBlockKey::lrArtboard},
 			{"abdd", TaggedBlockKey::lrArtboard},
