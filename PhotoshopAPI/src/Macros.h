@@ -9,7 +9,7 @@
 #define PSAPI_NAMESPACE_BEGIN namespace NAMESPACE_PSAPI {
 #define PSAPI_NAMESPACE_END }
 
-#define PSAPI_UNUSED(x) (void)(x);
+#define PSAPI_UNUSED(x) (void)(x)
 
 #define PSAPI_PROFILING 1
 

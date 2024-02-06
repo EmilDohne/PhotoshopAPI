@@ -35,7 +35,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "Signature is not 1 or 2, got %" PRIu16 " instead", version);
 	}
 
@@ -89,7 +89,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "Depth is invalid, got %" PRIu16, depth);
 	};
 
@@ -100,7 +100,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "ColorMode is invalid, got %" PRIu16, colorMode);
 	};
 }

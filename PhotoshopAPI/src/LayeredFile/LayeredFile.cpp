@@ -479,7 +479,6 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
 	{
 		auto& layerRecord = *layerRecordsIterator;
-		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
 		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
@@ -499,8 +498,16 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		{
 			root.push_back(layer);
 		}
-		++layerRecordsIterator;
-		++channelImageDataIterator;
+		try
+		{
+			++layerRecordsIterator;
+			++channelImageDataIterator;
+		}
+		catch (const std::exception& ex)
+		{
+			PSAPI_UNUSED(ex);
+			PSAPI_LOG_ERROR("LayeredFile", "Unhandled exception when trying to decrement the layer iterator");
+		}
 	}
 	return root;
 }
