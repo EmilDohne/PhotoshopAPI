@@ -80,6 +80,9 @@ endif()
 if(PSAPI_BUILD_TESTS)
     add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopTest")
 endif()
+if(PSAPI_BUILD_BENCHMARKS)
+    add_subdirectory ("${CMAKE_SOURCE_DIR}/PhotoshopBenchmark")
+endif()
 
 # Add our Example directories
 # --------------------------------------------------------------------------
