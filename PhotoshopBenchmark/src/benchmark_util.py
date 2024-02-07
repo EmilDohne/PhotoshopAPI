@@ -52,7 +52,7 @@ def _find_photoshop(search_path: str) -> str:
     if not photoshop_folder_path:
         raise PsNotInstalledError(f"Unable to locate a 'Adobe Photoshop*' folder in the provided path")
     
-    print(f"Found Photoshop Folder f'{os.path.basename(photoshop_folder_path)}'")
+    print(f"Found Photoshop Folder '{os.path.basename(photoshop_folder_path)}'")
     for file in os.listdir(photoshop_folder_path):
         if file.lower() == "photoshop.exe":
             return os.path.join(photoshop_folder_path, file)
