@@ -24,11 +24,15 @@ namespace ImageDataImpl
 			// First write all the scanline sizes, then the compressed data
 			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint16_t>(document, scanlineSizes);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = scanlineSizes;
+				WriteBinaryArray<uint16_t>(document, std::move(data));
 			}
 			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint8_t>(document, compressedData);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = compressedData;
+				WriteBinaryArray<uint8_t>(document, std::move(data));
 			}
 		}
 		else
@@ -38,11 +42,15 @@ namespace ImageDataImpl
 			// First write all the scanline sizes, then the compressed data
 			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint32_t>(document, scanlineSizes);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = scanlineSizes;
+				WriteBinaryArray<uint32_t>(document, std::move(data));
 			}
 			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint8_t>(document, compressedData);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = compressedData;
+				WriteBinaryArray<uint8_t>(document, std::move(data));
 			}
 		}
 	}

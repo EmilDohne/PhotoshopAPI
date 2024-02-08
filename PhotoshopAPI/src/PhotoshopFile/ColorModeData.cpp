@@ -60,7 +60,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 	if (header.m_ColorMode == Enum::ColorMode::Indexed)
 	{
 		WriteBinaryData<uint32_t>(document, m_Data.size());
-		WriteBinaryArray<uint8_t>(document, m_Data);
+		WriteBinaryArray<uint8_t>(document, std::move(m_Data));
 		m_Size = m_Data.size() + 4u;
 	}
 	else if (header.m_Depth == Enum::BitDepth::BD_32)
@@ -84,7 +84,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		}
 		m_Data = data;
 		WriteBinaryData<uint32_t>(document, data.size());
-		WriteBinaryArray<uint8_t>(document, data);
+		WriteBinaryArray<uint8_t>(document, std::move(data));
 		m_Size = data.size() + 4u;
 
 	}

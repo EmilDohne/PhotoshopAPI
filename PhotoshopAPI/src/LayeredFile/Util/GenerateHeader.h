@@ -14,8 +14,9 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 FileHeader generateHeader(LayeredFile<T>& layeredFile)
 {
+	// Since we decide the version on write we just pass psd in here
 	FileHeader header(
-		layeredFile.getVersion(),
+		Enum::Version::Psd,
 		layeredFile.getNumChannels(),
 		layeredFile.m_Width,
 		layeredFile.m_Height,

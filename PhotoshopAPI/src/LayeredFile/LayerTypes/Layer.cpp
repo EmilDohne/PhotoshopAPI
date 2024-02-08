@@ -28,47 +28,35 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 	m_LayerName = layerRecord.m_LayerName.getString();
 	// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
 	// blendmode if it is present
+	if (!layerRecord.m_AdditionalLayerInfo.has_value())
 	{
 		// Short circuit if no additional layer info is present
-		if (!layerRecord.m_AdditionalLayerInfo.has_value())
+		m_BlendMode = layerRecord.m_BlendMode;
+	}
+	else
+	{
+		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
+		auto sectionDivider = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
+		if (sectionDivider.has_value() && sectionDivider.value()->m_BlendMode.has_value())
 		{
-			m_BlendMode = layerRecord.m_BlendMode;
+			m_BlendMode = sectionDivider.value()->m_BlendMode.value();
 		}
 		else
 		{
-			auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
-			auto sectionDivider = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
-			if (sectionDivider.has_value() && sectionDivider.value()->m_BlendMode.has_value())
-			{
-				m_BlendMode = sectionDivider.value()->m_BlendMode.value();
-			}
-			else
-			{
-				m_BlendMode = layerRecord.m_BlendMode;
-			}
+			m_BlendMode = layerRecord.m_BlendMode;
 		}
 	}
 	// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 	m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
 	m_Opacity = layerRecord.m_Opacity;
 
-	// Generate our coordinates from the layer extents, for the x and y coordinates we calculate the offset of the centers
-	// and use that 
-	m_Width = layerRecord.m_Right - layerRecord.m_Left;
-	m_Height = layerRecord.m_Bottom - layerRecord.m_Top;
-
-	// Documents start at 0, 0 and goes to width, height.
-	// We need floats here as when dividing by 2 we would otherwise truncate
-	float documentCenterX = static_cast<float>(header.m_Width) / 2;
-	float documentCenterY = static_cast<float>(header.m_Height) / 2;
-
-	// Calculate our layer coordinates by adding half the width to the left
-	float layerCenterX = static_cast<float>(layerRecord.m_Left + m_Width) / 2;
-	float layerCenterY = static_cast<float>(layerRecord.m_Top + m_Height) / 2;
-
-	// Finally just calculate the difference between these two
-	m_CenterX = documentCenterX - layerCenterX;
-	m_CenterY = documentCenterY - layerCenterY;
+	// Generate our coordinates from the extents
+	ChannelExtents extents{ layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right };
+	ChannelCoordinates coordinates = generateChannelCoordinates(extents, header);
+	m_Width = coordinates.width;
+	m_Height = coordinates.height;
+	m_CenterX = coordinates.centerX;
+	m_CenterY = coordinates.centerY;
 
 	// Move the layer mask into our layerMask struct, for now this only does pixel masks
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
@@ -100,11 +88,25 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			auto& layerMaskParams = maskParams.m_LayerMask.value();
 
 			lrMask.isDisabled = layerMaskParams.m_Disabled;
+			lrMask.isMaskRelativeToLayer = layerMaskParams.m_PositionRelativeToLayer;
+			lrMask.defaultColor = layerMaskParams.m_DefaultColor;
 			lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
 			lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
 
 			// Set the layer mask by moving our temporary struct
 			m_LayerMask = std::optional(std::move(lrMask));
+		}
+	}
+
+	// Get the reference point (if it is there)
+	if (layerRecord.m_AdditionalLayerInfo.has_value())
+	{
+		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
+		auto referencePoint = additionalLayerInfo.getTaggedBlock<ReferencePointTaggedBlock>(Enum::TaggedBlockKey::lrReferencePoint);
+		if (referencePoint.has_value())
+		{
+			m_ReferencePointX.emplace(referencePoint.value()->m_ReferenceX);
+			m_ReferencePointY.emplace(referencePoint.value()->m_ReferenceY);
 		}
 	}
 }
@@ -113,7 +115,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
+std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData(const FileHeader& header)
 {
 	auto lrMaskData = LayerRecords::LayerMaskData();
 
@@ -127,18 +129,14 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 	{
 		LayerRecords::LayerMask lrMask = LayerRecords::LayerMask{};
 
-		int32_t top, left, bottom, right;
-		int32_t centerX = m_LayerMask.value().maskData.getCenterX();
-		int32_t centerY = m_LayerMask.value().maskData.getCenterY();
+		float centerX = m_LayerMask.value().maskData.getCenterX();
+		float centerY = m_LayerMask.value().maskData.getCenterY();
 		int32_t width = m_LayerMask.value().maskData.getWidth();
 		int32_t height = m_LayerMask.value().maskData.getHeight();
-		top		= centerY - height / 2;
-		left	= centerX - width / 2;
-		bottom	= centerY + height / 2;
-		right	= centerX + width / 2;
+		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
 		lrMaskData.m_Size += 16u;
 
-		uint8_t defaultColor = 255u;
+		// Default color
 		lrMaskData.m_Size += 1u;
 
 		// This is the size for the mask bitflags
@@ -162,11 +160,13 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 
 		}
 
-		lrMask.m_Top = top;
-		lrMask.m_Left = left;
-		lrMask.m_Bottom = bottom;
-		lrMask.m_Right = right;
+		lrMask.m_Top = extents.top;
+		lrMask.m_Left = extents.left;
+		lrMask.m_Bottom = extents.bottom;
+		lrMask.m_Right = extents.right;
+		lrMask.m_DefaultColor = m_LayerMask.value().defaultColor;
 		lrMask.m_Disabled = m_LayerMask.value().isDisabled;
+		lrMask.m_PositionRelativeToLayer = m_LayerMask.value().isMaskRelativeToLayer;
 		lrMask.m_HasMaskParams = hasMaskDensity || hasMaskFeather;
 		lrMask.m_HasUserMaskDensity = hasMaskDensity;
 		lrMask.m_HasUserMaskFeather = hasMaskFeather;
@@ -196,41 +196,27 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<int32_t, int32_t, int32_t, int32_t> Layer<T>::generateExtents(const FileHeader& header)
+PascalString Layer<T>::generatePascalString()
 {
-	// The document always uses 0 based extents. so if a document is 64x64 pixels the extents would be 
-	// [0, 0, 64, 64] making our calculations much easier
-	int32_t documentTop = 0;
-	int32_t documentLeft = 0;
-	int32_t documentBottom = header.m_Height;
-	int32_t documentRight = header.m_Width;
-
-	// Our center coordinates are in the middle of the canvas, which means if continuing our 
-	// example they translate to 32, 32
-
-	float translatedCenterX = static_cast<float>(documentRight) / 2 + m_CenterX;
-	float translatedCenterY = static_cast<float>(documentBottom) / 2 + m_CenterY;
-
-	// Use our translated center variables to make Photoshop compliant coordinates. If the 
-	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
-
-	int32_t top	= static_cast<int32_t>(translatedCenterY - static_cast<float>(m_Height) / 2);
-	int32_t left = static_cast<int32_t>(translatedCenterX - static_cast<float>(m_Width) / 2);
-	int32_t bottom = static_cast<int32_t>(translatedCenterY + static_cast<float>(m_Height) / 2);
-	int32_t right = static_cast<int32_t>(translatedCenterX + static_cast<float>(m_Width) / 2);
-
-	return std::make_tuple(top, left, bottom, right);
+	return PascalString(m_LayerName, 4u);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-PascalString Layer<T>::generatePascalString()
+std::vector<std::shared_ptr<TaggedBlock>> Layer<T>::generateTaggedBlocks()
 {
-	return PascalString(m_LayerName, 4u);
-}
+	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
+	// Generate our reference point tagged block
+	if (m_ReferencePointX.has_value() && m_ReferencePointY.has_value())
+	{
+		auto referencePointPtr = std::make_shared<ReferencePointTaggedBlock>(m_ReferencePointX.value(), m_ReferencePointY.value());
+		blockVec.push_back(referencePointPtr);
+	}
 
+	return blockVec;
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -281,18 +267,22 @@ std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::Colo
 	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 	ChannelImageData channelData{};
 
-	auto extents = this->generateExtents(header);
-	int32_t top = std::get<0>(extents);
-	int32_t left = std::get<1>(extents);
-	int32_t bottom = std::get<2>(extents);
-	int32_t right = std::get<3>(extents);
+	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(m_Width, m_Height, m_CenterX, m_CenterY), header);
+
+	auto blockVec = this->generateTaggedBlocks();
+	std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+	if (blockVec.size() > 0)
+	{
+		TaggedBlockStorage blockStorage = { blockVec };
+		taggedBlocks.emplace(blockStorage);
+	}
 
 	LayerRecord lrRecord(
 		PascalString(m_LayerName, 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
-		top,
-		left,
-		bottom,
-		right,
+		extents.top,
+		extents.left,
+		extents.bottom,
+		extents.right,
 		0u,		// Number of channels, photoshop does appear to actually write out all the channels with 0 length, we will see later if that is a requirement
 		channelInfo,
 		m_BlendMode,
@@ -301,10 +291,23 @@ std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::Colo
 		LayerRecords::BitFlags(false, !m_IsVisible, false),
 		std::nullopt,	// LayerMaskData
 		Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
-		std::nullopt	// Additional layer information
+		std::move(taggedBlocks)		// Additional layer information
 	);
 
 	return std::make_tuple(std::move(lrRecord), std::move(channelData));
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void Layer<T>::setCompression(const Enum::Compression compCode)
+{
+	if (m_LayerMask.has_value())
+	{
+		m_LayerMask.value().maskData.m_Compression = compCode;
+	}
 }
 
 

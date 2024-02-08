@@ -80,7 +80,7 @@ public:
             va_list args;
             va_start(args, format);
             int result = vsnprintf(buffer, sizeof(buffer), format, args);
-            PSAPI_UNUSED(result)
+            PSAPI_UNUSED(result);
             va_end(args);
         }
         auto time = getTime();

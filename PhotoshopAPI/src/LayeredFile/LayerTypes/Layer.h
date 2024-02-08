@@ -15,7 +15,9 @@ template <typename T>
 struct LayerMask
 {
 	ImageChannel<T> maskData;
+	bool isMaskRelativeToLayer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
 	bool isDisabled = false;
+	uint8_t defaultColor = 255u;
 	std::optional<uint8_t> maskDensity;
 	std::optional<float64_t> maskFeather;
 
@@ -56,6 +58,7 @@ struct Layer
 
 	std::string m_LayerName;
 
+	/// A pixel layer mask
 	std::optional<LayerMask<T>> m_LayerMask;
 
 	Enum::BlendMode m_BlendMode;
@@ -100,28 +103,34 @@ struct Layer
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
 	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
 	
+	/// Changes the compression mode of all channels in this layer to the given compression mode
+	virtual void setCompression(const Enum::Compression compCode);
+
 	virtual ~Layer() = default;
 
 protected:
 
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointX = std::nullopt;
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointY = std::nullopt;
+
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
 	///
 	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
-	std::optional<LayerRecords::LayerMaskData> generateMaskData();
-
-	/// \brief Generate the channel extents from the width, height, and center coordinates.
-	///
-	/// Using the provided FileHeader's coordinates as a reference frame, this function returns
-	/// the top, left, bottom, and right extents in that order.
-	///
-	/// \param header The FileHeader providing reference frame coordinates.
-	/// \return A tuple representing the top, left, bottom, and right extents of the layer.
-	std::tuple<int32_t, int32_t, int32_t, int32_t> generateExtents(const FileHeader& header);
+	std::optional<LayerRecords::LayerMaskData> generateMaskData(const FileHeader& header);
 
 	/// \brief Generate the layer name as a Pascal string.
 	///
 	/// \return A PascalString representing the layer name.
 	PascalString generatePascalString();
+
+	/// \brief Generate the tagged blocks necessary for writing the layer
+	virtual std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks();
 
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).
 	///
@@ -140,5 +149,6 @@ protected:
 	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to BaseImageChannel.
 	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> extractLayerMask(bool doCopy);
 };
+
 
 PSAPI_NAMESPACE_END

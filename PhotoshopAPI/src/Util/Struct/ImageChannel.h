@@ -5,6 +5,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 #include "Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "CoordinateUtil.h"
 
 #include "blosc2.h"
 
@@ -98,7 +99,7 @@ struct ImageChannel : public BaseImageChannel
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
-		uint64_t numChunks = ceil((static_cast<uint64_t>(width) * height * sizeof(T)) / m_ChunkSize);
+		uint64_t numChunks = ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize);
 		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
 		if (numChunks == 0)
 		{
@@ -131,11 +132,13 @@ struct ImageChannel : public BaseImageChannel
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
+				// C-blos2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
+				// C-blos2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
 				remainingSize = 0;
 			}

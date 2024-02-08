@@ -39,6 +39,7 @@ namespace
 		}
 		return true;
 	}
+
 }
 
 
@@ -48,11 +49,7 @@ template <typename T>
 std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
-	auto extents = Layer<T>::generateExtents(header);
-	int32_t top = std::get<0>(extents);
-	int32_t left = std::get<1>(extents);
-	int32_t bottom = std::get<2>(extents);
-	int32_t right = std::get<3>(extents);
+	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 
 	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
@@ -63,15 +60,24 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 
 	uint8_t clipping = 0u;	// No clipping mask for now
 	LayerRecords::BitFlags bitFlags(false, !Layer<T>::m_IsVisible, false);
-	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
+	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 	
+	// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
+	auto blockVec = this->generateTaggedBlocks();
+	std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+	if (blockVec.size() > 0)
+	{
+		TaggedBlockStorage blockStorage = { blockVec };
+		taggedBlocks.emplace(blockStorage);
+	}
+
 	LayerRecord lrRecord = LayerRecord(
 		lrName,
-		top,
-		left,
-		bottom,
-		right,
+		extents.top,
+		extents.left,
+		extents.bottom,
+		extents.right,
 		channelCount,
 		channelInfoVec,
 		Layer<T>::m_BlendMode,
@@ -80,7 +86,7 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 		bitFlags,
 		lrMaskData,
 		blendingRanges,
-		std::nullopt	// We dont really need to pass any additional layer info in here
+		std::move(taggedBlocks)
 	);
 
 	return std::make_tuple(std::move(lrRecord), std::move(channelImgData));
@@ -97,8 +103,12 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
 	{
 		auto& channelInfo = layerRecord.m_ChannelInformation[i];
+
+		// We already extract masks ahead of time and skip them here to avoid raising warnings
+		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
+
 		auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
-		// Pointers might have already been invalidated such as extracting masks beforehand
+		// Pointers might have already been
 		if (!channelPtr) continue;
 
 		// Insert any valid pointers to channels we have. We move to avoid having 
@@ -339,5 +349,21 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 		Layer<T>::m_LayerMask = mask;
 	}
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void ImageLayer<T>::setCompression(const Enum::Compression compCode)
+{
+	// Change the mask channels' compression codec
+	Layer<T>::setCompression(compCode);
+	// Change the image channel compression codecs
+	for (const auto& [key, val] : m_ImageData)
+	{
+		m_ImageData[key].m_Compression = compCode;
+	}
+}
+
 
 PSAPI_NAMESPACE_END

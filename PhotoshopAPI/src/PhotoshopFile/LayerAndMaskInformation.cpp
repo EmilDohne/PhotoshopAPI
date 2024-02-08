@@ -109,6 +109,12 @@ void LayerRecords::LayerMask::setFlags(const uint8_t bitFlag)
 	m_Disabled = (bitFlag & m_DisabledMask) != 0;
 	m_IsVector = (bitFlag & m_IsVectorMask) != 0;
 	m_HasMaskParams = (bitFlag & m_HasMaskParamsMask) != 0;
+
+	// We do need to pass this through for roundtripping
+	m_unknownBit2 = (bitFlag & m_unknownBit2Mask) != 0;
+	m_unknownBit5 = (bitFlag & m_unknownBit5Mask) != 0;
+	m_unknownBit6 = (bitFlag & m_unknownBit6Mask) != 0;
+	m_unknownBit7 = (bitFlag & m_unknownBit7Mask) != 0;
 }
 
 
@@ -126,6 +132,15 @@ uint8_t LayerRecords::LayerMask::getFlags() const noexcept
 		bitFlags |= m_IsVectorMask;
 	if (m_HasMaskParams)
 		bitFlags |= m_HasMaskParamsMask;
+	
+	if (m_unknownBit2)
+		bitFlags |= m_unknownBit2Mask;
+	if (m_unknownBit5)
+		bitFlags |= m_unknownBit5Mask;
+	if (m_unknownBit6)
+		bitFlags |= m_unknownBit6Mask;
+	if (m_unknownBit7)
+		bitFlags |= m_unknownBit7Mask;
 
 	return bitFlags;
 }
@@ -273,12 +288,13 @@ void LayerRecords::LayerMaskData::read(File& document)
 		mask.m_Right = ReadBinaryData<int32_t>(document);
 		toRead -= 16u;
 
-		const uint8_t defaultColor = ReadBinaryData<uint8_t>(document);
-		toRead -= 1u;
-		if (defaultColor != 0 && defaultColor != 255)
+		mask.m_DefaultColor = ReadBinaryData<uint8_t>(document);
+		if (mask.m_DefaultColor != 0 && mask.m_DefaultColor != 255)
 		{
-			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", defaultColor);
+			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", mask.m_DefaultColor);
 		}
+		toRead -= 1u;
+
 
 		const uint8_t bitFlags = ReadBinaryData<uint8_t>(document);
 		mask.setFlags(bitFlags);
@@ -951,10 +967,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
 			const uint64_t channelOffset = channelOffsets[index];
 
-			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
-			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			float centerX = static_cast<float>(layerRecord.m_Left + width) / 2;
-			float centerY = static_cast<float>(layerRecord.m_Top + height) / 2;
+			// Generate our coordinates from the layer extents
+			ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -962,10 +976,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
 				{
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
-					width = mask.m_Right - mask.m_Left;
-					height = mask.m_Bottom - mask.m_Top;
-					centerX = static_cast<float>(mask.m_Left + width) / 2;
-					centerY = static_cast<float>(mask.m_Top + height) / 2;
+					// Generate our coordinates from the mask extents instead
+					coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
@@ -978,44 +990,41 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<uint8_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
-				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX,
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<uint16_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
-				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width,
+					coordinates.height,
+					coordinates.centerX,
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				if (channel.m_Size == 2u && channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
-				{
-					PSAPI_LOG_WARNING("ChannelImageData", "Encountered an unsupported Vector image channel which we will simply skip for now");
-					std::vector<float32_t> decompressedData = {};
-					auto channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, 0u, 0u, centerX, centerY);
-					m_ImageData[index] = std::move(channelPtr);
-					return;
-				}
-				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX, 
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
@@ -1037,7 +1046,7 @@ void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& 
 			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec");
 
 		WriteBinaryData<uint16_t>(document, compressionCode.value());
-		WriteBinaryArray<uint8_t>(document, compressedChannelData[i]);
+		WriteBinaryArray<uint8_t>(document, std::move(compressedChannelData[i]));
 	}
 }
 
@@ -1371,12 +1380,6 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
-
-	// I genuinely have no idea why this is required but when we dont add this the files wont open in Photoshop
-	if (header.m_Version == Enum::Version::Psb)
-	{
-		WritePadddingBytes(document, 2u);	// 4 also appears to be a valid number here
-	}
 }
 
 PSAPI_NAMESPACE_END

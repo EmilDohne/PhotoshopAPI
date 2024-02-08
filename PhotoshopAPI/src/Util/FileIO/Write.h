@@ -54,7 +54,7 @@ void WriteBinaryDataVariadic(File& document, TPsb data, Enum::Version version)
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
 template <typename T>
-void WriteBinaryArray(File& document, std::vector<T>& data)
+void WriteBinaryArray(File& document, std::vector<T>&& data)
 {
 	// Endian encode in-place
 	endianEncodeBEArray<T>(data);
@@ -70,7 +70,7 @@ inline void WritePadddingBytes(File& document, uint64_t numBytes)
 {
 	if (numBytes == 0) return;
 	std::vector<uint8_t> padding(numBytes, 0);
-	WriteBinaryArray<uint8_t>(document, padding);
+	WriteBinaryArray<uint8_t>(document,std::move(padding));
 }
 
 

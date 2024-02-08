@@ -1,0 +1,2 @@
+matplotlib >= 3.8.2
+photoshop-python-api >= 0.22.4

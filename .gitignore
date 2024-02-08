@@ -3,6 +3,23 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+# Benchmark Binary files
+PhotoshopBenchmark/documents/read
+PhotoshopBenchmark/documents/write
+
+# Benchmark Result Files
+PhotoshopBenchmark/benchmarkStatisticsPhotoshop.txt
+PhotoshopBenchmark/benchmarkStatisticsPSAPI.txt
+
+# Benchmark plots, these will be housed in the docs/ folder instead
+PhotoshopBenchmark/plots/
+
+# Benchmark temp files from vscode
+PhotoshopBenchmark/src/tempCodeRunnerFile.py
+
+# Benchmark executables
+*.exe
+
 # VS Code Counter
 .VSCodeCounter/
 
