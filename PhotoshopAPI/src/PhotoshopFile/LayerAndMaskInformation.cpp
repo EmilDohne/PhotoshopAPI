@@ -952,10 +952,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
 			const uint64_t channelOffset = channelOffsets[index];
 
-			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
-			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			float centerX = static_cast<float>(layerRecord.m_Left + width) / 2;
-			float centerY = static_cast<float>(layerRecord.m_Top + height) / 2;
+			// Generate our coordinates from the layer extents
+			ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -963,10 +961,8 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
 				{
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
-					width = mask.m_Right - mask.m_Left;
-					height = mask.m_Bottom - mask.m_Top;
-					centerX = static_cast<float>(mask.m_Left + width) / 2;
-					centerY = static_cast<float>(mask.m_Top + height) / 2;
+					// Generate our coordinates from the mask extents instead
+					coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
@@ -979,20 +975,41 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX,
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width,
+					coordinates.height,
+					coordinates.centerX,
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
+					channelCompression, 
+					decompressedData, 
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX, 
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});

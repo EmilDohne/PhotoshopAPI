@@ -109,24 +109,27 @@ struct Layer
 
 protected:
 
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointX = std::nullopt;
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointY = std::nullopt;
+
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
 	///
 	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
 	std::optional<LayerRecords::LayerMaskData> generateMaskData();
 
-	/// \brief Generate the channel extents from the width, height, and center coordinates.
-	///
-	/// Using the provided FileHeader's coordinates as a reference frame, this function returns
-	/// the top, left, bottom, and right extents in that order.
-	///
-	/// \param header The FileHeader providing reference frame coordinates.
-	/// \return A tuple representing the top, left, bottom, and right extents of the layer.
-	std::tuple<int32_t, int32_t, int32_t, int32_t> generateExtents(const FileHeader& header);
-
 	/// \brief Generate the layer name as a Pascal string.
 	///
 	/// \return A PascalString representing the layer name.
 	PascalString generatePascalString();
+
+	/// \brief Generate the tagged blocks necessary for writing the layer
+	virtual std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks();
 
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).
 	///

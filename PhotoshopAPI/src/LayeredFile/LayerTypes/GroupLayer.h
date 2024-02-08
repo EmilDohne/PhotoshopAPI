@@ -66,10 +66,10 @@ struct GroupLayer : public Layer<T>
 	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
 	GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed = false);
 
-private:
-	/// \brief Generates an additional layer information section holding group state information.
-	/// \return The generated additional layer information.
-	AdditionalLayerInfo generateAdditionalLayerInfo();
+
+protected:
+	/// \brief Generate the tagged blocks necessary for writing the layer
+	std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks() override;
 };
 
 

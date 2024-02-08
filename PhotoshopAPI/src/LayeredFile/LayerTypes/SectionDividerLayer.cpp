@@ -27,11 +27,13 @@ std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(co
 	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 	ChannelImageData channelData{};
 
-	LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
-	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
-	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
-	TaggedBlockStorage blockStorage = { blockVec };
-	std::optional<AdditionalLayerInfo> lrInfo(blockStorage);
+	auto blockVec = this->generateTaggedBlocks();
+	std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+	if (blockVec.size() > 0)
+	{
+		TaggedBlockStorage blockStorage = { blockVec };
+		taggedBlocks.emplace(blockStorage);
+	}
 
 	LayerRecord lrRecord(
 		PascalString("", 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
@@ -47,10 +49,23 @@ std::tuple<LayerRecord, ChannelImageData> SectionDividerLayer<T>::toPhotoshop(co
 		LayerRecords::BitFlags{},
 		std::nullopt,
 		Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
-		std::move(lrInfo)
+		std::move(taggedBlocks)
 	);
 
 	return std::make_tuple(std::move(lrRecord), std::move(channelData));
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<TaggedBlock>> SectionDividerLayer<T>::generateTaggedBlocks()
+{
+	auto blockVec = Layer<T>::generateTaggedBlocks();
+	LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
+	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
+
+	return blockVec;
 }
 
 

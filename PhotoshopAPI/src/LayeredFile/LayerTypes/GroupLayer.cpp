@@ -69,11 +69,7 @@ template <typename T>
 std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
-	auto extents = Layer<T>::generateExtents(header);
-	int32_t top = std::get<0>(extents);
-	int32_t left = std::get<1>(extents);
-	int32_t bottom = std::get<2>(extents);
-	int32_t right = std::get<3>(extents);
+	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 	uint16_t channelCount = static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 	uint8_t clipping = 0u;	// No clipping mask for now
 	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
@@ -95,14 +91,22 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 		channelDataVec.push_back(std::move(std::get<1>(maskData.value())));
 	}
 
+	auto blockVec = this->generateTaggedBlocks();
+	std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+	if (blockVec.size() > 0)
+	{
+		TaggedBlockStorage blockStorage = { blockVec };
+		taggedBlocks.emplace(blockStorage);
+	}
+
 	if (Layer<T>::m_BlendMode != Enum::BlendMode::Passthrough)
 	{
 		LayerRecord lrRecord = LayerRecord(
 			lrName,
-			top,
-			left,
-			bottom,
-			right,
+			extents.top,
+			extents.left,
+			extents.bottom,
+			extents.right,
 			channelCount,
 			channelInfoVec,
 			Layer<T>::m_BlendMode,
@@ -111,7 +115,7 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 			bitFlags,
 			lrMaskData,
 			blendingRanges,
-			this->generateAdditionalLayerInfo()
+			std::move(taggedBlocks)
 		);
 		return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
 	}
@@ -120,10 +124,10 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 		// If the group has a blendMode of Passthrough we actually need to pass that in the LrSectionDivider tagged block while the layers blendmode is set to normal
 		LayerRecord lrRecord = LayerRecord(
 			lrName,
-			top,
-			left,
-			bottom,
-			right,
+			extents.top,
+			extents.left,
+			extents.bottom,
+			extents.right,
 			channelCount,
 			channelInfoVec,
 			Enum::BlendMode::Normal,
@@ -132,7 +136,7 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 			bitFlags,
 			lrMaskData,
 			blendingRanges,
-			this->generateAdditionalLayerInfo()
+			std::move(taggedBlocks)
 		);
 		return std::make_tuple(std::move(lrRecord), ChannelImageData(std::move(channelDataVec)));
 	}
@@ -164,8 +168,38 @@ GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
+GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
 {
+	PROFILE_FUNCTION();
+	Layer<T>::m_LayerName = layerParameters.layerName;
+	Layer<T>::m_BlendMode = layerParameters.blendMode;
+	Layer<T>::m_Opacity = layerParameters.opacity;
+	Layer<T>::m_IsVisible = true;
+	Layer<T>::m_CenterX = layerParameters.posX;
+	Layer<T>::m_CenterY = layerParameters.posY;
+	Layer<T>::m_Width = layerParameters.width;
+	Layer<T>::m_Height = layerParameters.height;
+
+
+	// Set the layer mask if present
+	if (layerParameters.layerMask.has_value())
+	{
+		LayerMask<T> mask{};
+		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		mask.maskData = std::move(maskChannel);
+		Layer<T>::m_LayerMask = mask;
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<std::shared_ptr<TaggedBlock>> GroupLayer<T>::generateTaggedBlocks()
+{
+	auto blockVec = Layer<T>::generateTaggedBlocks();
+
 	LrSectionTaggedBlock sectionBlock;
 	if (m_isCollapsed)
 	{
@@ -189,39 +223,9 @@ AdditionalLayerInfo GroupLayer<T>::generateAdditionalLayerInfo()
 			sectionBlock = LrSectionTaggedBlock(Enum::SectionDivider::OpenFolder, std::nullopt);
 		}
 	}
-	std::vector<std::shared_ptr<TaggedBlock>> blockVec;
 	blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
-	TaggedBlockStorage blockStorage(blockVec);
-	AdditionalLayerInfo lrInfo(blockStorage);
-	return lrInfo;
-}
 
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
-GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
-{
-	PROFILE_FUNCTION();
-	Layer<T>::m_LayerName = layerParameters.layerName;
-	Layer<T>::m_BlendMode = layerParameters.blendMode;
-	Layer<T>::m_Opacity = layerParameters.opacity;
-	Layer<T>::m_IsVisible = true;
-	Layer<T>::m_CenterX = layerParameters.posX;
-	Layer<T>::m_CenterY = layerParameters.posY;
-	Layer<T>::m_Width = layerParameters.width;
-	Layer<T>::m_Height = layerParameters.height;
-
-
-	// Set the layer mask if present
-	if (layerParameters.layerMask.has_value())
-	{
-		LayerMask<T> mask{};
-		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-		mask.maskData = std::move(maskChannel);
-		Layer<T>::m_LayerMask = mask;
-	}
+	return blockVec;
 }
 
 PSAPI_NAMESPACE_END
