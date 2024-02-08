@@ -178,9 +178,6 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 template <typename T>
 std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
-	uint64_t initialOffset = stream.getOffset();
-	stream.setOffset(offset);
-
 	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
 	if (size % sizeof(T) != 0)
 	{
@@ -189,12 +186,8 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t siz
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
 	endianEncodeBEArray<T>(data);
-
-	stream.setOffset(initialOffset);
-
-
 	return data;
 }
 
@@ -284,9 +277,7 @@ template<>
 inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<uint8_t> data(size);
-	uint64_t initialOffset = stream.getOffset();
-	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
-	stream.setOffset(initialOffset);
+	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
 	return data;
 }
 
@@ -298,9 +289,7 @@ template<>
 inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<int8_t> data(size);
-	uint64_t initialOffset = stream.getOffset();
-	stream.setOffsetAndRead(reinterpret_cast<char*>(data.data()), offset, size);
-	stream.setOffset(initialOffset);
+	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
 	return data;
 }
 

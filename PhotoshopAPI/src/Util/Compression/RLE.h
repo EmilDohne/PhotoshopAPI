@@ -184,7 +184,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     if (header.m_Version == Enum::Version::Psd)
     {
         std::vector<uint16_t> buff(height);
-        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
+        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
         endianDecodeBEArray<uint16_t>(buff);
         for (auto item : buff)
         {
@@ -194,7 +194,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     else
     {
         std::vector<uint32_t> buff(height);
-        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
+        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
         endianDecodeBEArray<uint32_t>(buff);
         for (auto item : buff)
         {
@@ -214,7 +214,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 
 	// Read the data without converting from BE to native as we need to decompress first
 	std::vector<uint8_t> compressedData(scanlineTotalSize);
-    stream.setOffsetAndRead(reinterpret_cast<char*>(compressedData.data()), offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
+    stream.read(reinterpret_cast<char*>(compressedData.data()), offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
 
 	// Decompress using the PackBits algorithm
     std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData, width, height);

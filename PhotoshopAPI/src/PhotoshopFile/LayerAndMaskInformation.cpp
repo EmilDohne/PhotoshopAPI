@@ -961,7 +961,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 	m_ChannelCompression.resize(layerRecord.m_ChannelInformation.size());
 
 	// Iterate the channels in parallel
-	std::for_each(std::execution::par, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
+	std::for_each(std::execution::par_unseq, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
 		[&](const LayerRecords::ChannelInformation& channel)
 		{
 			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
@@ -982,7 +982,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
 			uint16_t compressionNum = 0;
-			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
+			stream.read(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
 			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
 			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
 			m_ChannelCompression[index] = channelCompression;
@@ -1130,7 +1130,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 
 	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(std::execution::par_unseq, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
