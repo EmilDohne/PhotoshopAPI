@@ -115,15 +115,14 @@ struct ImageChannel : public BaseImageChannel
 		cparams.typesize = sizeof(T);
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
-		// Running this on a single thread speeds up execution since we already are running across
-
+		// Running this on a single thread speeds up execution since we already are running across multiple threads
 		cparams.nthreads = 1;
 		dparams.nthreads = 1;
 		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
-
+		
 		uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
 		for (int nchunk = 0; nchunk < numChunks; ++nchunk)
 		{
@@ -142,10 +141,10 @@ struct ImageChannel : public BaseImageChannel
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
 				remainingSize = 0;
 			}
-			if (nchunks != nchunk + 1)
-			{
-				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
-			}
+			if (nchunks != nchunk + 1) [[unlikely]]
+				{
+					PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
+				}
 		}
 
 		// Log the total compressed / uncompressed size to later determine our stats

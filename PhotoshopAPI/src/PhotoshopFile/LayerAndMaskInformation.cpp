@@ -993,7 +993,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(
 					channelCompression, 
-					decompressedData, 
+					std::move(decompressedData),
 					channel.m_ChannelID, 
 					coordinates.width, 
 					coordinates.height, 
@@ -1006,7 +1006,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
 					channelCompression, 
-					decompressedData, 
+					std::move(decompressedData),
 					channel.m_ChannelID, 
 					coordinates.width,
 					coordinates.height,
@@ -1019,7 +1019,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
 				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
 					channelCompression, 
-					decompressedData, 
+					std::move(decompressedData),
 					channel.m_ChannelID, 
 					coordinates.width, 
 					coordinates.height, 

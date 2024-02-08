@@ -24,8 +24,9 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
+std::vector<uint8_t> DecompressPackBits(const std::span<uint8_t> compressedData, const uint32_t width, const uint32_t height)
 {
+    PROFILE_FUNCTION();
     std::vector<uint8_t> decompressedData;
     decompressedData.reserve((sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height)));
 
@@ -213,8 +214,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     }
 
 	// Read the data without converting from BE to native as we need to decompress first
-	std::vector<uint8_t> compressedData(scanlineTotalSize);
-    stream.read(reinterpret_cast<char*>(compressedData.data()), offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
+    std::span<uint8_t> compressedData = stream.read(offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
 
 	// Decompress using the PackBits algorithm
     std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData, width, height);

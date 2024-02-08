@@ -25,7 +25,7 @@ namespace {
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	std::vector<T> UnZip(const std::vector<uint8_t>& compressedData, const uint64_t decompressedSize)
+	std::vector<T> UnZip(const std::span<uint8_t> compressedData, const uint64_t decompressedSize)
 	{
 		PROFILE_FUNCTION();
 		// Inflate the data
@@ -353,8 +353,7 @@ std::vector<T> DecompressZIP(ByteStream& stream, uint64_t offset, const uint32_t
 {
 	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
-	std::vector<uint8_t> compressedData(compressedSize);
-	stream.read(reinterpret_cast<char*>(compressedData.data()), offset, compressedSize);
+	std::span<uint8_t> compressedData = stream.read(offset, compressedSize);
 
 	// Decompress using Inflate ZIP
 	std::vector<T> decompressedData = UnZip<T>(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
@@ -409,8 +408,7 @@ std::vector<T> DecompressZIPPrediction(ByteStream& stream, uint64_t offset, cons
 {
 	PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
-	std::vector<uint8_t> compressedData(compressedSize);
-	stream.read(reinterpret_cast<char*>(compressedData.data()), offset, compressedSize);
+	std::span<uint8_t> compressedData = stream.read(offset, compressedSize);
 
 	// Decompress using Inflate ZIP
 	std::vector<T> decompressedData = UnZip<T>(compressedData, static_cast<uint64_t>(width) * static_cast<uint64_t>(height));

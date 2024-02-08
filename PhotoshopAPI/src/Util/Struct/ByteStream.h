@@ -5,6 +5,7 @@
 #include "File.h"
 
 #include <vector>
+#include <span>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -27,6 +28,9 @@ struct ByteStream
 	// Unlike the above read method this does not actually change the 
 	// m_Offset variable 
 	void read(char* buffer, uint64_t offset, uint64_t size);
+
+	std::span<uint8_t> read(uint64_t size);
+	std::span<uint8_t> read(uint64_t offset, uint64_t size);
 
 	ByteStream() = default;
 	// Initialize a ByteStream from a given document and read the size into the ByteStream object
