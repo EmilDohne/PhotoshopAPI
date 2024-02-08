@@ -73,7 +73,7 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 	uint16_t channelCount = static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 	uint8_t clipping = 0u;	// No clipping mask for now
 	LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
-	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
+	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 
 

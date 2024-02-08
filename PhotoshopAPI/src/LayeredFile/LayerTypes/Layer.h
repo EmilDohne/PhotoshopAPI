@@ -15,6 +15,7 @@ template <typename T>
 struct LayerMask
 {
 	ImageChannel<T> maskData;
+	bool isMaskRelativeToLayer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
 	bool isDisabled = false;
 	uint8_t defaultColor = 255u;
 	std::optional<uint8_t> maskDensity;
@@ -121,7 +122,7 @@ protected:
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
 	///
 	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
-	std::optional<LayerRecords::LayerMaskData> generateMaskData();
+	std::optional<LayerRecords::LayerMaskData> generateMaskData(const FileHeader& header);
 
 	/// \brief Generate the layer name as a Pascal string.
 	///

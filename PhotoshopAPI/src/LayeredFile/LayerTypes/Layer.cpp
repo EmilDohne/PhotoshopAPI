@@ -88,6 +88,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			auto& layerMaskParams = maskParams.m_LayerMask.value();
 
 			lrMask.isDisabled = layerMaskParams.m_Disabled;
+			lrMask.isMaskRelativeToLayer = layerMaskParams.m_PositionRelativeToLayer;
 			lrMask.defaultColor = layerMaskParams.m_DefaultColor;
 			lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
 			lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
@@ -114,7 +115,7 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
+std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData(const FileHeader& header)
 {
 	auto lrMaskData = LayerRecords::LayerMaskData();
 
@@ -128,15 +129,11 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 	{
 		LayerRecords::LayerMask lrMask = LayerRecords::LayerMask{};
 
-		int32_t top, left, bottom, right;
-		int32_t centerX = m_LayerMask.value().maskData.getCenterX();
-		int32_t centerY = m_LayerMask.value().maskData.getCenterY();
+		float centerX = m_LayerMask.value().maskData.getCenterX();
+		float centerY = m_LayerMask.value().maskData.getCenterY();
 		int32_t width = m_LayerMask.value().maskData.getWidth();
 		int32_t height = m_LayerMask.value().maskData.getHeight();
-		top		= centerY - height / 2;
-		left	= centerX - width / 2;
-		bottom	= centerY + height / 2;
-		right	= centerX + width / 2;
+		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
 		lrMaskData.m_Size += 16u;
 
 		// Default color
@@ -163,12 +160,13 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData()
 
 		}
 
-		lrMask.m_Top = top;
-		lrMask.m_Left = left;
-		lrMask.m_Bottom = bottom;
-		lrMask.m_Right = right;
+		lrMask.m_Top = extents.top;
+		lrMask.m_Left = extents.left;
+		lrMask.m_Bottom = extents.bottom;
+		lrMask.m_Right = extents.right;
 		lrMask.m_DefaultColor = m_LayerMask.value().defaultColor;
 		lrMask.m_Disabled = m_LayerMask.value().isDisabled;
+		lrMask.m_PositionRelativeToLayer = m_LayerMask.value().isMaskRelativeToLayer;
 		lrMask.m_HasMaskParams = hasMaskDensity || hasMaskFeather;
 		lrMask.m_HasUserMaskDensity = hasMaskDensity;
 		lrMask.m_HasUserMaskFeather = hasMaskFeather;

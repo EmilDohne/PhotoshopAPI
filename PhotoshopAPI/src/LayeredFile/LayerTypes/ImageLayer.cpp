@@ -60,7 +60,7 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 
 	uint8_t clipping = 0u;	// No clipping mask for now
 	LayerRecords::BitFlags bitFlags(false, !Layer<T>::m_IsVisible, false);
-	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData();
+	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
 	
 	// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer

@@ -109,6 +109,12 @@ void LayerRecords::LayerMask::setFlags(const uint8_t bitFlag)
 	m_Disabled = (bitFlag & m_DisabledMask) != 0;
 	m_IsVector = (bitFlag & m_IsVectorMask) != 0;
 	m_HasMaskParams = (bitFlag & m_HasMaskParamsMask) != 0;
+
+	// We do need to pass this through for roundtripping
+	m_unknownBit2 = (bitFlag & m_unknownBit2Mask) != 0;
+	m_unknownBit5 = (bitFlag & m_unknownBit5Mask) != 0;
+	m_unknownBit6 = (bitFlag & m_unknownBit6Mask) != 0;
+	m_unknownBit7 = (bitFlag & m_unknownBit7Mask) != 0;
 }
 
 
@@ -126,6 +132,15 @@ uint8_t LayerRecords::LayerMask::getFlags() const noexcept
 		bitFlags |= m_IsVectorMask;
 	if (m_HasMaskParams)
 		bitFlags |= m_HasMaskParamsMask;
+	
+	if (m_unknownBit2)
+		bitFlags |= m_unknownBit2Mask;
+	if (m_unknownBit5)
+		bitFlags |= m_unknownBit5Mask;
+	if (m_unknownBit6)
+		bitFlags |= m_unknownBit6Mask;
+	if (m_unknownBit7)
+		bitFlags |= m_unknownBit7Mask;
 
 	return bitFlags;
 }
