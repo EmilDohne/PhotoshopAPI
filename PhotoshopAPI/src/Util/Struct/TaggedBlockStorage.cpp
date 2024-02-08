@@ -56,6 +56,7 @@ template std::shared_ptr<TaggedBlock> TaggedBlockStorage::getTaggedBlockView(con
 template std::shared_ptr<Lr16TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<Lr32TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<LrSectionTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -95,6 +96,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(lrSectionTaggedBlock);
 			return lrSectionTaggedBlock;
 		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrReferencePoint)
+		{
+			auto lrReferencePointBlock = std::make_shared<ReferencePointTaggedBlock>();
+			lrReferencePointBlock->read(document, header, offset, signature, padding);
+			this->m_TaggedBlocks.push_back(lrReferencePointBlock);
+			return lrReferencePointBlock;
+		}
 		else
 		{
 			auto baseTaggedBlock = std::make_shared<TaggedBlock>();
@@ -102,6 +110,8 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(baseTaggedBlock);
 			return baseTaggedBlock;
 		}
+
+
 	}
 	else
 	{

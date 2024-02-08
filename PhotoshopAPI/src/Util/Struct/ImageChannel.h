@@ -5,6 +5,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 #include "Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "CoordinateUtil.h"
 
 #include "blosc2.h"
 
