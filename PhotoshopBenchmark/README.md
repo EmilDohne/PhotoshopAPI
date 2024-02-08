@@ -12,7 +12,7 @@ To run the benchmark suite locally you have the additional requirement of having
 
     $ .venv/Scripts/activate.bat
 
-    $ py -m pip install requirements.txt
+    $ py -m pip install -r requirements.txt
 
     ```
 
