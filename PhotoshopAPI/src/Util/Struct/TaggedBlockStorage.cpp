@@ -110,8 +110,6 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(baseTaggedBlock);
 			return baseTaggedBlock;
 		}
-
-
 	}
 	else
 	{

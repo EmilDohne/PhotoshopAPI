@@ -163,7 +163,7 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
 
 
@@ -192,7 +192,7 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
 
 
@@ -225,7 +225,7 @@ void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, c
 	m_Length = length;
 	m_ReferenceX = ReadBinaryData<float64_t>(document);
 	m_ReferenceY = ReadBinaryData<float64_t>(document);
-	m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + 4u;
 }
 
 
