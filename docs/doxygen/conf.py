@@ -19,7 +19,7 @@ breathe_projects = {}
 
 if read_the_docs_build:
     input_dir = '../../PhotoshopAPI'
-    output_dir = 'build'
+    output_dir = 'docs/doxygen'
     configureDoxyfile(input_dir, output_dir)
     subprocess.call('doxygen', shell=True)
     breathe_projects['PhotoshopAPI'] = output_dir + '/xml'
