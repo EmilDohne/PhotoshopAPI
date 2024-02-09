@@ -23,6 +23,7 @@
 #include <span>
 #include <variant>
 #include <memory>
+#include <filesystem>
 #include <algorithm>
 
 
@@ -40,6 +41,22 @@ template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<uint16_t>(Layered
 template std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile<float32_t>(LayeredFile<float32_t>&& layeredFile);
 
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ICCProfile::ICCProfile(const std::filesystem::path& pathToICCFile)
+{
+	if (pathToICCFile.extension() != ".icc") [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("ICCProfile", "Must pass a valid .icc file into the ctor. Got a %s", pathToICCFile.extension().string().c_str());
+	}
+	// Open a File object and read the raw bytes of the ICC file
+	File iccFile = { pathToICCFile };
+	m_Data = ReadBinaryArray<uint8_t>(iccFile, iccFile.getSize());
+}
+
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
@@ -50,8 +67,9 @@ std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFi
 	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
 	ImageResources imageResources = generateImageResources<T>(layeredFile);
 	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
+	ImageData imageData = ImageData(layeredFile.getNumChannels(true, true));	// Ignore any mask or alpha channels
 
-	return std::make_unique<PhotoshopFile>(header, colorModeData, imageResources, std::move(lrMaskInfo));
+	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }
 
 
@@ -67,9 +85,17 @@ LayeredFile<T>::LayeredFile(std::unique_ptr<PhotoshopFile> file)
 	m_ColorMode = document->m_Header.m_ColorMode;
 	m_Width = document->m_Header.m_Width;
 	m_Height = document->m_Header.m_Height;
-	m_Version = document->m_Header.m_Version;
+
+	// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
+	m_ICCProfile = LayeredFileImpl::readICCProfile(document.get());
+	// Extract the DPI from the document, default to 72
+	m_DotsPerInch = LayeredFileImpl::readDPI(document.get());
 
 	m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
+	if (m_Layers.size() == 0)
+	{
+		PSAPI_LOG_ERROR("LayeredFile", "Read an invalid PhotoshopFile as it does not contain any layers. Is the only layer in the scene locked? This is not supported by the PhotoshopAPI");
+	}
 }
 
 
@@ -193,6 +219,38 @@ void LayeredFile<T>::moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
+void LayeredFile<T>::moveLayer(const std::string layer, const std::string parentLayer /* = "" */)
+{
+	PROFILE_FUNCTION();
+	if (parentLayer == "")
+	{
+		auto layerPtr = findLayer(layer);
+		if (!layerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+		}
+		moveLayer(layerPtr);
+	}
+	else
+	{
+		auto layerPtr = findLayer(layer);
+		auto parentLayerPtr = findLayer(parentLayer);
+		if (!layerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+		}
+		if (!parentLayerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the parentlayer %s for moveLayer()", parentLayer.c_str());
+		}
+		moveLayer(layerPtr, parentLayerPtr);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
 void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
 {
 	PROFILE_FUNCTION();
@@ -212,6 +270,34 @@ void LayeredFile<T>::removeLayer(std::shared_ptr<Layer<T>> layer)
 			return;
 		}
 		++index;
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::removeLayer(const std::string layer)
+{
+	PROFILE_FUNCTION();
+	auto layerPtr = findLayer(layer);
+	if (!layerPtr) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for removeLayer()", layer.c_str());
+	}
+	moveLayer(layerPtr);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::setCompression(const Enum::Compression compCode)
+{
+	for (const auto& documentLayer : m_Layers)
+	{
+		documentLayer->setCompression(compCode);
+		LayeredFileImpl::setCompressionRecurse(documentLayer, compCode);
 	}
 }
 
@@ -253,9 +339,9 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFile<T>::generateFlatLayers(std::o
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
+uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/, bool ignoreAlphaChannel /* = false */)
 {
-	std::set<uint16_t> channelIndices = {};
+	std::set<int16_t> channelIndices = {};
 	for (const auto& layer : m_Layers)
 	{
 		LayeredFileImpl::getNumChannelsRecurse(layer, channelIndices);
@@ -268,6 +354,12 @@ uint16_t LayeredFile<T>::getNumChannels(bool ignoreMaskChannels /*= true*/)
 		if (channelIndices.contains(-2))
 			numChannels -= 1u;
 		if (channelIndices.contains(-3))
+			numChannels -= 1u;
+	}
+	if (ignoreAlphaChannel)
+	{
+		// Photoshop doesnt store the alpha channels in the merged image data section so we must not count it
+		if (channelIndices.contains(-1))
 			numChannels -= 1u;
 	}
 	return numChannels;
@@ -387,7 +479,6 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 	while (layerRecordsIterator != layerRecords.rend() && channelImageDataIterator != channelImageData.rend())
 	{
 		auto& layerRecord = *layerRecordsIterator;
-		// Get the variant of channelImageDatas and extract the type we have
 		auto& channelImage = *channelImageDataIterator;
 
 		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
@@ -407,8 +498,16 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		{
 			root.push_back(layer);
 		}
-		++layerRecordsIterator;
-		++channelImageDataIterator;
+		try
+		{
+			++layerRecordsIterator;
+			++channelImageDataIterator;
+		}
+		catch (const std::exception& ex)
+		{
+			PSAPI_UNUSED(ex);
+			PSAPI_LOG_ERROR("LayeredFile", "Unhandled exception when trying to decrement the layer iterator");
+		}
 	}
 	return root;
 }
@@ -455,6 +554,11 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 template <typename T>
 std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
+	// Short ciruit here as we have an image layer for sure
+	if (!layerRecord.m_AdditionalLayerInfo.has_value())
+	{
+		return std::make_shared<ImageLayer<T>>(layerRecord, channelImageData, header);
+	}
 	const AdditionalLayerInfo& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 
 	// Check for GroupLayer, ArtboardLayer or SectionDividerLayer
@@ -606,7 +710,7 @@ std::shared_ptr<Layer<T>> LayeredFileImpl::findLayerRecurse(std::shared_ptr<Laye
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices)
+void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices)
 {
 	// We must first check if we could recurse down another level. We dont check for masks on the 
 	// group here yet as we do that further down
@@ -634,6 +738,23 @@ void LayeredFileImpl::getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLaye
 	}
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFileImpl::setCompressionRecurse(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode)
+{
+	// We must first check if we could recurse down another level. We dont check for masks on the 
+	// group here yet as we do that further down
+	if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
+	{
+		for (const auto& layerPtr : groupLayerPtr->m_Layers)
+		{
+			layerPtr->setCompression(compCode);
+			setCompressionRecurse(layerPtr, compCode);
+		}
+	}
+}
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -686,5 +807,32 @@ bool LayeredFileImpl::removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, 
 }
 
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ICCProfile LayeredFileImpl::readICCProfile(const PhotoshopFile* file)
+{
+	const auto blockPtr = file->m_ImageResources.getResourceBlockView<ICCProfileBlock>(Enum::ImageResource::ICCProfile);
+	if (blockPtr)
+	{
+		return ICCProfile{ blockPtr->m_RawICCProfile };
+	}
+	return ICCProfile{};
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+float LayeredFileImpl::readDPI(const PhotoshopFile* file)
+{
+	const auto blockPtr = file->m_ImageResources.getResourceBlockView<ResolutionInfoBlock>(Enum::ImageResource::ResolutionInfo);
+	if (blockPtr)
+	{
+		// We dont actually have to do any back and forth conversions here since the value is always stored as DPI and never as 
+		// DPCM
+		return blockPtr->m_HorizontalRes.getFloat();
+	}
+	return 72.0f;
+}
 
 PSAPI_NAMESPACE_END

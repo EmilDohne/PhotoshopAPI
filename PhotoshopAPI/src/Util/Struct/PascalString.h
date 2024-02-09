@@ -14,7 +14,7 @@ PSAPI_NAMESPACE_BEGIN
 // or 4 bytes depending on which section its read from
 struct PascalString : public FileSection
 {
-	PascalString() { FileSection::m_Size = 0u; };
+	PascalString() { FileSection::m_Size = 2u; m_String = ""; };
 	// Initialize a padded PascalString based on its size
 	PascalString(std::string name, const uint8_t padding);
 

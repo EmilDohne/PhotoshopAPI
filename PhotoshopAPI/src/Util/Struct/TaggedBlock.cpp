@@ -135,7 +135,7 @@ void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const
 		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value");
 	WriteBinaryData<uint32_t>(document, sectionDividerType.value());
 	
-	// For some reason the blend mode has another 4 bytes for a 8BPS key
+	// For some reason the blend mode has another 4 bytes for a 8BIM key
 	if (m_BlendMode.has_value())
 	{
 		WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
@@ -163,7 +163,7 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
 
 
@@ -192,7 +192,7 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	m_Length = length;
 	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + 8u;
+	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
 
 
@@ -209,5 +209,36 @@ void Lr32TaggedBlock::write(File& document, const FileHeader& header, const uint
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding /*= 1u*/)
+{
+	m_Key = Enum::TaggedBlockKey::lrReferencePoint;
+	m_Offset = offset;
+	m_Signature = signature;
+	uint32_t length = ReadBinaryData<uint32_t>(document);
+	// The data is always two doubles 
+	if (length != 16u)
+	{
+		PSAPI_LOG_ERROR("ReferencePointTaggedBlock", "Invalid size for Reference Point found, expected 16 but got %u", length);
+	}
+	m_Length = length;
+	m_ReferenceX = ReadBinaryData<float64_t>(document);
+	m_ReferenceY = ReadBinaryData<float64_t>(document);
+	m_TotalLength = length + 4u + 4u + 4u;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /* = 1u */)
+{
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("fxrp").m_Value);
+	WriteBinaryData<uint32_t>(document, m_TotalLength - 12u);
+
+	WriteBinaryData<float64_t>(document, m_ReferenceX);
+	WriteBinaryData<float64_t>(document, m_ReferenceY);
+}
 
 PSAPI_NAMESPACE_END

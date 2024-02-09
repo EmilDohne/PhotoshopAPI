@@ -2,6 +2,10 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q4TYALW)
 
+[![Documentation Status](https://readthedocs.org/projects/photoshopapi/badge/?version=latest)](https://photoshopapi.readthedocs.io/en/latest/?badge=latest)
+
+> [!NOTE]
+> The PhotoshopAPI is still in early development status which means it is subject to change and will likely include bugs. If you find any please report them to the issues page
 
 About
 =========
@@ -36,6 +40,7 @@ Supported:
 - Pixel Masks
 - Modifying layer attributes (name, blend mode etc.)
 - Setting the Display ICC Profile
+- Setting the DPI of the document
 - 8-, 16- and 32-bit files
 - RGB Color Mode
 - All compression modes known to Photoshop
@@ -56,13 +61,13 @@ Not Supported:
 Documentation
 ===============
 
-The full documentation with benchmarks, build instructions and code reference is hosted on the [PhotoshopAPI readthedocs page](https://readthedocs.org/projects/photoshopapi/).
+The full documentation with benchmarks, build instructions and code reference is hosted on the [PhotoshopAPI readthedocs page](https://photoshopapi.readthedocs.io/).
 
 
 Requirements
 =============
 
-This goes over requirements for usage, for development requirements please visit the [docs](https://readthedocs.org/projects/photoshopapi/).
+This goes over requirements for usage, for development requirements please visit the [docs](https://photoshopapi.readthedocs.io/).
 
 - A CPU with AVX2 support (this is most CPUs after 2014). If you are unsure, please refer to your CPUs specification
 - A C++ 20 compatible compiler
@@ -74,7 +79,7 @@ The PhotoshopAPI is built with performance as one of its foremost concerns. Usin
 SIMD instructions to leverage all the computing power your computer can afford. 
 
 As the feature set increases this will keep being one of the key requirements.
-For detailed benchmarks running on a variety of different configurations please visit the [docs](https://readthedocs.org/projects/photoshopapi/)
+For detailed benchmarks running on a variety of different configurations please visit the [docs](https://photoshopapi.readthedocs.io/)
 
 
 Python Wrapper
@@ -91,7 +96,7 @@ The primary struct to familiarize yourself with when using the PhotoshopAPI is t
 GroupLayer), all of these are template structs for each of the available bit depths. 
 
 To get a feel of what is possible with the API as well as how to use it please refer to ``PhotoshopExample/`` directory. To familiarize
-yourself with the main concepts, as well as recommended workflows check out the [docs](https://readthedocs.org/projects/photoshopapi/)
+yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/)
 
 If more fine grained control over the binary structure is necessary, one can modify the PhotoshopFile which is what is parsed by the API internally.
 Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. 

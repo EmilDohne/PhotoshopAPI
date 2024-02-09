@@ -131,6 +131,7 @@ namespace Enum
 		GridAndGuidesInformation,
 		ThumbnailResource,
 		GlobalAngle,
+		ICCProfile,
 		ICCUntaggedProfile,
 		SpotHalftone,
 		IDSeed,
@@ -170,6 +171,7 @@ namespace Enum
 			{1032, ImageResource::GridAndGuidesInformation},
 			{1036, ImageResource::ThumbnailResource},
 			{1037, ImageResource::GlobalAngle},
+			{1039, ImageResource::ICCProfile},
 			{1041, ImageResource::ICCUntaggedProfile},
 			{1043, ImageResource::SpotHalftone},
 			{1044, ImageResource::IDSeed},
@@ -209,6 +211,53 @@ namespace Enum
 	{
 		return findByValue(imageResourceMap, key).value();
 	}
+
+	enum class ResolutionUnit
+	{
+		PixelsPerInch,
+		PixelsPerCm
+	};
+	// Since this struct is so simple we do bidirectional mapping directly here
+	inline std::unordered_map<uint16_t, ResolutionUnit> resolutionUnitMap =
+	{
+		{1u, ResolutionUnit::PixelsPerInch},
+		{2u, ResolutionUnit::PixelsPerCm},
+	};
+	// Since this struct is so simple we do bidirectional mapping directly here
+	inline std::unordered_map<ResolutionUnit, uint16_t> resolutionUnitMapRev =
+	{
+		{ResolutionUnit::PixelsPerInch, 1u},
+		{ResolutionUnit::PixelsPerCm, 2u},
+	};
+
+
+	enum class DisplayUnit
+	{
+		Inches,
+		Cm,
+		Points,
+		Picas,
+		Columns
+	};
+	// Since this struct is so simple we do bidirectional mapping directly here
+	inline std::unordered_map<uint16_t, DisplayUnit> displayUnitMap =
+	{
+		{1u, DisplayUnit::Inches},
+		{2u, DisplayUnit::Cm},
+		{3u, DisplayUnit::Points},
+		{4u, DisplayUnit::Picas},
+		{5u, DisplayUnit::Columns}
+	};
+	// Since this struct is so simple we do bidirectional mapping directly here
+	inline std::unordered_map<DisplayUnit, uint16_t> displayUnitMapRev =
+	{
+		{DisplayUnit::Inches, 1u},
+		{DisplayUnit::Cm, 2u},
+		{DisplayUnit::Points, 3u},
+		{DisplayUnit::Picas, 4u},
+		{DisplayUnit::Columns, 5u}
+	};
+
 }
 
 
@@ -554,6 +603,7 @@ namespace Enum
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
+			{"lsdk", TaggedBlockKey::lrSectionDivider},
 			{"artb", TaggedBlockKey::lrArtboard},
 			{"artd", TaggedBlockKey::lrArtboard},
 			{"abdd", TaggedBlockKey::lrArtboard},

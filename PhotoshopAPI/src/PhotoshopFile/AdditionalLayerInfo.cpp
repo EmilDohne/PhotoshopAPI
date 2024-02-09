@@ -37,9 +37,8 @@ void AdditionalLayerInfo::read(File& document, const FileHeader& header, const u
 		m_Size += toRead;
 		document.skip(toRead);
 		return;
-	}
-
-	if (toRead <= 0)
+	} 
+	else
 	{
 		PSAPI_LOG_WARNING("AdditionalLayerInfo", "Read too much data for the additional layer info, was allowed %" PRIu64 " but read %" PRIu64 " instead",
 			maxLength, maxLength - toRead);

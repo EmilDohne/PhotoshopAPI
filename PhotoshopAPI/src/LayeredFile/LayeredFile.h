@@ -17,6 +17,7 @@
 #include <variant>
 #include <vector>
 #include <set>
+#include <filesystem>
 #include <memory>
 
 
@@ -46,6 +47,28 @@ enum class LayerOrder
 };
 
 
+/// Helper Structure for loading an ICC profile from memory of disk. Photoshop will then store
+/// the raw bytes of the ICC profile in their ICCProfile ResourceBlock (ID 1039)
+struct ICCProfile
+{
+	/// Initialize an empty ICCProfile
+	ICCProfile() : m_Data({}) {};
+	/// Initialize the ICCProfile by passing in a raw byte array of an ICC profile
+	ICCProfile(std::vector<uint8_t> data) : m_Data(data) {};
+	/// Initialize the ICCProfile by loading the path contents from disk
+	ICCProfile(const std::filesystem::path& pathToICCFile);
+
+	/// Return a copy of the ICC profile data
+	std::vector<uint8_t> getData() const noexcept { return m_Data; };
+
+	/// Return the absolute size of the data
+	uint32_t getDataSize() const noexcept { return m_Data.size(); };
+
+private:
+	std::vector<uint8_t> m_Data;
+};
+
+
 /// \brief Represents a layered file structure.
 /// 
 /// This struct defines a layered file structure, where each file contains a hierarchy
@@ -59,6 +82,13 @@ struct LayeredFile
 	/// The root layers in the file, they may contain multiple levels of sub-layers
 	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
 	
+	/// The ICC Profile associated with the file, this may be empty in which case there will be no colour
+	/// profile associated with the file
+	ICCProfile m_ICCProfile;
+
+	/// The DPI of the document, this will only change the display unit and wont resize any data
+	float m_DotsPerInch = 72.0f;
+
 	/// The bit depth of the file
 	Enum::BitDepth m_BitDepth = Enum::BitDepth::BD_8;
 
@@ -70,6 +100,8 @@ struct LayeredFile
 
 	/// The height of the file in pixels. Can be up to 30,000 for PSD and up to 300,000 for PSB
 	uint64_t m_Height = 0u;
+
+	LayeredFile() = default;
 
 	/// \ingroup Constructors
 	/// \brief Constructs a LayeredFile instance from a Photoshop file.
@@ -119,13 +151,39 @@ struct LayeredFile
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
 	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr);
 
+	/// \brief Moves a layer from its current parent to a new parent node.
+	///
+	/// If no parentLayer is provided, moves the layer to the root. If the parentLayer is found to be under
+	/// the layer it will issue a warning and stop the insertion. I.e. if moving "/Group" to "/Group/GroupNested/"
+	/// that would be an illegal move operation as well as moving a layer to itself
+	///
+	/// \param layer The layer to be moved.
+	/// \param parentLayer The new parent layer (if not provided, moves to the root).
+	void moveLayer(const std::string layer, const std::string parentLayer = "");
+
 	/// \brief Recursively removes a layer from the layer structure.
 	///
 	/// Iterates the layer structure until the given node is found and then removes it from the tree.
 	///
 	/// \param layer The layer to be removed.
 	void removeLayer(std::shared_ptr<Layer<T>> layer);
+
+	/// \brief Recursively removes a layer from the layer structure.
+	///
+	/// Iterates the layer structure until the given node is found and then removes it from the tree.
+	///
+	/// \param layer The layer to be removed.
+	void removeLayer(const std::string layer);
 	
+	/// \brief change the compression codec across all layers and channels
+	///
+	/// Iterates the layer structure and changes the compression codec for write on all layers.
+	/// This is especially useful for e.g. 8-bit files which from Photoshop write with RLE compression
+	/// but ZipCompression gives us better ratios
+	/// 
+	/// \param compCode the compression codec to apply
+	void setCompression(const Enum::Compression compCode);
+
 	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
 	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
 	/// \brief Generates a flat layer stack from either the current root or a given layer.
@@ -137,26 +195,15 @@ struct LayeredFile
 	/// \return The flat layer tree with automatic \ref SectionDividerLayer inserted to mark section ends
 	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
 
-	/// \brief Sets the version of the layered file.
-	///
-	/// By version Psd or Psb is meant. This is however also automatically detected on write depending on the 
-	/// extension we write out
-	/// 
-	/// \param version The version to set.
-	inline void setVersion(Enum::Version version) { m_Version = version; };
-
-	/// \brief Gets the version of the layered file.
-	///
-	/// \return The version of the layered file.
-	inline Enum::Version getVersion() { return m_Version; };
-
 	/// \brief Gets the total number of channels in the document.
 	///
-	/// Excludes mask channels unless ignoreMaskChannels is set to false.
+	/// Excludes mask channels unless ignoreMaskChannels is set to false. Same goes 
+	/// for ignoreAlphaChannel
 	///
 	/// \param ignoreMaskChannels Flag to exclude mask channels from the count.
+	/// \param ignoreMaskChannel Flag to exclude the transparency alpha channel from the count.
 	/// \return The total number of channels in the document.
-	uint16_t getNumChannels(bool ignoreMaskChannels = true);
+	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true);
 
 	/// \brief Checks if a layer already exists in the nested structure.
 	///
@@ -174,9 +221,8 @@ private:
 	/// \param parentLayer The new parent layer.
 	/// \return True if the move is valid, false otherwise.
 	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer);
-
-	Enum::Version m_Version = Enum::Version::Psd;
 };
+
 
 
 /// \brief Converts a layeredFile into a PhotoshopFile, taking ownership of and invalidating any data
@@ -218,13 +264,16 @@ namespace LayeredFileImpl
 	/// Recursively build a flat layer hierarchy
 	template <typename T>
 	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers);
-
+	
 	/// Find a layer based on a separated path and a parent layer. To be called by LayeredFile::findLayer
 	template <typename T>
 	std::shared_ptr<Layer<T>> findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index);
 
 	template <typename T>
-	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<uint16_t>& channelIndices);
+	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices);
+
+	template <typename T>
+	void setCompressionRecurse(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode);
 
 	template <typename T>
 	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer);
@@ -232,6 +281,17 @@ namespace LayeredFileImpl
 	/// Remove a layer from the hierarchy recursively, if a match is found we short circuit and return early
 	template <typename T>
 	bool removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer);
+
+	// Util functions
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+
+	/// Read the ICC profile from the PhotoshopFile, if it doesnt exist we simply initialize an
+	/// empty ICC profile
+	ICCProfile readICCProfile(const PhotoshopFile* file);
+
+	/// Read the document DPI, default to 72 if we cannot read it.
+	float readDPI(const PhotoshopFile* file);
 }
 
 

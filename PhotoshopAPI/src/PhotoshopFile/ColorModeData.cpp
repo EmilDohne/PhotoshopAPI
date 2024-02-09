@@ -60,7 +60,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 	if (header.m_ColorMode == Enum::ColorMode::Indexed)
 	{
 		WriteBinaryData<uint32_t>(document, m_Data.size());
-		WriteBinaryArray<uint8_t>(document, m_Data);
+		WriteBinaryArray<uint8_t>(document, std::move(m_Data));
 		m_Size = m_Data.size() + 4u;
 	}
 	else if (header.m_Depth == Enum::BitDepth::BD_32)
@@ -68,7 +68,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		// This data is unfortunately undocumented but we just parse the literal values as Photoshop expects these for 32-bit
 		// data. These values were taken from a 32-bit file saved in Photoshop 23.3.2 x64. These defaults should also work for 
 		// versions up and down but this is as of yet untested
-		const std::vector<uint8_t> data = {
+		std::vector<uint8_t> data = {
 			0x68, 0x64, 0x72, 0x74, 0x00, 0x00, 0x00, 0x03, 0x3E, 0x6B, 0x85, 0x1F,
 			0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08, 0x00, 0x44, 0x00, 0x65, 0x00, 0x66, 0x00, 0x61,
 			0x00, 0x75, 0x00, 0x6C, 0x00, 0x74, 0x00, 0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00,
@@ -84,7 +84,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 		}
 		m_Data = data;
 		WriteBinaryData<uint32_t>(document, data.size());
-		WriteBinaryArray<uint8_t>(document, data);
+		WriteBinaryArray<uint8_t>(document, std::move(data));
 		m_Size = data.size() + 4u;
 
 	}

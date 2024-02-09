@@ -24,17 +24,18 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
+std::vector<uint8_t> DecompressPackBits(const std::span<uint8_t> compressedData, const uint32_t width, const uint32_t height)
 {
     PROFILE_FUNCTION();
     std::vector<uint8_t> decompressedData;
     decompressedData.reserve((sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height)));
 
     uint64_t i = 0;
-    while (i < compressedData.size()) {
+    const auto dataSize = compressedData.size();
+    while (i < dataSize) {
         uint8_t value = compressedData[i];
 
-        if (value == 128) 
+        if (value == 128) [[unlikely]]
         {
             // Do nothing, nop. Equivalent to 0 in int8_t
         }
@@ -42,10 +43,11 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
         {
             // Repeat the next byte after this n times
             value = 256 - value;
-            for (int j = 0; j <= value; ++j)
-            {
-                decompressedData.push_back(compressedData.at(i + 1));
-            }
+
+			for (int j = 0; j <= value; ++j)
+			{
+				decompressedData.push_back(compressedData[i + 1]);
+			}
             ++i;
         }
         else 
@@ -53,7 +55,7 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
             // Header byte indicates the next n bytes are to be read as values
             for (int j = 0; j <= value; ++j)
             {
-                decompressedData.push_back(compressedData.at(i + j + 1));
+                decompressedData.push_back(compressedData[i + j + 1]);
             }
             i += static_cast<uint64_t>(value) + 1;
         }
@@ -72,7 +74,6 @@ std::vector<uint8_t> DecompressPackBits(const std::vector<uint8_t>& compressedDa
 // ---------------------------------------------------------------------------------------------------------------------
 inline std::vector<uint8_t> CompressPackBits(const std::span<uint8_t> uncompressedScanline, uint32_t& scanlineSize)
 {
-    PROFILE_FUNCTION();
     // We assume a ~4x compression ratio for RLE to avoid continuously reserving more size
     std::vector<uint8_t> compressedData;
     compressedData.reserve(uncompressedScanline.size() / 4);
@@ -184,7 +185,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     if (header.m_Version == Enum::Version::Psd)
     {
         std::vector<uint16_t> buff(height);
-        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
+        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
         endianDecodeBEArray<uint16_t>(buff);
         for (auto item : buff)
         {
@@ -194,7 +195,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     else
     {
         std::vector<uint32_t> buff(height);
-        stream.setOffsetAndRead(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
+        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
         endianDecodeBEArray<uint32_t>(buff);
         for (auto item : buff)
         {
@@ -213,8 +214,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
     }
 
 	// Read the data without converting from BE to native as we need to decompress first
-	std::vector<uint8_t> compressedData(scanlineTotalSize);
-    stream.setOffsetAndRead(reinterpret_cast<char*>(compressedData.data()), offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
+    std::span<uint8_t> compressedData = stream.read(offset + SwapPsdPsb<uint16_t, uint32_t>(header.m_Version) * height, scanlineTotalSize);
 
 	// Decompress using the PackBits algorithm
     std::vector<uint8_t> decompressedData = DecompressPackBits<T>(compressedData, width, height);
@@ -241,6 +241,7 @@ std::vector<T> DecompressRLE(ByteStream& stream, uint64_t offset, const FileHead
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
+    PROFILE_FUNCTION();
     endianEncodeBEArray(uncompressedData);
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -297,6 +298,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
+    PROFILE_FUNCTION();
 	endianEncodeBEArray(uncompressedData);
 
 	std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -337,6 +339,7 @@ std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, c
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
+    PROFILE_FUNCTION();
 	endianEncodeBEArray(uncompressedData);
 
 	std::vector<std::span<uint8_t>> uncompressedDataViews;

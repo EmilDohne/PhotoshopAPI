@@ -109,6 +109,12 @@ void LayerRecords::LayerMask::setFlags(const uint8_t bitFlag)
 	m_Disabled = (bitFlag & m_DisabledMask) != 0;
 	m_IsVector = (bitFlag & m_IsVectorMask) != 0;
 	m_HasMaskParams = (bitFlag & m_HasMaskParamsMask) != 0;
+
+	// We do need to pass this through for roundtripping
+	m_unknownBit2 = (bitFlag & m_unknownBit2Mask) != 0;
+	m_unknownBit5 = (bitFlag & m_unknownBit5Mask) != 0;
+	m_unknownBit6 = (bitFlag & m_unknownBit6Mask) != 0;
+	m_unknownBit7 = (bitFlag & m_unknownBit7Mask) != 0;
 }
 
 
@@ -126,6 +132,15 @@ uint8_t LayerRecords::LayerMask::getFlags() const noexcept
 		bitFlags |= m_IsVectorMask;
 	if (m_HasMaskParams)
 		bitFlags |= m_HasMaskParamsMask;
+	
+	if (m_unknownBit2)
+		bitFlags |= m_unknownBit2Mask;
+	if (m_unknownBit5)
+		bitFlags |= m_unknownBit5Mask;
+	if (m_unknownBit6)
+		bitFlags |= m_unknownBit6Mask;
+	if (m_unknownBit7)
+		bitFlags |= m_unknownBit7Mask;
 
 	return bitFlags;
 }
@@ -273,12 +288,13 @@ void LayerRecords::LayerMaskData::read(File& document)
 		mask.m_Right = ReadBinaryData<int32_t>(document);
 		toRead -= 16u;
 
-		const uint8_t defaultColor = ReadBinaryData<uint8_t>(document);
-		toRead -= 1u;
-		if (defaultColor != 0 && defaultColor != 255)
+		mask.m_DefaultColor = ReadBinaryData<uint8_t>(document);
+		if (mask.m_DefaultColor != 0 && mask.m_DefaultColor != 255)
 		{
-			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", defaultColor);
+			PSAPI_LOG_ERROR("LayerMaskData", "Layer Mask default color can only be 0 or 255, not %u", mask.m_DefaultColor);
 		}
+		toRead -= 1u;
+
 
 		const uint8_t bitFlags = ReadBinaryData<uint8_t>(document);
 		mask.setFlags(bitFlags);
@@ -598,7 +614,6 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	{
 		PSAPI_LOG_ERROR("LayerRecord", "A Photoshop document cannot have more than 56 channels at once");
 	}
-	m_ChannelInformation.reserve(m_ChannelCount);
 
 	// Read the Channel Information, there is one of these for each channel in the layer record
 	for (int i = 0; i < m_ChannelCount; i++)
@@ -624,10 +639,10 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
-		m_ChannelInformation.emplace_back(channelInfo);
 
 		// Size of one channel information section is 6 or 10 bytes
 		m_Size += static_cast<uint64_t>(2u) + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+		m_ChannelInformation.push_back(channelInfo);
 	}
 
 	// Perform a signature check but do not store it as it isnt required
@@ -946,16 +961,14 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 	m_ChannelCompression.resize(layerRecord.m_ChannelInformation.size());
 
 	// Iterate the channels in parallel
-	std::for_each(std::execution::par, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
+	std::for_each(std::execution::par_unseq, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
 		[&](const LayerRecords::ChannelInformation& channel)
 		{
 			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
 			const uint64_t channelOffset = channelOffsets[index];
 
-			int32_t width = layerRecord.m_Right - layerRecord.m_Left;
-			int32_t height = layerRecord.m_Bottom - layerRecord.m_Top;
-			int32_t centerX = layerRecord.m_Left + width / 2;
-			int32_t centerY = layerRecord.m_Top + height / 2;
+			// Generate our coordinates from the layer extents
+			ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
 
 			// If the channel is a mask the extents are actually stored in the layermaskdata
 			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -963,15 +976,13 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
 				{
 					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
-					width = mask.m_Right - mask.m_Left;
-					height = mask.m_Bottom - mask.m_Top;
-					centerX = mask.m_Left + width / 2;
-					centerY = mask.m_Top + height / 2;
+					// Generate our coordinates from the mask extents instead
+					coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
 				}
 			}
 			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
 			uint16_t compressionNum = 0;
-			stream.setOffsetAndRead(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
+			stream.read(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
 			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
 			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
 			m_ChannelCompression[index] = channelCompression;
@@ -979,20 +990,41 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-			std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-			std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
-			m_ImageData[index] = std::move(channelPtr);
+				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(
+					channelCompression, 
+					std::move(decompressedData),
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX,
+					coordinates.centerY);
+				m_ImageData[index] = std::move(channelPtr);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
+					channelCompression, 
+					std::move(decompressedData),
+					channel.m_ChannelID, 
+					coordinates.width,
+					coordinates.height,
+					coordinates.centerX,
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 			if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, width, height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(channelCompression, decompressedData, channel.m_ChannelID, width, height, centerX, centerY);
+				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
+					channelCompression, 
+					std::move(decompressedData),
+					channel.m_ChannelID, 
+					coordinates.width, 
+					coordinates.height, 
+					coordinates.centerX, 
+					coordinates.centerY);
 				m_ImageData[index] = std::move(channelPtr);
 			}
 		});
@@ -1001,7 +1033,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ChannelImageData::write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression)
+void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& compressedChannelData, const std::vector<Enum::Compression>& channelCompression)
 {
 	m_ChannelOffsetsAndSizes = {};
 	for (int i = 0; i < compressedChannelData.size(); ++i)
@@ -1014,7 +1046,7 @@ void ChannelImageData::write(File& document, const std::vector<std::vector<uint8
 			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec");
 
 		WriteBinaryData<uint16_t>(document, compressionCode.value());
-		WriteBinaryArray<uint8_t>(document, compressedChannelData[i]);
+		WriteBinaryArray<uint8_t>(document, std::move(compressedChannelData[i]));
 	}
 }
 
@@ -1063,9 +1095,10 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		PSAPI_LOG_ERROR("LayerInfo", "LayerInfo() expects an explicit section size if the call is from the additional layer information section");
 	}
 
-	// If this value is negative the first alpha channel of the layer records holds the merged image result (Image Data Section) alpha channel
-	// TODO this isnt yet implemented
+	// If this value is negative the first alpha channel of the layer records would hold the merged image result (Image Data Section) alpha channel
+	// which we do not care about
 	uint16_t layerCount = static_cast<uint16_t>(std::abs(ReadBinaryData<int16_t>(document)));
+
 	m_LayerRecords.reserve(layerCount);
 	m_ChannelImageData.reserve(layerCount);
 
@@ -1097,7 +1130,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 
 	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(std::execution::par_unseq, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
@@ -1237,7 +1270,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 	document.setOffset(sizeMarkerOffset);
 	uint64_t sectionSizeRounded = RoundUpToMultiple<uint64_t>(sectionSize, 4u);
 	// Subtract the section size marker from the total length as it isnt counted
-	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSize - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
+	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, sectionSizeRounded - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version), header.m_Version);
 	// Set the offset back to the end to leave the document in a valid state
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
@@ -1337,6 +1370,7 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	if (m_AdditionalLayerInfo.has_value())
 		m_AdditionalLayerInfo.value().write(document, header, 4u);
 
+	
 	// The section size does not include the size marker so we must subtract that
 	uint64_t endOffset = document.getOffset();
 	uint64_t sectionSize = endOffset - sizeMarkerOffset - SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);

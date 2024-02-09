@@ -35,7 +35,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "Signature is not 1 or 2, got %" PRIu16 " instead", version);
 	}
 
@@ -89,7 +89,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "Depth is invalid, got %" PRIu16, depth);
 	};
 
@@ -100,7 +100,7 @@ void FileHeader::read(File& document)
 	}
 	catch (const std::out_of_range& oor)
 	{
-		PSAPI_UNUSED(oor)
+		PSAPI_UNUSED(oor);
 		PSAPI_LOG_ERROR("FileHeader", "ColorMode is invalid, got %" PRIu16, colorMode);
 	};
 }
@@ -123,11 +123,13 @@ void FileHeader::write(File& document)
 	auto extension = filePath.extension();
 	if (extension == ".psb")
 	{
+		m_Version = Enum::Version::Psb;
 		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psb);
 		WriteBinaryData<uint16_t>(document, versionVal.value());
 	}
 	else if (extension == ".psd")
 	{
+		m_Version = Enum::Version::Psd;
 		std::optional<uint16_t> versionVal = findByValue(Enum::versionMap, Enum::Version::Psd);
 		WriteBinaryData<uint16_t>(document, versionVal.value());
 	}
@@ -137,7 +139,7 @@ void FileHeader::write(File& document)
 	}
 
 	// Filler bytes, must be explicitly set them to 0
-	WriteBinaryArray<uint8_t>(document, std::vector<uint8_t>(6u, 0u));
+	WritePadddingBytes(document, 6u);
 
 	WriteBinaryData<uint16_t>(document, m_NumChannels);
 

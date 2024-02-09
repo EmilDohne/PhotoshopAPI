@@ -5,6 +5,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 #include "Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
+#include "CoordinateUtil.h"
 
 #include "blosc2.h"
 
@@ -32,7 +33,7 @@ struct BaseImageChannel
 
 
 	BaseImageChannel() = default;
-	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord)
+	BaseImageChannel(Enum::Compression compression, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
 	{
 		if (width > 300000u)
 		{
@@ -57,15 +58,15 @@ struct BaseImageChannel
 
 	int32_t getWidth() const { return m_Width; };
 	int32_t getHeight() const { return m_Height; };
-	int32_t getCenterX() const { return m_XCoord; };
-	int32_t getCenterY() const { return m_YCoord; };
+	float getCenterX() const { return m_XCoord; };
+	float getCenterY() const { return m_YCoord; };
 
 protected:
 	// Photoshop stores their positions as a bounding rect but we instead store extents and center coordinates
 	int32_t m_Width = 0u;
 	int32_t m_Height = 0u;
-	int32_t m_XCoord = 0u;
-	int32_t m_YCoord = 0u;
+	float m_XCoord = 0.0f;
+	float m_YCoord = 0.0f;
 };
 
 
@@ -83,9 +84,14 @@ struct ImageChannel : public BaseImageChannel
 	ImageChannel() = default;
 
 	/// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const int32_t xcoord, const int32_t ycoord) :
+	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord) :
 		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
+		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
+		}
+
 
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
@@ -93,7 +99,7 @@ struct ImageChannel : public BaseImageChannel
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
-		uint64_t numChunks = ceil((static_cast<uint64_t>(width) * height * sizeof(T)) / m_ChunkSize);
+		uint64_t numChunks = ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize);
 		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
 		if (numChunks == 0)
 		{
@@ -109,14 +115,14 @@ struct ImageChannel : public BaseImageChannel
 		cparams.typesize = sizeof(T);
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
-		// TODO set this to hardware concurrency?
+		// Running this on a single thread speeds up execution since we already are running across multiple threads
 		cparams.nthreads = 1;
 		dparams.nthreads = 1;
 		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
-
+		
 		uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
 		for (int nchunk = 0; nchunk < numChunks; ++nchunk)
 		{
@@ -125,18 +131,20 @@ struct ImageChannel : public BaseImageChannel
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
+				// C-blos2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
+				// C-blos2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
 				remainingSize = 0;
 			}
-			if (nchunks != nchunk + 1)
-			{
-				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
-			}
+			if (nchunks != nchunk + 1) [[unlikely]]
+				{
+					PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
+				}
 		}
 
 		// Log the total compressed / uncompressed size to later determine our stats

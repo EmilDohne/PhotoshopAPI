@@ -16,6 +16,12 @@ file(GLOB_RECURSE HEADER_FILES ${SOURCE_DIR}/*.h)
 # Set the include dir in our binary
 set(BIN_INCLUDE_DIR ${CMAKE_BINARY_DIR}/include)
 
+# Custom target for header file copying
+add_custom_target(CopyHeaders
+    COMMENT "Copying header files to include directory"
+    VERBATIM
+)
+
 # Copy header files to the include directory with folder structure intact
 foreach(HEADER_FILE ${HEADER_FILES})
     # Get the relative path of the header file
@@ -27,15 +33,24 @@ foreach(HEADER_FILE ${HEADER_FILES})
     file(MAKE_DIRECTORY ${DESTINATION_DIR})
 
     # Copy the header file to the include directory
-    configure_file(${HEADER_FILE} ${DESTINATION_DIR} COPYONLY)
+    add_custom_command(TARGET CopyHeaders
+        COMMAND ${CMAKE_COMMAND} -E copy ${HEADER_FILE} ${DESTINATION_DIR}
+        COMMENT "Copying ${HEADER_FILE} to ${DESTINATION_DIR}"
+    )
 endforeach()
 
 # Copy the /include/PhotoshopAPI.h separately
-configure_file("${PROJECT_SOURCE_DIR}/include/PhotoshopAPI.h" ${BIN_INCLUDE_DIR} COPYONLY)
+add_custom_command(TARGET CopyHeaders
+    COMMAND ${CMAKE_COMMAND} -E copy "${PROJECT_SOURCE_DIR}/include/PhotoshopAPI.h" ${BIN_INCLUDE_DIR}
+    COMMENT "Copying ${PROJECT_SOURCE_DIR}/include/PhotoshopAPI.h to ${BIN_INCLUDE_DIR}"
+)
 
 # Create our static lib
 # --------------------------------------------------------------------------
 add_library (${LIB} STATIC ${MY_SOURCES})
+
+# Add dependency to CopyHeaders
+add_dependencies(${LIB} CopyHeaders)
 
 # Set some additional includes 
 target_include_directories(${LIB} PUBLIC

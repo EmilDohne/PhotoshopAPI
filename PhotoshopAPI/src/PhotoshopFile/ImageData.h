@@ -15,20 +15,24 @@ PSAPI_NAMESPACE_BEGIN
 namespace ImageDataImpl
 {
 	template <typename T>
-	void writeCompressedData(File& document, const FileHeader& header, std::vector<T>&& uncompressedData)
+	void writeCompressedData(File& document, const FileHeader& header, const uint16_t numChannels, std::vector<T>&& uncompressedData)
 	{
 		if (header.m_Version == Enum::Version::Psd)
 		{
 			std::vector<uint16_t> scanlineSizes;
 			std::vector<uint8_t> compressedData = CompressRLEImageDataPsd(uncompressedData, header, header.m_Width, header.m_Height, scanlineSizes);
 			// First write all the scanline sizes, then the compressed data
-			for (int i = 0; i < header.m_NumChannels; ++i)
+			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint16_t>(document, scanlineSizes);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = scanlineSizes;
+				WriteBinaryArray<uint16_t>(document, std::move(data));
 			}
-			for (int i = 0; i < header.m_NumChannels; ++i)
+			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint8_t>(document, compressedData);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = compressedData;
+				WriteBinaryArray<uint8_t>(document, std::move(data));
 			}
 		}
 		else
@@ -36,15 +40,25 @@ namespace ImageDataImpl
 			std::vector<uint32_t> scanlineSizes;
 			std::vector<uint8_t> compressedData = CompressRLEImageDataPsb(uncompressedData, header, header.m_Width, header.m_Height, scanlineSizes);
 			// First write all the scanline sizes, then the compressed data
-			for (int i = 0; i < header.m_NumChannels; ++i)
+			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint32_t>(document, scanlineSizes);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = scanlineSizes;
+				WriteBinaryArray<uint32_t>(document, std::move(data));
 			}
-			for (int i = 0; i < header.m_NumChannels; ++i)
+			for (int i = 0; i < numChannels; ++i)
 			{
-				WriteBinaryArray<uint8_t>(document, compressedData);
+				// we must copy here as we otherwise byteswap multiple times
+				auto data = compressedData;
+				WriteBinaryArray<uint8_t>(document, std::move(data));
 			}
 		}
+	}
+
+	template <typename T>
+	void writeRawData(File& document, const FileHeader& header, std::vector<T>&& uncompressedData)
+	{
+		WriteBinaryArray<T>(document, uncompressedData);
 	}
 }
 
@@ -69,19 +83,28 @@ struct ImageData : public FileSection
 		if (header.m_Depth == Enum::BitDepth::BD_8)
 		{
 			std::vector<uint8_t> emptyData(static_cast<uint64_t>(header.m_Width) * header.m_Height, 0u);
-			ImageDataImpl::writeCompressedData(document, header, std::move(emptyData));
+			ImageDataImpl::writeCompressedData(document, header, m_NumChannels, std::move(emptyData));
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_16)
 		{
 			std::vector<uint16_t> emptyData(static_cast<uint64_t>(header.m_Width) * header.m_Height, 0u);
-			ImageDataImpl::writeCompressedData(document, header, std::move(emptyData));
+			ImageDataImpl::writeCompressedData(document, header, m_NumChannels, std::move(emptyData));
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_32)
 		{
 			std::vector<float32_t> emptyData(static_cast<uint64_t>(header.m_Width) * header.m_Height, 0u);
-			ImageDataImpl::writeCompressedData(document, header, std::move(emptyData));
+			ImageDataImpl::writeCompressedData(document, header, m_NumChannels, std::move(emptyData));
 		}
 	}
+
+	ImageData() = default;
+
+	/// Initialize the ImageData with a given number of channels to write out. We do this rather than deducting
+	/// from the header as the header counts alpha channels while this does not!
+	ImageData(uint16_t numChannels) : m_NumChannels(numChannels) {};
+
+private:
+	uint16_t m_NumChannels = 0u;
 };
 
 

@@ -32,6 +32,7 @@ namespace LayerRecords
 		bool m_isBit4Useful = false;	// This bit simply tells us if the next section holds useful information and whether it should be considered
 		bool m_isPixelDataIrrelevant = false;	// If m_isBit4Useful is set to false this will always also be false, no matter if the value itself would be true
 
+
 		// Set the internal flag states using the provided flag uint8_t
 		void setFlags(const uint8_t flags) noexcept;
 		// Return the current flag states as a uint8_t with the relevant bits set
@@ -44,6 +45,7 @@ namespace LayerRecords
 	private:
 		const static uint8_t m_transparencyProtectedMask = 1u << 0;
 		const static uint8_t m_hiddenMask = 1u << 1;
+		const static uint8_t m_unknownBit2Mask = 1u << 2;
 		const static uint8_t m_bit4UsefulMask = 1u << 3;
 		const static uint8_t m_pixelDataIrrelevantMask = 1u << 4;
 	};
@@ -66,6 +68,11 @@ namespace LayerRecords
 		bool m_Disabled = false;				// Bit 1 of the flags
 		bool m_IsVector = false;				// Bit 3 of the flags
 		bool m_HasMaskParams = false;			// Bit 4 of the flags
+
+		bool m_unknownBit2 = false;
+		bool m_unknownBit5 = false;
+		bool m_unknownBit6 = false;
+		bool m_unknownBit7 = false;
 
 		bool m_HasUserMaskDensity = false;		// Bit 0 of the maskParams
 		bool m_HasUserMaskFeather = false;		// Bit 1 of the maskParams
@@ -102,6 +109,13 @@ namespace LayerRecords
 		const uint8_t m_DisabledMask = 1u << 1;
 		const uint8_t m_IsVectorMask = 1u << 3;
 		const uint8_t m_HasMaskParamsMask = 1u << 4;
+
+		// Unknown bits of the flags which do sometimes get written and affect the look of the document
+		// mostly for roundtripping
+		const static uint8_t m_unknownBit2Mask = 1u << 5;
+		const static uint8_t m_unknownBit5Mask = 1u << 5;
+		const static uint8_t m_unknownBit6Mask = 1u << 6;
+		const static uint8_t m_unknownBit7Mask = 1u << 7;	
 
 		// Mask parameter bitmasks to bitwise & with
 		const uint8_t m_UserMaskDensityMask = 1u << 0;
@@ -274,7 +288,7 @@ struct ChannelImageData : public FileSection
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
 
 	/// Write a single layer to disk, there is no need to write to a preallocated buffer here as we compress ahead of time
-	void write(File& document, const std::vector<std::vector<uint8_t>> compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
+	void write(File& document, std::vector<std::vector<uint8_t>>& compressedChannelData, const std::vector<Enum::Compression>& channelCompression);
 
 	/// Get an index to a specific channel based on the identifier
 	/// returns -1 if no matching channel is found
@@ -367,6 +381,11 @@ struct ChannelImageData : public FileSection
 	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
 	{
 		const int index = this->getChannelIndex(channelIDInfo);
+		if (index == -1)
+		{
+			PSAPI_LOG_WARNING("ChannelImageData", "Unable to retrieve index %i from the ChannelImageData", channelIDInfo.index);
+			return nullptr;
+		}
 		// Take ownership of and invalidate the current index
 		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
