@@ -36,7 +36,7 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 			auto outputFile = File(writePath, params);
 			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 			psdOutDocumentPtr->write(outputFile);
-		}
+		}   
 	}
 #pragma pop_macro("PSAPI_PROFILING")
 }
@@ -83,8 +83,12 @@ int main()
 	using namespace NAMESPACE_PSAPI;
 	static const int repeats = 3u;
 
+	// These files are just here to test the size of single layer photoshop files
+	//readWriteFile<bpp16_t>(1u, "documents/read/single_layer_16bit.psb", "documents/write/single_layer_16bit.psb", "single_layer_16bit");
+	//readWriteFile<bpp32_t>(1u, "documents/read/single_layer_32bit.psb", "documents/write/single_layer_32bit.psb", "single_layer_32bit");
+
 	readWriteFile<bpp8_t>(repeats, "documents/read/large_file_8bit.psb", "documents/write/large_file_8bit.psb", "Automotive Data (8-bit) ~1.27GB");
-	//// Benchmark how changing the compression reduces the file size
+	// Benchmark how changing the compression reduces the file size
 	readWriteFileChangeCompression<bpp8_t>(repeats, "documents/read/large_file_8bit.psb", "documents/write/large_fileZip_8bit.psb", "Automotive Data Zip (8-bit) ~1.27GB");
 	readWriteFile<bpp16_t>(repeats, "documents/read/large_file_16bit.psb", "documents/write/large_file_16bit.psb", "Automotive Data (16-bit) ~1.97GB");
 	readWriteFile<bpp32_t>(repeats, "documents/read/large_file_32bit.psb", "documents/write/large_file_32bit.psb", "Automotive Data (32-bit) ~3.65GB");
