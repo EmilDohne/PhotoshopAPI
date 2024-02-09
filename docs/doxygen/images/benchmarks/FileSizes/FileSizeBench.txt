@@ -1,0 +1,12 @@
+psAutomotive Data (8-bit): 1332381KB
+apiAutomotive Data (8-bit): 1331007KB
+zipAutomotive Data (8-bit): 654303KB
+psAutomotive Data (16-bit): 2068890KB
+apiAutomotive Data (16-bit): 1783722KB
+psAutomotive Data (32-bit): 3828110KB
+apiAutomotive Data (32-bit): 3432613KB
+psGlacious Hyundai Sample (8-bit): 768916KB
+apiGlacious Hyundai Sample (8-bit): 759660KB
+zipGlacious Hyundai Sample (8-bit): 402999KB
+psDeep Nested Layers (8-bit): 517233KB
+apiDeep Nested Layers (8-bit): 482427KB

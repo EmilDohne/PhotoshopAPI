@@ -1,0 +1,42 @@
+readAutomotive Data (8-bit) ~1.27GB: 3528ms
+writeAutomotive Data (8-bit) ~1.27GB: 3828ms
+readAutomotive Data (8-bit) ~1.27GB: 3258ms
+writeAutomotive Data (8-bit) ~1.27GB: 4033ms
+readAutomotive Data (8-bit) ~1.27GB: 3299ms
+writeAutomotive Data (8-bit) ~1.27GB: 4035ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 3249ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 6296ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 3253ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 6029ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 3272ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 5917ms
+readAutomotive Data (16-bit) ~1.97GB: 8613ms
+writeAutomotive Data (16-bit) ~1.97GB: 13579ms
+readAutomotive Data (16-bit) ~1.97GB: 6710ms
+writeAutomotive Data (16-bit) ~1.97GB: 14478ms
+readAutomotive Data (16-bit) ~1.97GB: 6688ms
+writeAutomotive Data (16-bit) ~1.97GB: 13664ms
+readAutomotive Data (32-bit) ~3.65GB: 20099ms
+writeAutomotive Data (32-bit) ~3.65GB: 30177ms
+readAutomotive Data (32-bit) ~3.65GB: 18496ms
+writeAutomotive Data (32-bit) ~3.65GB: 31710ms
+readAutomotive Data (32-bit) ~3.65GB: 18473ms
+writeAutomotive Data (32-bit) ~3.65GB: 32197ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 1989ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 2088ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 1498ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 2164ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 1486ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 2096ms
+readDeep Nested Layers (8-bit) ~.5GB: 1513ms
+writeDeep Nested Layers (8-bit) ~.5GB: 1493ms
+readDeep Nested Layers (8-bit) ~.5GB: 1076ms
+writeDeep Nested Layers (8-bit) ~.5GB: 1556ms
+readDeep Nested Layers (8-bit) ~.5GB: 1103ms
+writeDeep Nested Layers (8-bit) ~.5GB: 1439ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1516ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 3985ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1504ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 4397ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1873ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 4299ms

@@ -1,0 +1,4 @@
+psSingleLayer (16-bit): 296257KB
+apiSingleLayer (16-bit): 84997KB
+psSingleLayer (32-bit): 603543KB
+apiSingleLayer (32-bit): 193056

@@ -1,0 +1,42 @@
+readAutomotive Data (8-bit) ~1.27GB: 1472ms
+writeAutomotive Data (8-bit) ~1.27GB: 2332ms
+readAutomotive Data (8-bit) ~1.27GB: 1541ms
+writeAutomotive Data (8-bit) ~1.27GB: 2392ms
+readAutomotive Data (8-bit) ~1.27GB: 1487ms
+writeAutomotive Data (8-bit) ~1.27GB: 2345ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1475ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2732ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1493ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2702ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1559ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2658ms
+readAutomotive Data (16-bit) ~1.97GB: 4432ms
+writeAutomotive Data (16-bit) ~1.97GB: 6563ms
+readAutomotive Data (16-bit) ~1.97GB: 4482ms
+writeAutomotive Data (16-bit) ~1.97GB: 6801ms
+readAutomotive Data (16-bit) ~1.97GB: 4445ms
+writeAutomotive Data (16-bit) ~1.97GB: 6743ms
+readAutomotive Data (32-bit) ~3.65GB: 12821ms
+writeAutomotive Data (32-bit) ~3.65GB: 15349ms
+readAutomotive Data (32-bit) ~3.65GB: 12944ms
+writeAutomotive Data (32-bit) ~3.65GB: 15549ms
+readAutomotive Data (32-bit) ~3.65GB: 12962ms
+writeAutomotive Data (32-bit) ~3.65GB: 15541ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 824ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 1057ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 786ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 1268ms
+readGlacious Hyundai Sample (8-bit) ~.75GB: 783ms
+writeGlacious Hyundai Sample (8-bit) ~.75GB: 1169ms
+readDeep Nested Layers (8-bit) ~.5GB: 557ms
+writeDeep Nested Layers (8-bit) ~.5GB: 729ms
+readDeep Nested Layers (8-bit) ~.5GB: 556ms
+writeDeep Nested Layers (8-bit) ~.5GB: 840ms
+readDeep Nested Layers (8-bit) ~.5GB: 469ms
+writeDeep Nested Layers (8-bit) ~.5GB: 852ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 782ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1763ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 724ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1738ms
+readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 754ms
+writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1802ms
