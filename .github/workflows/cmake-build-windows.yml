@@ -33,11 +33,7 @@ jobs:
       
       run: |
         cmake -B ${{github.workspace}}/build \
-              -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-              -DPSAPI_BUILD_TESTS=OFF \
-              -DPSAPI_BUILD_EXAMPLES=OFF \
-              -DPSAPI_BUILD_BENCHMARKS=OFF \
-              -DPSAPI_BUILD_DOCS=OFF
+              -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
       # Build your program with the given configuration
