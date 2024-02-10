@@ -3,6 +3,7 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q4TYALW)
 
 [![Documentation Status](https://readthedocs.org/projects/photoshopapi/badge/?version=latest)](https://photoshopapi.readthedocs.io/en/latest/?badge=latest)
+![CI Windows Status](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-build-windows.yml/badge.svg)
 
 > [!NOTE]
 > The PhotoshopAPI is still in early development status which means it is subject to change and will likely include bugs. If you find any please report them to the issues page
