@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required (VERSION 3.20)
-project ("PhotoshopAPIBuild")
+project ("PhotoshopAPIBuild" VERSION 0.1.0 LANGUAGES CXX)
 
 # --------------------------------------------------------------------------
 # Configurable options
@@ -39,7 +39,7 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 
 # Add doctest
 add_library(doctest INTERFACE)
-target_include_directories(doctest INTERFACE thirdparty/doctest)
+target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
 
 # Projects
 # --------------------------------------------------------------------------

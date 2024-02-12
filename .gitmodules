@@ -4,3 +4,6 @@
 [submodule "thirdparty/zlib-ng"]
 	path = thirdparty/zlib-ng
 	url = https://github.com/zlib-ng/zlib-ng
+[submodule "thirdparty/doctest"]
+	path = thirdparty/doctest
+	url = https://github.com/doctest/doctest/
