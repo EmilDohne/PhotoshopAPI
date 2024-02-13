@@ -83,6 +83,14 @@ SIMD instructions to leverage all the computing power your computer can afford.
 As the feature set increases this will keep being one of the key requirements.
 For detailed benchmarks running on a variety of different configurations please visit the [docs](https://photoshopapi.readthedocs.io/)
 
+Below you can find some of the benchmarks comparing the PhotoshopAPI ('PSAPI') against Photoshop in read/write performance
+
+[![8-bit](docs/doxygen/images/benchmarks/Ryzen_9_5950x/8-bit_graphs.png)](https://photoshopapi.readthedocs.io/en/latest/benchmarks.html)
+
+
+[![16-bit](docs/doxygen/images/benchmarks/Ryzen_9_5950x/16-bit_graphs.png)](https://photoshopapi.readthedocs.io/en/latest/benchmarks.html) [![32-bit](docs/doxygen/images/benchmarks/Ryzen_9_5950x/32-bit_graphs.png)](https://photoshopapi.readthedocs.io/en/latest/benchmarks.html)
+
+
 
 Python Wrapper
 ==============
