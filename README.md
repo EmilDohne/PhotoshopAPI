@@ -98,7 +98,7 @@ The primary struct to familiarize yourself with when using the PhotoshopAPI is t
 GroupLayer), all of these are template structs for each of the available bit depths. 
 
 To get a feel of what is possible with the API as well as how to use it please refer to ``PhotoshopExample/`` directory. To familiarize
-yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/)
+yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/) or the [examples](https://github.com/EmilDohne/PhotoshopAPI/tree/master/PhotoshopExamples).
 
 If more fine grained control over the binary structure is necessary, one can modify the PhotoshopFile which is what is parsed by the API internally.
 Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. 
