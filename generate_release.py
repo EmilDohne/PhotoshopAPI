@@ -19,6 +19,7 @@ def _find_file_and_copy(file_name: str, base_dir: str, out_dir: str) -> str:
             shutil.copy(source_file, output_file)
             print(f"File '{file_name}' copied to '{out_dir}'")
             return output_file
+    raise FileNotFoundError(f"Could not find file {file_name}")
 
 
 def build_cmake(out_path_rel: str = "build_tmp") -> str:
@@ -81,10 +82,13 @@ def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> No
     '''
     if not os.path.exists(out_path):
         os.makedirs(out_path, exist_ok=True)
+    lib_path = os.path.abspath(os.path.join(out_path, "lib"))
+    if not os.path.exists(lib_path):
+        os.makedirs(lib_path, exist_ok=True)
     # Copy over our PhotoshopAPI.lib, zlibstatic-ng.lib and libblosc2.lib
-    _find_file_and_copy("PhotoshopAPI.lib",  build_dir, os.path.join(out_path, "lib"))
-    _find_file_and_copy("zlibstatic-ng.lib", build_dir, os.path.join(out_path, "lib"))
-    _find_file_and_copy("libblosc2.lib",     build_dir, os.path.join(out_path, "lib"))
+    _find_file_and_copy("PhotoshopAPI.lib",  build_dir, lib_path)
+    _find_file_and_copy("zlibstatic-ng.lib", build_dir, lib_path)
+    _find_file_and_copy("libblosc2.lib",     build_dir, lib_path)
 
     # Copy over the headers which are already pre-sorted
     shutil.copytree(header_dir, os.path.join(out_path, "include"), dirs_exist_ok=True)
