@@ -338,7 +338,7 @@ struct ChannelImageData : public FileSection
 
 		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr.get()))
 		{
-			return std::move(imageChannel->getData());
+			return std::move(imageChannel->extractData());
 		}
 		else
 		{
@@ -367,7 +367,7 @@ struct ChannelImageData : public FileSection
 
 		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr))
 		{
-			return std::move(imageChannel->getData());
+			return std::move(imageChannel->extractData());
 		}
 		else
 		{

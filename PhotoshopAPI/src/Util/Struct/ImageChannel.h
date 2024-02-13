@@ -152,12 +152,18 @@ struct ImageChannel : public BaseImageChannel
 	};
 
 	/// Extract the data from the image channel and invalidate it (can only be called once). 
-	/// If the image data does not exist (yet) we simply return an empty vector<T>
-	std::vector<T> getData() {
+	/// If the image data does not exist yet we simply return an empty vector<T>. If the data
+	/// was already freed we throw
+	std::vector<T> extractData() {
 		PROFILE_FUNCTION();
 		if (!m_Data)
 		{
+			PSAPI_LOG_WARNING("ImageChannel", "Channel data does not exist yet, was it initialized?");
 			return std::vector<T>();
+		}
+		if (m_wasFreed)
+		{
+			PSAPI_LOG_ERROR("ImageChannel", "Data was already freed, cannot extract it anymore");
 		}
 
 		std::vector<T> tmpData(m_OrigByteSize / sizeof(T), 0);
@@ -179,7 +185,43 @@ struct ImageChannel : public BaseImageChannel
 		}
 
 		blosc2_schunk_free(m_Data);
+		m_wasFreed = true;
 
+		return tmpData;
+	}
+
+	/// Copy the image data out of the ImageChannel, does not free the data afterwards. Returns an empty vector if the
+	/// data does not exist yet. If the data was already freed we throw
+	std::vector<T> getData()
+	{
+		PROFILE_FUNCTION();
+		if (!m_Data)
+		{
+			PSAPI_LOG_WARNING("ImageChannel", "Channel data does not exist yet, was it initialized?");
+			return std::vector<T>();
+		}
+		if (m_wasFreed)
+		{
+			PSAPI_LOG_ERROR("ImageChannel", "Data was already freed, cannot extract it anymore");
+		}
+
+		std::vector<T> tmpData(m_OrigByteSize / sizeof(T), 0);
+
+		uint64_t remainingSize = m_OrigByteSize;
+		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
+		{
+			void* ptr = reinterpret_cast<uint8_t*>(tmpData.data()) + nchunk * m_ChunkSize;
+			if (remainingSize > m_ChunkSize)
+			{
+				blosc2_schunk_decompress_chunk(m_Data, nchunk, ptr, m_ChunkSize);
+				remainingSize -= m_ChunkSize;
+			}
+			else
+			{
+				blosc2_schunk_decompress_chunk(m_Data, nchunk, ptr, remainingSize);
+				remainingSize = 0;
+			}
+		}
 		return tmpData;
 	}
 
@@ -215,6 +257,8 @@ private:
 	/// Total number of chunks in the super-chunk
 	uint64_t m_NumChunks = 0u;
 
+	/// Whether or not the SuperChunk was freed, if this is true the image data is no longer valid
+	bool m_wasFreed = false;
 };
 
 

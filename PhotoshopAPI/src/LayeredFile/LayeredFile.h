@@ -211,6 +211,26 @@ struct LayeredFile
 	/// \return True if the layer exists, false otherwise.
 	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const;
 
+	/// \brief read and create a LayeredFile from disk
+	///
+	/// Simplify the creation of a LayeredFile by abstracting away the step of 
+	/// PhotoshopFile -> LayeredFile doing the work internally without exposing the 
+	/// PhotoshopFile instance to the user
+	/// 
+	/// \param filePath the path on disk of the file to be read
+	static LayeredFile<T> read(const std::filesystem::path& filePath);
+
+	/// \brief write the LayeredFile instance to disk, consumes and invalidates the instance
+	/// 
+	/// Simplify the writing of a LayeredFile by abstracting away the step of 
+	/// LayeredFile -> PhotoshopFile doing the work internally without exposing the 
+	/// PhotoshopFile instance to the user
+	/// 
+	/// \param layeredFile The LayeredFile to consume, invalidates it
+	/// \param filePath The path on disk of the file to be written
+	/// \param forceOvewrite Whether to forcefully overwrite the file or fail if the file already exists
+	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite = true);
+
 private:
 
 	/// \brief Checks if moving the child layer to the provided parent layer is valid.
@@ -223,6 +243,38 @@ private:
 	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer);
 };
 
+
+/// \brief Finds a layer based on the given path and casts it to the given type.
+///
+/// This function matches LayeredFile<T>::findLayer() but instead of returning a generic layer basetype
+/// we return the requested type (if the cast is valid), this is especially useful if the layer type is
+/// known ahead of time and is the preferred way of accessing a layer.
+/// 
+/// Example call:
+/// \code{.cpp}
+/// LayeredFile<bpp8_t> layeredFile{};	// We assume this is already populated
+/// auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Path/To/ImageLayer", layeredFile);
+/// \endcode
+/// 
+/// The path should be separated by forward slashes, e.g., "Group1/GroupNested/ImageLayer".
+/// Returns a reference to the specific layer if found; otherwise, returns nullptr and issues a warning.
+/// If we cannot upcast to the specified ptr an error is raised.
+///
+/// \param path The path to the layer.
+/// \param layeredFile the file to search from
+/// \return A shared pointer to the found layer or nullptr.
+template<typename T, template<typename X> class LayerType>
+std::shared_ptr<LayerType<T>> findLayerAs(const std::string path, const LayeredFile<T>& layeredFile)
+{
+	auto basePtr = layeredFile.findLayer(path);
+	auto downcastedPtr = std::dynamic_pointer_cast<LayerType<T>>(basePtr);
+	if (downcastedPtr)
+	{
+		return downcastedPtr;
+	}
+	PSAPI_LOG_ERROR("LayeredFile", "Unable to cast Layer pointer to requested type, aborting");
+	return nullptr;
+}
 
 
 /// \brief Converts a layeredFile into a PhotoshopFile, taking ownership of and invalidating any data
