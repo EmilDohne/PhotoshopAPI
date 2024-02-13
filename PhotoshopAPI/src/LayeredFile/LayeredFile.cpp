@@ -285,7 +285,7 @@ void LayeredFile<T>::removeLayer(const std::string layer)
 	{
 		PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for removeLayer()", layer.c_str());
 	}
-	moveLayer(layerPtr);
+	removeLayer(layerPtr);
 }
 
 
@@ -384,6 +384,31 @@ bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>> layer) co
 		}
 	}
 	return false;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath)
+{
+	auto inputFile = File(filePath);
+	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
+	psDocumentPtr->read(inputFile);
+	LayeredFile<T> layeredFile = { std::move(psDocumentPtr) };
+	return layeredFile;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite /*= true*/)
+{
+	File::FileParams params = { .doRead = false, .forceOverwrite = forceOvewrite };
+	auto outputFile = File(filePath, params);
+	auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
+	psdOutDocumentPtr->write(outputFile);
 }
 
 

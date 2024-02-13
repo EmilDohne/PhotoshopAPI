@@ -298,6 +298,26 @@ std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::Colo
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> Layer<T>::getMaskData(const bool doCopy /*= true*/)
+{
+	if (m_LayerMask.has_value())
+	{
+		if (doCopy)
+		{
+			return std::move(m_LayerMask.value().maskData.getData());
+		}
+		else
+		{
+			return std::move(m_LayerMask.value().maskData.extractData());
+		}
+	}
+	PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
+	return std::vector<T>();
+}
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------

@@ -54,7 +54,7 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 
 	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 	// the compression mode chosen on export and must therefore be updated later.
-	auto channelData = this->extractImageData(doCopy);
+	auto channelData = this->generateChannelImageData(doCopy);
 	auto& channelInfoVec = std::get<0>(channelData);
 	ChannelImageData channelImgData = std::move(std::get<1>(channelData));
 
@@ -124,7 +124,7 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::extractImageData(const bool doCopy)
+std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::generateChannelImageData(const bool doCopy)
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfoVec;
 	std::vector<std::unique_ptr<BaseImageChannel>> channelDataVec;
@@ -348,6 +348,87 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool doCopy /*= true*/)
+{
+	for (auto& [key, value] : m_ImageData)
+	{
+		if (key.id == channelID)
+		{
+			if (doCopy)
+			{
+				return value.getData();
+			}
+			else
+			{
+				return value.extractData();
+			}
+		}
+	}
+	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
+	return std::vector<T>();
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::vector<T> ImageLayer<T>::getChannel(const uint16_t channelIndex, bool doCopy /*= true*/)
+{
+	for (auto& [key, value] : m_ImageData)
+	{
+		if (key.index == channelIndex)
+		{
+			if (doCopy)
+			{
+				return value.getData();
+			}
+			else
+			{
+				return value.extractData();
+			}
+		}
+	}
+	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
+	return std::vector<T>();
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> ImageLayer<T>::getImageData(bool doCopy /*= true*/)
+{
+	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
+
+	if (Layer<T>::m_LayerMask.has_value())
+	{
+		Enum::ChannelIDInfo maskInfo;
+		maskInfo.id = Enum::ChannelID::UserSuppliedLayerMask;
+		maskInfo.index = -2;
+		imgData[maskInfo] = Layer<T>::getMaskData(doCopy);
+	}
+
+	if (doCopy)
+	{
+		for (auto& [key, value] : m_ImageData)
+		{
+			imgData[key] = std::move(value.getData());
+		}
+	}
+	else
+	{
+		for (auto& [key, value] : m_ImageData)
+		{
+			imgData[key] = std::move(value.extractData());
+		}
+	}
+	return imgData;
 }
 
 

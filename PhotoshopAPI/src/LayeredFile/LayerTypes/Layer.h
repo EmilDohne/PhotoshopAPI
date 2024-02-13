@@ -103,6 +103,9 @@ struct Layer
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
 	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
 	
+	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
+	std::vector<T> getMaskData(const bool doCopy = true);
+
 	/// Changes the compression mode of all channels in this layer to the given compression mode
 	virtual void setCompression(const Enum::Compression compCode);
 

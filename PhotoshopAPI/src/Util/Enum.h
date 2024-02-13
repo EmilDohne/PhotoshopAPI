@@ -335,7 +335,7 @@ namespace Enum
 		case Enum::ChannelID::Blue: return ChannelIDInfo{ value, 2 };
 		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
 		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
-		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID"); return ChannelIDInfo{};
 		}
 	}
 
@@ -364,7 +364,7 @@ namespace Enum
 		case Enum::ChannelID::Black: return ChannelIDInfo{ value, 2 };
 		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
 		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
-		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID"); return ChannelIDInfo{};
 		}
 	}
 
@@ -402,7 +402,7 @@ namespace Enum
 		case Enum::ChannelID::Gray: return ChannelIDInfo{ value, 0 };
 		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
 		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
-		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID");
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID"); return ChannelIDInfo{};
 		}
 	}
 

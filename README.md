@@ -98,7 +98,7 @@ The primary struct to familiarize yourself with when using the PhotoshopAPI is t
 GroupLayer), all of these are template structs for each of the available bit depths. 
 
 To get a feel of what is possible with the API as well as how to use it please refer to ``PhotoshopExample/`` directory. To familiarize
-yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/)
+yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/) or the [examples](https://github.com/EmilDohne/PhotoshopAPI/tree/master/PhotoshopExamples).
 
 If more fine grained control over the binary structure is necessary, one can modify the PhotoshopFile which is what is parsed by the API internally.
 Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. 
@@ -109,24 +109,16 @@ Below is a minimal example to get started with opening a PhotoshopFile, removing
 ```cpp	
 using namespace PhotoshopAPI;
 
-auto inputFile = File("./InputFile.psd");
-auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-psDocumentPtr->read(inputFile);
-
 // Initialize an 8-bit layeredFile. This must match the bit depth of the PhotoshopFile.
-// To find the bit depth programatically one can use the psDocumentPtr->m_Header.m_Depth
-// variable
-LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
-layeredFile.removeLayer("SomeGroup/SomeNestedLayer");	// This will also delete any child layers
+// To initialize this programmatically please refer to the ExtendedSignature example
+LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("InputFile.psd");
 
-// We can now convert back to a PhotoshopFile and write out to disk
-File::FileParams params = { .doRead = false};
+// Do some operation, in this case delete
+layeredFile.removeLayer("SomeGroup/SomeNestedLayer");	
+
 // One could write out to .psb instead if wanted and the PhotoshopAPI will take 
 // care of any conversion internally
-auto outputFile = File("./OutputFile.psd", params);
-auto psOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
-
-psOutDocumentPtr->write(outputFile);
+LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutputFile.psd");
 ```
 
-The same code for reading and writing can also be used to for example LayeredFile::moveLayer or LayeredFile::addLayer.
+The same code for reading and writing can also be used to for example LayeredFile::moveLayer or LayeredFile::addLayer as well as extracting any image data
