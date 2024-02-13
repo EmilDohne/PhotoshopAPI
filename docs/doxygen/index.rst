@@ -145,7 +145,7 @@ Contents
 License
 =======
 
-.. code-block:: raw
+.. code-block:: none
 	
 	BSD 3-Clause License
 
