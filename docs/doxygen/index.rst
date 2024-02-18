@@ -135,6 +135,7 @@ Contents
    :maxdepth: 2
 
    code/codestructures.rst
+   python/bindings.rst
    concepts/index.rst
    benchmarks.rst
    building.rst

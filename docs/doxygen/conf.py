@@ -1,5 +1,6 @@
 # The sphinx template and setup was mostly adopted from openimageios docs to mimic their styling
-import subprocess, os
+import subprocess, os, sys
+sys.path.insert(0, os.path.abspath("python"))
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :
@@ -36,7 +37,10 @@ release = '2024'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['breathe']
+extensions = [
+    'breathe',
+    'sphinx.ext.autodoc'
+    ]
 
 
 # -- Options for HTML output -------------------------------------------------
