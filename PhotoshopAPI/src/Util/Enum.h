@@ -311,8 +311,6 @@ namespace Enum
 		{
 			return (this->id == other.id && this->index == other.index);
 		}
-
-
 	};
 
 	// Define a custom hasher to allow us to use the above struct. As the indices are unique it is perfectly legal to have the indices define the hash
@@ -403,6 +401,28 @@ namespace Enum
 		case Enum::ChannelID::Alpha: return ChannelIDInfo{ value, -1 };
 		case Enum::ChannelID::UserSuppliedLayerMask: return ChannelIDInfo{ value, -2 };
 		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID"); return ChannelIDInfo{};
+		}
+	}
+
+	inline ChannelIDInfo channelIDToChannelIDInfo(const Enum::ChannelID value, const Enum::ColorMode colorMode)
+	{
+		switch (colorMode)
+		{
+		case Enum::ColorMode::RGB: return rgbChannelIDToChannelIDInfo(value);
+		case Enum::ColorMode::CMYK: return cmykChannelIDToChannelIDInfo(value);
+		case Enum::ColorMode::Grayscale: return grayscaleChannelIDToChannelIDInfo(value);
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given channelID"); return ChannelIDInfo{};
+		}
+	}
+
+	inline ChannelIDInfo intToChannelIDInfo(const int16_t value, const Enum::ColorMode colorMode)
+	{
+		switch (colorMode)
+		{
+		case Enum::ColorMode::RGB: return rgbIntToChannelID(value);
+		case Enum::ColorMode::CMYK: return cmykIntToChannelID(value);
+		case Enum::ColorMode::Grayscale: return grayscaleIntToChannelID(value);
+		default: PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given index"); return ChannelIDInfo{};
 		}
 	}
 
