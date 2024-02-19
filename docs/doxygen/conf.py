@@ -39,7 +39,8 @@ release = '2024'
 
 extensions = [
     'breathe',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx_inline_tabs'
     ]
 
 
@@ -50,11 +51,11 @@ html_theme = 'furo'
 html_theme_options = {
     "dark_css_variables": {
         "color-api-background" : "#212121",
-        "color-api-background-hover" : "#313131",
-        "color-api-keyword" : "#0000FF"
+        "color-api-background-hover" : "#313131"
     },
 }
 
+autodoc_member_order = 'bysource'
 
 # -- Breathe configuration ---------------------------------------------------
 breathe_default_project = "PhotoshopAPI"
