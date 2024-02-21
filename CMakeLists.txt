@@ -1,6 +1,11 @@
 ﻿cmake_minimum_required (VERSION 3.20)
 project ("PhotoshopAPIBuild" VERSION 0.1.0 LANGUAGES CXX)
 
+if (MSVC)
+    # MSVC is stupid
+    add_compile_definitions(NOMINMAX)
+endif()
+
 # --------------------------------------------------------------------------
 # Configurable options
 
