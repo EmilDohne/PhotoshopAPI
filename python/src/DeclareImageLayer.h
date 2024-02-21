@@ -20,11 +20,38 @@ template <typename T>
 void declareImageLayer(py::module& m, const std::string& extension) {
 	using Class = ImageLayer<T>;
 	std::string className = "ImageLayer" + extension;
-	py::class_<Class> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+	py::class_<Class, Layer<T>, std::shared_ptr<Class>> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
 	imageLayer.doc() = R"pbdoc(
 		This class defines a single image layer in a LayeredFile. There must be at least one of these
 		in any given file for it to be valid
+        
+        Attributes
+        ----------
+
+        image_data : dict[:class:`psapi.util.ImageChannel`]
+            A dictionary of the image data mapped by :class:`psapi.util.ChannelIDInfo`
+        name : str
+            The name of the layer, cannot be longer than 254
+        layer_mask : LayerMask_8bit
+            The pixel mask applied to the layer
+        blend_mode : enum.BlendMode
+            The blend mode of the layer, 'Passthrough' is reserved for group layers
+        opacity : int
+            The layers opacity from 0-255 with 255 being 100%
+        width : int
+            The width of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
+            this does not have to match the files width
+        height : int
+            The height of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
+            this does not have to match the files height
+        center_x : float
+            The center of the layer in regards to the canvas, a layer at center_x = 0 is
+            perfectly centered around the document
+        center_y : float
+            The center of the layer in regards to the canvas, a layer at center_y = 0 is
+            perfectly centered around the document
+        
 	)pbdoc";
     imageLayer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID channel_id, const bool do_copy = true)
         {
@@ -46,7 +73,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 :type do_copy: bool            
 
                 :return: The extracted channel
-                :rtype: np.ndarray
+                :rtype: numpy.ndarray
             )pbdoc");
     imageLayer.def("get_channel_by_index", [](Class& self, const int channel_index, const bool do_copy = true)
         {
@@ -67,8 +94,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 :param do_copy: Whether to copy the data on extraction (if false the channel is invalidated)
                 :type do_copy: bool            
 
-                :return: The extracted channel
-                :rtype: np.ndarray
+                :return: The extracted channel with dimensions (height, width)
+                :rtype: numpy.ndarray
             )pbdoc");
     imageLayer.def("__getitem__", [](Class& self, const Enum::ChannelID channel_id)
         {
@@ -91,7 +118,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 :param channel_id: The ID of the channel
                 :type channel_id: :class:`psapi.enum.ChannelID`
 
-                :return: The extracted channel
+                :return: The extracted channel with dimensions (height, width)
                 :rtype: np.ndarray
             )pbdoc");
     imageLayer.def("__getitem__", [](Class& self, const int channel_index)
@@ -125,5 +152,6 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 Change the compression codec of all the image channels.
                 
                 :param comp_code: The compression codec
+                :type comp_code: :class:`psapi.enum.Compression`
             )pbdoc");
 }
