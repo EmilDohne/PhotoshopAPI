@@ -111,9 +111,9 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 			:raises:
 				ValueError: If the path is not a valid path to a layer
 	)pbdoc");
-	layeredFile.def("__getitem__", [](const Class& self, const std::string& name)
+	layeredFile.def("__getitem__", [](Class& self, const std::string name)
 		{
-			for (const auto layer : self.m_Layers)
+			for (auto& layer : self.m_Layers)
 			{
 				// Get the layer name and recursively check the path
 				if (layer->m_LayerName == name)
@@ -153,6 +153,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("compression", nullptr, &Class::setCompression, "Property for setting compression of all sublayers.");
 	layeredFile.def_property_readonly("num_channels", &Class::getNumChannels, "Get the total number of channels in the document.");
+	layeredFile.def_property_readonly("layers", [](const Class& self) {return self.m_Layers; });
 	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.m_BitDepth; }, "Get the bit depth of the document");
 	layeredFile.def_property("dpi",
 			[](const Class& self) { return self.m_DotsPerInch; },
