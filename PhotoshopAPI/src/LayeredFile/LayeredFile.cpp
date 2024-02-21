@@ -142,7 +142,7 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 {
 	PROFILE_FUNCTION();
 	std::vector<std::string> segments = splitString(path, '/');
-	for (const auto layer : m_Layers)
+	for (const auto& layer : m_Layers)
 	{
 		// Get the layer name and recursively check the path
 		if (layer->m_LayerName == segments[0])
