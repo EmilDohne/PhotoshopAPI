@@ -62,6 +62,24 @@ void GroupLayer<T>::removeLayer(std::shared_ptr<Layer<T>>& layer)
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void GroupLayer<T>::removeLayer(const std::string layerName)
+{
+	int index = 0;
+	for (auto& sceneLayer : m_Layers)
+	{
+		if (layerName == sceneLayer->m_LayerName)
+		{
+			m_Layers.erase(m_Layers.begin() + index);
+			return;
+		}
+		++index;
+	}
+	PSAPI_LOG_WARNING("GroupLayer", "Cannot remove layer %s from the group as it doesnt appear to be a child of the group", layerName.c_str());
+}
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
