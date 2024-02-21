@@ -356,6 +356,10 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 template <typename T>
 std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool doCopy /*= true*/)
 {
+	if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
+	{
+		return this->getMaskData(doCopy);
+	}
 	for (auto& [key, value] : m_ImageData)
 	{
 		if (key.id == channelID)
@@ -378,8 +382,12 @@ std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool d
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<T> ImageLayer<T>::getChannel(const uint16_t channelIndex, bool doCopy /*= true*/)
+std::vector<T> ImageLayer<T>::getChannel(const int16_t channelIndex, bool doCopy /*= true*/)
 {
+	if (channelIndex == -2)
+	{
+		return this->getMaskData(doCopy);
+	}
 	for (auto& [key, value] : m_ImageData)
 	{
 		if (key.index == channelIndex)

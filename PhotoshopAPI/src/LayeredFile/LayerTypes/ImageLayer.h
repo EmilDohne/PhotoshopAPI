@@ -46,7 +46,7 @@ struct ImageLayer : public Layer<T>
 	///
 	/// \param channelIndex the channel index to extract
 	/// \param doCopy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> getChannel(const uint16_t channelIndex, bool doCopy = true);
+	std::vector<T> getChannel(const int16_t channelIndex, bool doCopy = true);
 
 	/// Extract all the channels of the ImageLayer into an unordered_map. Includes the mask channel
 	/// 
