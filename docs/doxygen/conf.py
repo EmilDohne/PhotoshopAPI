@@ -1,6 +1,6 @@
 # The sphinx template and setup was mostly adopted from openimageios docs to mimic their styling
 import subprocess, os, sys
-sys.path.insert(0, os.path.abspath("python"))
+sys.path.insert(0, os.path.abspath("../../bin-int/PhotoshopAPI/x64-release/python"))
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :
@@ -40,8 +40,12 @@ release = '2024'
 extensions = [
     'breathe',
     'sphinx.ext.autodoc',
-    'sphinx_inline_tabs'
+    'sphinx_inline_tabs',
+    'numpydoc'
     ]
+
+numpydoc_show_class_members = False
+autodoc_typehints = "none"
 
 
 # -- Options for HTML output -------------------------------------------------
