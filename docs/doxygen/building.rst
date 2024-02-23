@@ -47,6 +47,9 @@ Build the benchmarks associated with the PhotoshopAPI
 ``PSAPI_BUILD_DOCS``: default ``ON``
 Builds the documentation, requires some external installs which are documented at :ref:`buildingdocs`
 
+``PSAPI_BUILD_PYTHON``: default ``ON``
+Builds the python bindings associated with the PhotoshopAPI
+
 
 .. _submoduling:
 
@@ -120,7 +123,19 @@ If you do however wish to build the docs locally, there is some additional requi
 
 	$ cd <dir/to/PhotoshopAPI>
 	$ cd docs/doxygen
-	$ py -m pip install requirements.txt
+	$ py -m pip install -r requirements.txt
 
 Once these steps are completed the documentation will build alongside the PhotoshopAPI assuming the ``PSAPI_BUILD_DOCS`` CMake flag is enabled.
 To inspect the results locally head to ``<dir/to/PhotoshopAPI>/bin-int/<target>/docs/doxygen/docs/sphinx`` to inspect the index.html
+
+
+Building Python bindings
+-------------------------
+
+The python bindings are fairly straight forward to build if you are already building the PhotoshopAPI project, simply enable
+the ``PSAPI_BUILD_PYTHON`` flag and make sure to have python installed on the system. This once again is solely required for 
+local testing as the bindings are hosted on PyPi and can be installed with 
+
+.. code-block:: console
+
+	$ py -m pip install PhotoshopAPI
