@@ -3,10 +3,14 @@
 name: CI Windows
 
 on:
-  push:
-    branches: [ "master" ]
+  workflow_dispatch:
   pull_request:
-    branches: [ "master" ]
+  push:
+    branches:
+     - master
+  release:
+    types:
+      - published
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
