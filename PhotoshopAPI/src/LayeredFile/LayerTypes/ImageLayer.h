@@ -34,15 +34,13 @@ struct ImageLayer : public Layer<T>
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
 	ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters);
 
-	/// Extract a specified channel from the layer given its channel ID. This does not work for masks, those have to be extracted using 
-	/// Layer<T>::extractMask()
+	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///
 	/// \param channelID the channel ID to extract
 	/// \param doCopy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
 	std::vector<T> getChannel(const Enum::ChannelID channelID, bool doCopy = true);
 
-	/// Extract a specified channel from the layer given its channel ID. This does not work for masks, those have to be extracted using 
-	/// Layer<T>::extractMask()
+	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///
 	/// \param channelIndex the channel index to extract
 	/// \param doCopy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
