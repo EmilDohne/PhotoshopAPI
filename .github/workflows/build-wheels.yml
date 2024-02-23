@@ -37,7 +37,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -46,6 +46,7 @@ jobs:
 
     - uses: pypa/cibuildwheel@v2.16
       env:
+        CIBW_ARCHS: auto64
         CIBW_ARCHS_MACOS: auto universal2
 
     - name: Verify clean directory
