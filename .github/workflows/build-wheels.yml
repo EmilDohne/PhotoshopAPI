@@ -6,6 +6,7 @@ on:
   push:
     branches:
      - master
+     - feat-add-python-bindings
   release:
     types:
       - published

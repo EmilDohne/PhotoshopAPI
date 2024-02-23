@@ -1,6 +1,9 @@
 # The sphinx template and setup was mostly adopted from openimageios docs to mimic their styling
 import subprocess, os, sys
+
+# This is for local testing and a better way would be preferrable
 sys.path.insert(0, os.path.abspath("../../bin-int/PhotoshopAPI/x64-release/python"))
+sys.path.insert(0, os.path.abspath("../../bin-int/PhotoshopAPI/x64-debug/python"))
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :
@@ -16,7 +19,6 @@ def configureDoxyfile(input_dir, output_dir):
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 breathe_projects = {}
-
 
 if read_the_docs_build:
     input_dir = '../../PhotoshopAPI'
