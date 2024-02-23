@@ -310,7 +310,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 		in any given file for it to be valid
         
         Attributes
-        ----------
+        -----------
 
         image_data : dict[:class:`psapi.util.ImageChannel`]
             A dictionary of the image data mapped by :class:`psapi.util.ChannelIDInfo`

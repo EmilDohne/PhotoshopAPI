@@ -32,7 +32,7 @@ void declareLayer(py::module& m, const std::string& extension) {
         the other classes
 
         Attributes
-        ----------
+        -----------
 
         name : str
             The name of the layer, cannot be longer than 255

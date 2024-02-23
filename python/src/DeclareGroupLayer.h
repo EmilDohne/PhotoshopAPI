@@ -82,7 +82,7 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
     py::class_<Class, Layer<T>, std::shared_ptr<Class>> groupLayer(m, className.c_str(), py::dynamic_attr(), R"pbdoc(
         
         Attributes
-        ----------
+        -----------
         
         layers : list[psapi.Layer_*]
             The layers under the group, may be empty. These are polymorphic so it may be a group layer, an image layer etc.
