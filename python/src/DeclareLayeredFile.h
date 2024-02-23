@@ -86,6 +86,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	)pbdoc";
 
 	layeredFile.def(py::init<>(), "Initialize an empty LayeredFile instance");
+	layeredFile.def(py::init<Enum::ColorMode, uint64_t, uint64_t>(), "Initialize an empty LayeredFile instance");
 
 	// Layer Manipulation
 	// ---------------------------------------------------------------------------------------------------------------------
