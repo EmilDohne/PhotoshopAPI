@@ -426,6 +426,25 @@ namespace Enum
 		}
 	}
 
+	inline std::string channelIDToString(const Enum::ChannelID value)
+	{
+		switch (value)
+		{
+		case Enum::ChannelID::Red: return "red";
+		case Enum::ChannelID::Green: return "green";
+		case Enum::ChannelID::Blue: return "blue";
+		case Enum::ChannelID::Gray: return "gray";
+		case Enum::ChannelID::Custom: return "custom";
+		case Enum::ChannelID::Cyan: return "cyan";
+		case Enum::ChannelID::Magenta: return "magenta";
+		case Enum::ChannelID::Yellow: return "yellow";
+		case Enum::ChannelID::Black: return "black";
+		case Enum::ChannelID::Alpha: return "alpha";
+		case Enum::ChannelID::UserSuppliedLayerMask: return "pixelmask";
+		default: return "unknown";
+		}
+	}
+
 
 	// This Enum represents an exact mapping of all of Photoshop blendmodes
 	// --------------------------------------------------------------------------------
