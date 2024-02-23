@@ -52,5 +52,5 @@ void declareChannelIDInfo(py::module& m)
 			When setting this property the ``id`` property is updated automatically to reflect this change
 		)pbdoc"
 	);
-	channelIDInfo.def("__eq__", &Enum::ChannelIDInfo::operator ==);
+	channelIDInfo.def("__eq__", &Enum::ChannelIDInfo::operator ==, py::arg("other"));
 }

@@ -43,7 +43,7 @@ void declarePhotoshopFile(py::module& m)
 			FileHeader header;
 			header.read(document);
 			return header.m_Depth;
-		}, R"pbdoc(
+		}, py::arg("path"), R"pbdoc(
 			Find the bit depth of a Photoshop file from the given filepath.
 			This function has basically no runtime cost as it simply reads the first 26 bytes of the document
 			and uses that to extract the bit depth. The intention of this function is to provide an interface
