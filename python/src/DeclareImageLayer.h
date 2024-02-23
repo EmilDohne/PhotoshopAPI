@@ -1,4 +1,5 @@
 #include "LayeredFile/LayerTypes/ImageLayer.h"
+#include "LayeredFile/LayerTypes/Layer.h"
 #include "Macros.h"
 
 #include <pybind11/pybind11.h>
@@ -9,9 +10,291 @@
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 
+#include <unordered_map>
+#include <iostream>
+#include <vector>
+
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
+
+// Generate CPP image data based on the provided numpy array which can either come as 2d or 3d array.
+template <typename T>
+std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_t<T>& image_data, int width, int height, const Enum::ColorMode color_mode)
+{
+    // Generate an unordered map with implicit bindings for the channels using a 2d or 3d numpy array
+    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
+
+    // This will e.g. be (3, 1024, 1024) for a 3 channel 1024x1024 image
+    std::vector<size_t> shape;
+    for (size_t i = 0; i < image_data.ndim(); ++i)
+    {
+        shape.push_back(image_data.shape(i));
+    }
+    if (shape.size() != 2 || shape.size() != 3)
+    {
+        py::value_error("image_data parameter must have either 2 or 3 dimensions, not " + std::to_string(shape.size()));
+    }
+
+    // Extract the size of one channel and compare it against the size of the data
+    size_t channelSize = 0;
+    if (shape.size() == 2)
+        channelSize = shape[1]; // Width * Height for a 2D image
+    else if (shape.size() == 3)
+        channelSize = shape[1] * shape[2]; // Width * Height for a 3D image
+    if (channelSize != static_cast<size_t>(width) * height)
+    {
+        py::value_error("image_data must have the same size as width * height");
+    }
+
+    // For RGB we have two options, either there is an alpha channel with the RGB channels or not.
+    if (color_mode == Enum::ColorMode::RGB)
+    {
+        if (shape[0] != 3 || shape[0] != 4)
+        {
+            py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
+        }
+        std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
+        for (size_t i = 0; i < shape[0]; ++i)
+        {
+            const T* startPtr = image_data.data() + i * channelSize;
+            img_data_cpp[rgbChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+        }
+        return img_data_cpp;
+    }
+
+    // We add preliminary support for CMYK but it is not fully supported yet!
+    if (color_mode == Enum::ColorMode::CMYK)
+    {
+        if (shape[0] != 4 || shape[0] != 5)
+        {
+            py::value_error("Passed array must have either 4 or 5 channels, not " + std::to_string(shape[0]));
+        }
+        std::vector<Enum::ChannelID> cmykChannelIds = { Enum::ChannelID::Cyan, Enum::ChannelID::Magenta, Enum::ChannelID::Yellow, Enum::ChannelID::Black, Enum::ChannelID::Alpha };
+        for (size_t i = 0; i < shape[0]; ++i)
+        {
+            const T* startPtr = image_data.data() + i * channelSize;
+            img_data_cpp[cmykChannelIds[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+        }
+        return img_data_cpp;
+    }
+
+    // We add preliminary support for greyscale but it is not fully supported yet!
+    if (color_mode == Enum::ColorMode::CMYK)
+    {
+        if (shape[0] != 1 || shape[0] != 2)
+        {
+            py::value_error("Passed array must have either 1 or 2 channels, not " + std::to_string(shape[0]));
+        }
+        std::vector<Enum::ChannelID> greyChannelIDs = { Enum::ChannelID::Gray, Enum::ChannelID::Alpha};
+        for (size_t i = 0; i < shape[0]; ++i)
+        {
+            const T* startPtr = image_data.data() + i * channelSize;
+            img_data_cpp[greyChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+        }
+        return img_data_cpp;
+    }
+
+    throw py::value_error("Unsupported color mode encountered when trying to parse numpy array to image dict");
+}
+
+
+// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
+// than a separate structure as well as creating an interface for numpy.
+template <typename T>
+std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
+    py::array_t<T>& image_data,
+    const std::string& layer_name,
+    const std::optional<py::array_t<T>> layer_mask,
+    int width,  // This is only relevant if a layer mask is set
+    int height, // This is only relevant if a layer mask is set
+    const Enum::BlendMode blend_mode,
+    int pos_x, // This is only relevant if a layer mask is set
+    int pos_y, // This is only relevant if a layer mask is set
+    int opacity,
+    const Enum::Compression compression,
+    const Enum::ColorMode color_mode
+)
+{
+    typename Layer<T>::Params params;
+    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
+    // so we must ensure the range ourselves
+    if (layer_name.size() > 255)
+    {
+        throw py::value_error("layer_name parameter cannot exceed a length of 255");
+    }
+    if (layer_mask.has_value())
+    {
+        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
+        {
+            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
+        }
+        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+    }
+    if (width < 0)
+    {
+        throw py::value_error("width cannot be a negative value");
+    }
+    if (height < 0)
+    {
+        throw py::value_error("height cannot be a negative value");
+    }
+    if (opacity < 0 || opacity > 255)
+    {
+        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
+    }
+    
+    // Generate an unordered dict from the image data trying to automatically decode channels into their corresponding
+    // channel mappings 
+    auto img_data_cpp = generateImageData(image_data, width, height, color_mode);
+
+    params.layerName = layer_name;
+    params.blendMode = blend_mode;
+    params.posX = pos_x;
+    params.posY = pos_y;
+    params.width = width;
+    params.height = height;
+    params.opacity = opacity;
+    params.compression = compression;
+    params.colorMode = color_mode;
+    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+}
+
+
+// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
+// than a separate structure as well as creating an interface for numpy.
+template <typename T>
+std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
+    std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
+    const std::string& layer_name,
+    const std::optional<py::array_t<T>> layer_mask,
+    int width,  // This is only relevant if a layer mask is set
+    int height, // This is only relevant if a layer mask is set
+    const Enum::BlendMode blend_mode,
+    int pos_x, // This is only relevant if a layer mask is set
+    int pos_y, // This is only relevant if a layer mask is set
+    int opacity,
+    const Enum::Compression compression,
+    const Enum::ColorMode color_mode
+)
+{
+    typename Layer<T>::Params params;
+    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
+    // so we must ensure the range ourselves
+    if (layer_name.size() > 255)
+    {
+        throw py::value_error("layer_name parameter cannot exceed a length of 255");
+    }
+    if (layer_mask.has_value())
+    {
+        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
+        {
+            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
+        }
+        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+    }
+    if (width < 0)
+    {
+        throw py::value_error("width cannot be a negative value");
+    }
+    if (height < 0)
+    {
+        throw py::value_error("height cannot be a negative value");
+    }
+    if (opacity < 0 || opacity > 255)
+    {
+        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
+    }
+    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
+    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
+    for (auto& [key, value] : image_data)
+    {
+        if (value.size() != static_cast<uint64_t>(width) * height)
+        {
+            throw py::value_error("Channel '" + Enum::channelIDToString(key) + "' must have the same size as the layer itself (width * height)");
+        }
+        img_data_cpp[key] = std::vector<T>(value.data(), value.data() + value.size());
+    }
+
+    params.layerName = layer_name;
+    params.blendMode = blend_mode;
+    params.posX = pos_x;
+    params.posY = pos_y;
+    params.width = width;
+    params.height = height;
+    params.opacity = opacity;
+    params.compression = compression;
+    params.colorMode = color_mode;
+    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+}
+
+
+// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
+// than a separate structure as well as creating an interface for numpy.
+template <typename T>
+std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
+    std::unordered_map<int, py::array_t<T>>& image_data,
+    const std::string& layer_name,
+    const std::optional<py::array_t<T>> layer_mask,
+    int width,  // This is only relevant if a layer mask is set
+    int height, // This is only relevant if a layer mask is set
+    const Enum::BlendMode blend_mode,
+    int pos_x, // This is only relevant if a layer mask is set
+    int pos_y, // This is only relevant if a layer mask is set
+    int opacity,
+    const Enum::Compression compression,
+    const Enum::ColorMode color_mode
+)
+{
+    typename Layer<T>::Params params;
+    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
+    // so we must ensure the range ourselves
+    if (layer_name.size() > 255)
+    {
+        throw py::value_error("layer_name parameter cannot exceed a length of 255");
+    }
+    if (layer_mask.has_value())
+    {
+        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
+        {
+            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
+        }
+        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+    }
+    if (width < 0)
+    {
+        throw py::value_error("width cannot be a negative value");
+    }
+    if (height < 0)
+    {
+        throw py::value_error("height cannot be a negative value");
+    }
+    if (opacity < 0 || opacity > 255)
+    {
+        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
+    }
+    std::unordered_map<uint16_t, std::vector<T>> img_data_cpp;
+    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
+    for (auto& [key, value] : image_data)
+    {
+        if (value.size() != static_cast<uint64_t>(width) * height)
+        {
+            throw py::value_error("Channel '" + std::to_string(key) + "' must have the same size as the layer itself (width * height)");
+        }
+        img_data_cpp[static_cast<uint16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
+    }
+
+    params.layerName = layer_name;
+    params.blendMode = blend_mode;
+    params.posX = pos_x;
+    params.posY = pos_y;
+    params.width = width;
+    params.height = height;
+    params.opacity = opacity;
+    params.compression = compression;
+    params.colorMode = color_mode;
+    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+}
 
 
 // Generate a LayeredFile python class from our struct adjusting some
@@ -53,6 +336,264 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             perfectly centered around the document
         
 	)pbdoc";
+
+    // Constructors
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------------------------------
+
+    imageLayer.def(py::init(&createImageLayerFromNpArray<T>), R"pbdoc(
+        Construct an image layer from image data passed as numpy.ndarray
+
+        :param image_data: 
+            The image data as 2- or 3-Dimensional numpy array where the first dimension is the number of channels.
+    
+            If its a 2D ndarray the second dimension must hold the image data in row-major order with the size being height*width. 
+            An example could be the following shape: (3, 1024) for an RGB layer that is 32*32px. 
+
+            If its a 3D ndarray the second and third dimension hold height and width respectively.
+            An example could be the following shape: (3, 32, 32) for the same RGB layer
+
+            We also support adding alpha channels this way, those are always stored as the last channel and are optional. E.g. for RGB
+            there could be a ndarray like this (4, 32, 32) and it would automatically identify the last channel as alpha. For the individual
+            color modes there is always a set of required channels such as R, G and B for RGB or C, M, Y, K for CMYK with the optional alpha
+            that can be appended to the end.
+
+            The size **must** be the same as the width and height parameter
+        :type image_data: numpy.ndarray
+
+        :param layer_name: The name of the group, its length must not exceed 255
+        :type layer_name: str
+
+        :param layer_mask: 
+            Optional layer mask, must have the same dimensions as height * width but can be a 1- or 2-dimensional array with row-major ordering (for a numpy
+            2D array this would mean with a shape of (height, width)
+        :type layer_mask: numpy.ndarray
+
+        :param width: 
+            Optional, width of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type width: int
+
+        :param height: 
+            Optional, height of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type height: int
+
+        :param blend_mode: Optional, the blend mode of the layer, 'Passthrough' is the default for groups.
+        :type blend_mode: psapi.enum.BlendMode
+
+        :param pos_x: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_x: int
+
+        :param pos_y: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_y: int
+
+        :param opacity: The opacity of the layer from 0-255 where 0 is 0% and 255 is 100%. Defaults to 255
+        :type opacity: int
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels
+        :type compression: psapi.enum.Compression
+
+        :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
+        :type color_mode: psapi.enum.ColorMode
+
+        :raises:
+            ValueError: if length of layer name is greater than 255
+
+            ValueError: if size of layer mask is not width*height
+
+            ValueError: if width of layer is negative
+
+            ValueError: if height of layer is negative
+
+            ValueError: if opacity is not between 0-255
+
+            ValueError: if the channel size is not the same as width * height
+
+    )pbdoc",
+        py::arg("image_data"),
+        py::arg("layer_name"),
+        py::arg("layer_mask") = py::none(),
+        py::arg("width") = 0,
+        py::arg("height") = 0,
+        py::arg("blend_mode") = Enum::BlendMode::Normal,
+        py::arg("pos_x") = 0,
+        py::arg("pos_y") = 0,
+        py::arg("opacity") = 255,
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        py::arg("color_mode") = Enum::ColorMode::RGB);
+
+    imageLayer.def(py::init(&createImageLayerFromIntMapping<T>), R"pbdoc(
+        Construct an image layer from image data passed as dict with integers as key
+
+        :param image_data: 
+            The image data as a dictionary with channel indices as integers. E.g. for a RGB image layer 
+            
+            .. code-block:: python
+
+                data = {
+                    0 : numpy.ndarray,
+                    1 : numpy.ndarray,
+                    2 : numpy.ndarray
+                }
+
+        :type image_data: dict[numpy.ndarray]
+
+        :param layer_name: The name of the group, its length must not exceed 255
+        :type layer_name: str
+
+        :param layer_mask: 
+            Optional layer mask, must have the same dimensions as height * width but can be a 1- or 2-dimensional array with row-major ordering (for a numpy
+            2D array this would mean with a shape of (height, width)
+        :type layer_mask: numpy.ndarray
+
+        :param width: 
+            Optional, width of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type width: int
+
+        :param height: 
+            Optional, height of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type height: int
+
+        :param blend_mode: Optional, the blend mode of the layer, 'Passthrough' is the default for groups.
+        :type blend_mode: psapi.enum.BlendMode
+
+        :param pos_x: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_x: int
+
+        :param pos_y: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_y: int
+
+        :param opacity: The opacity of the layer from 0-255 where 0 is 0% and 255 is 100%. Defaults to 255
+        :type opacity: int
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels
+        :type compression: psapi.enum.Compression
+
+        :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
+        :type color_mode: psapi.enum.ColorMode
+
+        :raises:
+            ValueError: if length of layer name is greater than 255
+
+            ValueError: if size of layer mask is not width*height
+
+            ValueError: if width of layer is negative
+
+            ValueError: if height of layer is negative
+
+            ValueError: if opacity is not between 0-255
+
+            ValueError: if the channel size is not the same as width * height
+
+    )pbdoc",
+        py::arg("image_data"),
+        py::arg("layer_name"),
+        py::arg("layer_mask") = py::none(),
+        py::arg("width") = 0,
+        py::arg("height") = 0,
+        py::arg("blend_mode") = Enum::BlendMode::Normal,
+        py::arg("pos_x") = 0,
+        py::arg("pos_y") = 0,
+        py::arg("opacity") = 255,
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        py::arg("color_mode") = Enum::ColorMode::RGB);
+
+    imageLayer.def(py::init(&createImageLayerFromIDMapping<T>), R"pbdoc(
+        Construct an image layer from image data passed as dict with psapi.enum.ChannelID as key
+
+        :param image_data: 
+            The image data as a dictionary with channel IDs as enums. E.g. for a RGB image layer 
+
+            .. code-block:: python
+
+                data = {
+                    psapi.enum.ChannelID.red : numpy.ndarray,
+                    psapi.enum.ChannelID.green : numpy.ndarray,
+                    psapi.enum.ChannelID.blue : numpy.ndarray
+                }
+
+        :type image_data: dict[numpy.ndarray]
+
+        :param layer_name: The name of the group, its length must not exceed 255
+        :type layer_name: str
+
+        :param layer_mask: 
+            Optional layer mask, must have the same dimensions as height * width but can be a 1- or 2-dimensional array with row-major ordering (for a numpy
+            2D array this would mean with a shape of (height, width)
+        :type layer_mask: numpy.ndarray
+
+        :param width: 
+            Optional, width of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type width: int
+
+        :param height: 
+            Optional, height of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type height: int
+
+        :param blend_mode: Optional, the blend mode of the layer, 'Passthrough' is the default for groups.
+        :type blend_mode: psapi.enum.BlendMode
+
+        :param pos_x: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_x: int
+
+        :param pos_y: 
+            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
+            For group layers this is only relevant for the layer mask and can be left out otherwise
+        :type pos_y: int
+
+        :param opacity: The opacity of the layer from 0-255 where 0 is 0% and 255 is 100%. Defaults to 255
+        :type opacity: int
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels
+        :type compression: psapi.enum.Compression
+
+        :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
+        :type color_mode: psapi.enum.ColorMode
+
+        :raises:
+            ValueError: if length of layer name is greater than 255
+
+            ValueError: if size of layer mask is not width*height
+
+            ValueError: if width of layer is negative
+
+            ValueError: if height of layer is negative
+
+            ValueError: if opacity is not between 0-255
+
+            ValueError: if the channel size is not the same as width * height
+
+    )pbdoc",
+        py::arg("image_data"),
+        py::arg("layer_name"),
+        py::arg("layer_mask") = py::none(),
+        py::arg("width") = 0,
+        py::arg("height") = 0,
+        py::arg("blend_mode") = Enum::BlendMode::Normal,
+        py::arg("pos_x") = 0,
+        py::arg("pos_y") = 0,
+        py::arg("opacity") = 255,
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        py::arg("color_mode") = Enum::ColorMode::RGB);
+
+    // Image extraction
+    // ---------------------------------------------------------------------------------------------------------------------
+    // ---------------------------------------------------------------------------------------------------------------------
     imageLayer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID channel_id, const bool do_copy = true)
         {
             std::vector<T> data = self.getChannel(channel_id, do_copy);
@@ -140,13 +681,29 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 :param channel_index: The index of the channel
                 :type channel_index: int
             )pbdoc");
-    imageLayer.def("get_image_data", &Class::getImageData,
-            R"pbdoc(
-                Extract all the channels of the ImageLayer into an unordered_map.
+    imageLayer.def("get_image_data", [](Class& self, const bool do_copy)
+        {
+            auto data = self.getImageData(do_copy);
+            std::unordered_map<Enum::ChannelIDInfo, py::array_t<T>, Enum::ChannelIDInfoHasher> outData;
+            for (auto& [key, value] : data)
+            {
+                auto width = static_cast<size_t>(self.m_Width);
+                auto height = static_cast<size_t>(self.m_Height);
+                std::vector<size_t> shape = { height, width };
+                T* ptr = value.data();
+                // Unfortunately I dont think this can be trivially move constructed
+                outData[key] = py::array_t<T>(shape, ptr);
+            }
+            return outData;
+        }, py::arg("do_copy") = true,
+        R"pbdoc(
+            Extract all the channels of the ImageLayer into an unordered_map.
                 
-                :param do_copy: Whether to copy the data
-                :return: The extracted image data
-            )pbdoc");
+            :param do_copy: Whether to copy the data
+            :type do_copy: bool
+
+            :return: The extracted image data
+        )pbdoc");
     imageLayer.def("set_compression", &Class::setCompression,
             R"pbdoc(
                 Change the compression codec of all the image channels.
