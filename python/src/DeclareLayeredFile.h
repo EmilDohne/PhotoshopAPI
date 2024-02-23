@@ -109,7 +109,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 			The width of the document, must not exceed 30,000 for PSD or 300,000 for PSB
 
 		height : int
-			The of the document, must not exceed 30,000 for PSD or 300,000 for PSB
+			The height of the document, must not exceed 30,000 for PSD or 300,000 for PSB
 
 	)pbdoc";
 
