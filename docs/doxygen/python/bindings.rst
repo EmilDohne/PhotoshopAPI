@@ -14,7 +14,7 @@ therefore not all functions can be translated directly
 
 
 .. toctree::
-	:maxdepth: 2
+	:maxdepth: 1
 
 	layeredfile.rst
 	photoshopfile.rst

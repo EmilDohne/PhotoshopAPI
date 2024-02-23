@@ -81,7 +81,9 @@ Below you can find a list of layers that one is able to add to the LayeredFile i
    :maxdepth: 1
    :caption: Layer Types:
 
+   layers/layer.rst
    layers/image.rst
+   layers/group.rst
 
 
 Class Reference LayeredFile

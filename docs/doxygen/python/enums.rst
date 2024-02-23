@@ -11,3 +11,8 @@ Enumerators
 .. autoclass:: psapi.enum.ColorMode
 	:members:
 
+
+
+.. autoclass:: psapi.enum.ChannelID
+	:members:
+
