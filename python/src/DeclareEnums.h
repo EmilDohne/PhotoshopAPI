@@ -14,20 +14,8 @@ using namespace NAMESPACE_PSAPI;
 
 void declareBitDepthEnum(py::module& m)
 {
-	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth", R"pbdoc(
-		Enum representing the bit depth of an image.
+	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth");
 
-        Attributes
-		-------------
-
-		bd_8 : int
-			8-bits per channel, equivalent to numpy.uint8
-		bd_16 : int
-			16-bits per channel, equivalent to numpy.uint16
-		bd_32 : int
-			32-bits per channel, equivalent to numpy.float32
-
-        )pbdoc");
 	bitDepth.value("bd_8", Enum::BitDepth::BD_8);
 	bitDepth.value("bd_16", Enum::BitDepth::BD_16);
 	bitDepth.value("bd_32", Enum::BitDepth::BD_32);
@@ -41,21 +29,7 @@ void declareBitDepthEnum(py::module& m)
 
 void declareColorModeEnum(py::module& m)
 {
-	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode",
-		R"pbdoc(
-		Enum representing the color mode of an file.
-
-		Attributes
-		-------------
-
-		rgb : int
-			rgb color mode (supports channels R, G, B and A)
-		cmyk : int
-			cmyk color mode (supports channels C, M, Y, K and A)
-		grayscale : int
-			grayscale color mode (supports channels Gray, A)
-
-        )pbdoc");
+	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode");
 	colorMode.value("rgb", Enum::ColorMode::RGB);
 	colorMode.value("cmyk", Enum::ColorMode::CMYK);
 	colorMode.value("grayscale", Enum::ColorMode::Grayscale);
@@ -67,11 +41,7 @@ void declareColorModeEnum(py::module& m)
 
 void declareChannelIDEnum(py::module& m)
 {
-	py::enum_<Enum::ChannelID> channelID(m, "ChannelID",
-		R"pbdoc(
-		Enum representation of all the different channel ids found in a file.
-		)pbdoc");
-
+	py::enum_<Enum::ChannelID> channelID(m, "ChannelID");
 	channelID.value("red", Enum::ChannelID::Red);
 	channelID.value("green", Enum::ChannelID::Green);
 	channelID.value("blue", Enum::ChannelID::Blue);
@@ -91,24 +61,7 @@ void declareChannelIDEnum(py::module& m)
 
 void declareCompressionEnums(py::module& m)
 {
-	py::enum_<Enum::Compression> compression(m, "Compression",
-		R"pbdoc(
-		Enum representation of all the different Compression codecs supported by Photoshop (and PSAPI).
-
-		Attributes
-		-------------
-
-		raw : int
-			encode as raw bytes (no compression)
-		rle : int
-			encode with run-length-encoding for fastest write speeds at the cost of lower compression ratios (especially for 16- and 32-bit)
-		zip : int
-			encode with zip (deflate) compression, usually the best compression codec choice as well as zipprediction
-		zipprediction : int
-			encode with zip (deflate) compression but additionally 'prediction' encode the data which takes the difference between the last and 
-			the current pixel per scanline and stores that (for 32-bit files it interleaves the bytes).
-		)pbdoc");
-
+	py::enum_<Enum::Compression> compression(m, "Compression");
 	compression.value("raw", Enum::Compression::Raw);
 	compression.value("rle", Enum::Compression::Rle);
 	compression.value("zip", Enum::Compression::Zip);
@@ -121,11 +74,7 @@ void declareCompressionEnums(py::module& m)
 
 void declareBlendModeEnum(py::module& m)
 {
-	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode",
-		R"pbdoc(
-		Enum representation of all the different channel ids found in a file.
-		)pbdoc");
-
+	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode");
 	blendMode.value("passthrough", Enum::BlendMode::Passthrough);
 	blendMode.value("normal", Enum::BlendMode::Normal);
 	blendMode.value("dissolve", Enum::BlendMode::Dissolve);
