@@ -20,8 +20,9 @@ struct File
 {
 	struct FileParams
 	{
-		bool doRead = true;
-		bool forceOverwrite = false;
+		bool doRead;
+		bool forceOverwrite;
+		FileParams() : doRead(true), forceOverwrite(false) {};
 	};
 
 	// Use this mutex as well for locking throughout the application when IO functions
