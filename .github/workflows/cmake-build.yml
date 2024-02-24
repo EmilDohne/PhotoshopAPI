@@ -29,8 +29,9 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         include:
           - runs-on: ubuntu-latest
-            compiler: gcc
-            gcc: 13
+            env:
+              CC: gcc-13
+              CXX: g++-13
 
     steps:
     - uses: actions/checkout@v4
