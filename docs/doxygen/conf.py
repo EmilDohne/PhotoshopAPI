@@ -1,8 +1,6 @@
 # The sphinx template and setup was mostly adopted from openimageios docs to mimic their styling
 import subprocess, os, sys
 
-# Add the stubs path to system path so that we can use those for documentation
-sys.path.insert(0, os.path.abspath("../../python/psapi"))
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :

@@ -100,3 +100,4 @@ Class Reference LayeredFile
 	:members:
 
 	.. automethod:: __getitem__
+
