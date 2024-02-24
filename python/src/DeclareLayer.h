@@ -42,7 +42,7 @@ void declareLayer(py::module& m, const std::string& extension) {
 
                 return py::array_t<T>(shape, ptr);
             }
-            return py::array_t<T>(0, nullptr)
+            return py::array_t<T>(0, nullptr);
         });
     layer.def_readwrite("blend_mode", &Class::m_BlendMode);
     layer.def_readwrite("is_visible", &Class::m_IsVisible);

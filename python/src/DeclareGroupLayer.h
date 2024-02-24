@@ -116,5 +116,5 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
                 }
             }
             throw py::key_error("Unable to find layer '" + value + "' in the Group");
-        } py::arg("value"));
+        }, py::arg("value"));
 }

@@ -136,7 +136,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// Read/write functionality
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	layeredFile.def_static("read", &Class::read, , py::arg("path"));
+	layeredFile.def_static("read", &Class::read, py::arg("path"));
 
 	// wrap the write function to no longer be static as we dont have move semantics and it makes the signature
 	// a bit awkward otherwise so that now you can just call LayeredFile.write("SomeFile.psd")
