@@ -10,11 +10,17 @@
 #include <cstdarg>
 #include <stdexcept>
 
-
-#define PSAPI_LOG(task, format, ...)						NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Info, task, format __VA_OPT__(,) __VA_ARGS__)
-#define PSAPI_LOG_ERROR(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Error, task, format __VA_OPT__(,) __VA_ARGS__)
-#define PSAPI_LOG_WARNING(task, format, ...)				NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Warning, task, format __VA_OPT__(,) __VA_ARGS__)
-#define PSAPI_LOG_DEBUG(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Debug, task, format __VA_OPT__(,) __VA_ARGS__)
+#ifdef _MSC_VER
+    #define PSAPI_LOG(task, format, ...)						NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Info, task, format, __VA_ARGS__)
+    #define PSAPI_LOG_ERROR(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Error, task, format, __VA_ARGS__)
+    #define PSAPI_LOG_WARNING(task, format, ...)				NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Warning, task, format, __VA_ARGS__)
+    #define PSAPI_LOG_DEBUG(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Debug, task, format, __VA_ARGS__)
+#else
+    #define PSAPI_LOG(task, format, ...)						NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Info, task, format __VA_OPT__(,) __VA_ARGS__)
+    #define PSAPI_LOG_ERROR(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Error, task, format __VA_OPT__(,) __VA_ARGS__)
+    #define PSAPI_LOG_WARNING(task, format, ...)				NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Warning, task, format __VA_OPT__(,) __VA_ARGS__)
+    #define PSAPI_LOG_DEBUG(task, format, ...)					NAMESPACE_PSAPI::Logger::getInstance().log(NAMESPACE_PSAPI::Enum::Severity::Debug, task, format __VA_OPT__(,) __VA_ARGS__)
+#endif
 
 #define PSAPI_SET_SEVERITY_INFO								NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Info)
 #define PSAPI_SET_SEVERITY_WARNING							NAMESPACE_PSAPI::Logger::getInstance().setSeverity(NAMESPACE_PSAPI::Enum::Severity::Warning)
