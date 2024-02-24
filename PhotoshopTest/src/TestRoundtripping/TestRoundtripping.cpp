@@ -29,7 +29,9 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Write to disk
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
 		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 		psdOutDocumentPtr->write(outputFile);
@@ -46,7 +48,9 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Write to disk
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
 		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 		psdOutDocumentPtr->write(outputFile);
@@ -63,7 +67,9 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Write to disk
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
 		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 		psdOutDocumentPtr->write(outputFile);

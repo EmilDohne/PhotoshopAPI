@@ -41,7 +41,9 @@ TEST_CASE("Write AdobeRGB1998")
 		);
 		document.addLayer(layer);
 
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
 		psdDocumentPtr->write(outputFile);
@@ -99,7 +101,9 @@ TEST_CASE("Write AppleRGB")
 		);
 		document.addLayer(layer);
 
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
 		psdDocumentPtr->write(outputFile);
@@ -157,7 +161,9 @@ TEST_CASE("Write CIERGB")
 		);
 		document.addLayer(layer);
 
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
 		psdDocumentPtr->write(outputFile);

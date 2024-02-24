@@ -42,7 +42,9 @@ TEST_CASE("Write DPI")
 		);
 		document.addLayer(layer);
 
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
 		psdDocumentPtr->write(outputFile);
@@ -94,7 +96,9 @@ TEST_CASE("Write DPI fractional")
 		);
 		document.addLayer(layer);
 
-		File::FileParams params = { .doRead = false, .forceOverwrite = true };
+		File::FileParams params = File::FileParams();
+		params.doRead = false;
+		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
 		psdDocumentPtr->write(outputFile);

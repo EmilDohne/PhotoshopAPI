@@ -32,7 +32,9 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 			Profiler writeProfiler{ outStats , "write" + benchName };
 
 			// Write to disk
-			File::FileParams params = { .doRead = false, .forceOverwrite = true };
+			File::FileParams params = File::FileParams();
+			params.doRead = false;
+			params.forceOverwrite = true;
 			auto outputFile = File(writePath, params);
 			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 			psdOutDocumentPtr->write(outputFile);
@@ -67,7 +69,9 @@ void readWriteFileChangeCompression(const int repeats, const std::filesystem::pa
 			layeredFile.setCompression(Enum::Compression::Zip);
 
 			// Write to disk
-			File::FileParams params = { .doRead = false, .forceOverwrite = true };
+			File::FileParams params = File::FileParams();
+			params.doRead = false;
+			params.forceOverwrite = true;
 			auto outputFile = File(writePath, params);
 			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 			psdOutDocumentPtr->write(outputFile);
