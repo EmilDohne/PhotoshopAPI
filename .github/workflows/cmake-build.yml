@@ -27,11 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        include:
-          - runs-on: ubuntu-latest
-            env:
-              CC: gcc-13
-              CXX: g++-13
+            
 
     steps:
     - uses: actions/checkout@v4
@@ -41,10 +37,15 @@ jobs:
     - name: Configure CMake ${{ matrix.os }}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      
+      env:
+        CC: gcc-13
+        CXX: g++-13
       run: |
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF
 
     - name: Build ${{ matrix.os }}
       # Build your program with the given configuration
+      env:
+        CC: gcc-13
+        CXX: g++-13
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
