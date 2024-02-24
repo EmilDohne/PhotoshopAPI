@@ -153,9 +153,9 @@ setup(
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
     zip_safe=False,
+    package_data={"PhotoshopAPI" : ["python/psapi/*pyi", "python/psapi/py.typed"]},
     install_requires= [
-        "pybind11>=2.10.0",
         "numpy>=1.26"
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.10",
 )
