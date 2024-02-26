@@ -143,14 +143,7 @@ class CMakeBuild(build_ext):
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
-
-def package_files(directory):
-    paths = []
-    for (path, directories, filenames) in os.walk(directory):
-        for filename in filenames:
-            paths.append(os.path.join('..', path, filename))
-    return paths
-
+        
 
 setup(
     name="PhotoshopAPI",
@@ -162,7 +155,7 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     package_dir = {"": "python"},
     packages=["psapi-stubs"],
-    package_data={"psapi-stubs": package_files("python/psapi-stubs")},
+    package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi"]},
     zip_safe=False,
     install_requires= [
         "numpy>=1.26"
