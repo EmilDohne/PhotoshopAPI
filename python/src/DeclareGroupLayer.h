@@ -116,7 +116,7 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
 
     groupLayer.def(py::init(&createGroupLayer<T>),
         py::arg("layer_name"),
-        py::arg("layer_mask"),
+        py::arg("layer_mask") = py::none(),
         py::arg("width") = 0,
         py::arg("height") = 0,
         py::arg("blend_mode") = Enum::BlendMode::Passthrough,
