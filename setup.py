@@ -144,8 +144,6 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
 
-shutil.move('python/psapi-stubs', '.')
-
 def package_files(directory):
     paths = []
     for (path, directories, filenames) in os.walk(directory):
@@ -153,6 +151,8 @@ def package_files(directory):
             paths.append(os.path.join('..', path, filename))
     return paths
 
+if not os.path.exists("psapi-stubs"):
+    os.makedirs("psapi-stubs")
 
 setup(
     name="PhotoshopAPI",
@@ -162,6 +162,8 @@ setup(
     long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
+    packages=["psapi-stubs"],
+    package_data={"psapi-stubs": package_files("python/psapi-stubs")},
     zip_safe=False,
     install_requires= [
         "numpy>=1.26"
