@@ -14,9 +14,8 @@ using namespace NAMESPACE_PSAPI;
 
 void declareBitDepthEnum(py::module& m)
 {
-	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth");
+	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth", R"pbdoc(
 
-	bitDepth.doc() = R"pbdoc(
 		Enum representing the bit depth of an image.
 
 		Attributes
@@ -29,7 +28,7 @@ void declareBitDepthEnum(py::module& m)
 		bd_32 : int
 			32-bits per channel, equivalent to numpy.float32
 
-	)pbdoc";
+	)pbdoc");
 
 	bitDepth.value("bd_8", Enum::BitDepth::BD_8);
 	bitDepth.value("bd_16", Enum::BitDepth::BD_16);
@@ -44,9 +43,7 @@ void declareBitDepthEnum(py::module& m)
 
 void declareColorModeEnum(py::module& m)
 {
-	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode");
-
-	colorMode.doc() = R"pbdoc(
+	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode", R"pbdoc(
 		Enum representing the color mode of an file.
 
 		Attributes
@@ -59,7 +56,7 @@ void declareColorModeEnum(py::module& m)
 		grayscale : int
 			grayscale color mode(supports channels Gray, A)
 
-	)pbdoc";
+	)pbdoc");
 
 	colorMode.value("rgb", Enum::ColorMode::RGB);
 	colorMode.value("cmyk", Enum::ColorMode::CMYK);
@@ -72,9 +69,7 @@ void declareColorModeEnum(py::module& m)
 
 void declareChannelIDEnum(py::module& m)
 {
-	py::enum_<Enum::ChannelID> channelID(m, "ChannelID");
-
-	channelID.doc() = R"pbdoc(
+	py::enum_<Enum::ChannelID> channelID(m, "ChannelID", R"pbdoc(
 		Enum representation of all the different channel ids found in a file.
 
 		Attributes
@@ -102,7 +97,7 @@ void declareChannelIDEnum(py::module& m)
 
 		alpha: int
 
-	)pbdoc";
+	)pbdoc");
 
 	channelID.value("red", Enum::ChannelID::Red);
 	channelID.value("green", Enum::ChannelID::Green);
@@ -123,9 +118,7 @@ void declareChannelIDEnum(py::module& m)
 
 void declareCompressionEnums(py::module& m)
 {
-	py::enum_<Enum::Compression> compression(m, "Compression");
-
-	compression.doc() = R"pbdoc(
+	py::enum_<Enum::Compression> compression(m, "Compression", R"pbdoc(
 		Enum representation of all the different Compression codecs supported by Photoshop (and PSAPI).
 
 		Attributes
@@ -141,7 +134,7 @@ void declareCompressionEnums(py::module& m)
 			encode with zip (deflate) compression but additionally 'prediction' encode the data which takes the difference between the last and 
 			the current pixel per scanline and stores that (for 32-bit files it interleaves the bytes).
 
-	)pbdoc";
+	)pbdoc");
 
 	compression.value("raw", Enum::Compression::Raw);
 	compression.value("rle", Enum::Compression::Rle);
@@ -155,9 +148,7 @@ void declareCompressionEnums(py::module& m)
 
 void declareBlendModeEnum(py::module& m)
 {
-	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode");
-
-	blendMode.doc() = R"pbdoc(
+	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode", R"pbdoc(
 		Enum representation of all the different blendmodes found in a file.
 
 		Attributes
@@ -219,7 +210,7 @@ void declareBlendModeEnum(py::module& m)
 
 		luminosity: int
 
-	)pbdoc";
+	)pbdoc");
 
 	blendMode.value("passthrough", Enum::BlendMode::Passthrough);
 	blendMode.value("normal", Enum::BlendMode::Normal);
