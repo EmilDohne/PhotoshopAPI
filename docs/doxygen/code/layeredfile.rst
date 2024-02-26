@@ -12,52 +12,54 @@ Usage
 The code snippets below show some examples of how one would generally use a LayeredFile. For more detailed examples please visit the PhotoshopExamples/ directory
 on the github page
 
-.. code-block:: cpp
-	:caption: Initialize from PhotoshopFile
+.. tab:: Read and Modify
+
+	.. code-block:: cpp
+		:caption: Read from disk and modify
 	
-	using namespace NAMESPACE_PSAPI;
+		using namespace NAMESPACE_PSAPI;
 
-	LayeredFile<bpp16_t> layeredFile = LayeredFile<bpp16_t>::read("InFile.psd");
+		LayeredFile<bpp16_t> layeredFile = LayeredFile<bpp16_t>::read("InFile.psd");
 
-	// Move a layer one level up in the hierarchy
-	layeredFile.moveLayer("Group/NestedGroup/Image", "Group");
+		// Move a layer one level up in the hierarchy
+		layeredFile.moveLayer("Group/NestedGroup/Image", "Group");
 
-	// Delete the now empty group from the document
-	layeredFile.removeLayer("Group/NestedGroup");
+		// Delete the now empty group from the document
+		layeredFile.removeLayer("Group/NestedGroup");
 
-	// We can now convert the LayeredFile to a PhotoshopFile and write it out (this is done internally
-	// but can be exposed, see the ExtendedSignature example for more information)
-	LayeredFile<bpp16_t>::write(std::move(layeredFile), "OutFile.psd");
+		// We can now convert the LayeredFile to a PhotoshopFile and write it out (this is done internally
+		// but can be exposed, see the ExtendedSignature example for more information)
+		LayeredFile<bpp16_t>::write(std::move(layeredFile), "OutFile.psd");
 
 
-Alternatively we could initialize from scratch and add layers into the document at will and then write it out
+.. tab:: Initialize from scratch
 
-.. code-block:: cpp
-	:caption: Initialize and add some layers
+	.. code-block:: cpp
+		:caption: Initialize, modify and write
 
-	using namespace PhotoshopAPI;
+		using namespace PhotoshopAPI;
 
-	const static uint32_t width = 64u;
-	const static uint32_t height = 64u;
+		const static uint32_t width = 64u;
+		const static uint32_t height = 64u;
 
-	LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
+		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
 
-	// Create our individual channels to add to our image layer. Keep in mind that all these 3 channels
-	// need to be specified for RGB mode
-	std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
-	channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 255u);
-	channelMap[Enum::ChannelID::Green] = std::vector<bpp8_t>(width * height, 0u);
-	channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 0u);
+		// Create our individual channels to add to our image layer. Keep in mind that all these 3 channels
+		// need to be specified for RGB mode
+		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
+		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 255u);
+		channelMap[Enum::ChannelID::Green] = std::vector<bpp8_t>(width * height, 0u);
+		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 0u);
 
-	ImageLayer<bpp8_t>::Params layerParams = {};
-	layerParams.layerName = "Layer Red";
-	layerParams.width = width;
-	layerParams.height = height;
+		ImageLayer<bpp8_t>::Params layerParams = {};
+		layerParams.layerName = "Layer Red";
+		layerParams.width = width;
+		layerParams.height = height;
 
-	auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channelMap), layerParams);
-	document.addLayer(layer);
+		auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channelMap), layerParams);
+		document.addLayer(layer);
 
-	LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutFile.psd");
+		LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutFile.psd");
 
 
 
@@ -88,10 +90,14 @@ Conversion Functions
 
 .. doxygenfunction:: LayeredToPhotoshopFile
 
+|
+
 Find Layer as specific type
 ----------------------------
 
 .. doxygenfunction:: findLayerAs
+
+|
 
 ICC Profile Struct
 --------------------
@@ -99,6 +105,7 @@ ICC Profile Struct
 .. doxygenstruct:: ICCProfile
 	:members:
 
+|
 
 LayeredFile Struct
 ------------------
@@ -106,8 +113,11 @@ LayeredFile Struct
 .. doxygenstruct:: LayeredFile
 	:members:
 
+|
 
 Layer Order Enum
 -----------------
 
 .. doxygenenum:: LayerOrder
+
+|

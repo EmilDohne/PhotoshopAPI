@@ -58,7 +58,9 @@ int main()
 	*/
 
 	// We can now convert back to a PhotoshopFile and write out to disk
-	File::FileParams params = { .doRead = false, .forceOverwrite = true };
+	File::FileParams params = File::FileParams();
+	params.doRead = false;
+	params.forceOverwrite = true;
 	auto outputFile = File("./RearrangedFile.psd", params);
 	auto psOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 

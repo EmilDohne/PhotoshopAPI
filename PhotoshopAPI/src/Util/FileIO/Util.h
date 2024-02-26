@@ -17,7 +17,7 @@ inline T RoundUpToMultiple(T value, T padding)
 	if (value < 0)
 	{
 		PSAPI_LOG_ERROR("RoundUpToMultiple", "Cannot round up a negative value, returning 0");
-		return NULL;
+		return T{};
 	}
 	return ((value + padding - 1) / padding) * padding;
 }

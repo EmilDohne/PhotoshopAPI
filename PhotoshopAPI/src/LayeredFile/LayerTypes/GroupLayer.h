@@ -48,6 +48,10 @@ struct GroupLayer : public Layer<T>
 	/// \param layer The layer to be removed.
 	void removeLayer(std::shared_ptr<Layer<T>>& layer);
 
+	/// \brief Removes the specified layer from the group.
+	/// \param layerName The name of the layer to be removed
+	void removeLayer(const std::string layerName);
+
 	/// \brief Converts the group layer to Photoshop layerRecords and imageData.
 	/// \param colorMode The color mode for the conversion.
 	/// \param doCopy Set to true to safely keep using the current GroupLayer instance. Advised to keep true unless parsing the whole LayeredFile

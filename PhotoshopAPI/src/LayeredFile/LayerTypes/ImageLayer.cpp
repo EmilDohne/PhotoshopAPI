@@ -179,27 +179,27 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 	Layer<T>::m_Height = layerParameters.height;
 
 	// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
-	for (auto& pair : imageData)
+	for (auto& [key, value] : imageData)
 	{
 		Enum::ChannelIDInfo info = {};
 		if (layerParameters.colorMode == Enum::ColorMode::RGB)
-			info = Enum::rgbChannelIDToChannelIDInfo(pair.first);
+			info = Enum::rgbChannelIDToChannelIDInfo(key);
 		else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
-			info = Enum::cmykChannelIDToChannelIDInfo(pair.first);
+			info = Enum::cmykChannelIDToChannelIDInfo(key);
 		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
-			info = Enum::grayscaleChannelIDToChannelIDInfo(pair.first);
+			info = Enum::grayscaleChannelIDToChannelIDInfo(key);
 		else
 			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
-		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
+		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
-				pair.second.size(),
+				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
 
-			ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(pair.second), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+			ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 			m_ImageData[info] = std::move(channel);
 	}
 
@@ -277,27 +277,27 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 	Layer<T>::m_Height = layerParameters.height;
 
 	// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
-	for (auto& pair : imageData)
+	for (auto& [key, value] : imageData)
 	{
 		Enum::ChannelIDInfo info = {};
 		if (layerParameters.colorMode == Enum::ColorMode::RGB)
-			info = Enum::rgbIntToChannelID(pair.first);
+			info = Enum::rgbIntToChannelID(key);
 		else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
-			info = Enum::cmykIntToChannelID(pair.first);
+			info = Enum::cmykIntToChannelID(key);
 		else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
-			info = Enum::grayscaleIntToChannelID(pair.first);
+			info = Enum::grayscaleIntToChannelID(key);
 		else
 			PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
 
 		// Channel sizes must match the size of the layer
-		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > pair.second.size()) [[unlikely]]
+		if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
-				pair.second.size(),
+				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
 
-		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(pair.second), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		m_ImageData[info] = std::move(channel);
 	}
 
@@ -356,6 +356,10 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 template <typename T>
 std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool doCopy /*= true*/)
 {
+	if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
+	{
+		return this->getMaskData(doCopy);
+	}
 	for (auto& [key, value] : m_ImageData)
 	{
 		if (key.id == channelID)
@@ -378,8 +382,12 @@ std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool d
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<T> ImageLayer<T>::getChannel(const uint16_t channelIndex, bool doCopy /*= true*/)
+std::vector<T> ImageLayer<T>::getChannel(const int16_t channelIndex, bool doCopy /*= true*/)
 {
+	if (channelIndex == -2)
+	{
+		return this->getMaskData(doCopy);
+	}
 	for (auto& [key, value] : m_ImageData)
 	{
 		if (key.index == channelIndex)

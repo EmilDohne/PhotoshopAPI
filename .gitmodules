@@ -7,3 +7,6 @@
 [submodule "thirdparty/doctest"]
 	path = thirdparty/doctest
 	url = https://github.com/doctest/doctest/
+[submodule "thirdparty/pybind11"]
+	path = thirdparty/pybind11
+	url = https://github.com/pybind/pybind11

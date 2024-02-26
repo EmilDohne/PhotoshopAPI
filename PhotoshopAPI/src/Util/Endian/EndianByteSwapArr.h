@@ -12,6 +12,8 @@
 #include <array>
 #include <bit>
 
+#include <cstring>
+
 
 PSAPI_NAMESPACE_BEGIN
 

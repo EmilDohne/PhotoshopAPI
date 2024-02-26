@@ -6,6 +6,11 @@
 # Release artifacts
 release/
 
+# setuptools related artifacts
+.venv/
+build/
+PhotoshopAPI.egg-info/
+
 # Benchmark Binary files
 PhotoshopBenchmark/documents/read
 PhotoshopBenchmark/documents/write

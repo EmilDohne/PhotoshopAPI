@@ -1,5 +1,10 @@
 ﻿cmake_minimum_required (VERSION 3.20)
-project ("PhotoshopAPIBuild" VERSION 0.1.0 LANGUAGES CXX)
+project ("PhotoshopAPIBuild" VERSION 0.2.0 LANGUAGES CXX)
+
+if (MSVC)
+    # MSVC is stupid
+    add_compile_definitions(NOMINMAX)
+endif()
 
 # --------------------------------------------------------------------------
 # Configurable options
@@ -9,6 +14,7 @@ option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
+option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" ON)
 
 # Build setup
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -61,5 +67,12 @@ if(PSAPI_BUILD_EXAMPLES)
     add_subdirectory (PhotoshopExamples/ModifyLayerStructure)
 endif()
 if(PSAPI_BUILD_DOCS)
+    if(NOT PSAPI_BUILD_PYTHON)
+        message(WARNING "Building the documentation without the python bindings, this means the python bindings wont show up in your local copy")
+    endif()
     add_subdirectory (docs/doxygen)
+endif()
+if(PSAPI_BUILD_PYTHON)
+    add_subdirectory (thirdparty/pybind11)
+    add_subdirectory (python)
 endif()

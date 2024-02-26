@@ -12,6 +12,8 @@
 #include <type_traits>
 #include <vector>
 
+#include <cstring>
+
 
 PSAPI_NAMESPACE_BEGIN
 

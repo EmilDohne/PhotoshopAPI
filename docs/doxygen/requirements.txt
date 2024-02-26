@@ -1,3 +1,5 @@
 breathe==4.35.0
 sphinx==7.2.6
 furo==2023.9.10
+sphinx-inline-tabs==2023.4.21
+numpydoc==1.6.0
