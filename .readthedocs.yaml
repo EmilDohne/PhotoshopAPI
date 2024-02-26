@@ -10,9 +10,6 @@ build:
   os: ubuntu-22.04
   tools:
     python: "3.12"
-  apt_packages:
-    - libclang
-    - cmake
 
 # Build documentation in the "docs/" directory with Sphinx
 sphinx:
