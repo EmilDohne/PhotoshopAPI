@@ -144,7 +144,6 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
 
-os.listdir('psapi-stubs')
 shutil.move('python/psapi-stubs', '.')
 
 def package_files(directory):
@@ -163,8 +162,6 @@ setup(
     long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
-    packages=["psapi-stubs"],
-    package_data={"psapi-stubs": package_files("psapi-stubs")},
     zip_safe=False,
     install_requires= [
         "numpy>=1.26"
