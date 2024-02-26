@@ -1,5 +1,5 @@
 # Build wheels and publish them to PyPi (for the master branch)
-name: Wheels
+name: Python Wheels
 
 on:
   workflow_dispatch:
