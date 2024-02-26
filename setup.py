@@ -147,7 +147,7 @@ class CMakeBuild(build_ext):
 
 def move_stubs_to_root() -> None:
     shutil.move('python/psapi-stubs', 'psapi-stubs')
-    os.rmdir('python')
+    shutil.rmtree('python')
 
 
 move_stubs_to_root()
