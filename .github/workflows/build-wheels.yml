@@ -1,3 +1,4 @@
+# Build wheels and publish them to PyPi (for the master branch)
 name: Wheels
 
 on:
