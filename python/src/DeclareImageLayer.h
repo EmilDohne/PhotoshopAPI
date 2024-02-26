@@ -607,7 +607,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             std::vector<size_t> shape = { self.m_Height, self.m_Width };
 
             return py::array_t<T>(shape, ptr);
-        }, py::arg("id"), py::arg("do_copy"), R"pbdoc(
+        }, py::arg("id"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel ID.
                 
@@ -631,7 +631,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             std::vector<size_t> shape = { self.m_Height, self.m_Width };
 
             return py::array_t<T>(shape, ptr);
-        }, py::arg("index"), py::arg("do_copy"), R"pbdoc(
+        }, py::arg("index"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel index.
                 
@@ -692,7 +692,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def("get_image_data", [](Class& self, const bool do_copy)
         {
             auto data = self.getImageData(do_copy);
-            std::unordered_map<Enum::ChannelIDInfo, py::array_t<T>, Enum::ChannelIDInfoHasher> outData;
+            std::unordered_map<int, py::array_t<T>> outData;
             for (auto& [key, value] : data)
             {
                 auto width = static_cast<size_t>(self.m_Width);
@@ -700,7 +700,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 std::vector<size_t> shape = { height, width };
                 T* ptr = value.data();
                 // Unfortunately I dont think this can be trivially move constructed
-                outData[key] = py::array_t<T>(shape, ptr);
+                outData[key.index] = py::array_t<T>(shape, ptr);
             }
             return outData;
         }, py::arg("do_copy") = true, R"pbdoc(
@@ -727,7 +727,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def_property_readonly("image_data", [](Class& self)
         {
             auto data = self.getImageData();
-            std::unordered_map<Enum::ChannelIDInfo, py::array_t<T>, Enum::ChannelIDInfoHasher> outData;
+            std::unordered_map<int, py::array_t<T>> outData;
             for (auto& [key, value] : data)
             {
                 auto width = static_cast<size_t>(self.m_Width);
@@ -735,7 +735,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 std::vector<size_t> shape = { height, width };
                 T* ptr = value.data();
                 // Unfortunately I dont think this can be trivially move constructed
-                outData[key] = py::array_t<T>(shape, ptr);
+                outData[key.index] = py::array_t<T>(shape, ptr);
             }
             return outData;
         }, R"pbdoc(

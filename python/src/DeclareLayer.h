@@ -102,7 +102,7 @@ void declareLayer(py::module& m, const std::string& extension) {
                 return py::array_t<T>(shape, ptr);
             }
             return py::array_t<T>(0, nullptr);
-        }, R"pbdoc(
+        },py::arg("do_copy") = true, R"pbdoc(
 
         Get the pixel mask data associated with the layer (if it exists), if it doesnt
         a warning gets raised and a null-size numpy.ndarray is returned.
