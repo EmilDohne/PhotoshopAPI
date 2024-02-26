@@ -151,8 +151,6 @@ def package_files(directory):
             paths.append(os.path.join('..', path, filename))
     return paths
 
-if not os.path.exists("psapi-stubs"):
-    os.makedirs("psapi-stubs")
 
 setup(
     name="PhotoshopAPI",
@@ -162,6 +160,7 @@ setup(
     long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
+    package_dir = {"": "python"},
     packages=["psapi-stubs"],
     package_data={"psapi-stubs": package_files("python/psapi-stubs")},
     zip_safe=False,
