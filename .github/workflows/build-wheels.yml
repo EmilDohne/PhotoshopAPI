@@ -6,7 +6,6 @@ on:
   push:
     branches:
      - master
-     - feat-add-python-bindings
   release:
     types:
       - published
@@ -28,6 +27,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
+        name: PhotoshopAPI_Py
         path: dist/*.tar.gz
 
 
@@ -58,6 +58,7 @@ jobs:
     - name: Upload wheels
       uses: actions/upload-artifact@v3
       with:
+        name: PhotoshopAPI_Py
         path: wheelhouse/*.whl
 
 
@@ -76,7 +77,7 @@ jobs:
 
     - uses: actions/download-artifact@v3
       with:
-        name: artifact
+        name: PhotoshopAPI_Py
         path: dist
 
     - uses: pypa/gh-action-pypi-publish@release/v1
