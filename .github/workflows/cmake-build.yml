@@ -1,5 +1,3 @@
-# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
-# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
 name: Build
 
 on:
@@ -15,14 +13,10 @@ on:
       - published
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -50,3 +44,20 @@ jobs:
         CC: gcc-13
         CXX: g++-13
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+
+    # Call our python script to generate the relevant release artifacts after which we upload
+    # them for each platform
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Generate artifacts for ${{ matrix.os }}
+      run: python scripts/generate_release.py --build-dir ${{github.workspace}}/build
+
+    - name: Upload Release Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: PhotoshopAPI-${{ matrix.os }}
+        path: ${{github.workspace}}/release

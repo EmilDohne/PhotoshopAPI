@@ -12,7 +12,7 @@ PhotoshopAPI
 About
 =========
 
-**PhotoshopAPI** is a C++ Library for reading and writing of Photoshop Files (\*.psd and \*.psb) based on previous works from `psd_sdk <https://github.com/MolecularMatters/psd_sdk>`_,
+**PhotoshopAPI** is a C++20 Library with Python bindings for reading and writing of Photoshop Files (\*.psd and \*.psb) based on previous works from `psd_sdk <https://github.com/MolecularMatters/psd_sdk>`_,
 `pytoshop <https://github.com/mdboom/pytoshop>`_ and `psd-tools <https://github.com/psd-tools/psd-tools>`_. As well as the official 
 `Photoshop File Format Specification <https://web.archive.org/web/20231122064257/https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/>`_, where applicable.
 The library is continuously tested for correctness in its core functionality. If you do find a bug
@@ -29,7 +29,7 @@ Photoshop itself is unfortunately often slow to read/write files and the built-i
 extensive history of the Photoshop File Format, Photoshop files written out by Photoshop itself are often unnecessarily bloated to add backwards compatibility or cross-software compatibility.
 
 The PhotoshopAPI tries to address these issue by allowing the user to read/write/modify Photoshop Files without ever having to enter Photoshop itself which additionally means, no license 
-is required. It is roughly 5x faster in reads and 25x faster in writes than photoshop while producing files that are consistently 20-95% lower in size (see :ref:`benchmarks` for details).
+is required. It is roughly 5-10x faster in reads and 20x faster in writes than photoshop while producing files that are consistently 20-50% lower in size (see :ref:`benchmarks` for details).
 The cost of parsing is paid up front either on read or on write so modifying the layer structure itself is almost instantaneous (except for adding new layers).
 
 
@@ -68,7 +68,6 @@ Requirements
 This goes over requirements for usage, for development requirements please visit the :ref:`building` section.
 
 - A CPU with AVX2 support (this is most CPUs after 2014). If you are unsure, please refer to your CPUs specification
-- A C++ 20 compatible compiler
 
 Performance
 ===========
@@ -83,10 +82,13 @@ For detailed benchmarks running on a variety of different configurations please 
 Python Wrapper
 ==============
 
-.. note::
-	It is planned in the future (before the 1.0.0 Release) to add a python wrapper to the PhotoshopAPI to benefit from the C++ speed using a python module.
+The PhotoshopAPI comes with fully fledged Python bindings which can be simply installed using
 
+.. code-block:: none
 
+	$ py -m pip install PhotoshopAPI
+
+alternatively the wheels can be downloaded from the Releases page
 
 Quickstart
 ==========
@@ -101,6 +103,9 @@ If more fine grained control over the binary structure is necessary, one can mod
 Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. 
 
 Below is a minimal example to get started with opening a PhotoshopFile, removing some layer, and writing the file back out to disk:
+
+C++
+--------
 
 .. code-block:: cpp
 	
@@ -125,6 +130,23 @@ Below is a minimal example to get started with opening a PhotoshopFile, removing
 
 	psOutDocumentPtr->write(outputFile);
 
+
+Python
+---------
+
+.. code-block:: python
+
+	import psapi
+
+	# Read the layered_file using the LayeredFile helper class, this returns a 
+	# psapi.LayeredFile_*bit object with the appropriate bit-depth
+	layered_file = psapi.LayeredFile.read("InputFile.psd")
+
+	# Do some operation, in this case delete
+	layered_file.remove_layer()
+
+	# Write back out to disk
+	layered_file.write("OutFile.psd")
 
 The same code for reading and writing can also be used to for example :cpp:func:`LayeredFile::moveLayer` or :cpp:func:`LayeredFile::addLayer`.
 
