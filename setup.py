@@ -5,8 +5,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from glob import glob
 
-from setuptools import Extension, setup
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 import re
@@ -152,8 +153,9 @@ setup(
     long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
+    packages=find_packages(),
+    package_data={'': ['*.pyi', '*.typed'] + glob('python/psapi/**', recursive=True)},
     zip_safe=False,
-    package_data={"PhotoshopAPI" : ["python/psapi/py.typed"]},
     install_requires= [
         "numpy>=1.26"
     ],

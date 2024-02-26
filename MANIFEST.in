@@ -1,1 +1,0 @@
-recursive-include python/psapi *.pyi
