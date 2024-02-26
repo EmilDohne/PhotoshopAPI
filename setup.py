@@ -145,13 +145,6 @@ class CMakeBuild(build_ext):
         )
 
 
-def move_stubs_to_root() -> None:
-    shutil.move('python/psapi-stubs', '.')
-    shutil.rmtree('python')
-
-
-move_stubs_to_root()
-
 
 def package_files(directory):
     paths = []
@@ -170,7 +163,7 @@ setup(
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
     packages=["psapi-stubs"],
-    package_data={"psapi-stubs": package_files("psapi-stubs")},
+    package_data={"psapi-stubs": package_files("python/psapi-stubs")},
     zip_safe=False,
     install_requires= [
         "numpy>=1.26"
