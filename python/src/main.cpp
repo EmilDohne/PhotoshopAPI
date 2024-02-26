@@ -31,6 +31,11 @@ PYBIND11_MODULE(psapi, m) {
 	declareLayer<bpp16_t>(m, "_16bit");
 	declareLayer<bpp32_t>(m, "_32bit");
 
+	declareLayeredFile<bpp8_t>(m, "_8bit");
+	declareLayeredFile<bpp16_t>(m, "_16bit");
+	declareLayeredFile<bpp32_t>(m, "_32bit");
+	declareLayeredFileWrapper(m);
+
 	declareImageLayer<bpp8_t>(m, "_8bit");
 	declareImageLayer<bpp16_t>(m, "_16bit");
 	declareImageLayer<bpp32_t>(m, "_32bit");
@@ -38,11 +43,6 @@ PYBIND11_MODULE(psapi, m) {
 	declareGroupLayer<bpp8_t>(m, "_8bit");
 	declareGroupLayer<bpp16_t>(m, "_16bit");
 	declareGroupLayer<bpp32_t>(m, "_32bit");
-
-	declareLayeredFile<bpp8_t>(m, "_8bit");
-	declareLayeredFile<bpp16_t>(m, "_16bit");
-	declareLayeredFile<bpp32_t>(m, "_32bit");
-	declareLayeredFileWrapper(m);
 
 	declarePhotoshopFile(m);
 }
