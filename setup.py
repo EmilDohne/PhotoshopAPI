@@ -4,7 +4,6 @@ import os
 import re
 import subprocess
 import sys
-import shutil
 from pathlib import Path
 from glob import glob
 
@@ -12,6 +11,11 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 
 import re
+from pathlib import Path
+
+
+this_directory = Path(__file__).parent
+long_description = (this_directory / "README.md").read_text()
 
 # Find the version string from our CMakeLists.txt
 with open('CMakeLists.txt', 'r') as file:
@@ -145,12 +149,14 @@ class CMakeBuild(build_ext):
         )
         
 
+
 setup(
     name="PhotoshopAPI",
     version=__version__,
     author="Emil Dohne",
     description="A performant read/write parser of Photoshop Files (*.psd and *.psb)",
-    long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
     package_dir = {"": "python"},
