@@ -66,8 +66,7 @@ void declareLayeredFileWrapper(py::module& m)
 
 	layeredFileWrapper.def_static("read", &LayeredFileWrapper::read, py::arg("path"), R"pbdoc(
 
-		Read a layeredfile into the appropriate type based on the actual bit-depth
-        of the document
+		Read a layeredfile into the appropriate type based on the actual bit-depth of the document
 
         :param path: The path to the Photoshop file
         :type path: str
@@ -162,9 +161,8 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 			throw py::key_error("Unable to find layer '" + name + "' in the LayeredFile");
 		}, py::arg("name"), R"pbdoc(
 
-		Get the specified layer from the root of the layered file. Unlike :func:`find_layer` this does not 
-        accept a path but rather a single layer located in the root layer. This is to make chaining of paths
-        more pythonic since group layers also implement a __getitem__ function
+		Get the specified layer from the root of the layered file. Unlike :func:`find_layer` this does not accept a path but rather a 
+		single layer located in the root layer. This is to make chaining of paths more pythonic since group layers also implement a __getitem__ function
 
         .. code-block:: python
 
@@ -194,8 +192,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 		py::arg("parent") = "");
 	layeredFile.def("remove_layer", py::overload_cast<std::shared_ptr<Layer<T>>>(&Class::removeLayer), py::arg("layer"), R"pbdoc(
 		
-		Remove the specified layer from root of the layered_file, if you instead wish to remove 
-        from a group call remove_layer on a GroupLayer_*bit instance instead
+		Remove the specified layer from root of the layered_file, if you instead wish to remove from a group call remove_layer on a GroupLayer_*bit instance instead
 
 	)pbdoc");
 	layeredFile.def("remove_layer", py::overload_cast<const std::string>(&Class::removeLayer), py::arg("layer"));
@@ -205,14 +202,15 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc", [](const Class& self)
 		{
-			uint8_t* ptr = self.m_ICCProfile.getData().data();
+			auto data = self.m_ICCProfile.getData();
+			uint8_t* ptr = data.data();
 			std::vector<size_t> shape = { self.m_ICCProfile.getDataSize() };
 			return py::array_t<uint8_t>(shape, ptr);
 		}, [](Class& self, const std::filesystem::path& path)
 		{
 			self.m_ICCProfile = ICCProfile(path);
 		});
-	layeredFile.def_property("compression", nullptr, &Class::setCompression);
+	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, & Class::setCompression);
 	layeredFile.def_property_readonly("num_channels", &Class::getNumChannels);
 	layeredFile.def_property_readonly("layers", [](const Class& self) {return self.m_Layers; });
 	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.m_BitDepth; });
@@ -239,8 +237,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_static("read", &Class::read, py::arg("path"), R"pbdoc(
 
-		Read and create a LayeredFile from disk. If the bit depth isnt known ahead of time use LayeredFile.read() instead 
-        which will return the appropriate type
+		Read and create a LayeredFile from disk. If the bit depth isnt known ahead of time use LayeredFile.read() instead which will return the appropriate type
 
 	)pbdoc");
 
@@ -251,8 +248,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 		self.write(std::move(self), path, force_overwrite);
 	}, py::arg("path"), py::arg("force_overwrite") = true, R"pbdoc(
 
-		Write the LayeredFile_*bit instance to disk invalidating the data, after this point trying to use the 
-        instance is undefined behaviour. 
+		Write the LayeredFile_*bit instance to disk invalidating the data, after this point trying to use the instance is undefined behaviour. 
 
         :param path: 
             The path of the output file, must have a .psd or .psb extension. Conversion between these two types 
