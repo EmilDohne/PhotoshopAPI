@@ -144,7 +144,7 @@ class CMakeBuild(build_ext):
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
 
-
+os.listdir('psapi-stubs')
 shutil.move('python/psapi-stubs', '.')
 
 def package_files(directory):
