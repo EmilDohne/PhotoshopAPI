@@ -153,8 +153,8 @@ setup(
     long_description="Includes full support for modifying nested layer hierarchies as well as all bit depths known to Photoshop",
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
-    packages=["PhotoshopAPI-stubs"],
-    package_data={"PhotoshopAPI-stubs": ["*.pyi", "py.typed"]},
+    packages=["psapi-stubs"],
+    package_data={"psapi-stubs": ["python/psapi-stubs/*.pyi", "python/psapi-stubs/py.typed"]},
     zip_safe=False,
     install_requires= [
         "numpy>=1.26"
