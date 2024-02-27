@@ -22,7 +22,7 @@ therefore not all functions can be translated directly
 	utility.rst
 
 
-To get started with using these bindings, simply `pip install PhotoshopAPI` and then follow along with the examples in PhotoshopExamples
+To get started with using these bindings, simply ``pip install PhotoshopAPI`` and then follow along with the examples in PhotoshopExamples
 on the github page. 
 
 Below you can find an example of extracting a layer from a 16-bit psb file and inserting it into 
