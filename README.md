@@ -75,7 +75,9 @@ The PhotoshopAPI comes with fully fledged Python bindings which can be simply in
 $ py -m pip install PhotoshopAPI
 ```
 
-alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section on [Readthedocs](https://photoshopapi.readthedocs.io/en/latest/index.html) or check out the PhotoshopExamples/ directory on the github page which includes examples for Python as well as C++
+alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section on [Readthedocs](https://photoshopapi.readthedocs.io/en/latest/index.html) or check out the PhotoshopExamples/ directory on the github page which includes examples for Python as well as C++.
+
+For an even quicker way of getting started check out the [Quickstart](#quickstart) section!
 
 Documentation
 ===============
@@ -143,6 +145,9 @@ layeredFile.removeLayer("SomeGroup/SomeNestedLayer");
 LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutputFile.psd");
 ```
 
+
+The same code for reading and writing can also be used to for example `LayeredFile::moveLayer` or `LayeredFile::addLayer` as well as extracting any image data
+
 ### Python
 
 ```py
@@ -159,4 +164,44 @@ layered_file.remove_layer()
 layered_file.write("OutFile.psd")
 ```
 
-The same code for reading and writing can also be used to for example `LayeredFile::moveLayer` or `LayeredFile::addLayer` as well as extracting any image data
+We can also do much more advanced things such as taking image data from one file and transferring 
+it to another file, this can be across file sizes, psd/psb and even bit-depth!
+
+```py
+import psapi
+import numpy as np
+import os
+
+
+def main() -> None:
+    # Read both our files, they can be open at the same time or we can also read one file,
+    # extract the layer and return just that layer if we want to save on RAM.
+    file_src = psapi.LayeredFile.read("GraftSource_16.psb")
+    file_dest = psapi.LayeredFile.read("GraftDestination_8.psd")
+
+    # Extract the image data and convert to 8-bit.
+    lr_src: psapi.ImageLayer_16bit = file_src["GraftSource"]
+    img_data_src = lr_src.get_image_data()
+    img_data_8bit = {}
+    for key, value in img_data_src.items():
+        value = value / 256 # Convert from 0-65535 -> 0-255
+        img_data_8bit[key] = value.astype(np.uint8)
+
+    # Reconstruct an 8bit converted layer
+    img_layer_8bit = psapi.ImageLayer_8bit(
+        img_data_8bit, 
+        layer_name=lr_src.name, 
+        width=lr_src.width, 
+        height=lr_src.height, 
+        blend_mode=lr_src.blend_mode, 
+        opacity=lr_src.opacity
+        )
+
+    # add the layer and write out to file!
+    file_dest.add_layer(img_layer_8bit)
+    file_dest.write("GraftDestination_8_Edited.psd")
+
+
+if __name__ == "__main__":
+    main()
+```
