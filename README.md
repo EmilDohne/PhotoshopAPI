@@ -2,10 +2,15 @@
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/Q5Q4TYALW)
 
+
+[![CPP Version](https://img.shields.io/badge/language-C%2B%2B20-blue.svg)](https://isocpp.org/)
 [![Documentation Status](https://readthedocs.org/projects/photoshopapi/badge/?version=latest)](https://photoshopapi.readthedocs.io/en/latest/?badge=latest)
 [![CI Status](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-build.yml/badge.svg)](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-build.yml)
 [![Test Status](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-test.yml/badge.svg)](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-test.yml)
 [![Python Wheels](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/build-wheels.yml/badge.svg)](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/build-wheels.yml)
+[![PyPI - Downloads](https://img.shields.io/pypi/pyversions/PhotoshopAPI)](https://pypi.org/project/PhotoshopAPI/)
+
+
 
 > [!NOTE]
 > The PhotoshopAPI is still in early development status which means it is subject to change and will likely include bugs. If you find any please report them to the issues page
@@ -73,6 +78,11 @@ Requirements
 This goes over requirements for usage, for development requirements please visit the [docs](https://photoshopapi.readthedocs.io/).
 
 - A CPU with AVX2 support (this is most CPUs after 2014). If you are unsure, please refer to your CPUs specification
+- A 64-bit system
+- C++ Library: **Linux**, **Windows** or **MacOS** (M-Chips are not tested)
+- Python Library<sup>1</sup>: **Windows**, **MacOS** (M-Chips are not tested)
+
+> <sup>1</sup> Currently Linux is not supported as the manylinux image for cibuildwheels does not yet support C++20
 
 Performance
 ===========
@@ -100,7 +110,8 @@ The PhotoshopAPI comes with fully fledged Python bindings which can be simply in
 $ py -m pip install PhotoshopAPI
 ```
 
-alternatively the wheels can be downloaded from the Releases page
+alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section on [Readthedocs](https://photoshopapi.readthedocs.io/en/latest/index.html) or check out the PhotoshopExamples/ directory on
+the github page which includes fully fledged python examples.
 
 
 Quickstart
