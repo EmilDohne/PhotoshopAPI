@@ -53,6 +53,7 @@ jobs:
         CXX: g++-13
         CIBW_ARCHS: auto64
         CIBW_ARCHS_MACOS: x86_64
+        CIBW_SKIP: *-musllinux_*
 
     - name: Verify clean directory
       run: git diff --exit-code
