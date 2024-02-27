@@ -67,6 +67,16 @@ Not Supported:
 - Lab and Multichannel Color Modes 
 
 
+Python
+==============
+
+The PhotoshopAPI comes with fully fledged Python bindings which can be simply installed using
+```
+$ py -m pip install PhotoshopAPI
+```
+
+alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section on [Readthedocs](https://photoshopapi.readthedocs.io/en/latest/index.html) or check out the PhotoshopExamples/ directory on the github page which includes examples for Python as well as C++
+
 Documentation
 ===============
 
@@ -96,24 +106,11 @@ For detailed benchmarks running on a variety of different configurations please 
 
 Below you can find some of the benchmarks comparing the PhotoshopAPI ('PSAPI') against Photoshop in read/write performance
 
-[![8-bit](docs/doxygen/images/benchmarks/Ryzen_9_5950x/8-bit_graphs.png)](https://photoshopapi.readthedocs.io/en/latest/benchmarks.html)
+[![8-bit](https://github.com/EmilDohne/PhotoshopAPI/blob/master/docs/doxygen/images/benchmarks/Ryzen_9_5950x/8-bit_graphs.png)](https://photoshopapi.readthedocs.io/en/latest/benchmarks.html)
 
 
-<img src="docs/doxygen/images/benchmarks/Ryzen_9_5950x/16-bit_graphs.png" width="49%"/>
-<img src="docs/doxygen/images/benchmarks/Ryzen_9_5950x/32-bit_graphs.png" width="49%"/>
-
-Python Wrapper
-==============
-
-The PhotoshopAPI comes with fully fledged Python bindings which can be simply installed using
-
-```
-$ py -m pip install PhotoshopAPI
-```
-
-alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section on [Readthedocs](https://photoshopapi.readthedocs.io/en/latest/index.html) or check out the PhotoshopExamples/ directory on
-the github page which includes fully fledged python examples.
-
+<img src="https://github.com/EmilDohne/PhotoshopAPI/blob/master/docs/doxygen/images/benchmarks/Ryzen_9_5950x/16-bit_graphs.png" width="49%"/>
+<img src="https://github.com/EmilDohne/PhotoshopAPI/blob/master/docs/doxygen/images/benchmarks/Ryzen_9_5950x/32-bit_graphs.png" width="49%"/>
 
 Quickstart
 ==========
