@@ -22,21 +22,21 @@ readAutomotive Data (32-bit) ~3.65GB: 27600ms
 writeAutomotive Data (32-bit) ~3.65GB: 45152ms
 readAutomotive Data (32-bit) ~3.65GB: 26599ms
 writeAutomotive Data (32-bit) ~3.65GB: 45728ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 3384ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 2778ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 1965ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 3010ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 1931ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 2712ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 3384ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 2778ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 1965ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 3010ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 1931ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 2712ms
 readDeep Nested Layers (8-bit) ~.5GB: 1723ms
 writeDeep Nested Layers (8-bit) ~.5GB: 1962ms
 readDeep Nested Layers (8-bit) ~.5GB: 1242ms
 writeDeep Nested Layers (8-bit) ~.5GB: 1950ms
 readDeep Nested Layers (8-bit) ~.5GB: 1229ms
 writeDeep Nested Layers (8-bit) ~.5GB: 1929ms
-readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1814ms
-writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 5473ms
-readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1811ms
-writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 5679ms
-readGlacious Hyundai Sample Zip (8-bit) ~.75GB: 1880ms
-writeGlacious Hyundai Sample Zip (8-bit) ~.75GB: 5640ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1814ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 5473ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1811ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 5679ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1880ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 5640ms

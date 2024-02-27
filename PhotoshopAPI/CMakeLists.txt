@@ -9,4 +9,7 @@ target_link_libraries(PhotoshopAPI PUBLIC zlibstatic Blosc2::blosc2_static)
 
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)
+	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2)
+else()
+	target_compile_options(PhotoshopAPI PUBLIC -mavx2)
 endif()

@@ -33,11 +33,19 @@ Layer Enums
 Channel IDs for channels of an individual layer. These, or logical indices, can be used to uniquely identify a layer. For more
 information visit :cpp:struct:`ImageLayer`
 
+|
+
 .. doxygenenum:: Enum::ChannelID
+
+|
 
 The Blend Modes we are able to write out using the PhotoshopAPI, these match the ones present in Photoshop
 
+|
+
 .. doxygenenum:: Enum::BlendMode
+
+|
 
 A listing of all the available compression types in the PhotoshopAPI.
 For more information on how these compression codecs work internally please visit :ref:`compression`

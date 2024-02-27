@@ -1,9 +1,18 @@
 '''
-This python script generates our release artifacts, this would be upgraded to a github action in the future for multiple platform support
+This python script generates our release artifacts, this is called by the cmake-build.yml github action and generates release artifacts that are
+attached to the build.
+
+Expects a --build-dir argument which specifies where the build files are to differentiate between release and debug builds. This path is relative
+to the project source dir
+
+A sample call of this script would look like this (run from the PhotoshopAPI dir):
+
+py scripts/generate_release.py --build-dir bin-int/PhotoshopAPI/x64-release
 '''
-import subprocess
 import os
+import sys
 import shutil
+import argparse
 
 
 def _find_file_and_copy(file_name: str, base_dir: str, out_dir: str) -> str:
@@ -19,26 +28,7 @@ def _find_file_and_copy(file_name: str, base_dir: str, out_dir: str) -> str:
             shutil.copy(source_file, output_file)
             print(f"File '{file_name}' copied to '{out_dir}'")
             return output_file
-    raise FileNotFoundError(f"Could not find file {file_name}")
-
-
-def build_cmake(out_path_rel: str = "build_tmp") -> str:
-    '''
-    Builds the PhotoshopAPI with CMake in Release mode.
-
-    :returns: the full path to the build files 
-    '''
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    build_dir = os.path.join(base_path, out_path_rel)
-    if not os.path.exists(build_dir):
-        os.makedirs(build_dir, exist_ok=True)
-
-    # Run cmake in our temporary dir
-    subprocess.run(["cmake", "-B", build_dir, "-DCMAKE_BUILD_TYPE=Release", "-DPSAPI_BUILD_DOCS=OFF", "-DPSAPI_BUILD_BENCHMARKS=OFF", "-DPSAPI_BUILD_TESTS=OFF"], cwd=base_path)
-    # run the build process
-    subprocess.run(["cmake", "--build", build_dir, "--config", "Release"])
-
-    return build_dir
+    raise FileNotFoundError(f"Could not find file '{file_name}' in dir '{base_dir}'")
 
 
 def copy_headers(out_path_rel: str = "build_tmp/headers") -> str:
@@ -46,9 +36,9 @@ def copy_headers(out_path_rel: str = "build_tmp/headers") -> str:
     Copy all the header files from the PhotoshopAPI to a tmp directory
     where it can be collected from after
 
-    :returns: the full path to the headers
+    :returns: the full path to the extracted headers
     '''
-    base_path = os.path.dirname(os.path.abspath(__file__))
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     header_dir = os.path.join(base_path, out_path_rel)
     if not os.path.exists(header_dir):
         os.makedirs(header_dir, exist_ok=True)
@@ -78,29 +68,55 @@ def copy_headers(out_path_rel: str = "build_tmp/headers") -> str:
 
 def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> None:
     '''
-    Extract the relevant files from the build_dir and header_dir after which we delete both of those directories 
+    Extract the relevant files from the build_dir and header_dir and sort them into a 
+    "release" folder with "lib" and "include" subfolders. build_dir is relative to
+    the root directory of the PhotoshopAPI. Same goes for header_dir
     '''
+    build_dir = os.path.normpath(os.path.join(os.path.dirname(__file__), "..", build_dir))
+
     if not os.path.exists(out_path):
         os.makedirs(out_path, exist_ok=True)
     lib_path = os.path.abspath(os.path.join(out_path, "lib"))
     if not os.path.exists(lib_path):
         os.makedirs(lib_path, exist_ok=True)
+
+
     # Copy over our PhotoshopAPI.lib, zlibstatic-ng.lib and libblosc2.lib
-    _find_file_and_copy("PhotoshopAPI.lib",  build_dir, lib_path)
-    _find_file_and_copy("zlibstatic-ng.lib", build_dir, lib_path)
-    _find_file_and_copy("libblosc2.lib",     build_dir, lib_path)
+        
+    psapi_platform_mapping = {
+        "win32": "PhotoshopAPI.lib",
+        "linux": "libPhotoshopAPI.a",
+        "darwin": "libPhotoshopAPI.a"
+    }
+
+    zlib_platform_mapping = {
+        "win32": "zlibstatic-ng.lib",
+        "linux": "libz-ng.a",
+        "darwin": "libz-ng.a"
+    }
+
+    blosc2_platform_mapping = {
+        "win32": "libblosc2.lib",
+        "linux": "libblosc2.a",
+        "darwin": "libblosc2.a"
+    }
+
+    _find_file_and_copy(psapi_platform_mapping.get(sys.platform, psapi_platform_mapping["linux"]),   build_dir, lib_path)
+    _find_file_and_copy(zlib_platform_mapping.get(sys.platform, zlib_platform_mapping["linux"]),     build_dir, lib_path)
+    _find_file_and_copy(blosc2_platform_mapping.get(sys.platform, blosc2_platform_mapping["linux"]), build_dir, lib_path)
 
     # Copy over the headers which are already pre-sorted
     shutil.copytree(header_dir, os.path.join(out_path, "include"), dirs_exist_ok=True)
 
     # Clean up the temporary directory
-    if os.path.exists(build_dir):
-        shutil.rmtree(build_dir)
     if os.path.exists(header_dir):
         shutil.rmtree(header_dir)
 
 
 if __name__ == "__main__":
-    build_dir = build_cmake()
+    parser = argparse.ArgumentParser(description='Copy headers and library files to a clean release folder .')
+    parser.add_argument('--build-dir', required=True, help='Path to the build binaries.')
+    args = parser.parse_args()
+
     header_dir = copy_headers()
-    generate_clean_release("release", build_dir, header_dir)
+    generate_clean_release("release", args.build_dir, header_dir)

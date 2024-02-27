@@ -1,0 +1,63 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+     - master
+  push:
+    branches:
+     - master
+  release:
+    types:
+      - published
+
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+            
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Configure CMake ${{ matrix.os }}
+      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+      env:
+        CC: gcc-13
+        CXX: g++-13
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF -DPSAPI_BUILD_PYTHON=OFF
+
+    - name: Build ${{ matrix.os }}
+      # Build your program with the given configuration
+      env:
+        CC: gcc-13
+        CXX: g++-13
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+
+    # Call our python script to generate the relevant release artifacts after which we upload
+    # them for each platform
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+    
+    - name: Generate artifacts for ${{ matrix.os }}
+      run: python scripts/generate_release.py --build-dir ${{github.workspace}}/build
+
+    - name: Upload Release Artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: PhotoshopAPI-${{ matrix.os }}
+        path: ${{github.workspace}}/release

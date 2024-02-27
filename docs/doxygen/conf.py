@@ -1,5 +1,10 @@
 # The sphinx template and setup was mostly adopted from openimageios docs to mimic their styling
-import subprocess, os
+import subprocess, os, sys
+
+# This is for local development to properly include the paths
+sys.path.insert(0, os.path.abspath("../../bin-int/PhotoshopAPI/x64-release/python"))
+sys.path.insert(0, os.path.abspath("../../bin-int/PhotoshopAPI/x64-debug/python"))
+
 
 def configureDoxyfile(input_dir, output_dir):
     with open('Doxyfile.in', 'r') as file :
@@ -16,8 +21,8 @@ read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
 
 breathe_projects = {}
 
-
 if read_the_docs_build:
+    print("Detected we are running in Readthedocs")
     input_dir = '../../PhotoshopAPI'
     output_dir = 'build'
     configureDoxyfile(input_dir, output_dir)
@@ -36,7 +41,15 @@ release = '2024'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ['breathe']
+extensions = [
+    'breathe',
+    'sphinx.ext.autodoc',
+    'sphinx_inline_tabs',
+    'numpydoc'
+    ]
+
+numpydoc_show_class_members = False
+autodoc_typehints = "none"
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -46,11 +59,11 @@ html_theme = 'furo'
 html_theme_options = {
     "dark_css_variables": {
         "color-api-background" : "#212121",
-        "color-api-background-hover" : "#313131",
-        "color-api-keyword" : "#0000FF"
+        "color-api-background-hover" : "#313131"
     },
 }
 
+autodoc_member_order = 'bysource'
 
 # -- Breathe configuration ---------------------------------------------------
 breathe_default_project = "PhotoshopAPI"

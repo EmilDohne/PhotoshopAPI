@@ -29,6 +29,8 @@ Below you can find a list of sections that exist in a Photoshop File
 PhotoshopFile Struct
 --------------------
 
+|
+
 .. doxygenstruct:: PhotoshopFile
 	:members: 
 	:undoc-members:

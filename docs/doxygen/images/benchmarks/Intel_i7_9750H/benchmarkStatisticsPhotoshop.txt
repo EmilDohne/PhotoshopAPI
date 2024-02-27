@@ -16,12 +16,12 @@ readAutomotive Data (16-bit) ~1.97GB: 54655.4903ms
 writeAutomotive Data (16-bit) ~1.97GB: 260377.2204ms
 readAutomotive Data (16-bit) ~1.97GB: 55438.7422ms
 writeAutomotive Data (16-bit) ~1.97GB: 262926.6715ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 9000.4028ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 6621.9518ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 8592.9989ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 6354.7378ms
-readGlacious Hyundai Sample (8-bit) ~.75GB: 8672.7017ms
-writeGlacious Hyundai Sample (8-bit) ~.75GB: 6307.7884ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 9000.4028ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 6621.9518ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 8592.9989ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 6354.7378ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 8672.7017ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 6307.7884ms
 readDeep Nested Layers (8-bit) ~.5GB: 4570.6205ms
 writeDeep Nested Layers (8-bit) ~.5GB: 4900.975ms
 readDeep Nested Layers (8-bit) ~.5GB: 4604.0044ms

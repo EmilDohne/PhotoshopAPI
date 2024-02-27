@@ -15,6 +15,8 @@
 #include <span>
 #include <tuple>
 
+#include <cstring>
+
 PSAPI_NAMESPACE_BEGIN
 
 // Implementation of the calls to Inflate and Deflate through an abstraction layer

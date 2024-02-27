@@ -142,7 +142,7 @@ std::shared_ptr<Layer<T>> LayeredFile<T>::findLayer(std::string path) const
 {
 	PROFILE_FUNCTION();
 	std::vector<std::string> segments = splitString(path, '/');
-	for (const auto layer : m_Layers)
+	for (const auto& layer : m_Layers)
 	{
 		// Get the layer name and recursively check the path
 		if (layer->m_LayerName == segments[0])
@@ -405,7 +405,9 @@ LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath)
 template <typename T>
 void LayeredFile<T>::write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite /*= true*/)
 {
-	File::FileParams params = { .doRead = false, .forceOverwrite = forceOvewrite };
+	File::FileParams params = {};
+	params.doRead = false;
+	params.forceOverwrite = forceOvewrite;
 	auto outputFile = File(filePath, params);
 	auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 	psdOutDocumentPtr->write(outputFile);

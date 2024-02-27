@@ -15,7 +15,7 @@ def run_benchmarks(repeats: int = 3) -> None:
         "Automotive Data (32-bit) ~3.65GB" : ["documents/read/large_file_32bit.psb", "documents/write/large_file_32bit.psb"],
         "Automotive Data (8-bit) ~1.27GB" : ["documents/read/large_file_8bit.psb", "documents/write/large_file_8bit.psb"],
         "Automotive Data (16-bit) ~1.97GB" : ["documents/read/large_file_16bit.psb", "documents/write/large_file_16bit.psb"],
-        "Glacious Hyundai Sample (8-bit) ~.75GB" : ["documents/read/HyundaiGenesis_GlaciousCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciousCreations_8bit.psd"],
+        "Glacius Hyundai Sample (8-bit) ~.75GB" : ["documents/read/HyundaiGenesis_GlaciusCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciusCreations_8bit.psd"],
         "Deep Nested Layers (8-bit) ~.5GB" : ["documents/read/deep_nesting_8bit.psb", "documents/write/deep_nesting_8bit.psb"],
     }
 

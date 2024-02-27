@@ -14,6 +14,7 @@
 #include <vector>
 #include <limits>
 
+#include <cstring>
 #include <inttypes.h>
 
 
