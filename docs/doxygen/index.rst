@@ -70,11 +70,11 @@ This goes over requirements for usage, for development requirements please visit
 - A CPU with AVX2 support (this is most CPUs after 2014). If you are unsure, please refer to your CPUs specification
 - A 64-bit system
 - C++ Library: **Linux**, **Windows** or **MacOS** (M-Chips are not tested)
-- Python Library :sup:`1`: **Windows**, **MacOS** (M-Chips are not tested)
+- Python Library :sup:`1`: **Linux**, **Windows**, **MacOS** (M-Chips are not tested)
 
 .. note:: 
 	
-	:sup:`1` Currently Linux is not supported as the manylinux image for cibuildwheels does not yet support C++20
+	:sup:`1` Currently Linux is supported only as manylinux build and has some features disabled such as timestamps on logging.
 
 Performance
 ===========
