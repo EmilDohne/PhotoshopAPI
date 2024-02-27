@@ -9,8 +9,9 @@ version: 2
 build:
   os: ubuntu-22.04
   apt_packages:
-    - libclang
     - cmake
+    - gcc-13
+    - g++-13
   tools:
     python: "3.12"
 
