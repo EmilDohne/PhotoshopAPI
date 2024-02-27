@@ -2,7 +2,12 @@
 
 #include "Profiling/Perf/Instrumentor.h"
 
+#if defined(__GNUC__) && (__GNUC__ < 13)
+#include "tcb_span.hpp"
+#else
 #include <span>
+#endif
+
 
 #include <cstring>
 #define __STDC_FORMAT_MACROS 1

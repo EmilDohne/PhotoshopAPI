@@ -8,7 +8,7 @@ on:
      - master
   push:
     branches:
-     - master
+     - feat-disable-features-for-linux-wheels
   release:
     types:
       - published
@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        os: [windows-latest, macos-latest, ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v4
@@ -53,6 +53,7 @@ jobs:
         CXX: g++-13
         CIBW_ARCHS: auto64
         CIBW_ARCHS_MACOS: x86_64
+        CIBW_SKIP: "*-musllinux_*"
 
     - name: Verify clean directory
       run: git diff --exit-code

@@ -5,9 +5,9 @@ on:
   pull_request:
     branches:
      - master
-  push:
-    branches:
-     - master
+  release:
+    types:
+      - published
 
 env:
   BUILD_TYPE: Release

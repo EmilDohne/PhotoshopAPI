@@ -125,12 +125,17 @@ private:
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
 
+// Disable these symbols so we can build linux wheels, means we wont have a time for our logs
+#if defined(__GNUC__) && (__GNUC__ < 13)
+    inline const std::string getTime() { return ""; };
+#else
     inline const std::string getTime()
     {
         auto const time = std::chrono::current_zone()
             ->to_local(std::chrono::system_clock::now());
         return std::format("{:%Y-%m-%d %X}", time);
     }
+#endif
 
 
     inline const std::string createMessage(std::string time, std::string task, const std::string& message)
