@@ -7,7 +7,12 @@
 #include <fstream>
 #include <mutex>
 #include <vector>
+#if defined(__GNUC__) && (__GNUC__ < 13)
+#include "tcb_span.hpp"
+#else
 #include <span>
+#endif
+
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>

@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required (VERSION 3.20)
-project ("PhotoshopAPIBuild" VERSION 0.2.1 LANGUAGES CXX)
+project ("PhotoshopAPIBuild" VERSION 0.3.0 LANGUAGES CXX)
 
 if (MSVC)
     # MSVC is stupid
@@ -46,6 +46,10 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 # Add doctest
 add_library(doctest INTERFACE)
 target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
+
+# Add span from tcb for compatibility with older compilers for python bindings
+add_library(tcb_span INTERFACE)
+target_include_directories(tcb_span INTERFACE thirdparty/compatibility)
 
 # Projects
 # --------------------------------------------------------------------------
