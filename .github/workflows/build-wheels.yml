@@ -6,9 +6,6 @@ on:
   pull_request:
     branches:
      - master
-  push:
-    branches:
-     - feat-disable-features-for-linux-wheels
   release:
     types:
       - published
@@ -53,7 +50,7 @@ jobs:
         CXX: g++-13
         CIBW_ARCHS: auto64
         CIBW_ARCHS_MACOS: x86_64
-        CIBW_SKIP: "*-musllinux_*"
+        CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
 
     - name: Verify clean directory
       run: git diff --exit-code
