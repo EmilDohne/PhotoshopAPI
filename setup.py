@@ -140,12 +140,6 @@ class CMakeBuild(build_ext):
         build_temp = Path(self.build_temp) / ext.name
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
-            
-        # Determine GCC version
-        gcc_version = subprocess.check_output(["gcc", "-dumpversion"]).decode().strip()
-        # If GCC version is less than 13, add -fPIC flag
-        if int(gcc_version.split('.')[0]) < 13:
-            cmake_args.append("-DCMAKE_CXX_FLAGS=-fPIC")
 
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args, "-DPSAPI_BUILD_DOCS=OFF", "-DPSAPI_BUILD_BENCHMARKS=OFF", "-DPSAPI_BUILD_TESTS=OFF"], cwd=build_temp, check=True
