@@ -86,9 +86,9 @@ This test file mirrors a lot of the layers of the automotive data file but inste
 by having many deep nested layers. The resolution is unchanged from the automotive data file but with **19 image layers and 32 groups instead**.
 
 
-**Glacious Hyundai Benchmark File:**
+**Glacius Hyundai Benchmark File:**
 
-This sample was graciously provided by `Glacious Creations (Christer Stormark) <https://www.behance.net/cstormark7b40>`_ and is supposed to highlight a Photoshop file
+This sample was graciously provided by `Glacius Creations (Christer Stormark) <https://www.behance.net/cstormark7b40>`_ and is supposed to highlight a Photoshop file
 you would commonly when working with photography and applying adjustments that way. While the overall resolution is lower at **4532x6000** pixels the amount of layers is much
 larger at **320 image layers and 12 groups** with many layer mask and mostly empty layers.
 
@@ -278,7 +278,7 @@ data.
     :width: 49%
 .. image:: /images/benchmarks/FileSizes/Deep_Nested_Layers_(8-bit)_combined_plot.png
     :width: 49%
-.. image:: /images/benchmarks/FileSizes/Glacious_Hyundai_Sample_(8-bit)_combined_plot.png
+.. image:: /images/benchmarks/FileSizes/Glacius_Hyundai_Sample_(8-bit)_combined_plot.png
     :width: 98.6%
 
 

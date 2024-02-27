@@ -96,8 +96,8 @@ int main()
 	readWriteFileChangeCompression<bpp8_t>(repeats, "documents/read/large_file_8bit.psb", "documents/write/large_fileZip_8bit.psb", "Automotive Data Zip (8-bit) ~1.27GB");
 	readWriteFile<bpp16_t>(repeats, "documents/read/large_file_16bit.psb", "documents/write/large_file_16bit.psb", "Automotive Data (16-bit) ~1.97GB");
 	readWriteFile<bpp32_t>(repeats, "documents/read/large_file_32bit.psb", "documents/write/large_file_32bit.psb", "Automotive Data (32-bit) ~3.65GB");
-	readWriteFile<bpp8_t>(repeats, "documents/read/HyundaiGenesis_GlaciousCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciousCreations_8bit.psd", "Glacious Hyundai Sample (8-bit) ~.75GB");
+	readWriteFile<bpp8_t>(repeats, "documents/read/HyundaiGenesis_GlaciusCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciusCreations_8bit.psd", "Glacius Hyundai Sample (8-bit) ~.75GB");
 	readWriteFile<bpp8_t>(repeats, "documents/read/deep_nesting_8bit.psb", "documents/write/deep_nesting_8bit.psb", "Deep Nested Layers (8-bit) ~.5GB");
 	// Benchmark how changing the compression reduces the file size
-	readWriteFileChangeCompression<bpp8_t>(repeats, "documents/read/HyundaiGenesis_GlaciousCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciousCreationsZip_8bit.psd", "Glacious Hyundai Sample Zip (8-bit) ~.75GB");
+	readWriteFileChangeCompression<bpp8_t>(repeats, "documents/read/HyundaiGenesis_GlaciusCreations_8bit.psd", "documents/write/HyundaiGenesis_GlaciusCreationsZip_8bit.psd", "Glacius Hyundai Sample Zip (8-bit) ~.75GB");
 }
