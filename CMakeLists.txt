@@ -47,6 +47,10 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 add_library(doctest INTERFACE)
 target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
 
+# Add span from tcb for compatibility with older compilers for python bindings
+add_library(tcb_span INTERFACE)
+target_include_directories(tcb_span INTERFACE thirdparty/compatibility)
+
 # Projects
 # --------------------------------------------------------------------------
 if(PSAPI_BUILD_STATIC)

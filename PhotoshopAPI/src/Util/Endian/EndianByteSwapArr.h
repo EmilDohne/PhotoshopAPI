@@ -8,7 +8,12 @@
 #include <algorithm>
 #include <execution>
 #include <vector>
+#if defined(__GNUC__) && (__GNUC__ < 13)
+#include "tcb_span.hpp"
+#else
 #include <span>
+#endif
+
 #include <array>
 #include <bit>
 
