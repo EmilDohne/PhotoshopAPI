@@ -20,5 +20,8 @@ else()
     check_cxx_compiler_flag("-mavx2" COMPILER_SUPPORTS_AVX2)
     if(COMPILER_SUPPORTS_AVX2)
         target_compile_options(PhotoshopAPI PUBLIC -mavx2)
+    else()
+        # Workaround for macos-arm
+        target_compile_options(PhotoshopAPI PUBLIC -Wl,-ld_classic)
     endif()
 endif()
