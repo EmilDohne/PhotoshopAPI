@@ -23,7 +23,7 @@ set (CMAKE_CXX_STANDARD 20)
 # Add the cmake/ folder so the FindSphinx module is found
 # --------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
-
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Add thirdparty libraries
 # --------------------------------------------------------------------------
