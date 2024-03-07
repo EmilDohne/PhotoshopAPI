@@ -2,15 +2,6 @@
 
 #include "Macros.h"
 #include "Profiling/Perf/Instrumentor.h"
-
-// Disable AVX2 at runtime for mac systems and replace their implementation
-#ifdef __AVX2__
-	#include "AVX2EndianByteSwap.h"
-	#define AVX2_ENABLED 1
-#else
-	PSAPI_LOG_WARNING("AVX2", "Detected no support for AVX2 on the system and falling back to slower non-simd implementation");
-#endif
-
 #include "EndianByteSwap.h"
 
 #include <algorithm>
@@ -29,6 +20,15 @@
 
 
 PSAPI_NAMESPACE_BEGIN
+
+// Disable AVX2 at runtime for mac systems and replace their implementation
+#ifdef __AVX2__
+	#include "AVX2EndianByteSwap.h"
+	#define AVX2_ENABLED 1
+#else
+	PSAPI_LOG_WARNING("AVX2", "Detected no support for AVX2 on the system and falling back to slower non-simd implementation");
+#endif
+
 
 constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 
