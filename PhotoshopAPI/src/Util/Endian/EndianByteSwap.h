@@ -3,7 +3,6 @@
 #include "Macros.h"
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
-#include "AVX2EndianByteSwap.h"
 
 #include <vector>
 #include <algorithm>
