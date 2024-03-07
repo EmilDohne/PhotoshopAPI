@@ -284,7 +284,7 @@ inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
 	}
 #else
 	template<typename T>
-	void endianDecodeBEArray(std::vector<T>& data)
+	void endianEncodeBEArray(std::vector<T>& data)
 	{
 		PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
