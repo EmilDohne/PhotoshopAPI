@@ -12,9 +12,9 @@ endif()
 option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
-option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" OFF)
+option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
+option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" OFF)
 
 # Build setup
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -23,6 +23,7 @@ set (CMAKE_CXX_STANDARD 20)
 # Add the cmake/ folder so the FindSphinx module is found
 # --------------------------------------------------------------------------
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
+# Link in the msvc runtime so that users dont have to have it dynamically loaded
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 # Add thirdparty libraries
@@ -42,6 +43,10 @@ set(BUILD_FUZZERS OFF)
 set(BUILD_BENCHMARKS OFF)
 set(BUILD_EXAMPLES OFF)
 add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
+
+# Add target for blosc2 headers
+add_library(blosc2_include INTERFACE)
+target_include_directories(blosc2_include INTERFACE thirdparty/c-blosc2/include)
 
 # Add doctest
 add_library(doctest INTERFACE)

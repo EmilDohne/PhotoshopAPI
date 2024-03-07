@@ -9,8 +9,8 @@ set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET zlibstatic PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 
-target_include_directories(PhotoshopAPI PUBLIC include ${CMAKE_SOURCE_DIR}/thirdparty/c-blosc2/include src src/Util)
-target_link_libraries(PhotoshopAPI PUBLIC zlibstatic Blosc2::blosc2_static tcb_span)
+target_include_directories(PhotoshopAPI PUBLIC include src src/Util)
+target_link_libraries(PhotoshopAPI PUBLIC zlibstatic Blosc2::blosc2_static blosc2_include tcb_span)
 
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)
