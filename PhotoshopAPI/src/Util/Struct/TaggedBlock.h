@@ -136,4 +136,11 @@ struct ReferencePointTaggedBlock : TaggedBlock
 	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
 };
 
+
+struct SolidColorTaggedBlock : TaggedBlock
+{
+
+};
+
+
 PSAPI_NAMESPACE_END
