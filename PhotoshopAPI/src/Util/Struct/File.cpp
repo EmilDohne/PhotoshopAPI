@@ -109,7 +109,7 @@ File::File(const std::filesystem::path& file, const FileParams params)
 		}
 		else
 		{
-			PSAPI_LOG_WARNING("File", "File %s does not exist, aborting parsing", file.string().c_str());
+			PSAPI_LOG_ERROR("File", "File %s does not exist, aborting parsing", file.string().c_str());
 		}
 	}
 	else
