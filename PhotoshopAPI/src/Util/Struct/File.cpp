@@ -97,7 +97,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 File::File(std::filesystem::path file, const FileParams params)
 {
-	file.make_preferred();
+	file = file.make_preferred();
 	m_Offset = 0;
 	m_Size = 0;
 
