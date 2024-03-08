@@ -3,8 +3,7 @@ file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
 # Enable ctest
 enable_testing()
 
-# add_executable(PhotoshopTest ${MY_SOURCES})
-add_executable(PhotoshopTest src/main.cpp src/TestCompression/TestRLECompression.cpp)
+add_executable(PhotoshopTest ${MY_SOURCES})
 if(MSVC)
     target_compile_options(PhotoshopTest PRIVATE /MP)
 endif()
