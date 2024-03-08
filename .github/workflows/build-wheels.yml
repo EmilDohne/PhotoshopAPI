@@ -63,7 +63,9 @@ jobs:
         CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
         # We "Test" the python executable by running all our example files, this would be done a little better in the future
         CIBW_BEFORE_TEST: >
-            ls  {project}/PhotoshopExamples
+            python &&
+            import psapi &&
+            exit()
         CIBW_TEST_COMMAND: >
             python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
             python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
