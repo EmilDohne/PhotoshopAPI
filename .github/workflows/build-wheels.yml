@@ -64,7 +64,7 @@ jobs:
         # We "Test" the python executable by running all our example files, this would be done a little better in the future
         CIBW_BEFORE_TEST: >
             python &&
-            import psapi
+            import psapi; print(psapi.LayeredFile_8bit); exit()
         CIBW_TEST_COMMAND: >
             python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
             python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
