@@ -17,10 +17,10 @@ TEST_CASE("Read AdobeRGB1998")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\AdobeRGB1998.psb";
+	psb_path += "/documents/ICCProfiles/AdobeRGB1998.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\AdobeRGB1998.icc";
+	icc_path += "/documents/ICCProfiles/AdobeRGB1998.icc";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
@@ -43,10 +43,10 @@ TEST_CASE("Read AppleRGB")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\AppleRGB.psb";
+	psb_path += "/documents/ICCProfiles/AppleRGB.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\AppleRGB.icc";
+	icc_path += "/documents/ICCProfiles/AppleRGB.icc";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
@@ -69,10 +69,10 @@ TEST_CASE("Read CIERGB")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\CIERGB.psb";
+	psb_path += "/documents/ICCProfiles/CIERGB.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\CIERGB.icc";
+	icc_path += "/documents/ICCProfiles/CIERGB.icc";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();

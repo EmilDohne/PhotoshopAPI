@@ -102,8 +102,8 @@ TEST_CASE("Check Roundtripping Compression")
 		"Compression_ZipPrediction_32bit.psd"
 	};
 
-	const std::filesystem::path inDir = std::filesystem::current_path() / "documents\\Compression";
-	const std::filesystem::path outDir = std::filesystem::current_path() / "documents\\TestRoundtrippingOutput";
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/Compression";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
 
 	for (const auto& fileName : fileNames)
 	{
@@ -121,8 +121,8 @@ TEST_CASE("Check Roundtripping DPI")
 		"700dpi.psd"
 	};
 
-	const std::filesystem::path inDir = std::filesystem::current_path() / "documents\\DPI";
-	const std::filesystem::path outDir = std::filesystem::current_path() / "documents\\TestRoundtrippingOutput";
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/DPI";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
 
 	for (const auto& fileName : fileNames)
 	{
@@ -143,8 +143,8 @@ TEST_CASE("Check Roundtripping Groups")
 		"Groups_32bit.psd"
 	};
 
-	const std::filesystem::path inDir = std::filesystem::current_path() / "documents\\Groups";
-	const std::filesystem::path outDir = std::filesystem::current_path() / "documents\\TestRoundtrippingOutput";
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/Groups";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
 
 	for (const auto& fileName : fileNames)
 	{
@@ -162,8 +162,8 @@ TEST_CASE("Check Roundtripping ICCProfiles")
 		"CIERGB.psb"
 	};
 
-	const std::filesystem::path inDir = std::filesystem::current_path() / "documents\\ICCProfiles";
-	const std::filesystem::path outDir = std::filesystem::current_path() / "documents\\TestRoundtrippingOutput";
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/ICCProfiles";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
 
 	for (const auto& fileName : fileNames)
 	{
@@ -190,8 +190,8 @@ TEST_CASE("Check Roundtripping Masks")
 		"SingleLayer_32bit_MaximizeCompatibilityOff.psd"	// The MaximizeCompatibility setting will be ignored by us but it is another test case
 	};
 
-	const std::filesystem::path inDir = std::filesystem::current_path() / "documents\\SingleLayer";
-	const std::filesystem::path outDir = std::filesystem::current_path() / "documents\\TestRoundtrippingOutput";
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/SingleLayer";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
 
 	for (const auto& fileName : fileNames)
 	{

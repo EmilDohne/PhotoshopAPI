@@ -13,10 +13,10 @@ TEST_CASE("Write AdobeRGB1998")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\Write_AdobeRGB1998.psb";
+	psb_path += "/documents/ICCProfiles/Write_AdobeRGB1998.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\AdobeRGB1998.icc";
+	icc_path += "/documents/ICCProfiles/AdobeRGB1998.icc";
 
 	// Write out the file with the given ICC Profile
 	{
@@ -73,10 +73,10 @@ TEST_CASE("Write AppleRGB")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\Write_AppleRGB.psb";
+	psb_path += "/documents/ICCProfiles/Write_AppleRGB.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\AppleRGB.icc";
+	icc_path += "/documents/ICCProfiles/AppleRGB.icc";
 
 	// Write out the file with the given ICC Profile
 	{
@@ -133,10 +133,10 @@ TEST_CASE("Write CIERGB")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\ICCProfiles\\Write_CIERGB.psb";
+	psb_path += "/documents/ICCProfiles/Write_CIERGB.psb";
 
 	std::filesystem::path icc_path = std::filesystem::current_path();
-	icc_path += "\\documents\\ICCProfiles\\CIERGB.icc";
+	icc_path += "/documents/ICCProfiles/CIERGB.icc";
 
 	// Write out the file with the given ICC Profile
 	{

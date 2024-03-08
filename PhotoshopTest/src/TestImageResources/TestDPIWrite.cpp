@@ -15,7 +15,7 @@ TEST_CASE("Write DPI")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psd_path = std::filesystem::current_path();
-	psd_path += "\\documents\\DPI\\Write_300dpi.psd";
+	psd_path += "/documents/DPI/Write_300dpi.psd";
 
 	float dpi = 0.0f;
 
@@ -69,7 +69,7 @@ TEST_CASE("Write DPI fractional")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psd_path = std::filesystem::current_path();
-	psd_path += "\\documents\\DPI\\Write_700dpi.psd";
+	psd_path += "/documents/DPI/Write_700dpi.psd";
 
 	float dpi = 0.0f;
 
