@@ -20,6 +20,9 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 	std::filesystem::path fullInPath = inDir / psFile;
 	std::filesystem::path fullOutPath = outDir / psFile;
 
+	PSAPI_LOG("Test", "Started running roundtripping test on '%s'", fullInPath.string().c_str());
+	PSAPI_LOG("Test", "with output path '%s'", fullOutPath.string().c_str());
+
 	// Load the input file
 	auto inputFile = File(fullInPath);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();

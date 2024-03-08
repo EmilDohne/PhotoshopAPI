@@ -24,7 +24,7 @@ int main()
 	doctest::Context context;
 
 	// set defaults
-	context.setOption("abort-after", 9999);	// stop test execution after 5 failed assertions
+	context.setOption("abort-after", 5);	// stop test execution after 5 failed assertions
 
 	int res = context.run();				// run
 
