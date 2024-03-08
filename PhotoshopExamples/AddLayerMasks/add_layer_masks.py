@@ -1,5 +1,3 @@
-print(1)
-
 # Example of creating a simple document with a single layer and a mask using the PhotoshopAPI.
 import os
 import psapi
@@ -11,8 +9,6 @@ def main() -> None:
     width = 64
     height = 64
     
-    print(2)
-
     color_mode = psapi.enum.ColorMode.rgb
 
     # Generate our LayeredFile instance
