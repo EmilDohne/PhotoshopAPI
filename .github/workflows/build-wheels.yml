@@ -63,11 +63,11 @@ jobs:
         CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
         # We "Test" the python executable by running all our example files, this would be done a little better in the future
         CIBW_TEST_COMMAND: >
-            py {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
-            py {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
-            py {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
-            py {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
-            py {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py
+            python {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
+            python {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
+            python {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
+            python {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
+            python {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py
 
     - name: Verify clean directory
       run: git diff --exit-code
