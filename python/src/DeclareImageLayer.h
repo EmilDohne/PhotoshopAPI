@@ -80,7 +80,7 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
     }
 
     // We add preliminary support for greyscale but it is not fully supported yet!
-    if (color_mode == Enum::ColorMode::CMYK)
+    if (color_mode == Enum::ColorMode::Grayscale)
     {
         if (shape[0] != 1 || shape[0] != 2)
         {
