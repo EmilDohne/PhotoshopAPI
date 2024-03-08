@@ -19,7 +19,7 @@
 int main()
 {
 #if ARM_MAC_ARCH
-	PSAPI_LOG_WARNING("Test", "Detected we are running on an ARM-based MacOS system which means we disable any deliberately failing tests as these would segfault due to incorrect exception handling.")
+	PSAPI_LOG_WARNING("Test", "Detected we are running on an ARM-based MacOS system which means we disable any deliberately failing tests as these would segfault due to incorrect exception handling.");
 #endif
 	doctest::Context context;
 
