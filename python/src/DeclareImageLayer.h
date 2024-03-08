@@ -159,7 +159,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     // channel mappings 
     std::cout << "Generating image data..." << std::endl;
     auto img_data_cpp = generateImageData(image_data, width, height, color_mode);
-    std::cout << "Generated image data" << std::endl;
 
     params.layerName = layer_name;
     params.blendMode = blend_mode;
@@ -171,7 +170,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     params.compression = compression;
     params.colorMode = color_mode;
     std::cout << "Preparing to generate image layer" << std::endl;
-    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+    return std::make_shared<ImageLayer<T>>(img_data_cpp, params);
 }
 
 
