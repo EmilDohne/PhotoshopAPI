@@ -51,12 +51,15 @@ def main() -> None:
     # extracted which means it is no longer accessible. For an example:
     red_channel = img_layer.get_channel_by_index(0, do_copy=False)
     
-    try:
-        # We use another way of indexing for simplicity here to show that all the methods
-        # are compatible with one another
-        red_channel_again = img_layer[0]    # This implicitly enables do_copy
-    except RuntimeError:
-        pass    # The PhotoshopAPI will already complain here
+    # This would usually raise an error which we can catch but when running on ARM-Based mac systems 
+    # this actually segmentation faults and we cannot catch the exception due to the problems mentioned in
+    # this issue: https://github.com/EmilDohne/PhotoshopAPI/issues/61
+    # try:
+    #     # We use another way of indexing for simplicity here to show that all the methods
+    #     # are compatible with one another
+    #     red_channel_again = img_layer[0]    # This implicitly enables do_copy
+    # except RuntimeError:
+    #     pass    # The PhotoshopAPI will already complain here
 
 
 if __name__ == "__main__":
