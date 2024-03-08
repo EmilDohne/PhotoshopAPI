@@ -47,9 +47,6 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         py::value_error("image_data must have the same size as width * height");
     }
 
-    // TEMPOARRY
-    return img_data_cpp;
-
     // For RGB we have two options, either there is an alpha channel with the RGB channels or not.
     if (color_mode == Enum::ColorMode::RGB)
     {
@@ -58,10 +55,14 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
             py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
         }
         std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
+        return img_data_cpp;
         for (size_t i = 0; i < shape[0]; ++i)
         {
-            const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[rgbChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::vector<T> channelData(channelSize);
+            T* startPtr = image_data.data() + i * channelSize;
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<uint8_t*>(startPtr), channelSize * sizeof(T));
+            
+            img_data_cpp[rgbChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
     }
@@ -76,8 +77,11 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         std::vector<Enum::ChannelID> cmykChannelIds = { Enum::ChannelID::Cyan, Enum::ChannelID::Magenta, Enum::ChannelID::Yellow, Enum::ChannelID::Black, Enum::ChannelID::Alpha };
         for (size_t i = 0; i < shape[0]; ++i)
         {
-            const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[cmykChannelIds[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::vector<T> channelData(channelSize);
+            T* startPtr = image_data.data() + i * channelSize;
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<uint8_t*>(startPtr), channelSize * sizeof(T));
+
+            img_data_cpp[rgbChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
     }
@@ -92,8 +96,11 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         std::vector<Enum::ChannelID> greyChannelIDs = { Enum::ChannelID::Gray, Enum::ChannelID::Alpha};
         for (size_t i = 0; i < shape[0]; ++i)
         {
-            const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[greyChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::vector<T> channelData(channelSize);
+            T* startPtr = image_data.data() + i * channelSize;
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<uint8_t*>(startPtr), channelSize * sizeof(T));
+
+            img_data_cpp[rgbChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
     }
