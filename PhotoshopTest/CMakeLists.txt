@@ -20,7 +20,8 @@ add_custom_command(TARGET PhotoshopTest POST_BUILD
 add_custom_command(TARGET PhotoshopTest POST_BUILD
                     COMMAND ${CMAKE_COMMAND} -E echo 
                     "Finished copying test files to output directory $<TARGET_FILE_DIR:PhotoshopTest>/documents")
-                    add_custom_command(TARGET PhotoshopTest POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E echo-directory $<TARGET_FILE_DIR:PhotoshopTest>/documents)
+
 add_custom_command(TARGET PhotoshopTest POST_BUILD
-                    COMMAND ${CMAKE_COMMAND} -E echo-directory $<TARGET_FILE_DIR:PhotoshopTest>/documents/Compression)
+                    COMMAND ls $<TARGET_FILE_DIR:PhotoshopTest>/documents)
+add_custom_command(TARGET PhotoshopTest POST_BUILD
+                    COMMAND ls $<TARGET_FILE_DIR:PhotoshopTest>/documents/Compression)
