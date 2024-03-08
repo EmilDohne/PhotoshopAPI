@@ -24,6 +24,8 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
 {
     // Generate an unordered map with implicit bindings for the channels using a 2d or 3d numpy array
     std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
+    // Temporary for testing
+    return img_data_cpp;
 
     // This will e.g. be (3, 1024, 1024) for a 3 channel 1024x1024 image
     std::vector<size_t> shape;

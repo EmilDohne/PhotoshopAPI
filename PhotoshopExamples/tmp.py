@@ -15,7 +15,4 @@ img_data[0] = 255
 mask = np.full((height, width), 128, np.uint8)
 
 # # When creating an image layer the width and height parameter are required if its not a zero sized layer
-try:
-    img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask, width=width, height=height)
-except:
-    print("Caught exception")
+img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask, width=width, height=height)
