@@ -22,4 +22,4 @@ add_custom_command(TARGET PhotoshopTest POST_BUILD
                     "Finished copying test files to output directory $<TARGET_FILE_DIR:PhotoshopTest>/documents")
 
 add_custom_command(TARGET PhotoshopTest POST_BUILD
-                    COMMAND ls -d $<TARGET_FILE_DIR:PhotoshopTest>/documents/Compression)
+                    COMMAND ls -l $<TARGET_FILE_DIR:PhotoshopTest>/documents/Compression)
