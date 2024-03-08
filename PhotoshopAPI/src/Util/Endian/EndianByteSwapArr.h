@@ -119,12 +119,11 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 		}
 		PROFILE_FUNCTION();
 		std::vector<T> decodedData(data.size() / sizeof(T));
-		PSAPI_LOG("Endian", "Size of incoming data: %d, size of decoded data %d, for template size of %d", data.size(), decodedData.size(), sizeof(T));
 		for (uint64_t i = 0; i < decodedData.size(); ++i)
 		{
-			const uint8_t* memAddress = data.data() + i * sizeof(T);
-			decodedData[i] = endianDecodeBE<T>(memAddress);
+			decodedData[i] = endianDecodeBE<T>(&data[i * sizeof(T)]);
 		}
+		return decodedData;
 	}
 #endif
 
