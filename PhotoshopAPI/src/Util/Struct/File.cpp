@@ -100,7 +100,8 @@ File::File(std::filesystem::path file, const FileParams params)
 	file = file.make_preferred();
 	if (!std::filesystem::is_directory(file.parent_path()))
 	{
-		PSAPI_LOG_ERROR("File", "Parent directory of file %s does not exist", file.string().c_str());
+		std::filesystem::create_directories(file.parent_path());
+		PSAPI_LOG("Created directory '%s' as it didnt exist", file.parent_path().string().c_str());
 	}
 	m_Offset = 0;
 	m_Size = 0;
