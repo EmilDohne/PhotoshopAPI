@@ -55,7 +55,6 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
             py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
         }
         std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
-        return img_data_cpp;
         for (size_t i = 0; i < shape[0]; ++i)
         {
             std::vector<T> channelData(channelSize);
