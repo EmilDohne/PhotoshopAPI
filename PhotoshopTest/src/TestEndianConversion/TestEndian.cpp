@@ -1,5 +1,6 @@
 #include "doctest.h"
 
+#include "../DetectArmMac.h"
 #include "Util/Endian/EndianByteSwapArr.h"
 
 #include <vector>
@@ -431,26 +432,29 @@ TEST_CASE("Endian Decode Binary 32-bit large uneven")
 // Test EndianDecodeBEBinaryArray incorrect data size 16-bit
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TEST_CASE("Endian Decode Binary 16-bit incorrect data size" 
-	* doctest::no_breaks(true)
-	* doctest::no_output(true)
-	* doctest::should_fail(true))
-{
-	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit incorrect data size");
-	uint32_t width = 32;
-	uint32_t height = 32;
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Endian Decode Binary 16-bit incorrect data size" 
+		* doctest::no_breaks(true)
+		* doctest::no_output(true)
+		* doctest::should_fail(true))
+	{
+		PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit incorrect data size");
+		uint32_t width = 32;
+		uint32_t height = 32;
 
-	// The binary data in this case is on purpose an uneven number which should never work as 16 bits are 2
-	// bytes and the size must be divisible by 2
-	std::vector<NAMESPACE_PSAPI::bpp8_t> binaryData(width * height * sizeof(NAMESPACE_PSAPI::bpp16_t) - 1, 0);
+		// The binary data in this case is on purpose an uneven number which should never work as 16 bits are 2
+		// bytes and the size must be divisible by 2
+		std::vector<NAMESPACE_PSAPI::bpp8_t> binaryData(width * height * sizeof(NAMESPACE_PSAPI::bpp16_t) - 1, 0);
 
-	auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp16_t>(binaryData);
-}
+		auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp16_t>(binaryData);
+	}
+#endif
 
 // Test EndianDecodeBEBinaryArray incorrect data size 32-bit
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
 	* doctest::no_breaks(true)
 	* doctest::no_output(true)
 	* doctest::should_fail(true))
@@ -465,3 +469,4 @@ TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
 
 	auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp32_t>(binaryData);
 }
+#endif

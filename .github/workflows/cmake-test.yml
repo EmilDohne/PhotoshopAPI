@@ -34,14 +34,11 @@ jobs:
            - name: MacOS Intel GCC
              os: macos-latest
              compiler: gcc-13
+             compilercxx: g++-13 
+           - name: MacOS ARM GCC
+             os: macos-14
+             compiler: gcc-13
              compilercxx: g++-13
-           # We comment out ARM Macs as XCode 15.2 segfaults on exceptions which crashes ctest on an expected failure which throws
-           # this is unfortunate and I hope to be able to reenable it soon
-           # 
-           # - name: MacOS ARM GCC
-           #   os: macos-14
-           #   compiler: gcc-13
-           #   compilercxx: g++-13
 
     steps:
     - uses: actions/checkout@v4
