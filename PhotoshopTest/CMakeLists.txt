@@ -14,6 +14,8 @@ add_test(NAME PhotoshopTest COMMAND PhotoshopTest)
 
 
 # Copy the documents/ folder to the build dir to run the tests
+message("Copying test files to output directory...")
 add_custom_command(TARGET PhotoshopTest POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       ${CMAKE_CURRENT_SOURCE_DIR}/documents/ $<TARGET_FILE_DIR:PhotoshopTest>/documents/)
+                       ${CMAKE_CURRENT_SOURCE_DIR}/documents/ $<TARGET_FILE_DIR:PhotoshopTest>/documents)
+message("Finished copying test files to output directory")
