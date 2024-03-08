@@ -41,7 +41,7 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 	{
 		if (data.size() % sizeof(T) != 0)
 		{
-			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T)");
+			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T), got size %d and sizeof(T) = %d", data.size(), sizeof(T));
 		}
 
 		PROFILE_FUNCTION();
@@ -115,7 +115,7 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 	{
 		if (data.size() % sizeof(T) != 0)
 		{
-			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T)");
+			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T), got size %d and sizeof(T) = %d", data.size(), sizeof(T));
 		}
 		PROFILE_FUNCTION();
 		std::vector<T> decodedData(data.size() / sizeof(T));
