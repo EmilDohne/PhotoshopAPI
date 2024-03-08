@@ -61,6 +61,7 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
             /*const T* startPtr = image_data.data() + i * channelSize;
             std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
             */
+            std::cout << "Iteration: " << i << std::endl;
             img_data_cpp[rgbChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
