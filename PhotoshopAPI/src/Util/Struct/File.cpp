@@ -98,6 +98,10 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 File::File(std::filesystem::path file, const FileParams params)
 {
 	file = file.make_preferred();
+	if (!std::filesystem::is_directory(file.parent_path()))
+	{
+		PSAPI_LOG_ERROR("File", "Parent directory of file %s does not exist", file.string().c_str());
+	}
 	m_Offset = 0;
 	m_Size = 0;
 
@@ -119,16 +123,16 @@ File::File(std::filesystem::path file, const FileParams params)
 		{
 			if (params.forceOverwrite)
 			{
-				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
 				std::filesystem::remove(file);
+				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
 			}
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 		}
 		else
 		{
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 		}
 	}
 
