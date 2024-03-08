@@ -3,6 +3,9 @@ name: Python Wheels
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+     - dev
   pull_request:
     branches:
      - master
@@ -49,7 +52,6 @@ jobs:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
-        CIBW_ARCHS_MACOS: x86_64
         CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
 
     - name: Verify clean directory
