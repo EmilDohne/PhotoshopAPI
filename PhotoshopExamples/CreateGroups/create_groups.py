@@ -1,7 +1,7 @@
 # Example of creating a document with groups using the PhotoshopAPI.
 import os
-import psapi
 import numpy as np
+import psapi
 
 
 def main() -> None:
