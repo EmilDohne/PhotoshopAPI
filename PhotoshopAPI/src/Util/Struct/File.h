@@ -91,7 +91,7 @@ struct File
 	// open for reading while if we set it to false it is only open for writing
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	File(const std::filesystem::path& file, const FileParams params = FileParams());
+	File(std::filesystem::path file, const FileParams params = FileParams());
 
 
 private:
