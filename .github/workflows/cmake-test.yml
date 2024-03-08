@@ -35,10 +35,13 @@ jobs:
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-           - name: MacOS ARM GCC
-             os: macos-14
-             compiler: gcc-13
-             compilercxx: g++-13
+           # We comment out ARM Macs as XCode 15.2 segfaults on exceptions which crashes ctest on an expected failure which throws
+           # this is unfortunate and I hope to be able to reenable it soon
+           # 
+           # - name: MacOS ARM GCC
+           #   os: macos-14
+           #   compiler: gcc-13
+           #   compilercxx: g++-13
 
     steps:
     - uses: actions/checkout@v4
@@ -47,11 +50,11 @@ jobs:
     
     # We need to specify Xcode15.1 here as the default for macos-14 runners is 15.01 which has a bug 
     # causing linking to fail.
-    - name: Setup Xcode 14.3.1
+    - name: Setup Xcode 15.2
       if: matrix.os == 'macos-14'
       uses: maxim-lobanov/setup-xcode@v1
       with:
-        xcode-version: '14.3.1'
+        xcode-version: '15.2'
 
     - name: Configure CMake ${{ matrix.os }}
       env:
