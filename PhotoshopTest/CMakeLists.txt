@@ -10,12 +10,15 @@ endif()
 target_link_libraries(PhotoshopTest PRIVATE PhotoshopAPI doctest)
 
 # If someone finds a way to make this work with just doctest that would be great
-add_test(NAME PhotoshopTest COMMAND PhotoshopTest)
+add_test(NAME TestPhotoshopAPI COMMAND PhotoshopTest)
 
 
 # Copy the documents/ folder to the build dir to run the tests
-message("Copying test files to output directory...")
 add_custom_command(TARGET PhotoshopTest POST_BUILD
+                   MAIN_DEPENDENCY PhotoshopTest
                    COMMAND ${CMAKE_COMMAND} -E copy_directory
                        ${CMAKE_CURRENT_SOURCE_DIR}/documents/ $<TARGET_FILE_DIR:PhotoshopTest>/documents)
-message("Finished copying test files to output directory")
+add_custom_command(TARGET PhotoshopTest POST_BUILD
+                    MAIN_DEPENDENCY PhotoshopTest
+                    COMMAND ${CMAKE_COMMAND} -E echo 
+                    "Finished copying test files to output directory $<TARGET_FILE_DIR:PhotoshopTest>/documents")
