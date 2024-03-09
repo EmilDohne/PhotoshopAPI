@@ -146,6 +146,7 @@ struct ImageChannel : public BaseImageChannel
 				// C-blos2 returns the total number of chunks here
 				std::cout << "Preparing to append: " << remainingSize << " bytes to buffer" << std::endl;
 				std::vector<uint8_t> tmpVec(remainingSize, 0);
+				std::cout << "Generated temporary vector" << std::endl;
 				nchunks = blosc2_schunk_append_buffer(m_Data, tmpVec.data(), remainingSize);
 				remainingSize = 0;
 			}

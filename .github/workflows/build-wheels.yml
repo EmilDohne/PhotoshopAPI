@@ -60,6 +60,7 @@ jobs:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
+        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
         # We "Test" the python executable by running all our example files, this would be done a little better in the future
         CIBW_TEST_COMMAND: python -u {project}/PhotoshopExamples/tmp.py
