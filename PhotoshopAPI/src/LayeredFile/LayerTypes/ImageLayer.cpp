@@ -203,6 +203,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 		}
 		std::cout << "Generating channel: " << info.index << std::endl;
 		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		std::cout << "Generated channel: " << info.index << std::endl;
 		m_ImageData[info] = std::move(channel);
 	}
 
