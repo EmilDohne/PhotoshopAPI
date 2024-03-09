@@ -60,11 +60,8 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
             std::vector<T> channelData(channelSize);
             const T* startPtr = image_data.data() + i * channelSize;
             std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
-            std::cout << "Iteration: " << i << std::endl;
             img_data_cpp[rgbChannelIDs[i]] = channelData;
-            std::cout << "img_data_cpp size: " << img_data_cpp.size() << std::endl;
         }
-        std::cout << "Returning image data" << std::endl;
         return img_data_cpp;
     }
 
@@ -157,7 +154,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     
     // Generate an unordered dict from the image data trying to automatically decode channels into their corresponding
     // channel mappings 
-    std::cout << "Generating image data..." << std::endl;
     auto img_data_cpp = generateImageData(image_data, width, height, color_mode);
 
     params.layerName = layer_name;
@@ -169,7 +165,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     params.opacity = opacity;
     params.compression = compression;
     params.colorMode = color_mode;
-    std::cout << "Preparing to generate image layer" << std::endl;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
