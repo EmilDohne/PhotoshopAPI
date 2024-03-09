@@ -92,7 +92,6 @@ struct ImageChannel : public BaseImageChannel
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
 		}
-		std::cout << "Initializing image channel" << std::endl;
 
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
@@ -123,31 +122,22 @@ struct ImageChannel : public BaseImageChannel
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
-		
-		std::cout << "Set up blosc schunk" << std::endl;
 
 		uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
 		for (int nchunk = 0; nchunk < numChunks; ++nchunk)
 		{
-			std::cout << "Iterating chunk: " << nchunk << std::endl;
-			// Cast to uint8_t* to iterate by bytes, not by T
 			void* ptr = reinterpret_cast<uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
-			std::cout << "Offset from start: " << nchunk * m_ChunkSize << std::endl;
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
-				// C-blos2 returns the total number of chunks here
-				std::cout << "Preparing to append: " << m_ChunkSize << " bytes to buffer" << std::endl;
+				// C-blosc2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
 				// C-blos2 returns the total number of chunks here
-				std::cout << "Preparing to append: " << remainingSize << " bytes to buffer" << std::endl;
-				std::vector<uint8_t> tmpVec(remainingSize, 0);
-				std::cout << "Generated temporary vector" << std::endl;
-				nchunks = blosc2_schunk_append_buffer(m_Data, tmpVec.data(), remainingSize);
+				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
 				remainingSize = 0;
 			}
 			if (nchunks != nchunk + 1) [[unlikely]]
@@ -155,9 +145,6 @@ struct ImageChannel : public BaseImageChannel
 					PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
 				}
 		}
-
-
-		std::cout << "Filled blosc2 schunk" << std::endl;
 
 		// Log the total compressed / uncompressed size to later determine our stats
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
