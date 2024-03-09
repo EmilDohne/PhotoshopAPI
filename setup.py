@@ -164,7 +164,7 @@ setup(
     package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi"]},
     zip_safe=False,
     install_requires= [
-        "numpy>=1.26"
+        "numpy>=1.21.6"
     ],
     python_requires=">=3.7",
 )
