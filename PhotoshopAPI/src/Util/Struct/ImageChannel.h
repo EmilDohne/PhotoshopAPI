@@ -132,7 +132,7 @@ struct ImageChannel : public BaseImageChannel
 			std::cout << "Iterating chunk: " << nchunk << std::endl;
 			// Cast to uint8_t* to iterate by bytes, not by T
 			void* ptr = reinterpret_cast<uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
-			std::cout << "Offset from start: " << nchunk * m_ChunkSize;
+			std::cout << "Offset from start: " << nchunk * m_ChunkSize << std::endl;
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
@@ -145,7 +145,8 @@ struct ImageChannel : public BaseImageChannel
 			{
 				// C-blos2 returns the total number of chunks here
 				std::cout << "Preparing to append: " << remainingSize << " bytes to buffer" << std::endl;
-				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
+				std::vector<uint8_t> tmpVec(remainingSize, 0);
+				nchunks = blosc2_schunk_append_buffer(m_Data, tmpVec.data(), remainingSize);
 				remainingSize = 0;
 			}
 			if (nchunks != nchunk + 1) [[unlikely]]
