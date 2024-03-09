@@ -67,10 +67,12 @@ Requirements
 
 This goes over requirements for usage, for development requirements please visit the :ref:`building` section.
 
-- A CPU with AVX2 support (this is most CPUs after 2014). If you are unsure, please refer to your CPUs specification
-- A 64-bit system
-- C++ Library: **Linux**, **Windows** or **MacOS** (M-Chips are not tested)
-- Python Library :sup:`1`: **Linux**, **Windows**, **MacOS** (M-Chips are not tested)
+- A CPU with AVX2 support (this is most CPUs after 2014) will greatly increase performance, if we detect this to not be there we disable this optimization
+- C++ Library: **Linux**, **Windows** or **MacOS** 
+- Python Library :sup:`1`: **Linux**, **Windows**, **MacOS**
+
+The python bindings support python >=3.7 (except for ARM-based MacOS machines which raise this to >=3.10)
+
 
 .. note:: 
 	

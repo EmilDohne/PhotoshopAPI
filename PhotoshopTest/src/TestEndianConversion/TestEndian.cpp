@@ -1,5 +1,6 @@
 #include "doctest.h"
 
+#include "../DetectArmMac.h"
 #include "Util/Endian/EndianByteSwapArr.h"
 
 #include <vector>
@@ -154,6 +155,7 @@ TEST_CASE("Endian Roundtripping 32-bit array large uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 8-bit")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit");
 	uint32_t width = 32;
 	uint32_t height = 32;
 
@@ -171,6 +173,7 @@ TEST_CASE("Endian Decode Binary 8-bit")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 16-bit")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit");
 	uint32_t width = 32;
 	uint32_t height = 32;
 
@@ -194,6 +197,7 @@ TEST_CASE("Endian Decode Binary 16-bit")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 32-bit")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 32-bit");
 	uint32_t width = 32;
 	uint32_t height = 32;
 
@@ -220,6 +224,7 @@ TEST_CASE("Endian Decode Binary 32-bit")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 8-bit uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 8-bit uneven");
 	uint32_t width = 27;
 	uint32_t height = 35;
 
@@ -237,6 +242,7 @@ TEST_CASE("Endian Decode Binary 8-bit uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 16-bit uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit uneven");
 	uint32_t width = 27;
 	uint32_t height = 35;
 
@@ -260,6 +266,7 @@ TEST_CASE("Endian Decode Binary 16-bit uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 32-bit uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 32-bit uneven");
 	uint32_t width = 27;
 	uint32_t height = 35;
 
@@ -286,6 +293,7 @@ TEST_CASE("Endian Decode Binary 32-bit uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 8-bit large")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 8-bit large");
 	uint32_t width = 2048;
 	uint32_t height = 2048;
 
@@ -303,6 +311,7 @@ TEST_CASE("Endian Decode Binary 8-bit large")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 16-bit large")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit large");
 	uint32_t width = 2048;
 	uint32_t height = 2048;
 
@@ -326,6 +335,7 @@ TEST_CASE("Endian Decode Binary 16-bit large")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 32-bit large")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 32-bit large");
 	uint32_t width = 2048;
 	uint32_t height = 2048;
 
@@ -353,6 +363,7 @@ TEST_CASE("Endian Decode Binary 32-bit large")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 8-bit large uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 8-bit large uneven");
 	uint32_t width = 3288;
 	uint32_t height = 1671;
 
@@ -370,6 +381,7 @@ TEST_CASE("Endian Decode Binary 8-bit large uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 16-bit large uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit large uneven");
 	uint32_t width = 3288;
 	uint32_t height = 1671;
 
@@ -393,6 +405,7 @@ TEST_CASE("Endian Decode Binary 16-bit large uneven")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Endian Decode Binary 32-bit large uneven")
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 32-bit large uneven");
 	uint32_t width = 3288;
 	uint32_t height = 1671;
 
@@ -419,29 +432,34 @@ TEST_CASE("Endian Decode Binary 32-bit large uneven")
 // Test EndianDecodeBEBinaryArray incorrect data size 16-bit
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TEST_CASE("Endian Decode Binary 16-bit incorrect data size" 
-	* doctest::no_breaks(true)
-	* doctest::no_output(true)
-	* doctest::should_fail(true))
-{
-	uint32_t width = 32;
-	uint32_t height = 32;
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Endian Decode Binary 16-bit incorrect data size" 
+		* doctest::no_breaks(true)
+		* doctest::no_output(true)
+		* doctest::should_fail(true))
+	{
+		PSAPI_LOG("Test", "Running Test: Endian Decode Binary 16-bit incorrect data size");
+		uint32_t width = 32;
+		uint32_t height = 32;
 
-	// The binary data in this case is on purpose an uneven number which should never work as 16 bits are 2
-	// bytes and the size must be divisible by 2
-	std::vector<NAMESPACE_PSAPI::bpp8_t> binaryData(width * height * sizeof(NAMESPACE_PSAPI::bpp16_t) - 1, 0);
+		// The binary data in this case is on purpose an uneven number which should never work as 16 bits are 2
+		// bytes and the size must be divisible by 2
+		std::vector<NAMESPACE_PSAPI::bpp8_t> binaryData(width * height * sizeof(NAMESPACE_PSAPI::bpp16_t) - 1, 0);
 
-	auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp16_t>(binaryData);
-}
+		auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp16_t>(binaryData);
+	}
+#endif
 
 // Test EndianDecodeBEBinaryArray incorrect data size 32-bit
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
 	* doctest::no_breaks(true)
 	* doctest::no_output(true)
 	* doctest::should_fail(true))
 {
+	PSAPI_LOG("Test", "Running Test: Endian Decode Binary 32-bit incorrect data size");
 	uint32_t width = 32;
 	uint32_t height = 32;
 
@@ -451,3 +469,4 @@ TEST_CASE("Endian Decode Binary 32-bit incorrect data size"
 
 	auto result = NAMESPACE_PSAPI::endianDecodeBEBinaryArray<NAMESPACE_PSAPI::bpp32_t>(binaryData);
 }
+#endif

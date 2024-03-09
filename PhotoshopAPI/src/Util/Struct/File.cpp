@@ -95,8 +95,14 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-File::File(const std::filesystem::path& file, const FileParams params)
+File::File(std::filesystem::path file, const FileParams params)
 {
+	file = file.make_preferred();
+	if (!std::filesystem::is_directory(file.parent_path()))
+	{
+		std::filesystem::create_directories(file.parent_path());
+		PSAPI_LOG("Created directory '%s' as it didnt exist", file.parent_path().string().c_str());
+	}
 	m_Offset = 0;
 	m_Size = 0;
 
@@ -109,7 +115,7 @@ File::File(const std::filesystem::path& file, const FileParams params)
 		}
 		else
 		{
-			PSAPI_LOG_WARNING("File", "File %s does not exist, aborting parsing", file.string().c_str());
+			PSAPI_LOG_ERROR("File", "File %s does not exist, aborting parsing", file.string().c_str());
 		}
 	}
 	else
@@ -118,16 +124,16 @@ File::File(const std::filesystem::path& file, const FileParams params)
 		{
 			if (params.forceOverwrite)
 			{
-				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
 				std::filesystem::remove(file);
+				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
 			}
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 		}
 		else
 		{
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
+			PSAPI_LOG("File", "Created file %s", file.string().c_str());
 		}
 	}
 

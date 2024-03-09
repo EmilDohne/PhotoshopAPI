@@ -11,7 +11,7 @@ TEST_CASE("Read 300 DPI")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\DPI\\300dpi.psd";
+	psb_path += "/documents/DPI/300dpi.psd";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
@@ -29,7 +29,7 @@ TEST_CASE("Read 300.5 DPI")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\DPI\\300_point_5_dpi.psd";
+	psb_path += "/documents/DPI/300_point_5_dpi.psd";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
@@ -47,7 +47,7 @@ TEST_CASE("Read 700 DPI")
 	using namespace NAMESPACE_PSAPI;
 
 	std::filesystem::path psb_path = std::filesystem::current_path();
-	psb_path += "\\documents\\DPI\\700dpi.psd";
+	psb_path += "/documents/DPI/700dpi.psd";
 
 	auto inputFile = File(psb_path);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();

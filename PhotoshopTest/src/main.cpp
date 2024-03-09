@@ -3,6 +3,7 @@
 #include "doctest.h"
 
 #include "Macros.h"
+#include "DetectArmMac.h"
 #include "Enum.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
@@ -17,6 +18,9 @@
 
 int main()
 {
+#if ARM_MAC_ARCH
+	PSAPI_LOG_WARNING("Test", "Detected we are running on an ARM-based MacOS system which means we disable any deliberately failing tests as these would segfault due to incorrect exception handling.");
+#endif
 	doctest::Context context;
 
 	// set defaults

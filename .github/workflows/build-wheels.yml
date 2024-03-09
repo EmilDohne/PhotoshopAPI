@@ -3,6 +3,9 @@ name: Python Wheels
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+     - dev
   pull_request:
     branches:
      - master
@@ -37,20 +40,36 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: [windows-latest, macos-latest, macos-14, ubuntu-latest]
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: true
 
+    # We need to specify Xcode15.1 here as the default for macos-14 runners is 15.01 which has a bug 
+    # causing linking to fail.
+    - name: Setup Xcode 15.1
+      if: matrix.os == 'macos-14'
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.1'
+
     - uses: pypa/cibuildwheel@v2.16
       env:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
-        CIBW_ARCHS_MACOS: x86_64
-        CIBW_SKIP: "*-musllinux_* pp*" #disable musllinux and pypy builds for now to speed up execution
+        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+        # We disable musllinux as well as pypy builds and macos arm64 builds <3.10
+        CIBW_SKIP: "*-musllinux_* pp* cp38-macosx_arm64 cp39-macosx_arm64" 
+        # We "Test" the python executable by running all our example files, this would be done a little better in the future
+        CIBW_TEST_COMMAND: >
+            python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
+            python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
+            python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
+            python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
+            python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py
 
     - name: Verify clean directory
       run: git diff --exit-code

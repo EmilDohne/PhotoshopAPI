@@ -57,8 +57,10 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
         for (size_t i = 0; i < shape[0]; ++i)
         {
+            std::vector<T> channelData(channelSize);
             const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[rgbChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
+            img_data_cpp[rgbChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
     }
@@ -73,14 +75,17 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         std::vector<Enum::ChannelID> cmykChannelIds = { Enum::ChannelID::Cyan, Enum::ChannelID::Magenta, Enum::ChannelID::Yellow, Enum::ChannelID::Black, Enum::ChannelID::Alpha };
         for (size_t i = 0; i < shape[0]; ++i)
         {
+            std::vector<T> channelData(channelSize);
             const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[cmykChannelIds[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
+
+            img_data_cpp[cmykChannelIds[i]] = channelData;
         }
         return img_data_cpp;
     }
 
     // We add preliminary support for greyscale but it is not fully supported yet!
-    if (color_mode == Enum::ColorMode::CMYK)
+    if (color_mode == Enum::ColorMode::Grayscale)
     {
         if (shape[0] != 1 || shape[0] != 2)
         {
@@ -89,8 +94,11 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
         std::vector<Enum::ChannelID> greyChannelIDs = { Enum::ChannelID::Gray, Enum::ChannelID::Alpha};
         for (size_t i = 0; i < shape[0]; ++i)
         {
+            std::vector<T> channelData(channelSize);
             const T* startPtr = image_data.data() + i * channelSize;
-            img_data_cpp[greyChannelIDs[i]] = std::vector<T>(startPtr, startPtr + channelSize);
+            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
+
+            img_data_cpp[greyChannelIDs[i]] = channelData;
         }
         return img_data_cpp;
     }

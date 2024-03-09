@@ -13,6 +13,7 @@
 #include <thread>
 #include <memory>
 #include <random>
+#include <iostream>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -92,7 +93,6 @@ struct ImageChannel : public BaseImageChannel
 			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
 		}
 
-
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
@@ -122,16 +122,15 @@ struct ImageChannel : public BaseImageChannel
 
 		// Initialize our schunk
 		m_Data = blosc2_schunk_new(&storage);
-		
+
 		uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
 		for (int nchunk = 0; nchunk < numChunks; ++nchunk)
 		{
-			// Cast to uint8_t* to iterate by bytes, not by T
 			void* ptr = reinterpret_cast<uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
-				// C-blos2 returns the total number of chunks here
+				// C-blosc2 returns the total number of chunks here
 				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
 				remainingSize -= m_ChunkSize;
 			}

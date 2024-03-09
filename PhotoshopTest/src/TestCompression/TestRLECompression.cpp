@@ -54,14 +54,12 @@ TEST_CASE("Photoshop File Roundtripping")
 {
 	SUBCASE("PSD")
 	{
-		std::filesystem::path combined_path = std::filesystem::current_path();
-		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psd";
+		std::filesystem::path combined_path = std::filesystem::current_path() / "documents/Compression/Compression_RLE_8bit.psd";
 		checkCompressionFile<uint8_t>(combined_path);
 	}
 	SUBCASE("PSB")
 	{
-		std::filesystem::path combined_path = std::filesystem::current_path();
-		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psd";
+		std::filesystem::path combined_path = std::filesystem::current_path() / "documents/Compression/Compression_RLE_8bit.psb";
 		checkCompressionFile<uint8_t>(combined_path);
 	}
 }

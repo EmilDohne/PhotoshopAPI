@@ -142,7 +142,7 @@ class CMakeBuild(build_ext):
             build_temp.mkdir(parents=True)
 
         subprocess.run(
-            ["cmake", ext.sourcedir, *cmake_args, "-DPSAPI_BUILD_DOCS=OFF", "-DPSAPI_BUILD_BENCHMARKS=OFF", "-DPSAPI_BUILD_TESTS=OFF"], cwd=build_temp, check=True
+            ["cmake", ext.sourcedir, *cmake_args, "-DPSAPI_BUILD_PYTHON=ON","-DPSAPI_BUILD_DOCS=OFF", "-DPSAPI_BUILD_BENCHMARKS=OFF", "-DPSAPI_BUILD_EXAMPLES=OFF", "-DPSAPI_BUILD_TESTS=OFF"], cwd=build_temp, check=True
         )
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
@@ -164,7 +164,7 @@ setup(
     package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi"]},
     zip_safe=False,
     install_requires= [
-        "numpy>=1.26"
+        "numpy>=1.21.6"
     ],
     python_requires=">=3.7",
 )

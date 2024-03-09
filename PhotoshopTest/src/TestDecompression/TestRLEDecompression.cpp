@@ -41,14 +41,12 @@ TEST_CASE("Decompress file with RLE compression")
 {
 	SUBCASE("PSD")
 	{
-		std::filesystem::path combined_path = std::filesystem::current_path();
-		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psd";
+		std::filesystem::path combined_path = std::filesystem::current_path() / "documents/Compression/Compression_RLE_8bit.psd";
 		checkDecompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 	SUBCASE("PSB")
 	{
-		std::filesystem::path combined_path = std::filesystem::current_path();
-		combined_path += "\\documents\\Compression\\Compression_RLE_8bit.psb";
+		std::filesystem::path combined_path = std::filesystem::current_path() / "documents/Compression/Compression_RLE_8bit.psb";
 		checkDecompressionFile<uint8_t>(combined_path, 0, 128, 255, 0);
 	}
 }

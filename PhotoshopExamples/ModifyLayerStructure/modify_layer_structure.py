@@ -1,10 +1,7 @@
-# These are just for running these in the repository but is not necessary when the files are pip installed
-import os, sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),"../../bin-int/PhotoshopAPI/x64-release/python")))
-
 # Example of creating a simple document with a single layer using the PhotoshopAPI.
-import psapi
+import os
 import numpy as np
+import psapi
 
 
 def main() -> None:

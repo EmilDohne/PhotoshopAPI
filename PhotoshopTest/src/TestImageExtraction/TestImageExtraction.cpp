@@ -1,5 +1,7 @@
 #include "doctest.h"
 
+#include "../DetectArmMac.h"
+
 #include "Macros.h"
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/ImageLayer.h"
@@ -133,37 +135,40 @@ TEST_CASE("Double extract channel")
 }
 
 
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Double extract channel without copy"
+		* doctest::no_breaks(true)
+		* doctest::no_output(true)
+		* doctest::should_fail(true))
+	{
+		using namespace NAMESPACE_PSAPI;
 
-TEST_CASE("Double extract channel without copy"
-	* doctest::no_breaks(true)
-	* doctest::no_output(true)
-	* doctest::should_fail(true))
-{
-	using namespace NAMESPACE_PSAPI;
+		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
+		auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
 
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
-	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
+		// This is expected to fail
+		std::vector<bpp8_t> channel_g = imageLayerPtr->getChannel(Enum::ChannelID::Green, false);
+		std::vector<bpp8_t> channel_g_2 = imageLayerPtr->getChannel(Enum::ChannelID::Green, false);
+	}
+#endif
 
-	// This is expected to fail
-	std::vector<bpp8_t> channel_g = imageLayerPtr->getChannel(Enum::ChannelID::Green, false);
-	std::vector<bpp8_t> channel_g_2 = imageLayerPtr->getChannel(Enum::ChannelID::Green, false);
-}
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Double extract all channels without copy"
+		* doctest::no_breaks(true)
+		* doctest::no_output(true)
+		* doctest::should_fail(true))
+	{
+		using namespace NAMESPACE_PSAPI;
 
+		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
+		auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
 
-TEST_CASE("Double extract all channels without copy"
-	* doctest::no_breaks(true)
-	* doctest::no_output(true)
-	* doctest::should_fail(true))
-{
-	using namespace NAMESPACE_PSAPI;
+		// This is expected to fail
+		auto channels = imageLayerPtr->getImageData(false);
+		auto channels2 = imageLayerPtr->getImageData(false);
+	}
+#endif
 
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
-	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
-
-	// This is expected to fail
-	auto channels = imageLayerPtr->getImageData(false);
-	auto channels2 = imageLayerPtr->getImageData(false);
-}
 
 
 TEST_CASE("Extract mask channel from group")
@@ -184,20 +189,22 @@ TEST_CASE("Extract mask channel from group")
 }
 
 
-TEST_CASE("Double extract mask channel from group without copy"
-	* doctest::no_breaks(true)
-	* doctest::no_output(true)
-	* doctest::should_fail(true))
-{
-	using namespace NAMESPACE_PSAPI;
+#ifndef ARM_MAC_ARCH
+	TEST_CASE("Double extract mask channel from group without copy"
+		* doctest::no_breaks(true)
+		* doctest::no_output(true)
+		* doctest::should_fail(true))
+	{
+		using namespace NAMESPACE_PSAPI;
 
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
-	auto groupLayerPtr = findLayerAs<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
+		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
+		auto groupLayerPtr = findLayerAs<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 
-	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMaskData(false);
-	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMaskData(false);
+		std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMaskData(false);
+		std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMaskData(false);
 	
-}
+	}
+#endif
 
 
 TEST_CASE("Double extract mask channel from group")

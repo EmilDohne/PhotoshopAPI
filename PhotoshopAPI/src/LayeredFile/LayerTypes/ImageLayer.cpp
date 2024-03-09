@@ -6,6 +6,7 @@
 #include <vector>
 #include <unordered_map>
 #include <optional>
+#include <iostream>
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -178,6 +179,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 	Layer<T>::m_Width = layerParameters.width;
 	Layer<T>::m_Height = layerParameters.height;
 
+
 	// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
 	for (auto& [key, value] : imageData)
 	{
@@ -198,9 +200,8 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
-
-			ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-			m_ImageData[info] = std::move(channel);
+		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		m_ImageData[info] = std::move(channel);
 	}
 
 	// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
