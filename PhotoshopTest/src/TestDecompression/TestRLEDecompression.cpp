@@ -2,7 +2,8 @@
 
 #include "Utility.h"
 #include "Macros.h"
-#include "Compression/RLE.h"
+#include "Compression/Decompress_RLE.h"
+#include "Compression/Compress_RLE.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 
 #include <vector>
@@ -19,19 +20,10 @@ TEST_CASE("Test Wikipedia Packbits Example")
 	std::vector<uint8_t> data = { 254u, 170u, 2u, 128u, 0u, 42u, 253u, 170u, 3u, 128u, 0u, 42u, 34u, 247u, 170u };
 	std::vector<uint8_t> expected = { 170u, 170u, 170u, 128u, 0u, 42u, 170u, 170u, 170u, 170u, 128u, 0u, 42u, 34u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u };
 
-	SUBCASE("Defining no width and height")
-	{
-		// Note that we do not need to actually provide a width and height here as that only allows for premature reserving of the data
-		// but is not strictly necessary
-		std::vector<uint8_t> resultNoSize = NAMESPACE_PSAPI::DecompressPackBits<uint8_t>(data, 0u, 0u);
-		CHECK(resultNoSize == expected);
-	}
 
-	SUBCASE("Defining too large width and height")
-	{
-		std::vector<uint8_t> resultTooLarge = NAMESPACE_PSAPI::DecompressPackBits<uint8_t>(data, 128u, 128u);
-		CHECK(resultTooLarge == expected);
-	}
+	std::vector<uint8_t> result = NAMESPACE_PSAPI::RLE_Impl::DecompressPackBits<uint8_t>(data, expected.size(), 1u);
+	CHECK(result == expected);
+
 }
 
 

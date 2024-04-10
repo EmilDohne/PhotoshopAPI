@@ -6,7 +6,8 @@ sure these two results match.
 #include "doctest.h"
 
 #include "Macros.h"
-#include "Compression/ZIP.h"
+#include "Compression/Compress_ZIP.h"
+#include "Compression/Decompress_ZIP.h"
 
 #include <vector>
 #include <limits>
@@ -21,7 +22,7 @@ TEST_CASE("Compress Flat Channel 16-bit")
 	uint32_t width = 32;
 	uint32_t height = 32;
 
-	std::vector<uint16_t> channel(width * height, (std::numeric_limits<uint16_t>::max)());
+	std::vector<uint16_t> channel(width * height, std::numeric_limits<uint16_t>::max());
 	std::vector<uint16_t> dataExpected = channel;	// We construct a copy here as CompressZIP will invalidate the data
 
 	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIPPrediction<uint16_t>(channel, width, height);

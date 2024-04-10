@@ -2,7 +2,6 @@
 
 #include "Utility.h"
 #include "Macros.h"
-#include "Compression/RLE.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 
 #include <vector>
