@@ -29,10 +29,10 @@ struct ImageLayer : public Layer<T>
 	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters);
+	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters);
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters);
+	ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters);
 
 	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///

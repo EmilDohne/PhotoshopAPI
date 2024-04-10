@@ -68,7 +68,7 @@ struct GroupLayer : public Layer<T>
 	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
 	/// \param layerParameters The parameters for the group layer.
 	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
-	GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed = false);
+	GroupLayer(Layer<T>::Params& layerParameters, bool isCollapsed = false);
 
 
 protected:

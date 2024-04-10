@@ -80,12 +80,15 @@ struct ImageChannel : public BaseImageChannel
 {
 	/// The size of each sub-chunk in the super-chunk. For more information about what a chunk and super-chunk is
 	/// please refer to the c-blosc2 documentation
-	static const uint64_t m_ChunkSize = 1024 * 1024;	
+	static const uint64_t m_ChunkSize = 16384 * 16384;
 
 	ImageChannel() = default;
 
+
 	/// Take a reference to a decompressed image vector stream and set the according member variables
-	ImageChannel(Enum::Compression compression, std::vector<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord) :
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ImageChannel(Enum::Compression compression, std::vector<T>& imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord) :
 		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
 	{
 		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
@@ -116,6 +119,7 @@ struct ImageChannel : public BaseImageChannel
 		cparams.compcode = BLOSC_LZ4;
 		cparams.clevel = 5;
 		// Running this on a single thread speeds up execution since we already are running across multiple threads
+		// on decoding of the layers
 		cparams.nthreads = 1;
 		dparams.nthreads = 1;
 		blosc2_storage storage = {.cparams = &cparams, .dparams = &dparams };
@@ -141,18 +145,91 @@ struct ImageChannel : public BaseImageChannel
 				remainingSize = 0;
 			}
 			if (nchunks != nchunk + 1) [[unlikely]]
-				{
-					PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
-				}
+			{
+				PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
+			}
 		}
 
 		// Log the total compressed / uncompressed size to later determine our stats
 		REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
 	};
 
+
+	/// Take a reference to a decompressed image vector span and set the according member variables
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ImageChannel(Enum::Compression compression, std::span<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord) :
+		BaseImageChannel(compression, channelID, width, height, xcoord, ycoord)
+	{
+		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
+			{
+				PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
+			}
+
+			PROFILE_FUNCTION();
+			m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
+
+			blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
+			blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
+			// Calculate the number of chunks from the input
+			uint64_t numChunks = ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize);
+			// This could either be a no-op or a chunk that is smaller than m_ChunkSize
+			if (numChunks == 0)
+			{
+				// Check for chunks that are smaller than m_ChunkSize
+				if (static_cast<uint64_t>(width) * height * sizeof(T) > 0)
+				{
+					numChunks = 1;
+				}
+			}
+			m_NumChunks = numChunks;
+
+			// Set parameters to help with compression and decompression
+			cparams.typesize = sizeof(T);
+			cparams.compcode = BLOSC_LZ4;
+			cparams.clevel = 5;
+			// Running this on a single thread speeds up execution since we already are running across multiple threads
+			// on decoding of the layers
+			cparams.nthreads = 1;
+			dparams.nthreads = 1;
+			blosc2_storage storage = { .cparams = &cparams, .dparams = &dparams };
+
+			// Initialize our schunk
+			m_Data = blosc2_schunk_new(&storage);
+
+			uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
+			for (int nchunk = 0; nchunk < numChunks; ++nchunk)
+			{
+				void* ptr = reinterpret_cast<uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
+				int64_t nchunks;
+				if (remainingSize > m_ChunkSize)
+				{
+					// C-blosc2 returns the total number of chunks here
+					nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
+					remainingSize -= m_ChunkSize;
+				}
+				else
+				{
+					// C-blos2 returns the total number of chunks here
+					nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
+					remainingSize = 0;
+				}
+				if (nchunks != nchunk + 1) [[unlikely]]
+					{
+						PSAPI_LOG_ERROR("ImageChannel", "Unexpected number of chunks");
+					}
+			}
+
+			// Log the total compressed / uncompressed size to later determine our stats
+			REGISTER_COMPRESSION_TRACK(static_cast<uint64_t>(m_Data->cbytes), static_cast<uint64_t>(m_Data->nbytes));
+	};
+
+
 	/// Extract the data from the image channel and invalidate it (can only be called once). 
 	/// If the image data does not exist yet we simply return an empty vector<T>. If the data
 	/// was already freed we throw
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	std::vector<T> extractData() {
 		PROFILE_FUNCTION();
 		if (!m_Data)
@@ -189,8 +266,11 @@ struct ImageChannel : public BaseImageChannel
 		return tmpData;
 	}
 
+
 	/// Copy the image data out of the ImageChannel, does not free the data afterwards. Returns an empty vector if the
 	/// data does not exist yet. If the data was already freed we throw
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	std::vector<T> getData()
 	{
 		PROFILE_FUNCTION();
@@ -224,8 +304,11 @@ struct ImageChannel : public BaseImageChannel
 		return tmpData;
 	}
 
+
 	/// Extract n amount of randomly selected chunks from the ImageChannel super chunk. This does not invalidate any data
 	/// and is useful to e.g. compress these chunks using photoshops compression methods to estimate the final size on disk
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	std::vector<std::vector<T>> getRandomChunks(const FileHeader header, uint16_t numChunks) const
 	{
 		std::random_device rd;
@@ -249,6 +332,7 @@ struct ImageChannel : public BaseImageChannel
 		return outChunks;
 	}
 
+	/// Get the total number of chunks held in the ImageChannel
 	uint64_t getNumChunks() const { return m_NumChunks; };
 
 private:

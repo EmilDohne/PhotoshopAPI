@@ -186,7 +186,7 @@ GroupLayer<T>::GroupLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
+GroupLayer<T>::GroupLayer(Layer<T>::Params& layerParameters, bool isCollapsed /*= false*/)
 {
 	PROFILE_FUNCTION();
 	Layer<T>::m_LayerName = layerParameters.layerName;
@@ -204,7 +204,7 @@ GroupLayer<T>::GroupLayer(const Layer<T>::Params& layerParameters, bool isCollap
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
