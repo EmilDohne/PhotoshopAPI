@@ -1,7 +1,11 @@
 #pragma once
 
-#include "RLE.h"
-#include "ZIP.h"
+#include "Decompress_RLE.h"
+#include "Compress_RLE.h"
+
+#include "Decompress_ZIP.h"
+#include "Compress_ZIP.h"
+
 #include "Macros.h"
 #include "FileIO/Read.h"
 #include "Enum.h"
@@ -17,7 +21,6 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-
 /// Read and decompress a given number of bytes based on the compression algorithm given, after which
 /// the data is endian decoded into native encoding and returned either in scanline order
 /// 
@@ -29,21 +32,58 @@ PSAPI_NAMESPACE_BEGIN
 /// ---------------------------------------------------------------------------------------------------------------------
 /// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-inline std::vector<T> DecompressData(ByteStream& stream, uint64_t offset, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
+inline void DecompressData(ByteStream& stream, std::span<T> buffer, uint64_t offset, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
 	PROFILE_FUNCTION();
 	switch (compression)
 	{
 	case Enum::Compression::Raw:
-		return ReadBinaryArray<T>(stream, offset, compressedSize);
+		ReadBinaryArray<T>(stream, buffer, offset, compressedSize);
+		break;
 	case Enum::Compression::Rle:
-		return DecompressRLE<T>(stream, offset, header, width, height, compressedSize);
+		DecompressRLE<T>(stream, buffer, offset, header, width, height, compressedSize);
+		break;
 	case Enum::Compression::Zip:
-		return DecompressZIP<T>(stream, offset, width, height, compressedSize);
+		DecompressZIP<T>(stream, buffer, offset, width, height, compressedSize);
+		break;
 	case Enum::Compression::ZipPrediction:
-		return DecompressZIPPrediction<T>(stream, offset, width, height, compressedSize);
+		DecompressZIPPrediction<T>(stream, buffer, offset, width, height, compressedSize);
+		break;
 	default:
-		return ReadBinaryArray<T>(stream, offset, compressedSize);
+		ReadBinaryArray<T>(stream, buffer, offset, compressedSize);
+		break;
+	}
+}
+
+
+// Compress an input datastream using the appropriate compression algorithm while encoding to BE order
+// RLE compression will encode the scanline sizes at the start of the data as well. This would equals to 
+// 2/4 * height bytes of additional data (2 bytes for PSD and 4 for PSB)
+template <typename T>
+inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height)
+{
+	if (compression == Enum::Compression::Raw)
+	{
+		endianEncodeBEArray(uncompressedIn);
+		std::vector<uint8_t> data(uncompressedIn.size() * sizeof(T));
+		std::memcpy(reinterpret_cast<void*>(data.data()), reinterpret_cast<void*>(uncompressedIn.data()), data.size());
+		return data;
+	}
+	else if (compression == Enum::Compression::Rle)
+	{
+		return CompressRLE(uncompressedIn, buffer, header, width, height);
+	}
+	else if (compression == Enum::Compression::Zip)
+	{
+		return CompressZIP(uncompressedIn, buffer, compressor);
+	}
+	else if (compression == Enum::Compression::ZipPrediction)
+	{
+		return CompressZIPPrediction(uncompressedIn, buffer, compressor, width, height);
+	}
+	else
+	{
+		return(std::vector<uint8_t>{});
 	}
 }
 
