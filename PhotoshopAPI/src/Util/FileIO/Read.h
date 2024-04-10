@@ -150,6 +150,33 @@ std::vector<T> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
 }
 
 
+// Read a large amount of data into a pre-allocated buffer, assumes the file is already open 
+// for reading. The size parameter indicates the amount of bytes and the offset 
+// parameter indicates where to read from. After the read is complete we set the offset
+// back to what it was before
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template <typename T>
+void ReadBinaryArray(File& document, std::span<T> buffer, uint64_t offset, uint64_t size)
+{
+	uint64_t initialOffset = document.getOffset();
+	document.setOffset(offset);
+
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T));
+	}
+	document.read(reinterpret_cast<char*>(buffer.data()), size);
+	endianEncodeBEArray<T>(buffer);
+
+	document.setOffset(initialOffset);
+}
+
+
+
+
 // Read a large amount of data into a std::vector from a bytestream
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
@@ -188,9 +215,28 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t siz
 
 	std::vector<T> data(size / sizeof(T));
 	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
-	endianEncodeBEArray<T>(data);
+	endianDecodeBEArray(data);
 	return data;
 }
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template <typename T>
+void ReadBinaryArray(ByteStream& stream, std::span<T> buffer, uint64_t offset, uint64_t size)
+{
+	// Check that the data we are trying to read is cleanly divisible as we would trunkate bytes otherwise
+	if (size % sizeof(T) != 0)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
+			size, sizeof(T));
+	}
+
+	std::vector<T> data(size / sizeof(T));
+	stream.read(reinterpret_cast<char*>(buffer.data()), offset, size);
+	endianDecodeBEArray<T>(buffer);
+}
+
 
 
 // Specialization which just reads without endian decoding as it isnt necessary 
