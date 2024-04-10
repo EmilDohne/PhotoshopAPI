@@ -11,9 +11,9 @@ void File::read(char* buffer, uint64_t size)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (m_Offset + size > m_Size) [[unlikely]]
-	{
-			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
-	}
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, m_Offset, m_Size);
+		}
 
 	m_Document.read(buffer, size);
 	m_Offset += size;
@@ -31,7 +31,7 @@ void File::write(std::span<uint8_t> buffer)
 }
 
 
-// --------------------------------------------------------------------------------
+// -------------------------------------------------------------------------------- 
 // --------------------------------------------------------------------------------
 void File::skip(int64_t size)
 {
@@ -42,7 +42,7 @@ void File::skip(int64_t size)
 	}
 	if (m_Offset + size > m_Size)
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be skipped from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, m_Offset, m_Size);
 	}
 	m_Document.ignore(size);
 	m_Offset += size;
@@ -86,9 +86,12 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 
 	if (m_Offset + size > m_Size) [[unlikely]]
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from the file as it would exceed the file size", size);
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, offset, m_Size);
 	}
-	m_Document.read(buffer, size);	
+	{
+		PROFILE_SCOPE("File::setOffsetAndRead FileIO");
+		m_Document.read(buffer, size);
+	}
 	m_Offset += size;
 }
 
@@ -148,7 +151,7 @@ File::File(std::filesystem::path file, const FileParams params)
 	{
 		// Handle file open error
 		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.string().c_str());
-	}
+	}	
 
 	m_FilePath = file;
 }
