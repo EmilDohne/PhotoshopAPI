@@ -7,7 +7,8 @@
 #include <fstream>
 #include <mutex>
 #include <vector>
-#if defined(__GNUC__) && (__GNUC__ < 13)
+
+#if (__cplusplus < 202002L)
 #include "tcb_span.hpp"
 #else
 #include <span>

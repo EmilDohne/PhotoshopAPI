@@ -7,7 +7,7 @@
 #include "Endian/EndianByteSwapArr.h"
 
 
-#if defined(__GNUC__) && (__GNUC__ < 13)
+#if (__cplusplus < 202002L)
 #include "tcb_span.hpp"
 #else
 #include <span>

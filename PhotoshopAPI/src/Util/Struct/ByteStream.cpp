@@ -2,7 +2,7 @@
 
 #include "Profiling/Perf/Instrumentor.h"
 
-#if defined(__GNUC__) && (__GNUC__ < 13)
+#if (__cplusplus < 202002L)
 #include "tcb_span.hpp"
 #else
 #include <span>
@@ -100,7 +100,10 @@ std::span<uint8_t> ByteStream::read(uint64_t offset, uint64_t size)
 ByteStream::ByteStream(File& document, const uint64_t offset, const uint64_t size)
 {
 	PROFILE_FUNCTION();
-	m_Buffer = std::vector<uint8_t>(size);
+	{
+		PROFILE_SCOPE("Vector malloc");
+		m_Buffer = std::vector<uint8_t>(size);
+	}
 	m_Size = size;
 	document.setOffsetAndRead(reinterpret_cast<char*>(m_Buffer.data()), offset, size);
 	m_FileOffset = offset;
