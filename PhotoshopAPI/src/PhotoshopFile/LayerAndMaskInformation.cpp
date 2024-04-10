@@ -8,6 +8,8 @@
 #include "StringUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
 
+#include "libdeflate.h"
+
 #include <variant>
 #include <algorithm>
 #include <execution>
@@ -888,6 +890,48 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	std::vector<std::vector<uint8_t>> compressedData;
 	compressedData.reserve(m_ImageData.size());
 
+	// We create a scratch buffer here which we use to store data for compression since we need a sufficiently large buffer to compress into but
+	// then at the end want to shrink to the desired size. So here we create one that can accomodate any level of compression and then finally copy
+	// the buffers out after decompression in order to not allocate the buffer at each step of the way
+	std::vector<uint8_t> buffer;
+	libdeflate_compressor* compressor = libdeflate_alloc_compressor(ZIP_COMPRESSION_LVL);
+	{
+		PROFILE_SCOPE("Compression Allocate buffer");
+		size_t maxWidth = 0;
+		size_t maxHeight = 0;
+		for (const auto& channel : m_ImageData)
+		{
+			size_t width = channel->getWidth();
+			size_t height = channel->getHeight();
+			if (width > maxWidth)
+				maxWidth = width;
+			if (height > maxHeight)
+				maxHeight = height;
+		}
+
+		// We filter RLE early here if its not present since RLE at worst has a compression overhead of ~33% while ZIP has
+		// <1% so we dont want to spend time allocating a buffer we wont need
+		bool hasRLE = false;
+		for (const auto& channel : m_ImageData)
+		{
+			if (channel->m_Compression == Enum::Compression::Rle)
+				hasRLE = true;
+		}
+		// Compute the maximum necessary size to fit all of our compression needs and fill the buffer with that information
+		if (hasRLE)
+		{
+			size_t maxRLESize = RLE_Impl::MaxCompressedSize<T>(header, maxHeight, maxWidth);
+			size_t maxZIPSize = libdeflate_zlib_compress_bound(compressor, static_cast<uint64_t>(maxWidth) * maxHeight * sizeof(T));
+			size_t maxCompressedSize = std::max(maxRLESize, maxZIPSize);
+			buffer = std::vector<uint8_t>(maxCompressedSize);
+		}
+		else
+		{
+			size_t maxZIPSize = libdeflate_zlib_compress_bound(compressor, static_cast<uint64_t>(maxWidth) * maxHeight * sizeof(T));
+			buffer = std::vector<uint8_t>(maxZIPSize);
+		}
+	}
+
 	for (int i = 0; i < m_ImageData.size(); ++i)
 	{
 		// Take ownership of and invalidate the current channel index
@@ -918,7 +962,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 
 			// Compress the image data into a binary array and store it in our compressedData vec
 			std::vector<T> imgData = imageChannel->getData();
-			compressedData.push_back(CompressData(imgData, compressionMode, header, width, height));
+			compressedData.push_back(CompressData(imgData, buffer, compressor, compressionMode, header, width, height));
 
 			// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
 			LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
@@ -932,6 +976,8 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 			return emptyVec;
 		}
 	}
+
+	libdeflate_free_compressor(compressor);
 
 	return compressedData;
 }
@@ -956,78 +1002,104 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		countingOffset += channel.m_Size;
 	}
 
+	// Allocate a binary vector for the maximum extents such that we can then reuse the buffer in the loops rather than reallocating memory
+	ChannelCoordinates extent = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
+	uint32_t maxWidth = extent.width;
+	uint32_t maxHeight = extent.height;
+	if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
+	{
+		const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
+		// Generate our coordinates from the mask extents instead
+		ChannelCoordinates lrMask = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
+		if (lrMask.width > maxWidth)
+			maxWidth = lrMask.width;
+		if (lrMask.height > maxHeight)
+			maxHeight = lrMask.height;
+	}
+	std::vector<uint8_t> buffer;
+	if (header.m_Depth == Enum::BitDepth::BD_8)
+		buffer = std::vector<uint8_t>(maxWidth * maxHeight * sizeof(uint8_t));
+	else if (header.m_Depth == Enum::BitDepth::BD_16)
+		buffer = std::vector<uint8_t>(maxWidth * maxHeight * sizeof(uint16_t));
+	else if (header.m_Depth == Enum::BitDepth::BD_32)
+		buffer = std::vector<uint8_t>(maxWidth * maxHeight * sizeof(float32_t));
+
+
 	// Preallocate the ImageData vector as we need valid indices for the for each loop
 	m_ImageData.resize(layerRecord.m_ChannelInformation.size());
 	m_ChannelCompression.resize(layerRecord.m_ChannelInformation.size());
 
-	// Iterate the channels in parallel
-	std::for_each(std::execution::par_unseq, layerRecord.m_ChannelInformation.begin(), layerRecord.m_ChannelInformation.end(),
-		[&](const LayerRecords::ChannelInformation& channel)
+	// Iterate the channels and decompress after which we generate the image channels.
+	// uses the 'buffer' as an intermediate memory area
+	for (const auto& channel : layerRecord.m_ChannelInformation)
+	{
+		const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
+		const uint64_t channelOffset = channelOffsets[index];
+
+		// Generate our coordinates from the layer extents
+		ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
+
+		// If the channel is a mask the extents are actually stored in the layermaskdata
+		if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
 		{
-			const uint32_t index = &channel - &layerRecord.m_ChannelInformation[0];
-			const uint64_t channelOffset = channelOffsets[index];
+			if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
+			{
+				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
+				// Generate our coordinates from the mask extents instead
+				coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
+			}
+		}
+		// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
+		uint16_t compressionNum = 0;
+		stream.read(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
+		compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
+		Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
+		m_ChannelCompression[index] = channelCompression;
+		m_Size += channel.m_Size;
 
-			// Generate our coordinates from the layer extents
-			ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
-
-			// If the channel is a mask the extents are actually stored in the layermaskdata
-			if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
-			{
-				if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
-				{
-					const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
-					// Generate our coordinates from the mask extents instead
-					coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
-				}
-			}
-			// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
-			uint16_t compressionNum = 0;
-			stream.read(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
-			compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
-			Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
-			m_ChannelCompression[index] = channelCompression;
-			m_Size += channel.m_Size;
-
-			if (header.m_Depth == Enum::BitDepth::BD_8)
-			{
-				std::vector<uint8_t> decompressedData = DecompressData<uint8_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint8_t>> channelPtr = std::make_unique<ImageChannel<uint8_t>>(
-					channelCompression, 
-					std::move(decompressedData),
-					channel.m_ChannelID, 
-					coordinates.width, 
-					coordinates.height, 
-					coordinates.centerX,
-					coordinates.centerY);
-				m_ImageData[index] = std::move(channelPtr);
-			}
-			else if (header.m_Depth == Enum::BitDepth::BD_16)
-			{
-				std::vector<uint16_t> decompressedData = DecompressData<uint16_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
-					channelCompression, 
-					std::move(decompressedData),
-					channel.m_ChannelID, 
-					coordinates.width,
-					coordinates.height,
-					coordinates.centerX,
-					coordinates.centerY);
-				m_ImageData[index] = std::move(channelPtr);
-			}
-			if (header.m_Depth == Enum::BitDepth::BD_32)
-			{
-				std::vector<float32_t> decompressedData = DecompressData<float32_t>(stream, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-				std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
-					channelCompression, 
-					std::move(decompressedData),
-					channel.m_ChannelID, 
-					coordinates.width, 
-					coordinates.height, 
-					coordinates.centerX, 
-					coordinates.centerY);
-				m_ImageData[index] = std::move(channelPtr);
-			}
-		});
+		if (header.m_Depth == Enum::BitDepth::BD_8)
+		{
+			std::span<uint8_t> bufferSpan(buffer.data(), coordinates.width * coordinates.height);
+			DecompressData<uint8_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+			ImageChannel<uint8_t> imageChannel(
+				channelCompression,
+				bufferSpan,
+				channel.m_ChannelID,
+				coordinates.width,
+				coordinates.height,
+				coordinates.centerX,
+				coordinates.centerY);
+			m_ImageData[index] = std::make_unique<ImageChannel<uint8_t>>(std::move(imageChannel));
+		}
+		else if (header.m_Depth == Enum::BitDepth::BD_16)
+		{
+			std::span<uint16_t> bufferSpan(reinterpret_cast<uint16_t*>(buffer.data()), coordinates.width * coordinates.height);
+			DecompressData<uint16_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+			std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
+				channelCompression,
+				bufferSpan,
+				channel.m_ChannelID,
+				coordinates.width,
+				coordinates.height,
+				coordinates.centerX,
+				coordinates.centerY);
+			m_ImageData[index] = std::move(channelPtr);
+		}
+		if (header.m_Depth == Enum::BitDepth::BD_32)
+		{
+			std::span<float32_t> bufferSpan(reinterpret_cast<float32_t*>(buffer.data()), coordinates.width * coordinates.height);
+			DecompressData<float32_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
+			std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
+				channelCompression,
+				bufferSpan,
+				channel.m_ChannelID,
+				coordinates.width,
+				coordinates.height,
+				coordinates.centerX,
+				coordinates.centerY);
+			m_ImageData[index] = std::move(channelPtr);
+		}
+	}
 }
 
 
@@ -1130,7 +1202,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 
 	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	std::for_each(std::execution::par_unseq, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
 	{
 		int index = &layerRecord - &m_LayerRecords[0];
 
