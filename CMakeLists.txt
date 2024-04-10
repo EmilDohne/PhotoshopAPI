@@ -12,7 +12,7 @@ endif()
 option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" OFF)
+option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
 option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" OFF)
 
@@ -29,11 +29,11 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 # Add thirdparty libraries
 # --------------------------------------------------------------------------
 
-# Add zlib-ng
-set(ZLIB_ENABLE_TESTS OFF)
-set(ZLIBNG_ENABLE_TESTS OFF)
-set(WITH_GZFILEOP OFF)
-add_subdirectory (thirdparty/zlib-ng EXCLUDE_FROM_ALL)
+
+# Add libdeflate
+add_subdirectory (thirdparty/libdeflate)
+add_library(libdeflate_include INTERFACE)
+target_include_directories(libdeflate_include INTERFACE thirdparty/libdeflate)
 
 # Add c-blosc2
 set(DEACTIVATE_ZLIB ON)
