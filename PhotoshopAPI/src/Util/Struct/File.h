@@ -7,6 +7,7 @@
 #include <fstream>
 #include <mutex>
 #include <vector>
+#include <cstring>
 
 #include <mio/mmap.hpp>
 

@@ -51,9 +51,9 @@ namespace RLE_Impl
             const uint8_t value = compressedData[i];
 
             if (value == 128) [[unlikely]]
-                {
-                    // Do nothing, nop. Equivalent to 0 in int8_t
-                }
+            {
+                // Do nothing, nop. Equivalent to 0 in int8_t
+            }
             else if (value > 128)
             {
                 // Repeat the next byte after this 257-n times
