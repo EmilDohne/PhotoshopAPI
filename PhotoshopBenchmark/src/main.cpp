@@ -14,7 +14,7 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 {
 	using namespace NAMESPACE_PSAPI;
 
-	for (int i = 0; i < repeats; ++i)
+	for (int i = 0; i < repeats + 1; ++i)
 	{
 		// Run a dry-run first which we do not profile to warm up
 		if (i == 0)
