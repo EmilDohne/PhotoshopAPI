@@ -35,6 +35,9 @@ add_subdirectory (thirdparty/libdeflate)
 add_library(libdeflate_include INTERFACE)
 target_include_directories(libdeflate_include INTERFACE thirdparty/libdeflate)
 
+# Add mio for memory-mapped IO files
+add_subdirectory (thirdparty/mio)
+
 # Add c-blosc2
 set(DEACTIVATE_ZLIB ON)
 set(DEACTIVATE_ZSTD ON)
@@ -51,6 +54,8 @@ target_include_directories(blosc2_include INTERFACE thirdparty/c-blosc2/include)
 # Add doctest
 add_library(doctest INTERFACE)
 target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
+
+
 
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
