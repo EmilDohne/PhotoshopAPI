@@ -105,7 +105,7 @@ ByteStream::ByteStream(File& document, const uint64_t offset, const uint64_t siz
 		m_Buffer = std::vector<uint8_t>(size);
 	}
 	m_Size = size;
-	document.setOffsetAndRead(reinterpret_cast<char*>(m_Buffer.data()), offset, size);
+	document.readFromOffset(reinterpret_cast<char*>(m_Buffer.data()), offset, size);
 	m_FileOffset = offset;
 }
 

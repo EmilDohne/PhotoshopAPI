@@ -8,6 +8,8 @@
 #include <mutex>
 #include <vector>
 
+#include <mio/mmap.hpp>
+
 #if (__cplusplus < 202002L)
 #include "tcb_span.hpp"
 #else
@@ -41,6 +43,12 @@ struct File
 	// --------------------------------------------------------------------------------
 	void read(char* buffer, uint64_t size);
 	
+	// Read a specified number of bytes using a memory mapped file representation meaning
+	// this function is safe to call from any thread. This does not move around the 
+	// internal offset marker unlike setOffsetAndRead.
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void readFromOffset(char* buffer, const uint64_t offset, const uint64_t size);
 
 	// Write n bytes to the file from the input span.
 	// --------------------------------------------------------------------------------
@@ -98,6 +106,7 @@ struct File
 private:
 	std::filesystem::path m_FilePath;
 	std::fstream m_Document;	// The file stream that represents our document
+	mio::ummap_source m_DocumentMMap;
 	uint64_t m_Size;			// The total size of the document
 	uint64_t m_Offset;			// The current document offset.
 };

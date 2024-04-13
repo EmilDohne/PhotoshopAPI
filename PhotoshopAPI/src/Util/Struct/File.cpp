@@ -22,6 +22,21 @@ void File::read(char* buffer, uint64_t size)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
+void File::readFromOffset(char* buffer, const uint64_t offset, const uint64_t size)
+{
+	PROFILE_FUNCTION();
+	if (offset + size > m_Size) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, offset, m_Size);
+	}
+	// We use the memory-mapped file version here to access in parallel
+	const uint8_t* srcPtr = m_DocumentMMap.data() + offset;
+	std::memcpy(buffer, srcPtr, size);
+}
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 void File::write(std::span<uint8_t> buffer)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);
@@ -115,6 +130,7 @@ File::File(std::filesystem::path file, const FileParams params)
 		if (std::filesystem::exists(file))
 		{
 			m_Document.open(file, std::ios::binary | std::fstream::in);
+			m_DocumentMMap = mio::ummap_source(file.string());
 		}
 		else
 		{
