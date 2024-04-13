@@ -29,8 +29,8 @@ struct Profiler
 	}
 
 private:
-	std::chrono::steady_clock::time_point m_Start;
-	std::chrono::steady_clock::time_point m_End;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_Start;
+	std::chrono::time_point<std::chrono::high_resolution_clock> m_End;
 	std::filesystem::path m_Path;
 	std::string m_BenchName;
 };
