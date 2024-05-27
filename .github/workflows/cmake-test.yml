@@ -32,7 +32,7 @@ jobs:
              compiler: msvc
              compilercxx: msvc
            - name: MacOS Intel GCC
-             os: macos-13
+             os: macos-12
              compiler: gcc-13
              compilercxx: g++-13 
            - name: MacOS ARM GCC
@@ -45,7 +45,7 @@ jobs:
       with:
         submodules: 'recursive'
     
-    # We need to specify Xcode15.1 here as the default for macos-14 runners is 15.01 which has a bug 
+    # We need to specify Xcode15.2 here as the default for macos-14 runners is 15.01 which has a bug 
     # causing linking to fail.
     - name: Setup Xcode 15.2
       if: matrix.os == 'macos-latest' ||  matrix.os == 'macos-13' 

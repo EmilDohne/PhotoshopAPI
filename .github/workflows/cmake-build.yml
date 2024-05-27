@@ -31,7 +31,7 @@ jobs:
              compiler: msvc
              compilercxx: msvc
            - name: MacOS Intel GCC
-             os: macos-13
+             os: macos-12
              compiler: gcc-13
              compilercxx: g++-13 
            - name: MacOS ARM GCC
