@@ -1,6 +1,6 @@
 #include "Enum.h"
 #include "Macros.h"
-#include "Struct/File.h"
+#include "Core/Struct/File.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
