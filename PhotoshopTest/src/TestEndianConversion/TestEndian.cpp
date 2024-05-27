@@ -1,7 +1,7 @@
 #include "doctest.h"
 
 #include "../DetectArmMac.h"
-#include "Util/Endian/EndianByteSwapArr.h"
+#include "Core/Endian/EndianByteSwapArr.h"
 
 #include <vector>
 

@@ -23,7 +23,7 @@ jobs:
       matrix:
         include:
            - name: Ubuntu GCC
-             os: ubuntu-latest
+             os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
            - name: Windows MSVC
@@ -31,11 +31,11 @@ jobs:
              compiler: msvc
              compilercxx: msvc
            - name: MacOS Intel GCC
-             os: macos-latest
+             os: macos-12
              compiler: gcc-13
-             compilercxx: g++-13
+             compilercxx: g++-13 
            - name: MacOS ARM GCC
-             os: macos-14
+             os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
             
@@ -48,7 +48,7 @@ jobs:
     # We need to specify Xcode15.1 here as the default for macos-14 runners is 15.01 which has a bug 
     # causing linking to fail.
     - name: Setup Xcode 15.1
-      if: matrix.os == 'macos-14'
+      if: matrix.os == 'macos-latest' ||  matrix.os == 'macos-13' 
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '15.1'

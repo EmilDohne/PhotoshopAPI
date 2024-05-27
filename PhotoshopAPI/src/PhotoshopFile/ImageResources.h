@@ -2,9 +2,9 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
-#include "Struct/ResourceBlock.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
+#include "Core/Struct/ResourceBlock.h"
 
 #include <vector>
 #include <type_traits>

@@ -14,11 +14,19 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 {
 	using namespace NAMESPACE_PSAPI;
 
-#pragma push_macro("PSAPI_PROFILING")
-#define PSAPI_PROFILING 0
-
-	for (int i = 0; i < repeats; ++i)
+	for (int i = 0; i < repeats + 1; ++i)
 	{
+		// Run a dry-run first which we do not profile to warm up
+		if (i == 0)
+		{
+			LayeredFile<T> layeredFile;
+			auto inputFile = File(readPath);
+			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
+			psDocumentPtr->read(inputFile);
+			layeredFile = { std::move(psDocumentPtr) };
+			continue;
+		}
+		Instrumentor::Get().BeginSession((readPath.string() + std::to_string(i)).c_str(), (readPath.string() + std::to_string(i) + ".json").c_str());
 		LayeredFile<T> layeredFile;
 		{
 			Profiler readProfiler{ outStats , "read" + benchName };
@@ -38,9 +46,9 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 			auto outputFile = File(writePath, params);
 			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 			psdOutDocumentPtr->write(outputFile);
-		}   
+		}
+		Instrumentor::Get().EndSession();
 	}
-#pragma pop_macro("PSAPI_PROFILING")
 }
 
 
@@ -50,11 +58,18 @@ void readWriteFileChangeCompression(const int repeats, const std::filesystem::pa
 {
 	using namespace NAMESPACE_PSAPI;
 
-#pragma push_macro("PSAPI_PROFILING")
-#define PSAPI_PROFILING 0
-
-	for (int i = 0; i < repeats; ++i)
+	for (int i = 0; i < repeats + 1; ++i)
 	{
+		// Run a dry-run first which we do not profile to warm up
+		if (i == 0)
+		{
+			LayeredFile<T> layeredFile;
+			auto inputFile = File(readPath);
+			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
+			psDocumentPtr->read(inputFile);
+			layeredFile = { std::move(psDocumentPtr) };
+			continue;
+		}
 		LayeredFile<T> layeredFile;
 		{
 			Profiler readProfiler{ outStats , "read" + benchName };
@@ -77,7 +92,6 @@ void readWriteFileChangeCompression(const int repeats, const std::filesystem::pa
 			psdOutDocumentPtr->write(outputFile);
 		}
 	}
-#pragma pop_macro("PSAPI_PROFILING")
 }
 
 

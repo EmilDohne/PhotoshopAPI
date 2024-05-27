@@ -1,12 +1,15 @@
 [submodule "PhotoshopAPI/thirdparty/c-blosc2"]
 	path = thirdparty/c-blosc2
 	url = https://github.com/Blosc/c-blosc2
-[submodule "thirdparty/zlib-ng"]
-	path = thirdparty/zlib-ng
-	url = https://github.com/zlib-ng/zlib-ng
 [submodule "thirdparty/doctest"]
 	path = thirdparty/doctest
 	url = https://github.com/doctest/doctest/
 [submodule "thirdparty/pybind11"]
 	path = thirdparty/pybind11
 	url = https://github.com/pybind/pybind11
+[submodule "thirdparty/libdeflate"]
+	path = thirdparty/libdeflate
+	url = https://github.com/ebiggers/libdeflate
+[submodule "thirdparty/mio"]
+	path = thirdparty/mio
+	url = https://github.com/vimpunk/mio

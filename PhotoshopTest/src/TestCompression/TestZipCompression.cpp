@@ -6,7 +6,8 @@ sure these two results match.
 #include "doctest.h"
 
 #include "Macros.h"
-#include "Compression/ZIP.h"
+#include "Core/Compression/Compress_ZIP.h"
+#include "Core/Compression/Decompress_ZIP.h"
 
 #include <vector>
 #include <limits>

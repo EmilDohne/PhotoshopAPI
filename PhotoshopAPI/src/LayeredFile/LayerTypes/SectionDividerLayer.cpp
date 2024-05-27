@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Logger.h"
 #include "Enum.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 
 #include <vector>
 #include <tuple>

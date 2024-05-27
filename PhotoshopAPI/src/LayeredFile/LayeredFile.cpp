@@ -3,7 +3,7 @@
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "Macros.h"
 #include "StringUtil.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "LayerTypes/Layer.h"
 #include "LayerTypes/ImageLayer.h"
 #include "LayerTypes/GroupLayer.h"
@@ -20,7 +20,8 @@
 #include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 
 #include <vector>
-#if defined(__GNUC__) && (__GNUC__ < 13)
+
+#if (__cplusplus < 202002L)
 #include "tcb_span.hpp"
 #else
 #include <span>

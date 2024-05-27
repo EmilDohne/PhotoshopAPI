@@ -32,42 +32,6 @@ without any setup time from the library. During testing it was found that this i
     infeasible
 
 
-.. _systemsused:
-
-Systems used
-^^^^^^^^^^^^^
-
-The benchmarks were run on 4 different machines with both intel and amd cpus ranging from 2015-2020 as well as a mobile cpu.
-
-Below you can find a list of all the machines, they will be referred to by their CPU from now on
-
-.. list-table:: Systems
-    :header-rows: 1
-
-    * - CPU
-      - Memory
-      - Memory Frequency
-      - Storage
-
-    * - Ryzen 9 5950x
-      - 96GB DDR4
-      - 3200MHz
-      - M.2 SSD
-    * - Ryzen 5 2600x
-      - 16GB DDR4
-      - 2800MHz
-      - M.2 SSD
-    * - Intel i7 6700k
-      - 32GB DDR4
-      - 2133MHz
-      - M.2 SSD
-    * - Intel i7 9750H
-      - 16 DDR4
-      - 2667MHz
-      - M.2 SSD
-
-
-
 Benchmark test files
 ^^^^^^^^^^^^^^^^^^^^^
 
@@ -102,7 +66,7 @@ This is just a single layer of the automotive data in 16- and 32- bit to show th
 Read/Write Speeds
 ------------------
 
-Below you can find the read/write speeds of the individual sample files tested on all 4 configurations mentioned in :ref:`systemsused`
+Below you can find the read/write speeds of the individual sample files
 
 
 .. tab:: Ryzen 9 5950x
@@ -137,108 +101,6 @@ Below you can find the read/write speeds of the individual sample files tested o
         harness which allows us to only write out .psd files from photoshop causing the write to abort for files >2GB. From observation it appears that 
         the files get written until the start of the ImageData section or in the case of the 32-bit file to about 2.86GB. Therefore the real write speed would 
         likely be ~20% higher than what is listed here.
-
-
-.. tab:: Ryzen 5 2600x
-
-
-    **8-bit files**
-
-    Despite 8-bit files being Photoshops' main target the PhotoshopAPI outperforms it here as well due to its scaling across multiple cores.
-
-    To decrease file size we can manually change the compression codec to something more efficient such as zip compression. While this does 
-    increase our write times by a significant margin it makes the files much smaller as seen in :ref:`filesizes`. This is not possible in 
-    Photoshop natively which is why there is no times for it.
-
-    .. figure:: /images/benchmarks/Ryzen_5_2600x/8-bit_graphs.png
-        :width: 100%
-
-    
-
-    **16- & 32-bit files**
-
-    This is where the PSAPI has the biggest performance gains over Photoshop as we linearly scale (~3x increase per jump)
-    with bit depth while Photoshop takes a massive performance hit going from 8- to 16- and 32-bit. 
-
-    .. image:: /images/benchmarks/Ryzen_5_2600x/16-bit_graphs.png
-        :width: 49%
-    .. image:: /images/benchmarks/Ryzen_5_2600x/32-bit_graphs.png
-        :width: 49%
-
-    .. note::
-
-        The asterisk behind photoshop_write indicates that the file did not complete its write operation. This is due to current limitations with our testing 
-        harness which allows us to only write out .psd files from photoshop causing the write to abort for files >2GB. From observation it appears that 
-        the files get written until the start of the ImageData section or in the case of the 32-bit file to about 2.86GB. Therefore the real write speed would 
-        likely be ~20% higher than what is listed here.
-
-
-.. tab:: Intel i7 6700k
-
-
-    **8-bit files**
-
-    Despite 8-bit files being Photoshops' main target the PhotoshopAPI outperforms it here as well due to its scaling across multiple cores.
-
-    To decrease file size we can manually change the compression codec to something more efficient such as zip compression. While this does 
-    increase our write times by a significant margin it makes the files much smaller as seen in :ref:`filesizes`. This is not possible in 
-    Photoshop natively which is why there is no times for it.
-
-    .. figure:: /images/benchmarks/Intel_i7_6700k/8-bit_graphs.png
-        :width: 100%
-
-    
-
-    **16- & 32-bit files**
-
-    This is where the PSAPI has the biggest performance gains over Photoshop as we linearly scale (~3x increase per jump)
-    with bit depth while Photoshop takes a massive performance hit going from 8- to 16- and 32-bit. 
-
-    .. image:: /images/benchmarks/Intel_i7_6700k/16-bit_graphs.png
-        :width: 49%
-    .. image:: /images/benchmarks/Intel_i7_6700k/32-bit_graphs.png
-        :width: 49%
-
-    .. note::
-
-        The asterisk behind photoshop_write indicates that the file did not complete its write operation. This is due to current limitations with our testing 
-        harness which allows us to only write out .psd files from photoshop causing the write to abort for files >2GB. From observation it appears that 
-        the files get written until the start of the ImageData section or in the case of the 32-bit file to about 2.86GB. Therefore the real write speed would 
-        likely be ~20% higher than what is listed here.
-
-
-.. tab:: Intel i7 9750H
-
-
-    **8-bit files**
-
-    Despite 8-bit files being Photoshops' main target the PhotoshopAPI outperforms it here as well due to its scaling across multiple cores.
-
-    To decrease file size we can manually change the compression codec to something more efficient such as zip compression. While this does 
-    increase our write times by a significant margin it makes the files much smaller as seen in :ref:`filesizes`. This is not possible in 
-    Photoshop natively which is why there is no times for it.
-
-    .. figure:: /images/benchmarks/Intel_i7_9750H/8-bit_graphs.png
-        :width: 100%
-
-    
-
-    **16- & 32-bit files**
-
-    This is where the PSAPI has the biggest performance gains over Photoshop as we linearly scale (~3x increase per jump)
-    with bit depth while Photoshop takes a massive performance hit going from 8- to 16- and 32-bit. 
-
-    .. image:: /images/benchmarks/Intel_i7_9750H/16-bit_graphs.png
-        :width: 49%
-    .. image:: /images/benchmarks/Intel_i7_9750H/32-bit_graphs.png
-        :width: 49%
-
-    .. note::
-
-        The asterisk behind photoshop_write indicates that the file did not complete its write operation. This is due to current limitations with our testing 
-        harness which allows us to only write out .psd files from photoshop causing the write to abort for files >2GB. From observation it appears that 
-        the files get written until the start of the ImageData section or in the case of the 32-bit file to about 2.86GB. Therefore the real write speed would 
-        likely be ~20% higher than what is listed here
 
 
 

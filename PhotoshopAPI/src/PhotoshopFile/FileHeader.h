@@ -2,9 +2,9 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/Signature.h"
-#include "Struct/Section.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Signature.h"
+#include "Core/Struct/Section.h"
 
 #include <cstdint>
 

@@ -4,12 +4,12 @@
 #include "AdditionalLayerInfo.h"
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/ByteStream.h"
-#include "Struct/Section.h"
-#include "Struct/ResourceBlock.h"
-#include "Struct/ImageChannel.h"
-#include "Compression/Compression.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/ByteStream.h"
+#include "Core/Struct/Section.h"
+#include "Core/Struct/ResourceBlock.h"
+#include "Core/Struct/ImageChannel.h"
+#include "Core/Compression/Compression.h"
 
 #include <vector>
 #include <memory>

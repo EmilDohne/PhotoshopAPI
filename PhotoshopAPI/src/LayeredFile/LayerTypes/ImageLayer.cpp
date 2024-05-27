@@ -159,7 +159,7 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
+ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
 	Layer<T>::m_LayerName = layerParameters.layerName;
@@ -200,7 +200,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
-		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, value, info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		m_ImageData[info] = std::move(channel);
 	}
 
@@ -247,7 +247,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}
@@ -257,7 +257,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, const Layer<T>::Params& layerParameters)
+ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters)
 {
 	PROFILE_FUNCTION();
 	Layer<T>::m_LayerName = layerParameters.layerName;
@@ -298,7 +298,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
 
-		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, std::move(value), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, value, info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		m_ImageData[info] = std::move(channel);
 	}
 
@@ -345,7 +345,7 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 	{
 		LayerMask<T> mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, std::move(layerParameters.layerMask.value()), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = mask;
 	}

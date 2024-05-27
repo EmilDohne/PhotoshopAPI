@@ -4,7 +4,7 @@
 #include "Enum.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 
 #include <vector>
 #include <optional>

@@ -81,7 +81,7 @@ def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> No
         os.makedirs(lib_path, exist_ok=True)
 
 
-    # Copy over our PhotoshopAPI.lib, zlibstatic-ng.lib and libblosc2.lib
+    # Copy over our PhotoshopAPI.lib, deflatestatic.lib and libblosc2.lib
         
     psapi_platform_mapping = {
         "win32": "PhotoshopAPI.lib",
@@ -89,10 +89,10 @@ def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> No
         "darwin": "libPhotoshopAPI.a"
     }
 
-    zlib_platform_mapping = {
-        "win32": "zlibstatic-ng.lib",
-        "linux": "libz-ng.a",
-        "darwin": "libz-ng.a"
+    libdeflate_platform_mapping = {
+        "win32": "deflatestatic.lib",
+        "linux": "libdeflate.a",
+        "darwin": "libdeflate.a"
     }
 
     blosc2_platform_mapping = {
@@ -101,8 +101,8 @@ def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> No
         "darwin": "libblosc2.a"
     }
 
-    _find_file_and_copy(psapi_platform_mapping.get(sys.platform, psapi_platform_mapping["linux"]),   build_dir, lib_path)
-    _find_file_and_copy(zlib_platform_mapping.get(sys.platform, zlib_platform_mapping["linux"]),     build_dir, lib_path)
+    _find_file_and_copy(psapi_platform_mapping.get(sys.platform, psapi_platform_mapping["linux"]), build_dir, lib_path)
+    _find_file_and_copy(libdeflate_platform_mapping.get(sys.platform, libdeflate_platform_mapping["linux"]), build_dir, lib_path)
     _find_file_and_copy(blosc2_platform_mapping.get(sys.platform, blosc2_platform_mapping["linux"]), build_dir, lib_path)
 
     # Copy over the headers which are already pre-sorted

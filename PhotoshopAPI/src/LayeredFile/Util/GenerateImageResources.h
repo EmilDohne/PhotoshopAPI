@@ -2,7 +2,7 @@
 
 #include "Macros.h"
 #include "PhotoshopFile/ImageResources.h"
-#include "Struct/ResourceBlock.h"
+#include "Core/Struct/ResourceBlock.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
 

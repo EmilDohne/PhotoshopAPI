@@ -1,42 +1,42 @@
-readAutomotive Data (8-bit) ~1.27GB: 1472ms
-writeAutomotive Data (8-bit) ~1.27GB: 2332ms
-readAutomotive Data (8-bit) ~1.27GB: 1541ms
-writeAutomotive Data (8-bit) ~1.27GB: 2392ms
-readAutomotive Data (8-bit) ~1.27GB: 1487ms
-writeAutomotive Data (8-bit) ~1.27GB: 2345ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 1475ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2732ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 1493ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2702ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 1559ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2658ms
-readAutomotive Data (16-bit) ~1.97GB: 4432ms
-writeAutomotive Data (16-bit) ~1.97GB: 6563ms
-readAutomotive Data (16-bit) ~1.97GB: 4482ms
-writeAutomotive Data (16-bit) ~1.97GB: 6801ms
-readAutomotive Data (16-bit) ~1.97GB: 4445ms
-writeAutomotive Data (16-bit) ~1.97GB: 6743ms
-readAutomotive Data (32-bit) ~3.65GB: 12821ms
-writeAutomotive Data (32-bit) ~3.65GB: 15349ms
-readAutomotive Data (32-bit) ~3.65GB: 12944ms
-writeAutomotive Data (32-bit) ~3.65GB: 15549ms
-readAutomotive Data (32-bit) ~3.65GB: 12962ms
-writeAutomotive Data (32-bit) ~3.65GB: 15541ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 824ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 1057ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 786ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 1268ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 783ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 1169ms
-readDeep Nested Layers (8-bit) ~.5GB: 557ms
-writeDeep Nested Layers (8-bit) ~.5GB: 729ms
-readDeep Nested Layers (8-bit) ~.5GB: 556ms
-writeDeep Nested Layers (8-bit) ~.5GB: 840ms
-readDeep Nested Layers (8-bit) ~.5GB: 469ms
-writeDeep Nested Layers (8-bit) ~.5GB: 852ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 782ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1763ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 724ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1738ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 754ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1802ms
+readAutomotive Data (8-bit) ~1.27GB: 1028ms
+writeAutomotive Data (8-bit) ~1.27GB: 1937ms
+readAutomotive Data (8-bit) ~1.27GB: 1015ms
+writeAutomotive Data (8-bit) ~1.27GB: 1997ms
+readAutomotive Data (8-bit) ~1.27GB: 1065ms
+writeAutomotive Data (8-bit) ~1.27GB: 2059ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1038ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2229ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 971ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2259ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1045ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2344ms
+readAutomotive Data (16-bit) ~1.97GB: 3808ms
+writeAutomotive Data (16-bit) ~1.97GB: 6215ms
+readAutomotive Data (16-bit) ~1.97GB: 3792ms
+writeAutomotive Data (16-bit) ~1.97GB: 6241ms
+readAutomotive Data (16-bit) ~1.97GB: 3773ms
+writeAutomotive Data (16-bit) ~1.97GB: 6232ms
+readAutomotive Data (32-bit) ~3.65GB: 13569ms
+writeAutomotive Data (32-bit) ~3.65GB: 14223ms
+readAutomotive Data (32-bit) ~3.65GB: 13493ms
+writeAutomotive Data (32-bit) ~3.65GB: 14500ms
+readAutomotive Data (32-bit) ~3.65GB: 13566ms
+writeAutomotive Data (32-bit) ~3.65GB: 14719ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 503ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 867ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 509ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 1030ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 595ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 1012ms
+readDeep Nested Layers (8-bit) ~.5GB: 399ms
+writeDeep Nested Layers (8-bit) ~.5GB: 754ms
+readDeep Nested Layers (8-bit) ~.5GB: 402ms
+writeDeep Nested Layers (8-bit) ~.5GB: 676ms
+readDeep Nested Layers (8-bit) ~.5GB: 401ms
+writeDeep Nested Layers (8-bit) ~.5GB: 689ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 677ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1289ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 756ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1410ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 813ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1415ms
