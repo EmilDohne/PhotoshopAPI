@@ -65,7 +65,7 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
     if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (image_data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
     {
         PSAPI_LOG_WARNING("ImageLayer", "Provided image_data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
-        image_data = image_data.cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
+        image_data = image_data.template cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
     }
 
     // For RGB we have two options, either there is an alpha channel with the RGB channels or not.
