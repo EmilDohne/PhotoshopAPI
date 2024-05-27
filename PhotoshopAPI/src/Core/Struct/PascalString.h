@@ -1,9 +1,9 @@
 #pragma once
 
 #include "Macros.h"
-#include "FileIO/Read.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
+#include "Core/FileIO/Read.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
 
 #include <string>
 

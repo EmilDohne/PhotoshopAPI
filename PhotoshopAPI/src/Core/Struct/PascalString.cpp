@@ -1,10 +1,10 @@
 #include "PascalString.h"
 
 #include "Macros.h"
-#include "FileIO/Read.h"
-#include "FileIO/Write.h"
-#include "FileIO/Util.h"
-#include "Struct/File.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
+#include "Core/FileIO/Util.h"
+#include "Core/Struct/File.h"
 
 #include <string>
 #include <limits>

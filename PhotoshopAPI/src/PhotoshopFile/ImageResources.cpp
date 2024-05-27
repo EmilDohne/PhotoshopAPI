@@ -2,13 +2,13 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "FileIO/Read.h"
-#include "FileIO/Write.h"
-#include "FileIO/Util.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
-#include "Struct/ResourceBlock.h"
-#include "Struct/Signature.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
+#include "Core/FileIO/Util.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
+#include "Core/Struct/ResourceBlock.h"
+#include "Core/Struct/Signature.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>

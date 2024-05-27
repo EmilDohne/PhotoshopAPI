@@ -2,11 +2,11 @@
 
 #include "Macros.h"
 #include "Logger.h"
-#include "FileIO/Util.h"
-#include "Endian/EndianByteSwap.h"
-#include "Endian/EndianByteSwapArr.h"
-#include "Struct/File.h"
-#include "Struct/ByteStream.h"
+#include "Core/FileIO/Util.h"
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/Endian/EndianByteSwapArr.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "Profiling/Perf/Instrumentor.h"
 
@@ -15,6 +15,7 @@
 
 #include <cstring>
 #include <inttypes.h>
+
 
 #ifdef __AVX2__
 #include "Decompress_RLE_AVX2.h"

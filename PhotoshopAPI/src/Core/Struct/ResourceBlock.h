@@ -2,11 +2,11 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/PascalString.h"
-#include "Struct/Section.h"
-#include "Struct/File.h"
-#include "Struct/Signature.h"
-#include "Struct/PhotoshopTypes.h"
+#include "Core/Struct/PascalString.h"
+#include "Core/Struct/Section.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Signature.h"
+#include "Core/Struct/PhotoshopTypes.h"
 
 #include <vector>
 

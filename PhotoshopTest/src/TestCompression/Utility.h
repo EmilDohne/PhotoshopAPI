@@ -17,7 +17,7 @@ There are 5 layers in total which each represent different types of data
 
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "Macros.h"
-#include "FileIO/Read.h"
+#include "Core/FileIO/Read.h"
 
 #include <filesystem>
 

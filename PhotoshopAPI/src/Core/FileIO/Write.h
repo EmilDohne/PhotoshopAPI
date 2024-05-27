@@ -2,9 +2,9 @@
 
 #include "Macros.h"
 #include "Util.h"
-#include "Struct/File.h"
-#include "Endian/EndianByteSwap.h"
-#include "Endian/EndianByteSwapArr.h"
+#include "Core/Struct/File.h"
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/Endian/EndianByteSwapArr.h"
 
 
 #if (__cplusplus < 202002L)

@@ -4,9 +4,9 @@
 #include "Logger.h"
 #include "CompressionUtil.h"
 #include "InterleavedToPlanar.h"
-#include "Endian/EndianByteSwap.h"
-#include "Endian/EndianByteSwapArr.h"
-#include "Struct/ByteStream.h"
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/Endian/EndianByteSwapArr.h"
+#include "Core/Struct/ByteStream.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 #include "libdeflate.h"

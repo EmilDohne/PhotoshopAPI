@@ -3,10 +3,10 @@
 #include "FileHeader.h"
 #include "Macros.h"
 #include "Enum.h"
-#include "FileIO/Read.h"
-#include "FileIO/Write.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 #include <vector>

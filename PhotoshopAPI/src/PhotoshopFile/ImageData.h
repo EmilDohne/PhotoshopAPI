@@ -2,10 +2,10 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
-#include "FileIO/Write.h"
-#include "Compression/Compress_RLE.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
+#include "Core/FileIO/Write.h"
+#include "Core/Compression/Compress_RLE.h"
 
 #include "blosc2.h"
 

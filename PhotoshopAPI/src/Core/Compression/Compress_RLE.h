@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Macros.h"
-#include "FileIO/Read.h"
-#include "FileIO/Util.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Util.h"
 #include "Logger.h"
-#include "Endian/EndianByteSwap.h"
-#include "Endian/EndianByteSwapArr.h"
-#include "Struct/File.h"
-#include "Struct/ByteStream.h"
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/Endian/EndianByteSwapArr.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "Profiling/Perf/Instrumentor.h"
 

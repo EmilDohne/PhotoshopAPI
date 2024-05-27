@@ -2,7 +2,7 @@
 #include "GenerateLayerMaskInfo.h"
 
 #include "Macros.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 
 #include <variant>

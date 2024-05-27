@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Layer.h"
-#include "Struct/ImageChannel.h"
+#include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
 #include <unordered_map>

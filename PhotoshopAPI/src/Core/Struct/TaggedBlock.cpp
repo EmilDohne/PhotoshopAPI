@@ -4,11 +4,11 @@
 #include "Enum.h"
 #include "Logger.h"
 #include "StringUtil.h"
-#include "Struct/Signature.h"
-#include "Struct/File.h"
+#include "Core/Struct/Signature.h"
+#include "Core/Struct/File.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "FileIO/Read.h"
-#include "FileIO/Write.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
 
 PSAPI_NAMESPACE_BEGIN
 

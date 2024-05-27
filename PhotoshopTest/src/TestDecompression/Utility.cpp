@@ -2,7 +2,7 @@
 
 #include "Macros.h"
 #include "PhotoshopFile/PhotoshopFile.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "Enum.h"
 #include "../TestMacros.h"
 

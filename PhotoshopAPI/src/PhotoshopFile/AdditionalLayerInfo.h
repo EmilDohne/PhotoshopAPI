@@ -2,9 +2,9 @@
 
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
-#include "Struct/TaggedBlockStorage.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
+#include "Core/Struct/TaggedBlockStorage.h"
 #include "FileHeader.h"
 
 #include <vector>

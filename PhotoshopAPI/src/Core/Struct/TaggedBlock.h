@@ -4,8 +4,8 @@
 #include "Enum.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
-#include "Struct/File.h"
-#include "Struct/Signature.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Signature.h"
 
 #include <memory>
 #include <variant>

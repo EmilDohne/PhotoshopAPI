@@ -1,8 +1,8 @@
 #include "doctest.h"
 
 #include "Utility.h"
-#include "Compression/Compress_RLE.h"
-#include "Compression/Decompress_RLE.h"
+#include "Core/Compression/Compress_RLE.h"
+#include "Core/Compression/Decompress_RLE.h"
 
 
 #include <vector>

@@ -7,9 +7,9 @@
 #include "Compress_ZIP.h"
 
 #include "Macros.h"
-#include "FileIO/Read.h"
+#include "Core/FileIO/Read.h"
 #include "Enum.h"
-#include "Struct/ByteStream.h"
+#include "Core/Struct/ByteStream.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 

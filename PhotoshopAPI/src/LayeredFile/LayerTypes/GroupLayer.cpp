@@ -1,8 +1,8 @@
 #include "GroupLayer.h"
 
 #include "Macros.h"
-#include "Struct/TaggedBlock.h"
-#include "Struct/TaggedBlockStorage.h"
+#include "Core/Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlockStorage.h"
 #include "LayeredFile/LayeredFile.h"
 
 

@@ -1,10 +1,10 @@
 #include "Utility.h"
 
 #include "Macros.h"
-#include "FileIO/Read.h"
-#include "FileIO/Write.h"
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
 #include "PhotoshopFile/PhotoshopFile.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "Enum.h"
 
 #include <vector>

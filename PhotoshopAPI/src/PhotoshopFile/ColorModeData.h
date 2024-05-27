@@ -3,8 +3,8 @@
 #include "FileHeader.h"
 #include "Macros.h"
 #include "Enum.h"
-#include "Struct/File.h"
-#include "Struct/Section.h"
+#include "Core/Struct/File.h"
+#include "Core/Struct/Section.h"
 
 #include <vector>
 

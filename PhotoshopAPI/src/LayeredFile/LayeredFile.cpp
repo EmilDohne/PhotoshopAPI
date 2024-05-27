@@ -3,7 +3,7 @@
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "Macros.h"
 #include "StringUtil.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "LayerTypes/Layer.h"
 #include "LayerTypes/ImageLayer.h"
 #include "LayerTypes/GroupLayer.h"

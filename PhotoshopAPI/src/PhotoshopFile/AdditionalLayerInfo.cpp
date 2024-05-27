@@ -1,7 +1,7 @@
 #include "AdditionalLayerInfo.h"
 #include "LayerAndMaskInformation.h"
 #include "FileHeader.h"
-#include "Struct/TaggedBlock.h"
+#include "Core/Struct/TaggedBlock.h"
 
 #include <memory>
 #include <optional>
