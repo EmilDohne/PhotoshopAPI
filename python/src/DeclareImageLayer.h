@@ -31,28 +31,49 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
     {
         shape.push_back(image_data.shape(i));
     }
-    if (shape.size() != 2 || shape.size() != 3)
+    if (shape.size() != 2 && shape.size() != 3)
     {
-        py::value_error("image_data parameter must have either 2 or 3 dimensions, not " + std::to_string(shape.size()));
+        throw py::value_error("image_data parameter must have either 2 or 3 dimensions, not " + std::to_string(shape.size()));
     }
+
+    
 
     // Extract the size of one channel and compare it against the size of the data
     size_t channelSize = 0;
     if (shape.size() == 2)
-        channelSize = shape[1]; // Width * Height for a 2D image
-    else if (shape.size() == 3)
-        channelSize = shape[1] * shape[2]; // Width * Height for a 3D image
-    if (channelSize != static_cast<size_t>(width) * height)
     {
-        py::value_error("image_data must have the same size as width * height");
+        channelSize = shape[1]; // Width * Height for a 2D image
+        if (channelSize != static_cast<size_t>(width) * height)
+        {
+            throw py::value_error("image_data parameter is expected to be of shape (channels, height * width) or (channels, height, width)" \
+" but the provided 2nd dimension does not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected: " \
++ std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
+        }
+    }
+    else if (shape.size() == 3)
+    {
+        channelSize = shape[1] * shape[2]; // Width * Height for a 3D image
+        if (channelSize != static_cast<size_t>(width) * height)
+        {
+            throw py::value_error("image_data parameter is expected to be of shape (channels, height * width) or (channels, height, width)" \
+" but the provided 2nd and 3rd dimension do not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected : " \
++ std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
+        }
+    }
+
+    // Force the array to be c-contiguous if it isnt using pybind11
+    if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (image_data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
+    {
+        PSAPI_LOG_WARNING("ImageLayer", "Provided image_data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
+        image_data = image_data.cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
     }
 
     // For RGB we have two options, either there is an alpha channel with the RGB channels or not.
     if (color_mode == Enum::ColorMode::RGB)
     {
-        if (shape[0] != 3 || shape[0] != 4)
+        if (shape[0] != 3 && shape[0] != 4)
         {
-            py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
+            throw py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
         }
         std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
         for (size_t i = 0; i < shape[0]; ++i)
@@ -68,9 +89,9 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
     // We add preliminary support for CMYK but it is not fully supported yet!
     if (color_mode == Enum::ColorMode::CMYK)
     {
-        if (shape[0] != 4 || shape[0] != 5)
+        if (shape[0] != 4 && shape[0] != 5)
         {
-            py::value_error("Passed array must have either 4 or 5 channels, not " + std::to_string(shape[0]));
+            throw py::value_error("Passed array must have either 4 or 5 channels, not " + std::to_string(shape[0]));
         }
         std::vector<Enum::ChannelID> cmykChannelIds = { Enum::ChannelID::Cyan, Enum::ChannelID::Magenta, Enum::ChannelID::Yellow, Enum::ChannelID::Black, Enum::ChannelID::Alpha };
         for (size_t i = 0; i < shape[0]; ++i)
@@ -87,9 +108,9 @@ std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_
     // We add preliminary support for greyscale but it is not fully supported yet!
     if (color_mode == Enum::ColorMode::Grayscale)
     {
-        if (shape[0] != 1 || shape[0] != 2)
+        if (shape[0] != 1 && shape[0] != 2)
         {
-            py::value_error("Passed array must have either 1 or 2 channels, not " + std::to_string(shape[0]));
+            throw py::value_error("Passed array must have either 1 or 2 channels, not " + std::to_string(shape[0]));
         }
         std::vector<Enum::ChannelID> greyChannelIDs = { Enum::ChannelID::Gray, Enum::ChannelID::Alpha};
         for (size_t i = 0; i < shape[0]; ++i)
