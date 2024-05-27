@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Macros.h"
+#include "Enum.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
