@@ -24,7 +24,7 @@ jobs:
       matrix:
         include:
            - name: Ubuntu GCC
-             os: ubuntu-latest
+             os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
            - name: Windows MSVC
@@ -32,11 +32,11 @@ jobs:
              compiler: msvc
              compilercxx: msvc
            - name: MacOS Intel GCC
-             os: macos-latest
+             os: macos-13
              compiler: gcc-13
              compilercxx: g++-13 
            - name: MacOS ARM GCC
-             os: macos-14
+             os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
 
