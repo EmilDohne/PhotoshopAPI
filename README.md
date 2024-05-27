@@ -5,7 +5,7 @@
 
 [![CPP Version](https://img.shields.io/badge/language-C%2B%2B20-blue.svg)](https://isocpp.org/)
 [![PyPI - Version](https://img.shields.io/pypi/v/PhotoshopAPI?label=pip&color=blue)](https://pypi.org/project/PhotoshopAPI/)
-[![PyPi - Downloads](https://img.shields.io/pypi/dm/PhotoshopAPI?label=pip%20downloads&color=4dc81f)](https://pypi.org/project/PhotoshopAPI/)
+[![PyPi - Downloads](https://static.pepy.tech/badge/photoshopapi)]([https://pepy.tech/project/photoshopapi](https://pypi.org/project/PhotoshopAPI/))
 [![Documentation Status](https://readthedocs.org/projects/photoshopapi/badge/?version=latest)](https://photoshopapi.readthedocs.io/en/latest/?badge=latest)
 [![CI Status](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-build.yml/badge.svg)](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-build.yml)
 [![Test Status](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-test.yml/badge.svg)](https://github.com/EmilDohne/PhotoshopAPI/actions/workflows/cmake-test.yml)
