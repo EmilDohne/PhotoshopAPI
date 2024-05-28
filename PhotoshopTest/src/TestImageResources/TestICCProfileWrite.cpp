@@ -46,14 +46,16 @@ TEST_CASE("Write AdobeRGB1998")
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
-		psdDocumentPtr->write(outputFile);
+		ProgressCallback callback{};
+		psdDocumentPtr->write(outputFile, callback);
 	}
 
 	// Read it back in and check if we actually have the right profile
 	{
 		auto inputFile = File(psb_path);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		ProgressCallback callback{};
+		psDocumentPtr->read(inputFile, callback);
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
@@ -106,14 +108,16 @@ TEST_CASE("Write AppleRGB")
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
-		psdDocumentPtr->write(outputFile);
+		ProgressCallback callback{};
+		psdDocumentPtr->write(outputFile, callback);
 	}
 
 	// Read it back in and check if we actually have the right profile
 	{
 		auto inputFile = File(psb_path);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		ProgressCallback callback{};
+		psDocumentPtr->read(inputFile, callback);
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
@@ -166,14 +170,16 @@ TEST_CASE("Write CIERGB")
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
-		psdDocumentPtr->write(outputFile);
+		ProgressCallback callback{};
+		psdDocumentPtr->write(outputFile, callback);
 	}
 
 	// Read it back in and check if we actually have the right profile
 	{
 		auto inputFile = File(psb_path);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		ProgressCallback callback{};
+		psDocumentPtr->read(inputFile, callback);
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB

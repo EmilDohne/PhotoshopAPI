@@ -18,6 +18,7 @@ TEST_CASE("Write DPI")
 	psd_path += "/documents/DPI/Write_300dpi.psd";
 
 	float dpi = 0.0f;
+	
 
 	// Write a file with a 300 dpi
 	{
@@ -47,12 +48,14 @@ TEST_CASE("Write DPI")
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
-		psdDocumentPtr->write(outputFile);
+		ProgressCallback callback{};
+		psdDocumentPtr->write(outputFile, callback);
 	}
 	{
 		auto inputFile = File(psd_path);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		ProgressCallback callback{};
+		psDocumentPtr->read(inputFile, callback);
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 		dpi = layeredFile.m_DotsPerInch;
 	}
@@ -101,12 +104,14 @@ TEST_CASE("Write DPI fractional")
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
 		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
-		psdDocumentPtr->write(outputFile);
+		ProgressCallback callback{};
+		psdDocumentPtr->write(outputFile, callback);
 	}
 	{
 		auto inputFile = File(psd_path);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		ProgressCallback callback{};
+		psDocumentPtr->read(inputFile, callback);
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 		dpi = layeredFile.m_DotsPerInch;
 	}
