@@ -9,6 +9,8 @@
 #include "LayerAndMaskInformation.h"
 #include "ImageData.h"
 
+#include "Util/ProgressCallback.h"
+
 #include <vector>
 
 
@@ -41,12 +43,13 @@ struct PhotoshopFile
 	/// \brief Read and Initialize this struct from a File
 	///
 	/// \param document the file object to read the data from
-	void read(File& document);
+	void read(File& document, ProgressCallback& callback);
 
-	/// \brief Write the PhotoshopFile struct to disk
+	/// \brief Write the PhotoshopFile struct to disk with an explicit progress callback
 	///
 	/// \param document the file object to write the data to
-	void write(File& document);
+	/// \param callback a callback which will report back the current progress of the write operation
+	void write(File& document, ProgressCallback& callback);
 };
 
 

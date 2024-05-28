@@ -29,7 +29,7 @@ struct TaggedBlock
 
 	// Read a TaggedBlock from a file
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
-	virtual void write(File& document, const FileHeader& header, const uint16_t padding = 1u);
+	virtual void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u);
 protected:
 	Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
 	// The length of the tagged block with all the the signature, key and length marker
@@ -65,7 +65,7 @@ struct LrSectionTaggedBlock : TaggedBlock
 	};
 	
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
-	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
 
@@ -82,8 +82,8 @@ struct Lr16TaggedBlock : TaggedBlock
 		m_TotalLength = 0u;
 	};
 	
-	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
-	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
+	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
 
@@ -101,8 +101,8 @@ struct Lr32TaggedBlock : TaggedBlock
 		m_TotalLength = 0u;
 	};
 	
-	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
-	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
+	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
 
@@ -133,7 +133,7 @@ struct ReferencePointTaggedBlock : TaggedBlock
 	};
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
-	void write(File& document, const FileHeader& header, const uint16_t padding = 1u) override;
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
 PSAPI_NAMESPACE_END

@@ -219,7 +219,29 @@ struct LayeredFile
 	/// PhotoshopFile instance to the user
 	/// 
 	/// \param filePath the path on disk of the file to be read
+	/// \param callback the callback which reports back the current progress and task to the user
+	static LayeredFile<T> read(const std::filesystem::path& filePath, ProgressCallback& callback);
+
+	/// \brief read and create a LayeredFile from disk
+	///
+	/// Simplify the creation of a LayeredFile by abstracting away the step of 
+	/// PhotoshopFile -> LayeredFile doing the work internally without exposing the 
+	/// PhotoshopFile instance to the user
+	/// 
+	/// \param filePath the path on disk of the file to be read
 	static LayeredFile<T> read(const std::filesystem::path& filePath);
+
+	/// \brief write the LayeredFile instance to disk, consumes and invalidates the instance
+	/// 
+	/// Simplify the writing of a LayeredFile by abstracting away the step of 
+	/// LayeredFile -> PhotoshopFile doing the work internally without exposing the 
+	/// PhotoshopFile instance to the user
+	/// 
+	/// \param layeredFile The LayeredFile to consume, invalidates it
+	/// \param filePath The path on disk of the file to be written
+	/// \param callback the callback which reports back the current progress and task to the user
+	/// \param forceOvewrite Whether to forcefully overwrite the file or fail if the file already exists
+	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, ProgressCallback& callback, const bool forceOvewrite = true);
 
 	/// \brief write the LayeredFile instance to disk, consumes and invalidates the instance
 	/// 

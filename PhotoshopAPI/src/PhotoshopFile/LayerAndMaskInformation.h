@@ -4,6 +4,7 @@
 #include "AdditionalLayerInfo.h"
 #include "Macros.h"
 #include "Enum.h"
+#include "Util/ProgressCallback.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
 #include "Core/Struct/Section.h"
@@ -230,10 +231,10 @@ struct LayerRecord : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read and Initialize the struct from disk using the given offset
-	void read(File& document, const FileHeader& header, const uint64_t offset);
+	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset);
 
 	/// Write the layer record to disk, requires the Image data to be compressed already and the size to be known
-	void write(File& document, const FileHeader& header, const std::vector<LayerRecords::ChannelInformation> channelInfos) const;
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const std::vector<LayerRecords::ChannelInformation> channelInfos) const;
 
 	/// Extract the absolute width of the layer
 	uint32_t getWidth() const noexcept;
@@ -440,9 +441,9 @@ struct LayerInfo : public FileSection
 	///
 	/// \param isFromAdditionalLayerInfo If true the section is parsed without a size marker as it is already stored on the tagged block
 	/// \param sectionSize This parameter must be present when isFromAdditionalLayerInfo = true
-	void read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
+	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 	/// Write the layer info section to file with the given padding
-	void write(File& document, const FileHeader& header, const uint16_t padding);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding);
 
 	/// Find the index to a layer based on a layer name that is given
 	/// 
@@ -479,10 +480,10 @@ struct LayerAndMaskInformation : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read and Initialize the struct from disk using the given offset
-	void read(File& document, const FileHeader& header, const uint64_t offset);
+	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset);
 
 	/// Write the section to disk in a Photoshop compliant way
-	void write(File& document, const FileHeader& header);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback);
 };
 
 
