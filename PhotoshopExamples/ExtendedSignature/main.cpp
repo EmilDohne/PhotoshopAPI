@@ -18,7 +18,11 @@ int main()
 
 	auto inputFile = File("./LayeredFile.psd");
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-	psDocumentPtr->read(inputFile);
+	// The PhotoshopFile struct requires a progress callback to be passed which will be 
+	// edited by the write function, to see an example of how to interact with this callback please refer
+	// to the "ProgressCallbacks" example
+	ProgressCallback callback{};
+	psDocumentPtr->read(inputFile, callback);
 
 
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
@@ -64,5 +68,7 @@ int main()
 	auto outputFile = File("./RearrangedFile.psd", params);
 	auto psOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 
-	psOutDocumentPtr->write(outputFile);
+	// We pass the same callback into the write function, clearing of data will 
+	// be handled internally
+	psOutDocumentPtr->write(outputFile, callback);
 }
