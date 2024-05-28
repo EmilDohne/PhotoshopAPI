@@ -19,33 +19,18 @@ void readWriteFile(const int repeats, const std::filesystem::path& readPath, con
 		// Run a dry-run first which we do not profile to warm up
 		if (i == 0)
 		{
-			LayeredFile<T> layeredFile;
-			auto inputFile = File(readPath);
-			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-			psDocumentPtr->read(inputFile);
-			layeredFile = { std::move(psDocumentPtr) };
+			auto res = LayeredFile<T>::read(readPath);
 			continue;
 		}
 		Instrumentor::Get().BeginSession((readPath.string() + std::to_string(i)).c_str(), (readPath.string() + std::to_string(i) + ".json").c_str());
 		LayeredFile<T> layeredFile;
 		{
 			Profiler readProfiler{ outStats , "read" + benchName };
-			// Load the input file
-			auto inputFile = File(readPath);
-			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-			psDocumentPtr->read(inputFile);
-			layeredFile = { std::move(psDocumentPtr) };
+			layeredFile = LayeredFile<T>::read(readPath);
 		}
 		{
 			Profiler writeProfiler{ outStats , "write" + benchName };
-
-			// Write to disk
-			File::FileParams params = File::FileParams();
-			params.doRead = false;
-			params.forceOverwrite = true;
-			auto outputFile = File(writePath, params);
-			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
-			psdOutDocumentPtr->write(outputFile);
+			LayeredFile<T>::write(std::move(layeredFile), writePath);
 		}
 		Instrumentor::Get().EndSession();
 	}
@@ -63,33 +48,18 @@ void readWriteFileChangeCompression(const int repeats, const std::filesystem::pa
 		// Run a dry-run first which we do not profile to warm up
 		if (i == 0)
 		{
-			LayeredFile<T> layeredFile;
-			auto inputFile = File(readPath);
-			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-			psDocumentPtr->read(inputFile);
-			layeredFile = { std::move(psDocumentPtr) };
+			auto res = LayeredFile<T>::read(readPath);
 			continue;
 		}
 		LayeredFile<T> layeredFile;
 		{
 			Profiler readProfiler{ outStats , "read" + benchName };
-			// Load the input file
-			auto inputFile = File(readPath);
-			auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-			psDocumentPtr->read(inputFile);
-			layeredFile = { std::move(psDocumentPtr) };
+			layeredFile = LayeredFile<T>::read(readPath);
 		}
 		{
 			Profiler writeProfiler{ outStats , "write" + benchName };
 			layeredFile.setCompression(Enum::Compression::Zip);
-
-			// Write to disk
-			File::FileParams params = File::FileParams();
-			params.doRead = false;
-			params.forceOverwrite = true;
-			auto outputFile = File(writePath, params);
-			auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
-			psdOutDocumentPtr->write(outputFile);
+			LayeredFile<T>::write(std::move(layeredFile), writePath);
 		}
 	}
 }
