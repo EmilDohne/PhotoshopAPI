@@ -140,7 +140,8 @@ void checkCompressionFile<uint8_t>(std::filesystem::path& inputPath)
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	document.read(file);
+	NAMESPACE_PSAPI::ProgressCallback callback{};
+	document.read(file, callback);
 
 	// 8-bit file store their layerInfo normally
 	NAMESPACE_PSAPI::LayerInfo& layerInformation = document.m_LayerMaskInfo.m_LayerInfo;
@@ -155,7 +156,8 @@ void checkCompressionFile<uint16_t>(std::filesystem::path& inputPath)
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	document.read(file);
+	NAMESPACE_PSAPI::ProgressCallback callback{};
+	document.read(file, callback);
 
 	// 16-bit files store their layerInformation in the additional tagged blocks
 	REQUIRE(document.m_LayerMaskInfo.m_AdditionalLayerInfo.has_value());
@@ -175,7 +177,8 @@ void checkCompressionFile<float32_t>(std::filesystem::path& inputPath)
 {
 	NAMESPACE_PSAPI::File file(inputPath);
 	NAMESPACE_PSAPI::PhotoshopFile document;
-	document.read(file);
+	NAMESPACE_PSAPI::ProgressCallback callback{};
+	document.read(file, callback);
 
 	// 16-bit files store their layerInformation in the additional tagged blocks
 	REQUIRE(document.m_LayerMaskInfo.m_AdditionalLayerInfo.has_value());

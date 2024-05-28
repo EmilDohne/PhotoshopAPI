@@ -396,11 +396,11 @@ bool LayeredFile<T>::isLayerInDocument(const std::shared_ptr<Layer<T>> layer) co
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath)
+LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath, ProgressCallback& callback)
 {
 	auto inputFile = File(filePath);
 	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-	psDocumentPtr->read(inputFile);
+	psDocumentPtr->read(inputFile, callback);
 	LayeredFile<T> layeredFile = { std::move(psDocumentPtr) };
 	return layeredFile;
 }
@@ -409,14 +409,34 @@ LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-void LayeredFile<T>::write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite /*= true*/)
+LayeredFile<T> LayeredFile<T>::read(const std::filesystem::path& filePath)
+{
+	ProgressCallback callback{};
+	return LayeredFile<T>::read(filePath, callback);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, ProgressCallback& callback, const bool forceOvewrite /*= true*/)
 {
 	File::FileParams params = {};
 	params.doRead = false;
 	params.forceOverwrite = forceOvewrite;
 	auto outputFile = File(filePath, params);
 	auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
-	psdOutDocumentPtr->write(outputFile);
+	psdOutDocumentPtr->write(outputFile, callback);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+template <typename T>
+void LayeredFile<T>::write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath,const bool forceOvewrite /*= true*/)
+{
+	ProgressCallback callback{};
+	LayeredFile<T>::write(std::move(layeredFile), filePath, callback, forceOvewrite);
 }
 
 

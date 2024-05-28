@@ -596,7 +596,7 @@ uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullp
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerRecord::read(File& document, const FileHeader& header, const uint64_t offset)
+void LayerRecord::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
 
@@ -705,7 +705,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 	if (toRead >= 12u)
 	{
 		AdditionalLayerInfo layerInfo = {};
-		layerInfo.read(document, header, document.getOffset(), toRead, 1u);
+		layerInfo.read(document, header, callback, document.getOffset(), toRead, 1u);
 		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
 	}
 }
@@ -713,7 +713,7 @@ void LayerRecord::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerRecord::write(File& document, const FileHeader& header, std::vector<LayerRecords::ChannelInformation> channelInfos) const
+void LayerRecord::write(File& document, const FileHeader& header, ProgressCallback& callback, std::vector<LayerRecords::ChannelInformation> channelInfos) const
 {
 	WriteBinaryData<uint32_t>(document, m_Top);
 	WriteBinaryData<uint32_t>(document, m_Left);
@@ -781,7 +781,7 @@ void LayerRecord::write(File& document, const FileHeader& header, std::vector<La
 
 		if (m_AdditionalLayerInfo.has_value())
 		{
-			m_AdditionalLayerInfo.value().write(document, header);
+			m_AdditionalLayerInfo.value().write(document, header, callback);
 		}
 
 		// The additional data is aligned to 2 bytes
@@ -1137,7 +1137,7 @@ uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerInfo::read(File& document, const FileHeader& header, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
+void LayerInfo::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
 	PROFILE_FUNCTION();
 
@@ -1170,6 +1170,9 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 	// If this value is negative the first alpha channel of the layer records would hold the merged image result (Image Data Section) alpha channel
 	// which we do not care about
 	uint16_t layerCount = static_cast<uint16_t>(std::abs(ReadBinaryData<int16_t>(document)));
+	// While it may seem counterintuitive to set the callbacks max here, due to the way the data is either stored
+	// on the LayerInfo or in the AdditionalLayerInfo this value will only be set once 
+	callback.setMax(layerCount);
 
 	m_LayerRecords.reserve(layerCount);
 	m_ChannelImageData.reserve(layerCount);
@@ -1178,7 +1181,7 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 	for (int i = 0; i < layerCount; i++)
 	{
 		LayerRecord layerRecord = {};
-		layerRecord.read(document, header, document.getOffset());
+		layerRecord.read(document, header, callback, document.getOffset());
 		m_LayerRecords.push_back(std::move(layerRecord));
 	}
 
@@ -1202,8 +1205,9 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 
 	// Read the Channel Image Instances
 	std::vector<ChannelImageData> localResults(m_LayerRecords.size());
-	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const auto& layerRecord)
+	std::for_each(std::execution::par, m_LayerRecords.begin(), m_LayerRecords.end(), [&](const LayerRecord& layerRecord)
 	{
+		callback.setTask("Reading Layer: " + std::string(layerRecord.m_LayerName.getString()));
 		int index = &layerRecord - &m_LayerRecords[0];
 
 		uint64_t tmpOffset = channelImageDataOffsets[index];
@@ -1217,8 +1221,10 @@ void LayerInfo::read(File& document, const FileHeader& header, const uint64_t of
 		auto result = ChannelImageData();
 		result.read(stream, header, tmpOffset, layerRecord);
 
-		// As each index is unique we do not need to worry about locking the mutex here
+		// As each index is unique we do not need to worry about locking here
 		localResults[index] = std::move(result);
+		// Increment the callback
+		callback.increment();
 	});
 	// Combine results after the loop
 	m_ChannelImageData.insert(m_ChannelImageData.end(), std::make_move_iterator(localResults.begin()), std::make_move_iterator(localResults.end()));
@@ -1259,7 +1265,7 @@ int LayerInfo::getLayerIndex(const std::string& layerName)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerInfo::write(File& document, const FileHeader& header, const uint16_t padding)
+void LayerInfo::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding)
 {
 	PROFILE_FUNCTION();
 	// The writing of this section is a bit confusing as we must first compress all of our image data, then write the 
@@ -1283,6 +1289,10 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 	{
 		PSAPI_LOG_ERROR("LayerInfo", "The number of layer records and channel image data instances mismatch, got %i lrRecords and %i channelImgData", m_LayerRecords.size(), m_ChannelImageData.size());
 	}
+
+	// We set the max to be two times the layer size here to indicate one step for compressing the data and another step for
+	// writing the data, the final step is added for the ImageData section
+	callback.setMax(m_LayerRecords.size() * 2 + 1);
 	
 	// The nesting here indicates Layers/Channels/ImgData. We reserve the top level as we access these members in parallel
 	std::vector<std::vector<std::vector<uint8_t>>> compressedData(m_ChannelImageData.size());
@@ -1302,6 +1312,7 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 		{
 			// Get a unique index for each of the layers to compress them in random order
 			const uint32_t index = &channel - &m_ChannelImageData[0];
+			callback.setTask("Compressing Layer: " + std::string(m_LayerRecords[index].m_LayerName.getString()));
 			std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
 			std::vector<Enum::Compression> lrCompression;
 			if (header.m_Depth == Enum::BitDepth::BD_8)
@@ -1322,18 +1333,21 @@ void LayerInfo::write(File& document, const FileHeader& header, const uint16_t p
 			}
 			channelInfos[index] = lrChannelInfo;
 			channelCompression[index] = lrCompression;
+			callback.increment();
 		});
 
 	// Write the layer records
 	for (int i = 0; i < m_LayerRecords.size(); ++i)
 	{
-		m_LayerRecords[i].write(document, header, channelInfos[i]);
+		m_LayerRecords[i].write(document, header, callback, channelInfos[i]);
 	}
 
 	// Write the ChannelImageData to disk, 
 	for (int i = 0; i < compressedData.size(); ++i)
 	{
+		callback.setTask("Writing Layer: " + std::string(m_LayerRecords[i].m_LayerName.getString()));
 		m_ChannelImageData[i].write(document, compressedData[i], channelCompression[i]);
+		callback.increment();
 	}
 
 	// Count how many bytes we already wrote, go back to the size marker and write that information
@@ -1387,7 +1401,7 @@ uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> head
 // Extract the layer and mask information section
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerAndMaskInformation::read(File& document, const FileHeader& header, const uint64_t offset)
+void LayerAndMaskInformation::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
 
@@ -1400,7 +1414,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 
 	// Parse Layer Info Section
 	{
-		m_LayerInfo.read(document, header, document.getOffset());
+		m_LayerInfo.read(document, header, callback, document.getOffset());
 		// Check the theoretical document offset against what was read by the layer info section. These should be identical
 		if (document.getOffset() != (m_Offset + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version)) + m_LayerInfo.m_Size)
 		{
@@ -1420,7 +1434,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 	{
 		// Tagged blocks at the end of the layer and mask information seem to be padded to 4-bytes
 		AdditionalLayerInfo layerInfo = {};
-		layerInfo.read(document, header, document.getOffset(), toRead, 4u);
+		layerInfo.read(document, header, callback, document.getOffset(), toRead, 4u);
 		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
 	}
 }
@@ -1428,7 +1442,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, con
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LayerAndMaskInformation::write(File& document, const FileHeader& header)
+void LayerAndMaskInformation::write(File& document, const FileHeader& header, ProgressCallback& callback)
 {
 	PROFILE_FUNCTION();
 	// For the layer and mask information section, getting the size is a little bit awkward as we only know the size upon 
@@ -1437,10 +1451,10 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	uint64_t sizeMarkerOffset = document.getOffset();
 	WriteBinaryDataVariadic<uint32_t, uint64_t>(document, 0u, header.m_Version);
 
-	m_LayerInfo.write(document, header, 4u);
+	m_LayerInfo.write(document, header, callback, 4u);
 	m_GlobalLayerMaskInfo.write(document, header);
 	if (m_AdditionalLayerInfo.has_value())
-		m_AdditionalLayerInfo.value().write(document, header, 4u);
+		m_AdditionalLayerInfo.value().write(document, header, callback, 4u);
 
 	
 	// The section size does not include the size marker so we must subtract that
@@ -1453,5 +1467,6 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header)
 	document.setOffset(endOffset);
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
 }
+
 
 PSAPI_NAMESPACE_END

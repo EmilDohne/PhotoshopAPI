@@ -43,7 +43,7 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void TaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /* = 1u */)
+void TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /* = 1u */)
 {
 
 	// Signatures are specified as being either '8BIM' or '8B64'. However, it isnt specified when we use which one.
@@ -124,7 +124,7 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /*= 1u*/)
+void LrSectionTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("lsct").m_Value);
@@ -153,7 +153,7 @@ void LrSectionTaggedBlock::write(File& document, const FileHeader& header, const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding) 
+void Lr16TaggedBlock::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
 	m_Key = Enum::TaggedBlockKey::Lr16;
 	m_Offset = offset;
@@ -161,7 +161,7 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>(length, padding);
 	m_Length = length;
-	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
+	m_Data.read(document, header, callback, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
 	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
@@ -169,20 +169,20 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, const uint6
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr16TaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /*= 1u*/)
+void Lr16TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr16").m_Value);
 
 	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
 	// care of that
-	m_Data.write(document, header, padding);
+	m_Data.write(document, header, callback, padding);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
+void Lr32TaggedBlock::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
 	m_Key = Enum::TaggedBlockKey::Lr32;
 	m_Offset = offset;
@@ -190,7 +190,7 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 	uint64_t length = ExtractWidestValue<uint32_t, uint64_t>(ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version));
 	length = RoundUpToMultiple<uint64_t>(length, padding);
 	m_Length = length;
-	m_Data.read(document, header, document.getOffset(), true, std::get<uint64_t>(m_Length));
+	m_Data.read(document, header, callback, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
 	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
 };
@@ -198,14 +198,14 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, const uint6
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr32TaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /*= 1u*/)
+void Lr32TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr32").m_Value);
 
 	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
 	// care of that
-	m_Data.write(document, header, padding);
+	m_Data.write(document, header, callback, padding);
 }
 
 
@@ -231,7 +231,7 @@ void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, c
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, const uint16_t padding /* = 1u */)
+void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /* = 1u */)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("fxrp").m_Value);

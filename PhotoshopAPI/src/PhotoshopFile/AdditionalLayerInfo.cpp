@@ -19,7 +19,7 @@ uint64_t AdditionalLayerInfo::calculateSize(std::shared_ptr<FileHeader> header /
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void AdditionalLayerInfo::read(File& document, const FileHeader& header, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
+void AdditionalLayerInfo::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
 {
 	m_Offset = offset;
 	document.setOffset(offset);
@@ -28,7 +28,7 @@ void AdditionalLayerInfo::read(File& document, const FileHeader& header, const u
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
-		const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, padding);
+		const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, callback, padding);
 		toRead -= taggedBlock->getTotalSize();
 		m_Size += taggedBlock->getTotalSize();
 	}
@@ -48,9 +48,9 @@ void AdditionalLayerInfo::read(File& document, const FileHeader& header, const u
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void AdditionalLayerInfo::write(File& document, const FileHeader& header, const uint16_t padding /*= 1u*/) const
+void AdditionalLayerInfo::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/) const
 {
-	m_TaggedBlocks.write(document, header, padding);
+	m_TaggedBlocks.write(document, header, callback, padding);
 }
 
 

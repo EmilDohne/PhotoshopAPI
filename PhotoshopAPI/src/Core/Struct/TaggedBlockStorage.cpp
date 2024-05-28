@@ -61,7 +61,7 @@ template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTagge
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& document, const FileHeader& header, const uint16_t padding)
+const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding)
 {
 	const uint64_t offset = document.getOffset();
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
@@ -78,14 +78,14 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 		if (taggedBlock.value() == Enum::TaggedBlockKey::Lr16)
 		{
 			auto lr16TaggedBlock = std::make_shared<Lr16TaggedBlock>();
-			lr16TaggedBlock->read(document, header, offset, signature, padding);
+			lr16TaggedBlock->read(document, header, callback, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lr16TaggedBlock);
 			return lr16TaggedBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::Lr32)
 		{
 			auto lr32TaggedBlock = std::make_shared<Lr32TaggedBlock>();
-			lr32TaggedBlock->read(document, header, offset, signature, padding);
+			lr32TaggedBlock->read(document, header, callback, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lr32TaggedBlock);
 			return lr32TaggedBlock;
 		}
@@ -118,11 +118,11 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	}
 }
 
-void TaggedBlockStorage::write(File& document, const FileHeader& header, const uint16_t padding) const
+void TaggedBlockStorage::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding) const
 {
 	for (const auto& block : m_TaggedBlocks)
 	{
-		block->write(document, header, padding);
+		block->write(document, header, callback, padding);
 	}
 	// Since the tagged blocks themselves are aligned to padding we dont need to pad the rest of this section manually
 }

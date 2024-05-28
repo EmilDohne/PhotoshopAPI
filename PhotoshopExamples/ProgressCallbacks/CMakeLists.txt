@@ -1,0 +1,2 @@
+add_executable(ProgressCallbacks main.cpp)
+target_link_libraries(ProgressCallbacks PRIVATE PhotoshopAPI)
