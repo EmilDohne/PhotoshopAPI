@@ -21,9 +21,10 @@ struct LayeredFileWrapper
 
 	inline static LayeredFileVariant read(const std::filesystem::path& filePath)
 	{
+		ProgressCallback callback{};
 		auto inputFile = File(filePath);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-		psDocumentPtr->read(inputFile);
+		psDocumentPtr->read(inputFile, callback);
 		if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_8)
 		{
 			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
@@ -42,6 +43,7 @@ struct LayeredFileWrapper
 		else
 		{
 			PSAPI_LOG_ERROR("LayeredFileWrapper", "Unable to extract the LayeredFile specialization from the fileheader");
+			return {};
 		}
 	}
 };
@@ -235,7 +237,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// Read/write functionality
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	layeredFile.def_static("read", &Class::read, py::arg("path"), R"pbdoc(
+	layeredFile.def_static("read", py::overload_cast<const std::filesystem::path&>(&Class::read), py::arg("path"), R"pbdoc(
 
 		Read and create a LayeredFile from disk. If the bit depth isnt known ahead of time use LayeredFile.read() instead which will return the appropriate type
 

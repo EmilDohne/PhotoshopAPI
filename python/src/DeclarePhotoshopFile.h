@@ -26,7 +26,12 @@ void declarePhotoshopFile(py::module& m)
 
 	photoshopFile.def(py::init<>());
 
-	photoshopFile.def("read", &PhotoshopFile::read, py::arg("document"), R"pbdoc(
+	photoshopFile.def("read", [](PhotoshopFile& self, File& document)
+		{
+			ProgressCallback callback{};
+			self.read(document, callback);
+			
+		}, py::arg("document"), R"pbdoc(
 
 		Read the PhotoshopFile class from a File instance, this file must be a valid .psd or .psb file.
 
@@ -37,7 +42,12 @@ void declarePhotoshopFile(py::module& m)
 
 	)pbdoc");
 
-	photoshopFile.def("write", &PhotoshopFile::write, py::arg("document"), R"pbdoc(
+	photoshopFile.def("write", [](PhotoshopFile& self, File& document)
+		{
+			ProgressCallback callback{};
+			self.write(document, callback);
+
+		}, py::arg("document"), R"pbdoc(
 
 		Write the PhotoshopFile class to disk using a instance, this file must be a valid .psd or .psb file.
 
