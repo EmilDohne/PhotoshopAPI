@@ -81,7 +81,7 @@ private:
 	size_t m_Count = 0;
 
 	/// The maximum m_Count is expected to reach
-	size_t m_Max = 0;
+	size_t m_Max = 1;
 
 	std::string m_CurrentTask = "";
 
