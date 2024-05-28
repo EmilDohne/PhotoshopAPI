@@ -116,7 +116,8 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 File::File(std::filesystem::path file, const FileParams params)
 {
 	file = file.make_preferred();
-	if (!std::filesystem::is_directory(file.parent_path()))
+	// Check if the parent path exists and if not we will create it
+	if (!std::filesystem::is_directory(file.parent_path()) && (!file.parent_path().empty() || file.has_root_directory()))
 	{
 		std::filesystem::create_directories(file.parent_path());
 		PSAPI_LOG("Created directory '%s' as it didnt exist", file.parent_path().string().c_str());
