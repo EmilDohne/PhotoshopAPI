@@ -27,7 +27,7 @@ using namespace NAMESPACE_PSAPI;
 template <typename T>
 void AsyncWriteFile(LayeredFile<T>&& document, std::filesystem::path filePath, ProgressCallback& callback)
 {
-	LayeredFile<bpp32_t>::write(std::move(document), filePath, callback);
+	LayeredFile<T>::write(std::move(document), filePath, callback);
 }
 
 
