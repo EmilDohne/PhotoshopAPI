@@ -50,7 +50,7 @@ jobs:
     # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
     # causing linking to fail.
     - name: Setup Xcode 15.3
-      if: matrix.os == 'macos-latest' ||  matrix.os == 'macos-12' 
+      if: matrix.os == 'macos-latest' ||  matrix.os == 'macos-13' 
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '15.3'
