@@ -1224,6 +1224,7 @@ void LayerInfo::read(File& document, const FileHeader& header, ProgressCallback&
 		// As each index is unique we do not need to worry about locking here
 		localResults[index] = std::move(result);
 		// Increment the callback
+		callback.setTask("Read Layer: " + std::string(layerRecord.m_LayerName.getString()));
 		callback.increment();
 	});
 	// Combine results after the loop
@@ -1333,6 +1334,7 @@ void LayerInfo::write(File& document, const FileHeader& header, ProgressCallback
 			}
 			channelInfos[index] = lrChannelInfo;
 			channelCompression[index] = lrCompression;
+			callback.setTask("Compressed Layer: " + std::string(m_LayerRecords[index].m_LayerName.getString()));
 			callback.increment();
 		});
 
