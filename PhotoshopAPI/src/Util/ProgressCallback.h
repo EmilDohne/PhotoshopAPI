@@ -21,7 +21,7 @@ struct ProgressCallback
 	ProgressCallback() = default;
 
 	/// Initialize the progress callback with a maximum number of elements
-	ProgressCallback(size_t maxElement) : m_Max(maxElement) {};
+	ProgressCallback(size_t maxElement) : m_Max(maxElement), m_IsInitialized(true) {};
 
 	/// On destruction check if m_Count was able to reach m_Max, otherwise raise a warning
 	~ProgressCallback()
@@ -38,6 +38,9 @@ struct ProgressCallback
 
 	/// Get the current task the PhotoshopAPI is working on, this may be empty
 	inline std::string getTask() const noexcept { return m_CurrentTask; }
+
+	/// Get the current task the PhotoshopAPI is working on, this may be empty
+	inline std::string_view getTaskView() const noexcept { return m_CurrentTask; }
 
 	/// Query whether the current progress is completed or if it is still running
 	inline bool isComplete() const noexcept { return m_Count == m_Max; }
@@ -62,7 +65,7 @@ struct ProgressCallback
 	// Set the max value the counter can increment to. This is called by the code 
 	// executing the long operation, not the user itself
 	// This function is not thread-safe
-	inline void setMax(size_t max) noexcept	{ m_Max = max; }
+	inline void setMax(size_t max) noexcept { m_Max = max; m_IsInitialized = true; }
 
 	// Set the currently executing task. This is called by the code 
 	// executing the long operation, not the user itself
@@ -74,7 +77,7 @@ struct ProgressCallback
 	// on the LayeredFile it will initialize the values there whereas the PhotoshopFile
 	// also has a write() method and this method needs to somehow if this struct was initialized
 	// or if it needs to do this itself.
-	inline bool isInitialized() const noexcept { return m_Max != 0; }
+	inline bool isInitialized() const noexcept { return m_IsInitialized; }
 
 private:
 	/// The current counter progressing towards m_Max
@@ -82,6 +85,9 @@ private:
 
 	/// The maximum m_Count is expected to reach
 	size_t m_Max = 1;
+
+	/// Is the callback initialized?
+	bool m_IsInitialized = false;
 
 	std::string m_CurrentTask = "";
 
