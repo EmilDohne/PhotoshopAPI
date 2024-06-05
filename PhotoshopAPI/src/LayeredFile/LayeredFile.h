@@ -281,7 +281,7 @@ private:
 /// 
 /// The path should be separated by forward slashes, e.g., "Group1/GroupNested/ImageLayer".
 /// Returns a reference to the specific layer if found; otherwise, returns nullptr and issues a warning.
-/// If we cannot upcast to the specified ptr an error is raised.
+/// If we cannot upcast to the specified ptr a warning is raised and nullptr is returned.
 ///
 /// \param path The path to the layer.
 /// \param layeredFile the file to search from
@@ -295,7 +295,7 @@ std::shared_ptr<LayerType<T>> findLayerAs(const std::string path, const LayeredF
 	{
 		return downcastedPtr;
 	}
-	PSAPI_LOG_ERROR("LayeredFile", "Unable to cast Layer pointer to requested type, aborting");
+	PSAPI_LOG_WARNING("LayeredFile", "Unable to cast Layer pointer to requested type, aborting");
 	return nullptr;
 }
 
