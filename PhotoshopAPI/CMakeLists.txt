@@ -10,7 +10,7 @@ set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET libdeflate_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 target_include_directories(PhotoshopAPI PUBLIC include src src/Util)
-target_link_libraries(PhotoshopAPI PUBLIC Blosc2::blosc2_static blosc2_include mio::mio-headers tcb_span libdeflate::libdeflate_static libdeflate_include)
+target_link_libraries(PhotoshopAPI PUBLIC Blosc2::blosc2_static blosc2_include mio::mio-headers tcb_span libdeflate::libdeflate_static libdeflate_include simdutf)
 
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)

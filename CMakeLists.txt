@@ -55,7 +55,9 @@ target_include_directories(blosc2_include INTERFACE thirdparty/c-blosc2/include)
 add_library(doctest INTERFACE)
 target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
 
-
+# Add simdutf for UTF conversion operations
+set (SIMDUTF_TESTS OFF)
+add_subdirectory (thirdparty/simdutf)
 
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
