@@ -36,9 +36,18 @@ uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= null
 	return m_Size;
 }
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-std::string_view PascalString::getString() const noexcept
+std::string PascalString::getString() const noexcept
+{
+	return m_String;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+const std::string_view PascalString::getStringView() const noexcept
 {
 	return m_String;
 }
