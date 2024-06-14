@@ -57,6 +57,7 @@ template std::shared_ptr<Lr16TaggedBlock> TaggedBlockStorage::getTaggedBlockView
 template std::shared_ptr<Lr32TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<LrSectionTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<UnicodeLayerNameTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
 // ---------------------------------------------------------------------------------------------------------------------
