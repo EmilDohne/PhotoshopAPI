@@ -32,7 +32,8 @@ struct UnicodeString : public FileSection
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Retrieve the UTF8 representation of the struct
-	const std::string_view getString() const noexcept;
+	const std::string getString() const noexcept;
+	const std::string_view getStringView() const noexcept;
 	/// Retrieve the UTF16LE representation of the struct
 	std::u16string getUTF16String() const noexcept;
 	
