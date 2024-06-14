@@ -225,7 +225,7 @@ void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, c
 	m_Length = length;
 	m_ReferenceX = ReadBinaryData<float64_t>(document);
 	m_ReferenceY = ReadBinaryData<float64_t>(document);
-	m_TotalLength = length + 4u + 4u + 4u;
+	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
 }
 
 
@@ -239,6 +239,37 @@ void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, 
 
 	WriteBinaryData<float64_t>(document, m_ReferenceX);
 	WriteBinaryData<float64_t>(document, m_ReferenceY);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void UnicodeLayerNameTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding /*= 1u*/)
+{
+	m_Key = Enum::TaggedBlockKey::lrUnicodeName;
+	m_Offset = offset;
+	m_Signature = signature;
+	uint32_t length = ReadBinaryData<uint32_t>(document);
+	length = RoundUpToMultiple<uint32_t>(length, padding);
+	m_Length = length;
+	// Internally it appears that UnicodeStrings are always padded to a 4-byte boundary which decides whether there is a two bye
+	// null character appended
+	m_Name.read(document, 4u);
+
+	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void UnicodeLayerNameTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+{
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("luni").m_Value);
+	WriteBinaryData<uint32_t>(document, m_TotalLength - 12u);
+	// Internally it appears that UnicodeStrings are always padded to a 4-byte boundary which decides whether there is a two bye
+	// null character appended
+	m_Name.write(document, 4u);
 }
 
 PSAPI_NAMESPACE_END

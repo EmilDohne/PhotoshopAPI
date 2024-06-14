@@ -103,6 +103,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(lrReferencePointBlock);
 			return lrReferencePointBlock;
 		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrUnicodeName)
+		{
+			auto lrUnicodeNameBlock = std::make_shared<UnicodeLayerNameTaggedBlock>();
+			lrUnicodeNameBlock->read(document, header, offset, signature, padding);
+			this->m_TaggedBlocks.push_back(lrUnicodeNameBlock);
+			return lrUnicodeNameBlock;
+		}
 		else
 		{
 			auto baseTaggedBlock = std::make_shared<TaggedBlock>();
