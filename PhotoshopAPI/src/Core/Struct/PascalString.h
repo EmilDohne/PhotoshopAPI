@@ -11,7 +11,7 @@ PSAPI_NAMESPACE_BEGIN
 
 /// A pascal string in Photoshop terms refers to a char[] with a 1 byte preceding length marker
 /// which includes the length marker itself. The length usually gets rounded up to a multiple of 2
-/// or 4 bytes depending on which section its read from
+/// or 4 bytes depending on which section its read from. The encoding appears to be UTF-8
 struct PascalString : public FileSection
 {
 	PascalString() { FileSection::m_Size = 2u; m_String = ""; };

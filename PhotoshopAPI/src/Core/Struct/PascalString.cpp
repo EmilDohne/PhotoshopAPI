@@ -18,9 +18,18 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 PascalString::PascalString(std::string name, const uint8_t padding)
 {
-	uint8_t stringSize = name.size();
+	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities. Since we write
+	// out the Unicode Layer name for layers anyways this isnt too bothersome
+	std::string truncatedName = name;
+	if (name.size() > 254u - 254u % padding)
+	{
+		PSAPI_LOG_WARNING("PascalString", "A pascal string can have a maximum length of 254, got %u. Truncating to fit", m_String.size());
+		truncatedName = name.substr(0, 254 - 254 % padding);
+	}
+
+	uint8_t stringSize = truncatedName.size();
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
-	m_String = name;
+	m_String = truncatedName;
 }
 
 
@@ -70,11 +79,6 @@ void PascalString::read(File& document, const uint8_t padding) noexcept
 // ---------------------------------------------------------------------------------------------------------------------
 void PascalString::write(File& document, const uint8_t padding) const
 {
-	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities
-	if (m_String.size() >  254u - 254u % padding )
-	{
-		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 254, got %u", m_String.size());
-	}
 	if (m_Size == 0)
 	{
 		PSAPI_LOG_ERROR("PascalString", "Size field is 0 which is not allowed since it will always be at least 1, was the PascalString initialized correctly?");
