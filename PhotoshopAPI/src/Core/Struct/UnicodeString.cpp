@@ -158,7 +158,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::write(File& document, const uint8_t padding) const
 {
-	// The length marker only denotes the actual length of the data, not any padding or the null character termination
+	// The length marker only denotes the actual length of the data, not any padding
 	WriteBinaryData<uint32_t>(document, m_UTF16String.size());
 
 	// Write the string data
