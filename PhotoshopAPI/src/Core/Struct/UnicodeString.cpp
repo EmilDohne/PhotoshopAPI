@@ -20,6 +20,15 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 {
+	// We check for empty strings here as simdutf would return 0 on the convert_utf8_to_utf16le which
+	// would cause us to mistakenly assume its a broken input string
+	if (str.size() == 0)
+	{
+		m_Size = RoundUpToMultiple<uint32_t>(0 + sizeof(uint32_t), padding);
+		m_String = {};
+		m_UTF16String = {};
+		return;
+	}
 	// Calculate the required UTF16-LE size and perform the conversion, storing
 	// the data
 	size_t expectedUtf16Len = simdutf::utf16_length_from_utf8(str.data(), str.size());
@@ -27,7 +36,7 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	if (!simdutf::convert_utf8_to_utf16le(str.data(), str.size(), m_UTF16String.data()))
 		PSAPI_LOG_ERROR("UnicodeString", "Invalid UTF8 source string '%s' provided, unable to initialize UnicodeString", str.c_str());
 
-	m_Size = RoundUpToMultiple<uint8_t>(expectedUtf16Len + sizeof(uint32_t), padding);
+	m_Size = RoundUpToMultiple<uint32_t>(expectedUtf16Len * sizeof(char16_t) + sizeof(uint32_t), padding);
 	m_String = str;
 }
 
@@ -43,7 +52,15 @@ uint64_t UnicodeString::calculateSize(std::shared_ptr<FileHeader> header /*= nul
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-const std::string_view UnicodeString::getString() const noexcept
+const std::string UnicodeString::getString() const noexcept
+{
+	return m_String;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+const std::string_view UnicodeString::getStringView() const noexcept
 {
 	return m_String;
 }
@@ -134,7 +151,7 @@ std::string UnicodeString::convertUTF16BEtoUTF8(const std::u16string& str)
 void UnicodeString::read(File& document, const uint8_t padding)
 {
 	// The number of code units does not appear to include the two-byte null
-	// termination so we must add 2 to the number of bytes to read
+	// termination
 	uint32_t numCodeUnits = ReadBinaryData<uint32_t>(document);
 	uint32_t numBytes = numCodeUnits * 2;
 
@@ -142,6 +159,16 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	// This UTF16 data is now in UTF16LE format (rather than the UTF16BE stored on disk)
 	std::vector<char16_t> utf16Data = ReadBinaryArray<char16_t>(document, numBytes);
 	m_UTF16String = std::u16string(utf16Data.begin(), utf16Data.end());
+
+	// We check for empty strings here as simdutf would return 0 on the convert_utf8_to_utf16le which
+	// would cause us to mistakenly assume its a broken input string
+	if (numBytes == 0u)
+	{
+		m_String = {};
+		// Skip the padding bytes (if any)
+		document.skip(m_Size - sizeof(uint32_t) - numBytes);
+		return;
+	}
 
 	// Calculate the required UTF8 size and perform the conversion
 	size_t expectedUtf8Len = simdutf::utf8_length_from_utf16le(utf16Data.data(), utf16Data.size());
@@ -158,7 +185,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::write(File& document, const uint8_t padding) const
 {
-	// The length marker only denotes the actual length of the data, not any padding
+	// The length marker only denotes the actual number of code units not counting any padding
 	WriteBinaryData<uint32_t>(document, m_UTF16String.size());
 
 	// Write the string data
@@ -166,7 +193,7 @@ void UnicodeString::write(File& document, const uint8_t padding) const
 	WriteBinaryArray<uint16_t>(document, std::move(stringData));
 
 	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, m_Size - m_String.size() - sizeof(uint32_t));
+	WritePadddingBytes(document, m_Size - m_UTF16String.size() * sizeof(char16_t) - sizeof(uint32_t));
 }
 
 
