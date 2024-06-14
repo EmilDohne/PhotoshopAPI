@@ -534,7 +534,7 @@ std::vector<std::shared_ptr<Layer<T>>> LayeredFileImpl::buildLayerHierarchyRecur
 		auto& layerRecord = *layerRecordsIterator;
 		auto& channelImage = *channelImageDataIterator;
 
-		std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
+		std::shared_ptr<Layer<T>> layer = generateLayerFromPhotoshopData<T>(layerRecord, channelImage, header);
 
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 		{
@@ -605,7 +605,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::shared_ptr<Layer<T>> LayeredFileImpl::identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
+std::shared_ptr<Layer<T>> LayeredFileImpl::generateLayerFromPhotoshopData(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 {
 	// Short ciruit here as we have an image layer for sure
 	if (!layerRecord.m_AdditionalLayerInfo.has_value())

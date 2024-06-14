@@ -185,13 +185,11 @@ struct LayeredFile
 	/// \param compCode the compression codec to apply
 	void setCompression(const Enum::Compression compCode);
 
-	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
-	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
 	/// \brief Generates a flat layer stack from either the current root or a given layer.
 	///
 	/// Use this function to get the most up-to-date flat layer stack based on the given order.
 	///
-	/// \param layer Optional layer to start the generation from (default is root).
+	/// \param layer Optional layer to start the generation from (default is root). If you provide e.g. a group this will only build the below layer tree
 	/// \param order The order in which layers should be stacked.
 	/// \return The flat layer tree with automatic \ref SectionDividerLayer inserted to mark section ends
 	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
@@ -329,7 +327,7 @@ namespace LayeredFileImpl
 	/// initialized with the given layer record and corresponding channel image data.
 	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
+	std::shared_ptr<Layer<T>> generateLayerFromPhotoshopData(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
 
 	/// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order
 	/// is not guaranteed
