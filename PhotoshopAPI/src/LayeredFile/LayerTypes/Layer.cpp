@@ -109,6 +109,17 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 			m_ReferencePointY.emplace(referencePoint.value()->m_ReferenceY);
 		}
 	}
+
+	// Get the unicode layer name (if it is there) and override the pascal string name
+	if (layerRecord.m_AdditionalLayerInfo.has_value())
+	{
+		auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
+		auto unicodeName = additionalLayerInfo.getTaggedBlock<UnicodeLayerNameTaggedBlock>(Enum::TaggedBlockKey::lrUnicodeName);
+		if (unicodeName.has_value())
+		{
+			m_LayerName = unicodeName.value()->m_Name.getString();
+		}
+	}
 }
 
 
@@ -214,6 +225,10 @@ std::vector<std::shared_ptr<TaggedBlock>> Layer<T>::generateTaggedBlocks()
 		auto referencePointPtr = std::make_shared<ReferencePointTaggedBlock>(m_ReferencePointX.value(), m_ReferencePointY.value());
 		blockVec.push_back(referencePointPtr);
 	}
+	// Generate our unicode layer name block, we always include this as its size is trivial and this avoids 
+	// any issues with names being truncated
+	auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, 4u);
+	blockVec.push_back(unicodeNamePtr);
 
 	return blockVec;
 }
