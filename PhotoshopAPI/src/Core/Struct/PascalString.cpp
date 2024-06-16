@@ -68,7 +68,8 @@ void PascalString::read(File& document, const uint8_t padding) noexcept
 	uint8_t stringSize = ReadBinaryData<uint8_t>(document);
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
 	std::vector<uint8_t> stringData = ReadBinaryArray<uint8_t>(document, stringSize);
-	m_String = std::string(stringData.begin(), stringData.end());
+	auto PascalString = std::string(stringData.begin(), stringData.end());
+	m_String = convertStrToUTF8(EncodingType::Windows_1252, PascalString);
 
 	// Skip the padding bytes
 	document.skip(m_Size - 1u - stringSize);
@@ -83,15 +84,16 @@ void PascalString::write(File& document, const uint8_t padding) const
 	{
 		PSAPI_LOG_ERROR("PascalString", "Size field is 0 which is not allowed since it will always be at least 1, was the PascalString initialized correctly?");
 	}
+	std::string nativeStr = ConvertUTF8ToStr(EncodingType::Windows_1252, m_String);
 
 	// The length marker only denotes the actual length of the data, not any padding
-	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(m_String.size()));
+	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(nativeStr.size()));
 
-	std::vector<uint8_t> stringData(m_String.begin(), m_String.end());
+	std::vector<uint8_t> stringData(nativeStr.begin(), nativeStr.end());
 	WriteBinaryArray<uint8_t>(document, std::move(stringData));
 
 	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, m_Size - m_String.size() - 1u);
+	WritePadddingBytes(document, m_Size - nativeStr.size() - 1u);
 }
 
 

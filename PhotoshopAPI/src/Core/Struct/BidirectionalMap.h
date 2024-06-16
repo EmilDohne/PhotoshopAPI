@@ -7,11 +7,13 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 namespace
 {
 	template <typename T, typename U>
 	constexpr bool is_different_v = !std::is_same_v<T, U>;
 }
+
 
 /// Bidirectional unordered map which internally stores two maps in both directions allowing for fast lookups at the cost of 
 /// storing the maps' contents twice. This is not meant for exceedingly large maps and provides a strong guarantee that 
