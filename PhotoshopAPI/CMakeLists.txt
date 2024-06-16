@@ -14,7 +14,7 @@ target_link_libraries(PhotoshopAPI PUBLIC Blosc2::blosc2_static blosc2_include m
 
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)
-	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2 /Zc:__cplusplus)
+	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2 /Zc:__cplusplus /utf-8)
 else()
     target_compile_options(PhotoshopAPI PUBLIC -O3)
     include(CheckCXXCompilerFlag)
