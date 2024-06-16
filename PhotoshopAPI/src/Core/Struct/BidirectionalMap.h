@@ -32,7 +32,7 @@ struct bidirectional_unordered_map
 			insert(item);
 		}
 	}
-	bidirectional_unordered_map(std::initializer_list<std::pair<T, U>> init)
+	bidirectional_unordered_map(std::initializer_list<std::pair<U, T>> init)
 	{
 		for (auto& item : init)
 		{
@@ -49,9 +49,9 @@ struct bidirectional_unordered_map
 		m_MapForward[val1] = val2;
 		m_MapBackwards[val2] = val1;
 	}
-	void insert(const U& val1, const T& val2) noexcept { add(val2, val1); }
-	void insert(const std::pair<const T, const U>& val) noexcept { add(std::get<T>(val), std::get<U>(val)); }
-	void insert(const std::pair<const U, const T>& val) noexcept { add(std::get<T>(val), std::get<U>(val)); }
+	void insert(const U& val1, const T& val2) noexcept { insert(val2, val1); }
+	void insert(const std::pair<const T, const U>& val) noexcept { insert(std::get<0>(val), std::get<1>(val)); }
+	void insert(const std::pair<const U, const T>& val) noexcept { insert(std::get<0>(val), std::get<1>(val)); }
 
 	/// Access an element without bounds checks
 	const T& operator[](const U& key) { return m_MapBackwards[key]; }
