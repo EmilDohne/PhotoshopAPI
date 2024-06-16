@@ -309,15 +309,15 @@ inline static std::string convertCharToUTF8(EncodingType encoding, const char ch
             if (static_cast<int>(character) >= 0x80)
                 return Windows1252_UTF8[character];
             else
-                return std::to_string(character);
+                return std::string(1, character);
         case EncodingType::Mac_Roman: 
             if (static_cast<int>(character) >= 0x80)
                 return MacRoman_UTF8[character];
             else
-                return std::to_string(character);
+                return std::string(1, character);
         default:
             PSAPI_LOG_WARNING("PascalString", "Unknown encoding encountered, skipping conversion");
-            return std::to_string(character);
+            return std::string(1, character);
     }
 }
 
@@ -334,6 +334,7 @@ inline static std::string convertStrToUTF8(EncodingType encoding, const std::str
     {
         res += convertCharToUTF8(encoding, character);
     }
+    return res;
 }
 
 
@@ -352,6 +353,7 @@ inline static std::string ConvertUTF8ToStr(EncodingType encoding, const std::str
             res += character;
         }
     }
+    return res;
 }
 
 
