@@ -345,7 +345,7 @@ struct ChannelImageData : public FileSection
 	std::vector<T> extractImageData(Enum::ChannelID channelID)
 	{
 		const int index = this->getChannelIndex(channelID);
-		return extractImageData(index);
+		return extractImageData<T>(index);
 	}
 
 	/// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
