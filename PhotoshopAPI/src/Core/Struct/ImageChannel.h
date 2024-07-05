@@ -150,8 +150,7 @@ struct ImageChannel
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
 		}
-		std::span<T> data(imageData);
-		initializeBlosc2Schunk<T>(data, width, height);
+		initializeBlosc2Schunk<T>(imageData, width, height);
 	}
 
 
@@ -214,7 +213,7 @@ private:
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T> 
-	void initializeBlosc2Schunk(std::span<T>& imageData, const int32_t width, const int32_t height)
+	void initializeBlosc2Schunk(std::span<T> imageData, const int32_t width, const int32_t height)
 	{
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
