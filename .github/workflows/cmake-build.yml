@@ -30,10 +30,6 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-           - name: MacOS Intel GCC
-             os: macos-13
-             compiler: gcc-13
-             compilercxx: g++-13 
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
@@ -52,14 +48,6 @@ jobs:
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '15.3'
-    # We need to specify Xcode15.2 here as the default for macos-13 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.2
-      if: matrix.os == 'macos-13' 
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.2'
-
     - name: Configure CMake ${{ matrix.os }}
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
       # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
