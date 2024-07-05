@@ -386,9 +386,9 @@ std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool d
 		if (key.id == channelID)
 		{
 			if (doCopy)
-				return value->getData<T>();
+				return value->template getData<T>();
 			else
-				return value->extractData<T>();
+				return value->template extractData<T>();
 		}
 	}
 	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
@@ -410,9 +410,9 @@ std::vector<T> ImageLayer<T>::getChannel(const int16_t channelIndex, bool doCopy
 		if (key.index == channelIndex)
 		{
 			if (doCopy)
-				return value->getData<T>();
+				return value->template getData<T>();
 			else
-				return value->extractData<T>();
+				return value->template extractData<T>();
 		}
 	}
 	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
@@ -439,14 +439,14 @@ std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHashe
 	{
 		for (auto& [key, value] : m_ImageData)
 		{
-			imgData[key] = std::move(value->getData<T>());
+			imgData[key] = std::move(value->template getData<T>());
 		}
 	}
 	else
 	{
 		for (auto& [key, value] : m_ImageData)
 		{
-			imgData[key] = std::move(value->extractData<T>());
+			imgData[key] = std::move(value->template extractData<T>());
 		}
 	}
 	return imgData;

@@ -844,7 +844,7 @@ uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t
 		// Extract a number of sample regions from the image that are chosen at random,
 		// we will now compress them according to the channels compression codec and add the size to 
 		// the total size multiplying by the number of chunks divided by our number of samples
-		auto channelData = imageChannelPtr->getRandomChunks(header, numSamples);
+		auto channelData = imageChannelPtr->getRandomChunks<T>(header, numSamples);
 		for (const auto& sample : channelData)
 		{
 			if (imageChannelPtr->m_Compression == Enum::Compression::Rle)
