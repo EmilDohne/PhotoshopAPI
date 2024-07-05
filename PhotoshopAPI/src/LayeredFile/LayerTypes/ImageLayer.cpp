@@ -27,12 +27,11 @@ namespace
 	// Returns false if a specific key is not found
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	template <typename T>
-	bool checkChannelKeys(const std::unordered_map<Enum::ChannelIDInfo, ImageChannel<T>, Enum::ChannelIDInfoHasher>& data, const std::vector<Enum::ChannelIDInfo>& requiredKeys)
+	bool checkChannelKeys(const std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>& data, const std::vector<Enum::ChannelIDInfo>& requiredKeys)
 	{
 		for (const auto& requiredKey : requiredKeys)
 		{
-			auto it = data.find(requiredKey);
+			const auto& it = data.find(requiredKey);
 			if (it == data.end())
 			{
 				return false;
@@ -47,7 +46,7 @@ namespace
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
+std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
 	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
@@ -55,7 +54,7 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 
 	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 	// the compression mode chosen on export and must therefore be updated later.
-	auto channelData = this->generateChannelImageData(doCopy);
+	auto channelData = this->generateChannelImageData();
 	auto& channelInfoVec = std::get<0>(channelData);
 	ChannelImageData channelImgData = std::move(std::get<1>(channelData));
 
@@ -109,15 +108,12 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
 
 		auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
-		// Pointers might have already been
+		// Pointers might have already been released previously
 		if (!channelPtr) continue;
 
 		// Insert any valid pointers to channels we have. We move to avoid having 
 		// to uncompress / recompress
-		if (auto imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get()))
-		{
-			m_ImageData[channelInfo.m_ChannelID] = std::move(*imageChannelPtr);
-		}
+		m_ImageData[channelInfo.m_ChannelID] = std::move(channelPtr);
 	}
 }
 
@@ -125,14 +121,14 @@ ImageLayer<T>::ImageLayer(const LayerRecord& layerRecord, ChannelImageData& chan
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::generateChannelImageData(const bool doCopy)
+std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> ImageLayer<T>::generateChannelImageData()
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfoVec;
-	std::vector<std::unique_ptr<BaseImageChannel>> channelDataVec;
+	std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
 
 	// First extract our mask data, the order of our channels does not matter as long as the 
 	// order of channelInfo and channelData is the same
-	auto maskData = Layer<T>::extractLayerMask(doCopy);
+	auto maskData = Layer<T>::extractLayerMask();
 	if (maskData.has_value())
 	{
 		channelInfoVec.push_back(std::get<0>(maskData.value()));
@@ -140,13 +136,10 @@ std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> Imag
 	}
 
 	// Extract all the channels next and push them into our data representation
-	for (const auto& it : m_ImageData)
+	for (auto& it : m_ImageData)
 	{
-		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second.m_OrigByteSize });
-		if (doCopy)
-			channelDataVec.push_back(std::make_unique<ImageChannel<T>>(it.second));
-		else
-			channelDataVec.push_back(std::make_unique<ImageChannel<T>>(std::move(it.second)));
+		channelInfoVec.push_back(LayerRecords::ChannelInformation{ it.first, it.second->m_OrigByteSize });
+		channelDataVec.push_back(std::move(it.second));
 	}
 
 	// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
@@ -200,8 +193,15 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
-		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, value, info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-		m_ImageData[info] = std::move(channel);
+		m_ImageData[info] = std::make_unique<ImageChannel>(
+			layerParameters.compression, 
+			value, 
+			info, 
+			layerParameters.width, 
+			layerParameters.height,
+			layerParameters.posX, 
+			layerParameters.posY
+		);
 	}
 
 	// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
@@ -245,11 +245,18 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 	// Set the layer mask
 	if (layerParameters.layerMask.has_value())
 	{
-		LayerMask<T> mask{};
+		LayerMask mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-		mask.maskData = std::move(maskChannel);
-		Layer<T>::m_LayerMask = mask;
+		mask.maskData = std::make_unique<ImageChannel>(
+			layerParameters.compression, 
+			layerParameters.layerMask.value(), 
+			info, 
+			layerParameters.width, 
+			layerParameters.height, 
+			layerParameters.posX, 
+			layerParameters.posY
+		);
+		Layer<T>::m_LayerMask = std::move(mask);
 	}
 }
 
@@ -297,9 +304,15 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 				value.size(),
 				static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
 		}
-
-		ImageChannel<T> channel = ImageChannel<T>(layerParameters.compression, value, info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-		m_ImageData[info] = std::move(channel);
+		m_ImageData[info] = std::make_unique<ImageChannel>(
+			layerParameters.compression, 
+			value, 
+			info, 
+			layerParameters.width, 
+			layerParameters.height, 
+			layerParameters.posX, 
+			layerParameters.posY
+		);
 	}
 
 	// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
@@ -343,11 +356,18 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 	// Set the layer mask
 	if (layerParameters.layerMask.has_value())
 	{
-		LayerMask<T> mask{};
+		LayerMask mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
-		mask.maskData = std::move(maskChannel);
-		Layer<T>::m_LayerMask = mask;
+		mask.maskData = std::make_unique<ImageChannel>(
+			layerParameters.compression, 
+			layerParameters.layerMask.value(), 
+			info, 
+			layerParameters.width, 
+			layerParameters.height, 
+			layerParameters.posX, 
+			layerParameters.posY
+		);
+		Layer<T>::m_LayerMask = std::move(mask);
 	}
 }
 
@@ -366,13 +386,9 @@ std::vector<T> ImageLayer<T>::getChannel(const Enum::ChannelID channelID, bool d
 		if (key.id == channelID)
 		{
 			if (doCopy)
-			{
-				return value.getData();
-			}
+				return value->getData<T>();
 			else
-			{
-				return value.extractData();
-			}
+				return value->extractData<T>();
 		}
 	}
 	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
@@ -394,13 +410,9 @@ std::vector<T> ImageLayer<T>::getChannel(const int16_t channelIndex, bool doCopy
 		if (key.index == channelIndex)
 		{
 			if (doCopy)
-			{
-				return value.getData();
-			}
+				return value->getData<T>();
 			else
-			{
-				return value.extractData();
-			}
+				return value->extractData<T>();
 		}
 	}
 	PSAPI_LOG_WARNING("ImageLayer", "Unable to find channel in ImageData, returning an empty vector");
@@ -427,14 +439,14 @@ std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHashe
 	{
 		for (auto& [key, value] : m_ImageData)
 		{
-			imgData[key] = std::move(value.getData());
+			imgData[key] = std::move(value->getData<T>());
 		}
 	}
 	else
 	{
 		for (auto& [key, value] : m_ImageData)
 		{
-			imgData[key] = std::move(value.extractData());
+			imgData[key] = std::move(value->extractData<T>());
 		}
 	}
 	return imgData;
@@ -451,7 +463,7 @@ void ImageLayer<T>::setCompression(const Enum::Compression compCode)
 	// Change the image channel compression codecs
 	for (const auto& [key, val] : m_ImageData)
 	{
-		m_ImageData[key].m_Compression = compCode;
+		m_ImageData[key]->m_Compression = compCode;
 	}
 }
 

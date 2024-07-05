@@ -54,10 +54,9 @@ struct GroupLayer : public Layer<T>
 
 	/// \brief Converts the group layer to Photoshop layerRecords and imageData.
 	/// \param colorMode The color mode for the conversion.
-	/// \param doCopy Set to true to safely keep using the current GroupLayer instance. Advised to keep true unless parsing the whole LayeredFile
 	/// \param header The file header for the conversion.
 	/// \return A tuple containing layerRecords and imageData.
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header) override;
+	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header) override;
 
 	/// \brief Constructs a GroupLayer using layerRecord, channelImageData, and file header.
 	/// \param layerRecord The layer record for the group layer.

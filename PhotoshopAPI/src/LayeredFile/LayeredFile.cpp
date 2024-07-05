@@ -592,7 +592,7 @@ void LayeredFileImpl::generateFlatLayersRecurse(const std::vector<std::shared_pt
 			LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
 			// If the layer is a group we actually want to insert a section divider at the end of it. This makes reconstructing the layer
 			// hierarchy much easier later on. We dont actually need to give this a name 
-			flatLayers.push_back(std::make_shared<SectionDividerLayer<T>>(SectionDividerLayer<T>{}));
+			flatLayers.push_back(std::make_shared<SectionDividerLayer<T>>());
 		}
 		else
 		{

@@ -13,7 +13,7 @@ struct SectionDividerLayer : Layer<T>
 {
 	SectionDividerLayer() = default;
 
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header) override;
+	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header) override;
 
 protected:
 	// Generates an additional LrSectionDivider Tagged Block 

@@ -65,18 +65,12 @@ Layer<T>::Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageDa
 		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask)
 		{
 			// Move the compressed image data into our LayerMask struct
-			LayerMask<T> lrMask;
+			LayerMask lrMask{};
 			auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
-			ImageChannel<T>* imageChannelPtr = dynamic_cast<ImageChannel<T>*>(channelPtr.get());
-			
-			if (imageChannelPtr)
-			{
-				lrMask.maskData = std::move(*imageChannelPtr);
-			}
+			if (channelPtr)
+				lrMask.maskData = std::move(channelPtr);
 			else
-			{
-				PSAPI_LOG_ERROR("Layer", "Unable to cast mask to ImageChannel");
-			}
+				PSAPI_LOG_ERROR("Layer", "Unable to extract mask channel for layer '%s'", m_LayerName.c_str());
 			channelPtr = nullptr;
 
 			// If no mask parameters are present we just use sensible defaults and skip
@@ -129,10 +123,10 @@ std::optional<LayerRecords::LayerMaskData> Layer<T>::generateMaskData(const File
 	{
 		LayerRecords::LayerMask lrMask = LayerRecords::LayerMask{};
 
-		float centerX = m_LayerMask.value().maskData.getCenterX();
-		float centerY = m_LayerMask.value().maskData.getCenterY();
-		int32_t width = m_LayerMask.value().maskData.getWidth();
-		int32_t height = m_LayerMask.value().maskData.getHeight();
+		float centerX = m_LayerMask.value().maskData->getCenterX();
+		float centerY = m_LayerMask.value().maskData->getCenterY();
+		int32_t width = m_LayerMask.value().maskData->getWidth();
+		int32_t height = m_LayerMask.value().maskData->getHeight();
 		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
 		lrMaskData.m_Size += 16u;
 
@@ -232,37 +226,24 @@ LayerRecords::LayerBlendingRanges Layer<T>::generateBlendingRanges(const Enum::C
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> Layer<T>::extractLayerMask(bool doCopy)
+std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>>> Layer<T>::extractLayerMask()
 {
 	if (!m_LayerMask.has_value())
 	{
 		return std::nullopt;
 	}
-
-	auto& maskImgChannel = m_LayerMask.value().maskData;
+	auto maskImgChannel = std::move(m_LayerMask.value().maskData);
 	Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
-	LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel.m_OrigByteSize };
-
-	// TODO this might not be doing much at all
-	if (doCopy)
-	{
-		std::unique_ptr<ImageChannel<T>> imgData = std::make_unique<ImageChannel<T>>(maskImgChannel);
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel<T>>> data = std::make_tuple(channelInfo, std::move(imgData));
-		return std::optional(std::move(data));
-	}
-	else
-	{
-		std::unique_ptr<ImageChannel<T>> imgData = std::make_unique<ImageChannel<T>>(std::move(maskImgChannel));
-		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel<T>>> data = std::make_tuple(channelInfo, std::move(imgData));
-		return std::optional(std::move(data));
-	}
+	LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel->m_OrigByteSize };
+	std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>> data = std::make_tuple(channelInfo, std::move(maskImgChannel));
+	return std::optional(std::move(data));
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
+std::tuple<LayerRecord, ChannelImageData> Layer<T>::toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header)
 {
 	std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 	ChannelImageData channelData{};
@@ -306,13 +287,9 @@ std::vector<T> Layer<T>::getMaskData(const bool doCopy /*= true*/)
 	if (m_LayerMask.has_value())
 	{
 		if (doCopy)
-		{
-			return std::move(m_LayerMask.value().maskData.getData());
-		}
+			return m_LayerMask.value().maskData->getData<T>();
 		else
-		{
-			return std::move(m_LayerMask.value().maskData.extractData());
-		}
+			return m_LayerMask.value().maskData->extractData<T>();
 	}
 	PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
 	return std::vector<T>();
@@ -325,9 +302,7 @@ template <typename T>
 void Layer<T>::setCompression(const Enum::Compression compCode)
 {
 	if (m_LayerMask.has_value())
-	{
-		m_LayerMask.value().maskData.m_Compression = compCode;
-	}
+		m_LayerMask.value().maskData->m_Compression = compCode;
 }
 
 

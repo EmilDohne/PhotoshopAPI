@@ -827,46 +827,46 @@ uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t
 
 	for (const auto& channel : m_ImageData)
 	{
-		ImageChannel<T>* imageChannel = dynamic_cast<ImageChannel<T>*>(channel.get());
-		if (!imageChannel)
+		auto imageChannelPtr = channel.get();
+		if (!imageChannelPtr)
 		{
 			PSAPI_LOG_WARNING("ChannelImageData", "Unable to read data from channel '%i'", channel->m_ChannelID.id);
 			continue;
 		}
 
-		if (imageChannel->m_Compression == Enum::Compression::Raw)
+		if (imageChannelPtr->m_Compression == Enum::Compression::Raw)
 		{
 			// We can just get the actual byte size making the estimate entirely accurate
-			estimatedSize += imageChannel->m_OrigByteSize;
+			estimatedSize += imageChannelPtr->m_OrigByteSize;
 			continue;
 		}
 
 		// Extract a number of sample regions from the image that are chosen at random,
 		// we will now compress them according to the channels compression codec and add the size to 
 		// the total size multiplying by the number of chunks divided by our number of samples
-		auto channelData = imageChannel->getRandomChunks(header, numSamples);
+		auto channelData = imageChannelPtr->getRandomChunks(header, numSamples);
 		for (const auto& sample : channelData)
 		{
-			if (imageChannel->m_Compression == Enum::Compression::Rle)
+			if (imageChannelPtr->m_Compression == Enum::Compression::Rle)
 			{
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
 				auto tmp = CompressData(sample, Enum::Compression::Rle, header, sample.size(), 1u);
 				// Subtract 2/4 bytes for the scanline size stored at the end of the data section
-				estimatedSize += (tmp.size() * sizeof(T) - SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * (imageChannel->getNumChunks() / numSamples);
+				estimatedSize += (tmp.size() * sizeof(T) - SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * (imageChannelPtr->getNumChunks() / numSamples);
 			}
-			else if (imageChannel->m_Compression == Enum::Compression::Zip)
+			else if (imageChannelPtr->m_Compression == Enum::Compression::Zip)
 			{
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
 				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
 				// Subtract 5 bytes to remove any header information 
-				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
+				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannelPtr->getNumChunks() / numSamples);
 			}
-			else if (imageChannel->m_Compression == Enum::Compression::ZipPrediction)
+			else if (imageChannelPtr->m_Compression == Enum::Compression::ZipPrediction)
 			{
 				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
 				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
 				// Subtract 5 bytes to remove any header information 
-				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannel->getNumChunks() / numSamples);
+				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannelPtr->getNumChunks() / numSamples);
 			}
 		}
 	}
@@ -935,46 +935,35 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	for (int i = 0; i < m_ImageData.size(); ++i)
 	{
 		// Take ownership of and invalidate the current channel index
-		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
+		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
 		if (imageChannelPtr == nullptr) [[unlikely]]
 		{
 			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
-			auto emptyVec = std::vector<std::vector<uint8_t>>();
-			return emptyVec;
+			return std::vector<std::vector<uint8_t>>();
 		}
 		m_ImageData[i] = nullptr;
 
-		// Check that our channel can be cast to a valid ImageChannel instance
-		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr.get())) [[likely]]
+		const auto& width = imageChannelPtr->getWidth();
+		const auto& height = imageChannelPtr->getHeight();
+		auto& compressionMode = imageChannelPtr->m_Compression;
+		const auto& channelIdx = imageChannelPtr->m_ChannelID;
+
+		// In 32-bit mode Photoshop insists on the data being prediction encoded even if the compression mode is set to zip
+		// to probably get better compression. We warn the user of this and switch to ZipPrediction
+		if (std::is_same_v<T, float32_t> && compressionMode == Enum::Compression::Zip)
 		{
-			const auto& width = imageChannel->getWidth();
-			const auto& height = imageChannel->getHeight();
-			auto& compressionMode = imageChannel->m_Compression;
-			const auto& channelIdx = imageChannel->m_ChannelID;
-
-			// In 32-bit mode Photoshop insists on the data being prediction encoded even if the compression mode is set to zip
-			// to probably get better compression. We warn the user of this and switch to ZipPrediction
-			if (std::is_same_v<T, float32_t> && compressionMode == Enum::Compression::Zip)
-			{
-				PSAPI_LOG("ChannelImageData", "Photoshop insists on ZipPrediction encoded data rather than Zip for 32-bit, switching to ZipPrediction");
-				compressionMode = Enum::Compression::ZipPrediction;
-			}
-
-			// Compress the image data into a binary array and store it in our compressedData vec
-			std::vector<T> imgData = imageChannel->getData();
-			compressedData.push_back(CompressData(imgData, buffer, compressor, compressionMode, header, width, height));
-
-			// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
-			LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
-			lrChannelInfo.push_back(channelInfo);
-			lrCompression.push_back(compressionMode);
+			PSAPI_LOG("ChannelImageData", "Photoshop insists on ZipPrediction encoded data rather than Zip for 32-bit, switching to ZipPrediction");
+			compressionMode = Enum::Compression::ZipPrediction;
 		}
-		else [[unlikely]]
-		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", i);
-			auto emptyVec = std::vector<std::vector<uint8_t>>();
-			return emptyVec;
-		}
+
+		// Compress the image data into a binary array and store it in our compressedData vec
+		std::vector<T> imgData = imageChannelPtr->getData<T>();
+		compressedData.push_back(CompressData(imgData, buffer, compressor, compressionMode, header, width, height));
+
+		// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
+		LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
+		lrChannelInfo.push_back(channelInfo);
+		lrCompression.push_back(compressionMode);
 	}
 
 	libdeflate_free_compressor(compressor);
@@ -1061,7 +1050,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			std::span<uint8_t> bufferSpan(buffer.data(), coordinates.width * coordinates.height);
 			DecompressData<uint8_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			ImageChannel<uint8_t> imageChannel(
+			auto channelPtr = std::make_unique<ImageChannel>(
 				channelCompression,
 				bufferSpan,
 				channel.m_ChannelID,
@@ -1069,13 +1058,13 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				coordinates.height,
 				coordinates.centerX,
 				coordinates.centerY);
-			m_ImageData[index] = std::make_unique<ImageChannel<uint8_t>>(std::move(imageChannel));
+			m_ImageData[index] = std::move(channelPtr);
 		}
 		else if (header.m_Depth == Enum::BitDepth::BD_16)
 		{
 			std::span<uint16_t> bufferSpan(reinterpret_cast<uint16_t*>(buffer.data()), coordinates.width * coordinates.height);
 			DecompressData<uint16_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			std::unique_ptr<ImageChannel<uint16_t>> channelPtr = std::make_unique<ImageChannel<uint16_t>>(
+			auto channelPtr = std::make_unique<ImageChannel>(
 				channelCompression,
 				bufferSpan,
 				channel.m_ChannelID,
@@ -1089,7 +1078,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			std::span<float32_t> bufferSpan(reinterpret_cast<float32_t*>(buffer.data()), coordinates.width * coordinates.height);
 			DecompressData<float32_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			std::unique_ptr<ImageChannel<float32_t>> channelPtr = std::make_unique<ImageChannel<float32_t>>(
+			auto channelPtr = std::make_unique<ImageChannel>(
 				channelCompression,
 				bufferSpan,
 				channel.m_ChannelID,

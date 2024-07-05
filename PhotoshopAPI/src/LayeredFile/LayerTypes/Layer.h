@@ -10,11 +10,10 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-/// Structure describing a layer mask (pixel based)
-template <typename T> 
+/// Structure describing a layer mask (pixel based) 
 struct LayerMask
 {
-	ImageChannel<T> maskData;
+	std::unique_ptr<ImageChannel> maskData;
 	bool isMaskRelativeToLayer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
 	bool isDisabled = false;
 	uint8_t defaultColor = 255u;
@@ -59,7 +58,7 @@ struct Layer
 	std::string m_LayerName;
 
 	/// A pixel layer mask
-	std::optional<LayerMask<T>> m_LayerMask;
+	std::optional<LayerMask> m_LayerMask;
 
 	Enum::BlendMode m_BlendMode;
 
@@ -95,13 +94,12 @@ struct Layer
 	/// In the future, the intention is to make this a pure virtual function. However, due to
 	/// the presence of multiple miscellaneous layers not yet implemented for the initial release,
 	/// this function is provided. It generates a tuple containing LayerRecord and ChannelImageData
-	/// based on the specified ColorMode, copying data if required, and using the provided FileHeader.
+	/// based on the specified ColorMode, and using the provided FileHeader.
 	///
 	/// \param colorMode The desired ColorMode for the PhotoshopFile.
-	/// \param doCopy A flag indicating whether to perform a copy of the layer data.
 	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const FileHeader& header);
 	
 	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
 	std::vector<T> getMaskData(const bool doCopy = true);
@@ -144,13 +142,10 @@ protected:
 	/// \return A LayerBlendingRanges object representing the layer blending ranges.
 	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode);
 
-	/// \brief Extract the layer mask into a tuple of channel information and image data.
+	/// \brief Extract the layer mask into a tuple of channel information and image data
 	///
-	/// If doCopy is set to false, the mask can be considered invalidated and must no longer be accessed.
-	///
-	/// \param doCopy A flag indicating whether to perform a copy of the layer mask.
 	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to BaseImageChannel.
-	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> extractLayerMask(bool doCopy);
+	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>>> extractLayerMask();
 };
 
 

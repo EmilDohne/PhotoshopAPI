@@ -84,7 +84,7 @@ void GroupLayer<T>::removeLayer(const std::string layerName)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header)
+std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header)
 {
 	PascalString lrName = Layer<T>::generatePascalString();
 	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
@@ -98,11 +98,11 @@ std::tuple<LayerRecord, ChannelImageData> GroupLayer<T>::toPhotoshop(const Enum:
 	// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
 	// again later
 	std::vector<LayerRecords::ChannelInformation> channelInfoVec;
-	std::vector<std::unique_ptr<BaseImageChannel>> channelDataVec;
+	std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
 
 	// First extract our mask data, the order of our channels does not matter as long as the 
 	// order of channelInfo and channelData is the same
-	auto maskData = Layer<T>::extractLayerMask(doCopy);
+	auto maskData = Layer<T>::extractLayerMask();
 	if (maskData.has_value())
 	{
 		channelInfoVec.push_back(std::get<0>(maskData.value()));
@@ -202,11 +202,18 @@ GroupLayer<T>::GroupLayer(Layer<T>::Params& layerParameters, bool isCollapsed /*
 	// Set the layer mask if present
 	if (layerParameters.layerMask.has_value())
 	{
-		LayerMask<T> mask{};
+		LayerMask mask{};
 		Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-		ImageChannel<T> maskChannel = ImageChannel<T>(layerParameters.compression, layerParameters.layerMask.value(), info, layerParameters.width, layerParameters.height, layerParameters.posX, layerParameters.posY);
+		std::unique_ptr<ImageChannel> maskChannel = std::make_unique<ImageChannel>(
+			layerParameters.compression, 
+			layerParameters.layerMask.value(), 
+			info, 
+			layerParameters.width, 
+			layerParameters.height, 
+			layerParameters.posX, 
+			layerParameters.posY);
 		mask.maskData = std::move(maskChannel);
-		Layer<T>::m_LayerMask = mask;
+		Layer<T>::m_LayerMask = std::move(mask);
 	}
 }
 

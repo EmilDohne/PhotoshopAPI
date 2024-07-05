@@ -107,7 +107,7 @@ template <typename T>
 std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header)
 {
 	// We default to not copying here
-	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, false, header);
+	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, header);
 	return lrData;
 }
 
