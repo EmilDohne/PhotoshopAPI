@@ -12,3 +12,13 @@
 			CHECK(x[i] == doctest::Approx(y[i])); \
 		} \
     }
+
+
+// Verbose CHECK implementation that will output exactly what position we failed in for vectors
+#define CHECK_VEC_VERBOSE(x, y) \
+    REQUIRE(x.size() == y.size()); \
+    for (size_t i = 0; i < x.size(); ++i) { \
+		if (x[i] != y[i]) { \
+			CHECK_MESSAGE(x[i] == y[i], "Failed vector index: ", i); \
+		} \
+    }
