@@ -8,12 +8,13 @@ if(MSVC)
     target_compile_options(PhotoshopTest PRIVATE /MP)
     add_compile_options(/fsanitize=address)
 else()
-    add_compile_options(-fsanitize=address -fsanitize=leak -fsanitize=thread -fsanitize=undefined)
+    add_compile_options(-fsanitize=address,leak,undefined)
 endif()
 target_link_libraries(PhotoshopTest PRIVATE PhotoshopAPI doctest)
 
-# If someone finds a way to make this work with just doctest that would be great
-add_test(NAME TestPhotoshopAPI COMMAND PhotoshopTest)
+include(CTest)
+include(${PROJECT_SOURCE_DIR}/thirdparty/doctest/scripts/cmake/doctest.cmake)
+doctest_discover_tests(PhotoshopTest)
 
 
 # Copy the documents/ folder to the build dir to run the tests
