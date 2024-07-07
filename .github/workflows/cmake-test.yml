@@ -63,9 +63,9 @@ jobs:
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
       
     - name: List working dir on Windows
-      working-directory: ${{github.workspace}}/build/PhotoshopTest
+      working-directory: ${{github.workspace}}/build/PhotoshopTest/Release
       if: runner.os == 'Windows'
-      run: dir /b /a /s
+      run: dir
         
 
     - name: Test ${{ matrix.os }}-${{ matrix.compilercxx }}
