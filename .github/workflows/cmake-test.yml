@@ -62,12 +62,12 @@ jobs:
         CXX: ${{ matrix.compilercxx }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
-    - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
-      if: runner.os != 'Windows'
-      working-directory: ${{github.workspace}}/build/PhotoshopTest
-      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure
-
-    - name: Test windows-${{ matrix.compilercxx }}
+    - name: Copy Testfiles on Windows
       if: runner.os == 'Windows'
-      working-directory: ${{github.workspace}}/build/PhotoshopTest/${{ env.BUILD_TYPE }}
+      working-directory: ${{github.workspace}}/build/PhotoshopTest
+      run: |
+        xcopy "./${{env.BUILD_TYPE}}/documents" "./documents" /E /I
+
+    - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
+      working-directory: ${{github.workspace}}/build/PhotoshopTest
       run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure
