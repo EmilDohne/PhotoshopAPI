@@ -24,10 +24,9 @@ int main()
 	doctest::Context context;
 
 	// set defaults
-	context.setOption("abort-after", 5);	// stop test execution after 5 failed assertions
+	context.setOption("abort-after", 5);	// stop test execution after 5 failed 
 
 	int res = context.run();				// run
 
-	if (context.shouldExit())				// important - query flags (and --exit) rely on the user doing this
-		return res;							// propagate the result of the tests
+	return res;
 }
