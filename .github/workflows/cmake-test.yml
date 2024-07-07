@@ -27,14 +27,26 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+           - name: Ubuntu Clang
+             os: ubuntu-24.04
+             compiler: clang
+             compilercxx: clang++
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+           - name: Windows Clang
+             os: windows-latest
+             compiler: clang
+             compilercxx: clang++
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+           - name:  MacOS ARM Clang
+             os: macos-latest
+             compiler: clang
+             compilercxx: clang++
 
     steps:
     - uses: actions/checkout@v4
