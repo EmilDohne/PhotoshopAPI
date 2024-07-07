@@ -34,10 +34,6 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-           - name: Windows Clang
-             os: windows-latest
-             compiler: "C:/Program Files/LLVM/bin/clang.exe"
-             compilercxx: "C:/Program Files/LLVM/bin/clang.exe"
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
@@ -58,8 +54,11 @@ jobs:
         xcode-version: '15.3'
 
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
+      env:
+        CC: ${{ matrix.compiler }}
+        CXX: ${{ matrix.compilercxx }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_C_COMPILER="${{ matrix.compiler }}" -DCMAKE_CXX_COMPILER="${{ matrix.compilercxx }}" -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
 
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
