@@ -65,8 +65,7 @@ jobs:
     - name: Copy Testfiles on Windows
       if: runner.os == 'Windows'
       working-directory: ${{github.workspace}}/build/PhotoshopTest
-      run: |
-        xcopy "./${{env.BUILD_TYPE}}/documents" "./documents" /E /I
+      run: xcopy ".\\${{env.BUILD_TYPE}}\\documents" ".\\documents" /E /I
 
     - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
       working-directory: ${{github.workspace}}/build/PhotoshopTest
