@@ -20,6 +20,7 @@ template <typename T>
 LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t");
+	return LayerAndMaskInformation();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
