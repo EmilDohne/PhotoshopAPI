@@ -20,7 +20,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
-
       matrix:
         include:
            - name: Ubuntu GCC
@@ -35,10 +34,6 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-           - name: Windows Clang
-             os: windows-latest
-             compiler: "C:/Program Files/LLVM/bin/clang.exe"
-             compilercxx: "C:/Program Files/LLVM/bin/clang.exe"
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13

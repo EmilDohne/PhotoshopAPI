@@ -19,6 +19,6 @@
     REQUIRE(x.size() == y.size()); \
     for (size_t i = 0; i < x.size(); ++i) { \
 		if (x[i] != y[i]) { \
-			CHECK_MESSAGE(x[i] == y[i], "Failed vector index: ", i); \
+			CHECK_MESSAGE(x[i] == y[i], "Failed vector index: ", i); return;\
 		} \
     }

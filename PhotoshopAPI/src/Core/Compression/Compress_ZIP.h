@@ -33,6 +33,7 @@ PSAPI_NAMESPACE_BEGIN
 namespace ZIP_Impl
 {
 	// Prediction encode the data per scanline while also big endian converting it
+	// The buffer parameter must match the bytesize of the data vector
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
@@ -58,7 +59,8 @@ namespace ZIP_Impl
 
 
 	// We need to specialize here as 32-bit files have their bytes de-interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
-	// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
+	// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out.
+	// The buffer parameter must match the bytesize of the data vector
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <>

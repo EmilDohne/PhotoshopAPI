@@ -37,8 +37,7 @@ jobs:
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
-             compilercxx: g++-13
-            
+             compilercxx: g++-13      
 
     steps:
     - uses: actions/checkout@v4
