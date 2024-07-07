@@ -210,8 +210,8 @@ GroupLayer<T>::GroupLayer(Layer<T>::Params& layerParameters, bool isCollapsed /*
 			info, 
 			layerParameters.width, 
 			layerParameters.height, 
-			layerParameters.posX, 
-			layerParameters.posY);
+			static_cast<float>(layerParameters.posX), 
+			static_cast<float>(layerParameters.posY));
 		mask.maskData = std::move(maskChannel);
 		Layer<T>::m_LayerMask = std::move(mask);
 	}

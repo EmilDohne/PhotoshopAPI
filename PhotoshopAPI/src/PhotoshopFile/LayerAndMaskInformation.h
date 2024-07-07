@@ -207,7 +207,7 @@ struct LayerRecord : public FileSection
 	LayerRecord(const LayerRecord&) = delete;
 	LayerRecord(LayerRecord&&) = default;
 	LayerRecord& operator=(const LayerRecord&) = delete;
-	LayerRecord& operator=(LayerRecord&&) = default;
+	LayerRecord& operator=(LayerRecord&&) = delete;
 
 	LayerRecord();
 	/// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping

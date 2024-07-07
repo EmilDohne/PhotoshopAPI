@@ -49,7 +49,7 @@ struct ImageLayer : public Layer<T>
 	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> getImageData(bool doCopy = true);
 
 	/// Change the compression codec of all the image channels
-	void setCompression(const Enum::Compression compCode);
+	void setCompression(const Enum::Compression compCode) override;
 
 private:
 	// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 

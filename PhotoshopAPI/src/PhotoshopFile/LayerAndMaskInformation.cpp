@@ -735,9 +735,10 @@ void LayerRecord::write(File& document, const FileHeader& header, ProgressCallba
 
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	std::optional<std::string> blendModeStr = Enum::getBlendMode<Enum::BlendMode, std::string>(m_BlendMode);
-	if (!blendModeStr.has_value())
+	if (blendModeStr.has_value())
+		WriteBinaryData<uint32_t>(document, Signature(blendModeStr.value()).m_Value);
+	else
 		PSAPI_LOG_ERROR("LayerRecord", "Could not identify a blend mode string from the given key");
-	WriteBinaryData<uint32_t>(document, Signature(blendModeStr.value()).m_Value);
 
 
 	WriteBinaryData<uint8_t>(document, m_Opacity);
@@ -1103,10 +1104,10 @@ void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& 
 		m_ChannelOffsetsAndSizes.push_back(std::tuple<uint64_t, uint64_t>(document.getOffset(), compressedChannelData[i].size() + 2u));
 
 		std::optional<uint16_t> compressionCode = Enum::getCompression<Enum::Compression, uint16_t>(channelCompression[i]);
-		if (!compressionCode.has_value()) [[unlikely]]
+		if (compressionCode.has_value()) [[likely]]
+			WriteBinaryData<uint16_t>(document, compressionCode.value());
+		else
 			PSAPI_LOG_ERROR("LayerInfo", "Could not find a match for the given compression codec");
-
-		WriteBinaryData<uint16_t>(document, compressionCode.value());
 		WriteBinaryArray<uint8_t>(document, std::move(compressedChannelData[i]));
 	}
 }
