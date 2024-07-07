@@ -28,5 +28,7 @@ int main()
 
 	int res = context.run();				// run
 
+	if (context.shouldExit())
+		return res;
 	return res;
 }

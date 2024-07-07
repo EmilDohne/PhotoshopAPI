@@ -65,7 +65,7 @@ jobs:
     - name: List working dir on Windows
       working-directory: ${{github.workspace}}/build/PhotoshopTest
       if: runner.os == 'Windows'
-      run: dir
+      run: dir /b /a /s
         
 
     - name: Test ${{ matrix.os }}-${{ matrix.compilercxx }}
