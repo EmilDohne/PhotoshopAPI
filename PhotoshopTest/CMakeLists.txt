@@ -13,9 +13,7 @@ endif()
 target_link_libraries(PhotoshopTest PRIVATE PhotoshopAPI doctest)
 
 include(CTest)
-include(${PROJECT_SOURCE_DIR}/thirdparty/doctest/scripts/cmake/doctest.cmake)
-doctest_discover_tests(PhotoshopTest)
-
+add_test(TestPhotoshopAPI PhotoshopTest)
 
 # Copy the documents/ folder to the build dir to run the tests
 add_custom_command(TARGET PhotoshopTest POST_BUILD

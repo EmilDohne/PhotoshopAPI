@@ -64,12 +64,4 @@ jobs:
 
     - name: Test ${{ matrix.os }}
       working-directory: ${{github.workspace}}/build/PhotoshopTest
-      if: runner.os != 'Windows'
-      run: ./PhotoshopTest
-
-    - name: Test windows
-      working-directory: ${{github.workspace}}/build/PhotoshopTest
-      if: runner.os == 'Windows'
-      run: ./PhotoshopTest.exe
-      
-        
+      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure
