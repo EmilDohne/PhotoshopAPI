@@ -36,16 +36,12 @@ jobs:
              compilercxx: msvc
            - name: Windows Clang
              os: windows-latest
-             compiler: clang
-             compilercxx: clang++
+             compiler: clang-cl
+             compilercxx: clang-cl
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-           - name:  MacOS ARM Clang
-             os: macos-latest
-             compiler: clang
-             compilercxx: clang++
             
 
     steps:
