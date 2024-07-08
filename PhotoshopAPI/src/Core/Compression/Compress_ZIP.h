@@ -39,6 +39,8 @@ namespace ZIP_Impl
 	template <typename T>
 	void PredictionEncode(std::vector<T>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
+		if (data.size() > buffer.size() * sizeof(T))
+			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(T), buffer.size());
 		PROFILE_FUNCTION();
 		for (int y = 0; y < height; ++y)
 		{
@@ -66,6 +68,8 @@ namespace ZIP_Impl
 	template <>
 	inline void PredictionEncode(std::vector<float32_t>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
+		if (data.size() > buffer.size() * sizeof(float32_t))
+			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(float32_t), buffer.size());
 		PROFILE_FUNCTION();
 
 		std::span<uint8_t> byteDataView(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(float32_t));
