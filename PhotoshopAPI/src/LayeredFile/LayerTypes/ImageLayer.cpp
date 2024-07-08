@@ -199,8 +199,8 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 			info, 
 			layerParameters.width, 
 			layerParameters.height,
-			layerParameters.posX, 
-			layerParameters.posY
+			static_cast<float>(layerParameters.posX), 
+			static_cast<float>(layerParameters.posY)
 		);
 	}
 
@@ -253,8 +253,8 @@ ImageLayer<T>::ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& 
 			info, 
 			layerParameters.width, 
 			layerParameters.height, 
-			layerParameters.posX, 
-			layerParameters.posY
+			static_cast<float>(layerParameters.posX), 
+			static_cast<float>(layerParameters.posY)
 		);
 		Layer<T>::m_LayerMask = std::move(mask);
 	}
@@ -310,8 +310,8 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 			info, 
 			layerParameters.width, 
 			layerParameters.height, 
-			layerParameters.posX, 
-			layerParameters.posY
+			static_cast<float>(layerParameters.posX), 
+			static_cast<float>(layerParameters.posY)
 		);
 	}
 
@@ -364,8 +364,8 @@ ImageLayer<T>::ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageDa
 			info, 
 			layerParameters.width, 
 			layerParameters.height, 
-			layerParameters.posX, 
-			layerParameters.posY
+			static_cast<float>(layerParameters.posX), 
+			static_cast<float>(layerParameters.posY)
 		);
 		Layer<T>::m_LayerMask = std::move(mask);
 	}
