@@ -156,6 +156,7 @@ namespace ZIP_Impl
                 byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
                 byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
                 byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
+            }
             else
             {
                 byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
