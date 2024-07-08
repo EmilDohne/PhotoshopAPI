@@ -132,17 +132,17 @@ namespace ZIP_Impl
             size_t offsetPlanar = static_cast<size_t>(numVecs) * 32 + i;
             if constexpr (std::endian::native == std::endian::little)
             {
-                byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
-                byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
-                byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
-                byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
-            }
-            else
-            {
                 byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
                 byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
                 byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
                 byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
+            }
+            else
+            {
+                byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
+                byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
+                byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
+                byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
             }
         }
 #else
@@ -150,10 +150,19 @@ namespace ZIP_Impl
         {
             size_t offsetInterleaved = i * sizeof(float32_t);
             size_t offsetPlanar = i;
-            byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
-            byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
-            byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
-            byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
+            if constexpr (std::endian::native == std::endian::little)
+            {
+                byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
+                byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
+                byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
+                byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
+            else
+            {
+                byte0View[offsetPlanar] = interleavedData[offsetInterleaved + 0];
+                byte1View[offsetPlanar] = interleavedData[offsetInterleaved + 1];
+                byte2View[offsetPlanar] = interleavedData[offsetInterleaved + 2];
+                byte3View[offsetPlanar] = interleavedData[offsetInterleaved + 3];
+            }
         }
 #endif
     }

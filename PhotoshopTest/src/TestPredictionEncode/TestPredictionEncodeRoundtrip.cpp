@@ -94,13 +94,24 @@ TEST_CASE("Prediction Roundtrip Flat Channel 32-bit")
 	std::vector<float32_t> dataExpected = channel;
 
 	NAMESPACE_PSAPI::ZIP_Impl::PredictionEncode(channel, buffer, width, height);
-	for (int y = 0; y < height; ++y)
-	{
-		for (int x = 0; x < width; ++x)
-		{
-			std::cout << "Y: " << y << "X:" << x << channel[y * width + x] << std::endl;
-		}
-	}
+	NAMESPACE_PSAPI::ZIP_Impl::RemovePredictionEncoding<float32_t>(channel, width, height);
+
+	CHECK_VEC_VERBOSE(channel, dataExpected);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Prediction Roundtrip Uneven Channel 32-bit")
+{
+	uint32_t width = 36;
+	uint32_t height = 36;
+
+	std::vector<float32_t> channel(width * height, 1.0f);
+	std::vector<uint8_t> buffer(width * height * sizeof(float32_t), 0u);
+	std::vector<float32_t> dataExpected = channel;
+
+	NAMESPACE_PSAPI::ZIP_Impl::PredictionEncode(channel, buffer, width, height);
 	NAMESPACE_PSAPI::ZIP_Impl::RemovePredictionEncoding<float32_t>(channel, width, height);
 
 	CHECK_VEC_VERBOSE(channel, dataExpected);
