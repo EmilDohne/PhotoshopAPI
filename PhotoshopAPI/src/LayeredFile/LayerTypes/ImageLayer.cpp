@@ -52,17 +52,11 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 	ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 	uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 
-	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
-	// the compression mode chosen on export and must therefore be updated later.
-	auto channelData = this->generateChannelImageData();
-	auto& channelInfoVec = std::get<0>(channelData);
-	ChannelImageData channelImgData = std::move(std::get<1>(channelData));
-
 	uint8_t clipping = 0u;	// No clipping mask for now
 	LayerRecords::BitFlags bitFlags(false, !Layer<T>::m_IsVisible, false);
 	std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 	LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
-	
+
 	// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
 	auto blockVec = this->generateTaggedBlocks();
 	std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
@@ -71,6 +65,13 @@ std::tuple<LayerRecord, ChannelImageData> ImageLayer<T>::toPhotoshop(const Enum:
 		TaggedBlockStorage blockStorage = { blockVec };
 		taggedBlocks.emplace(blockStorage);
 	}
+
+	// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
+	// the compression mode chosen on export and must therefore be updated later. This step is done last as generateChannelImageData() invalidates
+	// all image data which we might need for operations above
+	auto channelData = this->generateChannelImageData();
+	auto& channelInfoVec = std::get<0>(channelData);
+	ChannelImageData channelImgData = std::move(std::get<1>(channelData));
 
 	LayerRecord lrRecord = LayerRecord(
 		lrName,
