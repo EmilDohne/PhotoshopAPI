@@ -5,9 +5,11 @@ sure these two results match.
 */
 #include "doctest.h"
 
+
 #include "Macros.h"
 #include "Core/Compression/Compress_ZIP.h"
 #include "Core/Compression/Decompress_ZIP.h"
+#include "../TestMacros.h"
 
 #include <vector>
 #include <limits>
@@ -47,7 +49,7 @@ TEST_CASE("Compress Flat Channel 32-bit")
 	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIPPrediction<float32_t>(channel, width, height);
 	std::vector<float32_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIPPrediction<float32_t>(compressedData, width, height);
 
-	CHECK(dataExpected == uncompressedData);
+	CHECK_VEC_VERBOSE(dataExpected, uncompressedData);
 }
 
 
@@ -85,5 +87,5 @@ TEST_CASE("Compress Large Flat Channel 32-bit")
 	std::vector<uint8_t> compressedData = NAMESPACE_PSAPI::CompressZIPPrediction<float32_t>(channel, width, height);
 	std::vector<float32_t> uncompressedData = NAMESPACE_PSAPI::DecompressZIPPrediction<float32_t>(compressedData, width, height);
 
-	CHECK(dataExpected == uncompressedData);
+	CHECK_VEC_VERBOSE(dataExpected, uncompressedData);
 }

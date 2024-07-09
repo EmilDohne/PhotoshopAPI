@@ -20,6 +20,7 @@ template <typename T>
 LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t");
+	return LayerAndMaskInformation();
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -107,7 +108,7 @@ template <typename T>
 std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header)
 {
 	// We default to not copying here
-	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, false, header);
+	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, header);
 	return lrData;
 }
 

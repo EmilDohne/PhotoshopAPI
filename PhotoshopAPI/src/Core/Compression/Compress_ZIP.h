@@ -33,11 +33,14 @@ PSAPI_NAMESPACE_BEGIN
 namespace ZIP_Impl
 {
 	// Prediction encode the data per scanline while also big endian converting it
+	// The buffer parameter must match the bytesize of the data vector
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	void PredictionEncode(std::vector<T>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
+		if (data.size() > buffer.size() * sizeof(T))
+			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(T), buffer.size());
 		PROFILE_FUNCTION();
 		for (int y = 0; y < height; ++y)
 		{
@@ -58,12 +61,15 @@ namespace ZIP_Impl
 
 
 	// We need to specialize here as 32-bit files have their bytes de-interleaved (i.e. from 1234 1234 1234 1234 byte order to 1111 2222 3333 4444)
-	// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out
+	// And we need to do this de-interleaving separately. Thanks to both psd_sdk and psd-tools for having found this out.
+	// The buffer parameter must match the bytesize of the data vector
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <>
 	inline void PredictionEncode(std::vector<float32_t>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
+		if (data.size() > buffer.size() * sizeof(float32_t))
+			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(float32_t), buffer.size());
 		PROFILE_FUNCTION();
 
 		std::span<uint8_t> byteDataView(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(float32_t));

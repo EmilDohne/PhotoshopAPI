@@ -207,7 +207,7 @@ struct LayerRecord : public FileSection
 	LayerRecord(const LayerRecord&) = delete;
 	LayerRecord(LayerRecord&&) = default;
 	LayerRecord& operator=(const LayerRecord&) = delete;
-	LayerRecord& operator=(LayerRecord&&) = default;
+	LayerRecord& operator=(LayerRecord&&) = delete;
 
 	LayerRecord();
 	/// Construct a layer record with literal values, useful when we know all the data beforehand, i.e. for round tripping
@@ -262,7 +262,7 @@ struct GlobalLayerMaskInfo : public FileSection
 struct ChannelImageData : public FileSection
 {
 	ChannelImageData() = default;
-	ChannelImageData(std::vector<std::unique_ptr<BaseImageChannel>> data) : m_ImageData(std::move(data)) 
+	ChannelImageData(std::vector<std::unique_ptr<ImageChannel>> data) : m_ImageData(std::move(data)) 
 	{
 		for (const auto& item : m_ImageData)
 		{
@@ -328,25 +328,14 @@ struct ChannelImageData : public FileSection
 	std::vector<T> extractImageData(int index)
 	{
 		// Take ownership of and invalidate the current index
-		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
 			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
-			auto emptyVec = std::vector<T>();
-			return emptyVec;
+			return std::vector<T>();
 		}
 		m_ImageData[index] = nullptr;
-
-		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr.get()))
-		{
-			return std::move(imageChannel->extractData());
-		}
-		else
-		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
-			auto emptyVec = std::vector<T>();
-			return emptyVec;
-		}
+		return imageChannelPtr->extractData<T>();
 	}
 
 	/// Extract a channel from the given ChannelID and take ownership of the data. After this function is called the index will point to nullptr
@@ -356,30 +345,12 @@ struct ChannelImageData : public FileSection
 	std::vector<T> extractImageData(Enum::ChannelID channelID)
 	{
 		const int index = this->getChannelIndex(channelID);
-
-		// Take ownership of and invalidate the current index
-		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
-		if (imageChannelPtr == nullptr)
-		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
-			return std::vector<T>();
-		}
-		m_ImageData[index] = nullptr;
-
-		if (auto imageChannel = dynamic_cast<ImageChannel<T>*>(imageChannelPtr))
-		{
-			return std::move(imageChannel->extractData());
-		}
-		else
-		{
-			PSAPI_LOG_ERROR("ChannelImageData", "Unable to extract image data for channel at index %i", index);
-			return std::vector<T>();			
-		}
+		return extractImageData<T>(index);
 	}
 
 	/// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
 	/// we just return that silently and leave it up to the caller to check for this
-	std::unique_ptr<BaseImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
+	std::unique_ptr<ImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
 	{
 		const int index = this->getChannelIndex(channelIDInfo);
 		if (index == -1)
@@ -388,7 +359,7 @@ struct ChannelImageData : public FileSection
 			return nullptr;
 		}
 		// Take ownership of and invalidate the current index
-		std::unique_ptr<BaseImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
 			return nullptr;
@@ -414,7 +385,7 @@ private:
 	/// We hold the image data for all of the channels in this vector.
 	/// The image data gets compressed using blosc2 on creation allowing for a very small
 	/// memory footprint
-	std::vector<std::unique_ptr<BaseImageChannel>> m_ImageData;
+	std::vector<std::unique_ptr<ImageChannel>> m_ImageData;
 };
 
 

@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-13, macos-latest, ubuntu-24.04]
+        os: [windows-latest, macos-latest, ubuntu-24.04]
 
     steps:
     - uses: actions/checkout@v4
@@ -54,13 +54,6 @@ jobs:
       uses: maxim-lobanov/setup-xcode@v1
       with:
         xcode-version: '15.3'
-    # We need to specify Xcode15.2 here as the default for macos-13 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.2
-      if: matrix.os == 'macos-13' 
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.2'
 
     - uses: pypa/cibuildwheel@v2.16
       env:
