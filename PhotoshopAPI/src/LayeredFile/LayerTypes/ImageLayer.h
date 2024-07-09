@@ -129,7 +129,8 @@ public:
 
 	/// Initialize our imageLayer by first parsing the base Layer instance and then moving
 	/// the additional channels into our representation
-	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
+	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) :
+		Layer<T>(layerRecord, channelImageData, header)
 	{
 		// Move the layers into our own layer representation
 		for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
