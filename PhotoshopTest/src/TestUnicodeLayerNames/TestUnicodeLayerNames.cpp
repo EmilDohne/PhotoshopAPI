@@ -19,7 +19,12 @@ TEST_CASE("Read Unicode layer name from psd file")
 
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psd_path);
 
-	// Find the two layers by their names and check if the result is not null
+	// Find the three layers by their names and check if the result is not null
+	SUBCASE("Find chinese simplified layer")
+	{
+		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		CHECK(ptr);
+	}
 	SUBCASE("Find overflow layer")
 	{
 		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
@@ -44,7 +49,12 @@ TEST_CASE("Read Unicode layer name from psb file")
 
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
-	// Find the two layers by their names and check if the result is not null
+	// Find the three layers by their names and check if the result is not null
+	SUBCASE("Find chinese simplified layer")
+	{
+		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		CHECK(ptr);
+	}
 	SUBCASE("Find overflow layer")
 	{
 		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
@@ -74,7 +84,12 @@ TEST_CASE("Read write unicode layer name from psd file")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psd_path);
 
 
-	// Find the two layers by their names and check if the result is not null
+	// Find the three layers by their names and check if the result is not null
+	SUBCASE("Find chinese simplified layer")
+	{
+		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		CHECK(ptr);
+	}
 	SUBCASE("Find overflow layer")
 	{
 		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
@@ -104,7 +119,12 @@ TEST_CASE("Read write unicode layer name from psb file")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 
-	// Find the two layers by their names and check if the result is not null
+	// Find the three layers by their names and check if the result is not null
+	SUBCASE("Find chinese simplified layer")
+	{
+		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		CHECK(ptr);
+	}
 	SUBCASE("Find overflow layer")
 	{
 		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");

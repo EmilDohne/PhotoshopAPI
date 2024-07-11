@@ -5,7 +5,6 @@ on:
   push:
     branches:
      - dev
-     - 82-add-unicode-layer-name-support
   pull_request:
     branches:
      - master
