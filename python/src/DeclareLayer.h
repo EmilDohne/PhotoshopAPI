@@ -66,8 +66,8 @@ void declareLayer(py::module& m, const std::string& extension) {
             {
                 // If the size is greater than 0 that means we have a maskchannel
                 // which is why we can access .value() directly
-                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData.getWidth());
-                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData.getHeight());
+                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData->getWidth());
+                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData->getHeight());
 
                 // Get pointer to copied data and size
                 T* ptr = data.data();
@@ -92,8 +92,8 @@ void declareLayer(py::module& m, const std::string& extension) {
             { 
                 // If the size is greater than 0 that means we have a maskchannel
                 // which is why we can access .value() directly
-                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData.getWidth());
-                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData.getHeight());
+                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData->getWidth());
+                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData->getHeight());
 
                 // Get pointer to copied data and size
                 T* ptr = data.data();

@@ -777,6 +777,7 @@ namespace Enum
 		if (it != compressionMap.end()) {
 			return std::optional<Compression>(it->second);
 		}
+		return std::nullopt;
 	}
 
 	template <>

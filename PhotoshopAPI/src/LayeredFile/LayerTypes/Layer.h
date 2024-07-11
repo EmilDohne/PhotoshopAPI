@@ -4,17 +4,20 @@
 #include "Enum.h"
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
+#include "PhotoshopFile/AdditionalLayerInfo.h"
+#include "Core/Struct/TaggedBlock.h"
 
 #include <vector>
+#include <optional>
 #include <string>
+#include <memory>
 
 PSAPI_NAMESPACE_BEGIN
 
-/// Structure describing a layer mask (pixel based)
-template <typename T> 
+/// Structure describing a layer mask (pixel based) 
 struct LayerMask
 {
-	ImageChannel<T> maskData;
+	std::unique_ptr<ImageChannel> maskData;
 	bool isMaskRelativeToLayer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
 	bool isDisabled = false;
 	uint8_t defaultColor = 255u;
@@ -59,7 +62,7 @@ struct Layer
 	std::string m_LayerName;
 
 	/// A pixel layer mask
-	std::optional<LayerMask<T>> m_LayerMask;
+	std::optional<LayerMask> m_LayerMask;
 
 	Enum::BlendMode m_BlendMode;
 
@@ -326,19 +329,66 @@ public:
 	/// In the future, the intention is to make this a pure virtual function. However, due to
 	/// the presence of multiple miscellaneous layers not yet implemented for the initial release,
 	/// this function is provided. It generates a tuple containing LayerRecord and ChannelImageData
-	/// based on the specified ColorMode, copying data if required, and using the provided FileHeader.
+	/// based on the specified ColorMode, and using the provided FileHeader.
 	///
 	/// \param colorMode The desired ColorMode for the PhotoshopFile.
-	/// \param doCopy A flag indicating whether to perform a copy of the layer data.
 	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const bool doCopy, const FileHeader& header);
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const FileHeader& header)
+	{
+		std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
+		ChannelImageData channelData{};
+
+		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(m_Width, m_Height, m_CenterX, m_CenterY), header);
+
+		auto blockVec = this->generateTaggedBlocks();
+		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+		if (blockVec.size() > 0)
+		{
+			TaggedBlockStorage blockStorage = { blockVec };
+			taggedBlocks.emplace(blockStorage);
+		}
+
+		LayerRecord lrRecord(
+			PascalString(m_LayerName, 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
+			extents.top,
+			extents.left,
+			extents.bottom,
+			extents.right,
+			0u,		// Number of channels, photoshop does appear to actually write out all the channels with 0 length, we will see later if that is a requirement
+			channelInfo,
+			m_BlendMode,
+			m_Opacity,
+			0u,		// Clipping
+			LayerRecords::BitFlags(false, !m_IsVisible, false),
+			std::nullopt,	// LayerMaskData
+			Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
+			std::move(taggedBlocks)		// Additional layer information
+		);
+
+		return std::make_tuple(std::move(lrRecord), std::move(channelData));
+	}
 	
 	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
-	std::vector<T> getMaskData(const bool doCopy = true);
+	std::vector<T> getMaskData(const bool doCopy = true)
+	{
+		if (m_LayerMask.has_value())
+		{
+			if (doCopy)
+				return m_LayerMask.value().maskData->getData<T>();
+			else
+				return m_LayerMask.value().maskData->extractData<T>();
+		}
+		PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
+		return std::vector<T>();
+	}
 
 	/// Changes the compression mode of all channels in this layer to the given compression mode
-	virtual void setCompression(const Enum::Compression compCode);
+	virtual void setCompression(const Enum::Compression compCode)
+	{
+		if (m_LayerMask.has_value())
+		m_LayerMask.value().maskData->m_Compression = compCode;
+	}
 
 	virtual ~Layer() = default;
 
@@ -352,36 +402,6 @@ protected:
 	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
 	/// more than .5 away since it is a double)
 	std::optional<double> m_ReferencePointY = std::nullopt;
-
-	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
-	///
-	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
-	std::optional<LayerRecords::LayerMaskData> generateMaskData(const FileHeader& header);
-
-	/// \brief Generate the layer name as a Pascal string.
-	///
-	/// \return A PascalString representing the layer name.
-	PascalString generatePascalString();
-
-	/// \brief Generate the tagged blocks necessary for writing the layer
-	virtual std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks();
-
-	/// \brief Generate the layer blending ranges (which for now are just the defaults).
-	///
-	/// The blending ranges depend on the specified ColorMode. This function returns the default
-	/// blending ranges for the given color mode.
-	///
-	/// \param colorMode The ColorMode to determine the blending ranges.
-	/// \return A LayerBlendingRanges object representing the layer blending ranges.
-	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode);
-
-	/// \brief Extract the layer mask into a tuple of channel information and image data.
-	///
-	/// If doCopy is set to false, the mask can be considered invalidated and must no longer be accessed.
-	///
-	/// \param doCopy A flag indicating whether to perform a copy of the layer mask.
-	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to BaseImageChannel.
-	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<BaseImageChannel>>> extractLayerMask(bool doCopy);
 };
 
 

@@ -2,6 +2,8 @@
 
 #include "Macros.h"
 #include "Enum.h"
+#include "StringUtil.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
@@ -14,6 +16,11 @@
 #include "LayerTypes/ShapeLayer.h"
 #include "LayerTypes/SmartObjectLayer.h"
 #include "LayerTypes/TextLayer.h"
+
+#include "LayeredFile/Util/GenerateHeader.h"
+#include "LayeredFile/Util/GenerateColorModeData.h"
+#include "LayeredFile/Util/GenerateImageResources.h"
+#include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 
 #include <variant>
 #include <vector>
@@ -48,6 +55,7 @@ enum class LayerOrder
 };
 
 
+
 /// Helper Structure for loading an ICC profile from memory of disk. Photoshop will then store
 /// the raw bytes of the ICC profile in their ICCProfile ResourceBlock (ID 1039)
 struct ICCProfile
@@ -76,7 +84,7 @@ namespace LayeredFileImpl
 	/// initialized with the given layer record and corresponding channel image data.
 	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> generateLayerFromPhotoshopData(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
+	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 	{
 		// Short ciruit here as we have an image layer for sure
 		if (!layerRecord.m_AdditionalLayerInfo.has_value())
@@ -222,7 +230,7 @@ namespace LayeredFileImpl
 			auto& layerRecord = *layerRecordsIterator;
 			auto& channelImage = *channelImageDataIterator;
 
-			std::shared_ptr<Layer<T>> layer = generateLayerFromPhotoshopData<T>(layerRecord, channelImage, header);
+			std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
 
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
@@ -517,7 +525,27 @@ struct LayeredFile
 	/// to a layered file using the lrSectionDivider taggedBlock to identify layer breaks.
 	///
 	/// \param file The PhotoshopFile to transfer
-	LayeredFile(std::unique_ptr<PhotoshopFile> file);
+	LayeredFile(std::unique_ptr<PhotoshopFile> file)
+	{
+		// Take ownership of document
+		std::unique_ptr<PhotoshopFile> document = std::move(file);
+
+		m_BitDepth = document->m_Header.m_Depth;
+		m_ColorMode = document->m_Header.m_ColorMode;
+		m_Width = document->m_Header.m_Width;
+		m_Height = document->m_Header.m_Height;
+
+		// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
+		m_ICCProfile = LayeredFileImpl::readICCProfile(document.get());
+		// Extract the DPI from the document, default to 72
+		m_DotsPerInch = LayeredFileImpl::readDPI(document.get());
+
+		m_Layers = LayeredFileImpl::buildLayerHierarchy<T>(std::move(document));
+		if (m_Layers.size() == 0)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Read an invalid PhotoshopFile as it does not contain any layers. Is the only layer in the scene locked? This is not supported by the PhotoshopAPI");
+		}
+	}
 
 	/// \ingroup Constructors
 	/// \brief Constructs an empty LayeredFile object.
@@ -527,9 +555,27 @@ struct LayeredFile
 	/// \param colorMode The color mode of the file.
 	/// \param width The width of the file in pixels.
 	/// \param height The height of the file in pixels.
-	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint8_t>;
-	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>;
-	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>;
+	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint8_t>
+	{
+		m_BitDepth = Enum::BitDepth::BD_8;
+		m_ColorMode = colorMode;
+		m_Width = width;
+		m_Height = height;
+	}
+	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>
+	{
+		m_BitDepth = Enum::BitDepth::BD_16;
+		m_ColorMode = colorMode;
+		m_Width = width;
+		m_Height = height;
+	}
+	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>
+	{
+		m_BitDepth = Enum::BitDepth::BD_32;
+		m_ColorMode = colorMode;
+		m_Width = width;
+		m_Height = height;
+	}
 
 	/// \brief Finds a layer based on the given path.
 	///
@@ -538,7 +584,27 @@ struct LayeredFile
 	///
 	/// \param path The path to the layer.
 	/// \return A shared pointer to the found layer or nullptr.
-	std::shared_ptr<Layer<T>> findLayer(std::string path) const;
+	std::shared_ptr<Layer<T>> findLayer(std::string path) const
+	{
+		PROFILE_FUNCTION();
+		std::vector<std::string> segments = splitString(path, '/');
+		for (const auto& layer : m_Layers)
+		{
+			// Get the layer name and recursively check the path
+			if (layer->m_LayerName == segments[0])
+			{
+				// This is a simple path with no nested layers
+				if (segments.size() == 1)
+				{
+					return layer;
+				}
+				// Pass an index of one as we already found the first layer
+				return LayeredFileImpl::findLayerRecurse(layer, segments, 1);
+			}
+		}
+		PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
+		return nullptr;
+	}
 
 	/// 
 	/// \brief Inserts a layer into the root of the layered file.
@@ -546,7 +612,15 @@ struct LayeredFile
 	/// If you wish to add a layer to a group, use GroupLayer::addLayer() on a group node retrieved by \ref findLayer().
 	///
 	/// \param layer The layer to be added.
-	void addLayer(std::shared_ptr<Layer<T>> layer);
+	void addLayer(std::shared_ptr<Layer<T>> layer)
+	{
+		if (isLayerInDocument(layer))
+		{
+			PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+			return;
+		}
+		m_Layers.push_back(layer);
+	}
 
 	/// \brief Moves a layer from its current parent to a new parent node.
 	///
@@ -556,7 +630,42 @@ struct LayeredFile
 	///
 	/// \param layer The layer to be moved.
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
-	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr);
+	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr)
+	{
+		PROFILE_FUNCTION();
+		// We must first check that we are not trying to move a layer higher in the hierarchy to lower in the hierarchy 
+		// as that would be undefined behaviour. E.g. if we want to move /Group/ to /Group/NestedGroup that wouldnt work
+		// since the down stream nodes are dependant on the upstream nodes
+		if (parentLayer && isMovingToInvalidHierarchy(layer, parentLayer))
+		{
+			PSAPI_LOG_WARNING("LayeredFile", "Cannot move layer '%s' under '%s' as that would represent an illegal move operation",
+				layer->m_LayerName.c_str(), parentLayer->m_LayerName.c_str());
+			return;
+		}
+
+
+		// First we must remove the layer from the hierarchy and then reappend it in a different place
+		removeLayer(layer);
+
+		// Insert the layer back, either under the provided parent layer or under the scene root
+		if (parentLayer)
+		{
+			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
+			{
+				groupLayerPtr->addLayer(*this, layer);
+			}
+			else
+			{
+				PSAPI_LOG_WARNING("LayeredFile", "Parent layer '%s' provided is not a group layer, can only move layers under groups", 
+					parentLayer->m_LayerName.c_str());
+				return;
+			}
+		}
+		else
+		{
+			addLayer(layer);
+		}
+	}
 
 	/// \brief Moves a layer from its current parent to a new parent node.
 	///
@@ -566,21 +675,76 @@ struct LayeredFile
 	///
 	/// \param layer The layer to be moved.
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
-	void moveLayer(const std::string layer, const std::string parentLayer = "");
+	void moveLayer(const std::string layer, const std::string parentLayer = "")
+	{
+		PROFILE_FUNCTION();
+		if (parentLayer == "")
+		{
+			auto layerPtr = findLayer(layer);
+			if (!layerPtr) [[unlikely]]
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+			}
+			moveLayer(layerPtr);
+		}
+		else
+		{
+			auto layerPtr = findLayer(layer);
+			auto parentLayerPtr = findLayer(parentLayer);
+			if (!layerPtr) [[unlikely]]
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for moveLayer()", layer.c_str());
+			}
+			if (!parentLayerPtr) [[unlikely]]
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Could not find the parentlayer %s for moveLayer()", parentLayer.c_str());
+			}
+			moveLayer(layerPtr, parentLayerPtr);
+		}
+	}
 
 	/// \brief Recursively removes a layer from the layer structure.
 	///
 	/// Iterates the layer structure until the given node is found and then removes it from the tree.
 	///
 	/// \param layer The layer to be removed.
-	void removeLayer(std::shared_ptr<Layer<T>> layer);
+	void removeLayer(std::shared_ptr<Layer<T>> layer)
+	{
+		PROFILE_FUNCTION();
+		int index = 0;
+		for (auto& sceneLayer : m_Layers)
+		{
+			// Check if the layers directly in the scene root is the layer we are looking for and remove the layer if that is the case 
+			if (sceneLayer == layer)
+			{
+				m_Layers.erase(m_Layers.begin() + index);
+				return;
+			}
+
+			// Recurse down and short circuit if we find a match
+			if (LayeredFileImpl::removeLayerRecurse(sceneLayer, layer))
+			{
+				return;
+			}
+			++index;
+		}
+	}
 
 	/// \brief Recursively removes a layer from the layer structure.
 	///
 	/// Iterates the layer structure until the given node is found and then removes it from the tree.
 	///
 	/// \param layer The layer to be removed.
-	void removeLayer(const std::string layer);
+	void removeLayer(const std::string layer)
+	{
+		PROFILE_FUNCTION();
+		auto layerPtr = findLayer(layer);
+		if (!layerPtr) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Could not find the layer %s for removeLayer()", layer.c_str());
+		}
+		removeLayer(layerPtr);
+	}
 	
 	/// \brief change the compression codec across all layers and channels
 	///
@@ -589,8 +753,17 @@ struct LayeredFile
 	/// but ZipCompression gives us better ratios
 	/// 
 	/// \param compCode the compression codec to apply
-	void setCompression(const Enum::Compression compCode);
+	void setCompression(const Enum::Compression compCode)
+	{
+		for (const auto& documentLayer : m_Layers)
+		{
+			documentLayer->setCompression(compCode);
+			LayeredFileImpl::setCompressionRecurse(documentLayer, compCode);
+		}
+	}
 
+	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
+	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
 	/// \brief Generates a flat layer stack from either the current root or a given layer.
 	///
 	/// Use this function to get the most up-to-date flat layer stack based on the given order.
@@ -598,7 +771,35 @@ struct LayeredFile
 	/// \param layer Optional layer to start the generation from (default is root). If you provide e.g. a group this will only build the below layer tree
 	/// \param order The order in which layers should be stacked.
 	/// \return The flat layer tree with automatic \ref SectionDividerLayer inserted to mark section ends
-	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const;
+	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(std::optional<std::shared_ptr<Layer<T>>> layer, const LayerOrder order) const
+	{
+		if (order == LayerOrder::forward)
+		{
+			if (layer.has_value())
+			{
+				std::vector<std::shared_ptr<Layer<T>>> layerVec;
+				layerVec.push_back(layer.value());
+				return LayeredFileImpl::generateFlatLayers(layerVec);
+			}
+			return LayeredFileImpl::generateFlatLayers(m_Layers);
+		}
+		else if (order == LayerOrder::reverse)
+		{
+			if (layer.has_value())
+			{
+				std::vector<std::shared_ptr<Layer<T>>> layerVec;
+				layerVec.push_back(layer.value());
+				std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(layerVec);
+				std::reverse(flatLayers.begin(), flatLayers.end());
+				return flatLayers;
+			}
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers);
+			std::reverse(flatLayers.begin(), flatLayers.end());
+			return flatLayers;
+		}
+		PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse");
+		return std::vector<std::shared_ptr<Layer<T>>>();
+	}
 
 	/// \brief Gets the total number of channels in the document.
 	///
@@ -608,13 +809,52 @@ struct LayeredFile
 	/// \param ignoreMaskChannels Flag to exclude mask channels from the count.
 	/// \param ignoreMaskChannel Flag to exclude the transparency alpha channel from the count.
 	/// \return The total number of channels in the document.
-	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true);
+	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true)
+	{
+		std::set<int16_t> channelIndices = {};
+		for (const auto& layer : m_Layers)
+		{
+			LayeredFileImpl::getNumChannelsRecurse(layer, channelIndices);
+		}
+
+		uint16_t numChannels = channelIndices.size();
+		if (ignoreMaskChannels)
+		{
+			// Photoshop doesnt consider mask channels for the total amount of channels
+			if (channelIndices.contains(-2))
+				numChannels -= 1u;
+			if (channelIndices.contains(-3))
+				numChannels -= 1u;
+		}
+		if (ignoreAlphaChannel)
+		{
+			// Photoshop doesnt store the alpha channels in the merged image data section so we must not count it
+			if (channelIndices.contains(-1))
+				numChannels -= 1u;
+		}
+		return numChannels;
+	}
 
 	/// \brief Checks if a layer already exists in the nested structure.
 	///
 	/// \param layer The layer to check for existence.
 	/// \return True if the layer exists, false otherwise.
-	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const;
+	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const
+	{
+		PROFILE_FUNCTION();
+		for (const auto& documentLayer : m_Layers)
+		{
+			if (documentLayer == layer)
+			{
+				return true;
+			}
+			if (LayeredFileImpl::isLayerInDocumentRecurse(documentLayer, layer))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	/// \brief read and create a LayeredFile from disk
 	///
@@ -624,7 +864,14 @@ struct LayeredFile
 	/// 
 	/// \param filePath the path on disk of the file to be read
 	/// \param callback the callback which reports back the current progress and task to the user
-	static LayeredFile<T> read(const std::filesystem::path& filePath, ProgressCallback& callback);
+	static LayeredFile<T> read(const std::filesystem::path& filePath, ProgressCallback& callback)
+	{
+		auto inputFile = File(filePath);
+		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
+		psDocumentPtr->read(inputFile, callback);
+		LayeredFile<T> layeredFile = { std::move(psDocumentPtr) };
+		return layeredFile;
+	}
 
 	/// \brief read and create a LayeredFile from disk
 	///
@@ -633,7 +880,11 @@ struct LayeredFile
 	/// PhotoshopFile instance to the user
 	/// 
 	/// \param filePath the path on disk of the file to be read
-	static LayeredFile<T> read(const std::filesystem::path& filePath);
+	static LayeredFile<T> read(const std::filesystem::path& filePath)
+	{
+		ProgressCallback callback{};
+		return LayeredFile<T>::read(filePath, callback);
+	}
 
 	/// \brief write the LayeredFile instance to disk, consumes and invalidates the instance
 	/// 
@@ -645,7 +896,15 @@ struct LayeredFile
 	/// \param filePath The path on disk of the file to be written
 	/// \param callback the callback which reports back the current progress and task to the user
 	/// \param forceOvewrite Whether to forcefully overwrite the file or fail if the file already exists
-	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, ProgressCallback& callback, const bool forceOvewrite = true);
+	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, ProgressCallback& callback, const bool forceOvewrite = true)
+	{
+		File::FileParams params = {};
+		params.doRead = false;
+		params.forceOverwrite = forceOvewrite;
+		auto outputFile = File(filePath, params);
+		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
+		psdOutDocumentPtr->write(outputFile, callback);
+	}
 
 	/// \brief write the LayeredFile instance to disk, consumes and invalidates the instance
 	/// 
@@ -656,7 +915,11 @@ struct LayeredFile
 	/// \param layeredFile The LayeredFile to consume, invalidates it
 	/// \param filePath The path on disk of the file to be written
 	/// \param forceOvewrite Whether to forcefully overwrite the file or fail if the file already exists
-	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite = true);
+	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, const bool forceOvewrite = true)
+	{
+		ProgressCallback callback{};
+		LayeredFile<T>::write(std::move(layeredFile), filePath, callback, forceOvewrite);
+	}
 
 private:
 
@@ -667,7 +930,13 @@ private:
 	/// \param layer The child layer to be moved.
 	/// \param parentLayer The new parent layer.
 	/// \return True if the move is valid, false otherwise.
-	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer);
+	bool isMovingToInvalidHierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer)
+	{
+		// Check if the layer would be moving to one of its descendants which is illegal. Therefore the argument order is reversed
+		bool isDescendantOf = LayeredFileImpl::isLayerInDocumentRecurse(parentLayer, layer);
+		// We additionally check if the layer is the same as the parent layer as that would also not be allowed
+		return isDescendantOf || layer == parentLayer;
+	}
 };
 
 
@@ -709,68 +978,16 @@ std::shared_ptr<LayerType<T>> findLayerAs(const std::string path, const LayeredF
 /// \note This will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
 /// to create the layer structure.
 template <typename T>
-std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile);
-
-
-namespace LayeredFileImpl
+std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile)
 {
-	/// Build the layer hierarchy from a PhotoshopFile object using the Layer and Mask section with its LayerRecords and ChannelImageData subsections;
-	/// Returns a vector of nested layer variants which can go to any depth
-	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchy(std::unique_ptr<PhotoshopFile> file);
-	/// Recursively build a layer hierarchy using the LayerRecords, ChannelImageData and their respective reverse iterators
-	/// See comments in buildLayerHierarchy on why we iterate in reverse
-	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> buildLayerHierarchyRecurse(
-		std::vector<LayerRecord>& layerRecords,
-		std::vector<ChannelImageData>& channelImageData,
-		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
-		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
-		const FileHeader& header
-	);
+	PROFILE_FUNCTION();
+	FileHeader header = generateHeader<T>(layeredFile);
+	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
+	ImageResources imageResources = generateImageResources<T>(layeredFile);
+	LayerAndMaskInformation lrMaskInfo = generateLayerMaskInfo<T>(layeredFile, header);
+	ImageData imageData = ImageData(layeredFile.getNumChannels(true, true));	// Ignore any mask or alpha channels
 
-	/// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
-	/// initialized with the given layer record and corresponding channel image data.
-	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
-	template <typename T>
-	std::shared_ptr<Layer<T>> generateLayerFromPhotoshopData(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header);
-
-	/// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order
-	/// is not guaranteed
-	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers);
-	
-	/// Recursively build a flat layer hierarchy
-	template <typename T>
-	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers);
-	
-	/// Find a layer based on a separated path and a parent layer. To be called by LayeredFile::findLayer
-	template <typename T>
-	std::shared_ptr<Layer<T>> findLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::vector<std::string> path, int index);
-
-	template <typename T>
-	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices);
-
-	template <typename T>
-	void setCompressionRecurse(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode);
-
-	template <typename T>
-	bool isLayerInDocumentRecurse(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer);
-
-	/// Remove a layer from the hierarchy recursively, if a match is found we short circuit and return early
-	template <typename T>
-	bool removeLayerRecurse(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer);
-
-	// Util functions
-	// --------------------------------------------------------------------------------
-	// --------------------------------------------------------------------------------
-
-	/// Read the ICC profile from the PhotoshopFile, if it doesnt exist we simply initialize an
-	/// empty ICC profile
-	ICCProfile readICCProfile(const PhotoshopFile* file);
-
-	/// Read the document DPI, default to 72 if we cannot read it.
-	float readDPI(const PhotoshopFile* file);
+	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }
 
 
