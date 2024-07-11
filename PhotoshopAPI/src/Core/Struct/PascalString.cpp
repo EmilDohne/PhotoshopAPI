@@ -18,9 +18,18 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 PascalString::PascalString(std::string name, const uint8_t padding)
 {
-	uint8_t stringSize = name.size();
+	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities. Since we write
+	// out the Unicode Layer name for layers anyways this isnt too bothersome
+	std::string truncatedName = name;
+	if (name.size() > 254u - 254u % padding)
+	{
+		PSAPI_LOG_WARNING("PascalString", "A pascal string can have a maximum length of 254, got %u. Truncating to fit", m_String.size());
+		truncatedName = name.substr(0, 254 - 254 % padding);
+	}
+
+	uint8_t stringSize = truncatedName.size();
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
-	m_String = name;
+	m_String = truncatedName;
 }
 
 
@@ -36,9 +45,18 @@ uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= null
 	return m_Size;
 }
 
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-std::string_view PascalString::getString() const noexcept
+std::string PascalString::getString() const noexcept
+{
+	return m_String;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+const std::string_view PascalString::getStringView() const noexcept
 {
 	return m_String;
 }
@@ -50,7 +68,8 @@ void PascalString::read(File& document, const uint8_t padding) noexcept
 	uint8_t stringSize = ReadBinaryData<uint8_t>(document);
 	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
 	std::vector<uint8_t> stringData = ReadBinaryArray<uint8_t>(document, stringSize);
-	m_String = std::string(stringData.begin(), stringData.end());
+	auto PascalString = std::string(stringData.begin(), stringData.end());
+	m_String = convertStrToUTF8(EncodingType::Windows_1252, PascalString);
 
 	// Skip the padding bytes
 	document.skip(m_Size - 1u - stringSize);
@@ -61,24 +80,20 @@ void PascalString::read(File& document, const uint8_t padding) noexcept
 // ---------------------------------------------------------------------------------------------------------------------
 void PascalString::write(File& document, const uint8_t padding) const
 {
-	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities
-	if (m_String.size() >  254u - 254u % padding )
-	{
-		PSAPI_LOG_ERROR("PascalString", "A pascal string can have a maximum length of 254, got %u", m_String.size());
-	}
 	if (m_Size == 0)
 	{
 		PSAPI_LOG_ERROR("PascalString", "Size field is 0 which is not allowed since it will always be at least 1, was the PascalString initialized correctly?");
 	}
+	std::string nativeStr = ConvertUTF8ToStr(EncodingType::Windows_1252, m_String);
 
 	// The length marker only denotes the actual length of the data, not any padding
-	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(m_String.size()));
+	WriteBinaryData<uint8_t>(document, static_cast<uint8_t>(nativeStr.size()));
 
-	std::vector<uint8_t> stringData(m_String.begin(), m_String.end());
+	std::vector<uint8_t> stringData(nativeStr.begin(), nativeStr.end());
 	WriteBinaryArray<uint8_t>(document, std::move(stringData));
 
 	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, m_Size - m_String.size() - 1u);
+	WritePadddingBytes(document, m_Size - nativeStr.size() - 1u);
 }
 
 

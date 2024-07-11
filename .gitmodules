@@ -13,3 +13,6 @@
 [submodule "thirdparty/mio"]
 	path = thirdparty/mio
 	url = https://github.com/vimpunk/mio
+[submodule "thirdparty/simdutf"]
+	path = thirdparty/simdutf
+	url = https://github.com/simdutf/simdutf
