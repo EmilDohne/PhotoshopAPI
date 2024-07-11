@@ -68,6 +68,19 @@ void WriteBinaryArray(File& document, std::vector<T>&& data)
 }
 
 
+// Write an array of data while endian encoding the values, this will modify the incoming data
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template <typename T>
+void WriteBinaryArray(File& document, std::vector<T>& data)
+{
+	// Endian encode in-place
+	endianEncodeBEArray<T>(data);
+	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
+	document.write(dataSpan);
+}
+
+
 // Write a given amount of padding bytes with explicit zeroes
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
