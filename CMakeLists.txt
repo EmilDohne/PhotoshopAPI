@@ -57,6 +57,8 @@ target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)
 
 # Add simdutf for UTF conversion operations
 set (SIMDUTF_TESTS OFF)
+set (SIMDUTF_TOOLS OFF)
+set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
 
 # Add span from tcb for compatibility with older compilers for python bindings

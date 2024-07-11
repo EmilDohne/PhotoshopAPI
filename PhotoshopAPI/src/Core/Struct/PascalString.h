@@ -338,22 +338,12 @@ inline static std::string convertStrToUTF8(EncodingType encoding, const std::str
 }
 
 
-/// Convert a utf-8 encoded string to another encoding. For the moment we simply map the ascii
-/// characters and ignore any special character
+/// Convert a utf-8 encoded string to another encoding. For the moment we simply parse the data through as is
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 inline static std::string ConvertUTF8ToStr(EncodingType encoding, const std::string str)
 {
-    PROFILE_FUNCTION();
-    std::string res = "";
-    for (const auto& character : str)
-    {
-        if (character < 0x80)
-        {
-            res += character;
-        }
-    }
-    return res;
+    return str;
 }
 
 
