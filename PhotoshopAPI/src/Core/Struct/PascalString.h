@@ -348,7 +348,7 @@ inline static std::string ConvertUTF8ToStr(EncodingType encoding, const std::str
     std::string res = "";
     for (const auto& character : str)
     {
-        if (character < 0x80)
+        if (static_cast<unsigned char>(character) < 0x80)
         {
             res += character;
         }
