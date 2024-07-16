@@ -54,14 +54,14 @@ struct bidirectional_unordered_map
 	void insert(const std::pair<const U, const T>& val) noexcept { insert(std::get<0>(val), std::get<1>(val)); }
 
 	/// Access an element without bounds checks
-	const T& operator[](const U& key) { return m_MapBackwards[key]; }
+	T operator[](const U& key) { return m_MapBackwards[key]; }
 	/// Access an element without bounds checks
-	const U& operator[](const T& key) { return m_MapForward[key]; }
+	U operator[](const T& key) { return m_MapForward[key]; }
 
 	/// Access an element with bounds checks
-	T& at(const U& key) { return m_MapBackwards.at(key); }
+	T at(const U& key) const { return m_MapBackwards.at(key); }
 	/// Access an element with bounds checks
-	U& at(const T& key) { return m_MapForward.at(key); }
+	U at(const T& key) const { return m_MapForward.at(key); }
 
 	size_t size() const noexcept { return m_MapForward.size(); }
 
