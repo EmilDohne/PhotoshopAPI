@@ -13,41 +13,50 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 namespace Descriptors
 {
-
 	// Forward declaration for use in some of the DescriptorItems
 	struct Descriptor;
-
-	// Forward declare these items to use them in the ItemVariant type
+	struct GlobalObject;	// TODO
+	// Forward declare these items to use them in the DescriptorVariant type
 	struct Property;
-	struct Class;
+	struct Class;		// TODO implement the different keys
 	struct Enumerated;
+	struct Double;		// TODO add thin wrapper
+	struct Integer;		// TODO add thin wrapper
+	struct LargeInteger;// TODO add thin wrapper
+	struct Boolean;		// TODO add thin wrapper
+	struct String;		// TODO add thin wrapper
 	struct Index;
 	struct Name;
 	struct EnumeratedReference;
 	struct ObjectArray;
 	struct Offset;
 	struct RawData;
+	struct Path;		// TODO
 	struct Identifier;
 	struct UnitFloat;
 	struct UnitFloats;
 	struct List;
+	struct Reference;	// TODO
 
 	/// std::variant type which holds all the types that may be encountered within a Descriptor Structure.
 	/// This includes Descriptors themselves
 	using DescriptorVariant = std::variant<
 		Descriptor,
 		List,
+		Reference,
 		RawData,
-		double,
+		Path,
+		Double,
 		UnitFloat,
 		UnitFloats,
 		Enumerated,
-		int32_t,	// Integer type
-		int64_t,	// Large Integer type
-		bool,
-		UnicodeString,	// String type
+		Integer,
+		LargeInteger,
+		Boolean,
+		String,
 		Class,
 		Property,
 		EnumeratedReference,
@@ -80,8 +89,10 @@ namespace Descriptors
 		{
 			Reference,
 			Descriptor,
+			GlobalObject,
 			ObjectArray, // Undocumented but basically the same as Descriptor
 			List,
+			Reference,
 			Double,
 			UnitFloat,
 			UnitFloats,
@@ -90,9 +101,12 @@ namespace Descriptors
 			Integer,
 			LargeInteger,
 			Boolean,
-			Class,
+			Class_1,
+			Class_2,
+			Class_3,
 			Alias,
 			RawData,
+			Path,
 			Property,
 			EnumeratedReference,
 			Offset,
@@ -104,12 +118,14 @@ namespace Descriptors
 		/// A list of all the valid descriptor keys we know of, some of these are undocumented and 
 		/// others are grouped for convenience as the way they are read is identical and we store
 		/// the OSType on the struct anyways
-		static const std::unordered_map<OSTypes, std::vector<std::vector<char>>> descriptorKeys
+		static const std::unordered_map<OSTypes, std::vector<char>> descriptorKeys
 		{
 			// OSType keys
-			{ OSTypes::Descriptor,			{{ 'O', 'b', 'j', 'c' }, { 'G', 'l', 'b', 'O' }}},	// Descriptor & GlobalObject
+			{ OSTypes::Descriptor,			{{ 'O', 'b', 'j', 'c' }}},	// Descriptor
+			{ OSTypes::GlobalObject,		{{ 'G', 'l', 'b', 'O' }}},	// GlobalObject (same as Descriptor)
 			{ OSTypes::ObjectArray,			{{ 'O', 'b', 'A', 'r' }}},	// ObjectArray
-			{ OSTypes::List,				{{ 'V', 'l', 'L', 's' }, { 'o', 'b', 'j', ' ' }}},	// List & Reference
+			{ OSTypes::List,				{{ 'V', 'l', 'L', 's' }}},	// List
+			{ OSTypes::Reference,			{{ 'o', 'b', 'j', ' ' }}},	// Reference (same as List)
 			{ OSTypes::Double,				{{ 'd', 'o', 'u', 'b' }}},	// Double
 			{ OSTypes::UnitFloat,			{{ 'U', 'n', 't', 'F' }}},	// Unit Float
 			{ OSTypes::UnitFloats,			{{ 'U', 'n', 'F', 'l' }}},	// Unit Float
@@ -118,9 +134,12 @@ namespace Descriptors
 			{ OSTypes::Integer,				{{ 'l', 'o', 'n', 'g' }}},	// Integer (int32_t)
 			{ OSTypes::LargeInteger,		{{ 'c', 'o', 'm', 'p' }}},	// Large integer (int64_t)
 			{ OSTypes::Boolean,				{{ 'b', 'o', 'o', 'l' }}},	// Boolean
-			{ OSTypes::Class,				{{ 't', 'y', 'p', 'e' }, { 'G', 'l', 'b', 'C' }, { 'C', 'l', 's', 's' }}},	// Class
+			{ OSTypes::Class_1,				{{ 't', 'y', 'p', 'e' }}},	// Class
+			{ OSTypes::Class_2,				{{ 'G', 'l', 'b', 'C' }}},	// Class
+			{ OSTypes::Class_3,				{{ 'C', 'l', 's', 's' }}},	// Class
 			{ OSTypes::Alias,				{{ 'a', 'l', 'i', 's' }}},	// Alias
-			{ OSTypes::RawData,				{{ 't', 'd', 't', 'a' }, { 'P', 't', 'h', ' '}}},	// Raw Data & Path (both are the same)
+			{ OSTypes::RawData,				{{ 't', 'd', 't', 'a' }}},	// Raw data
+			{ OSTypes::Path,				{{ 'P', 't', 'h', ' ' }}},	// Path (same as raw data)
 			// OSType Reference Keys	
 			{ OSTypes::Property,			{{ 'p', 'r', 'o', 'p' }}}, // Property
 			{ OSTypes::EnumeratedReference, {{ 'E', 'n', 'm', 'r' }}}, // Enumerated Reference
@@ -280,13 +299,16 @@ namespace Descriptors
 		std::vector<std::pair<std::string, DescriptorVariant>> m_DescriptorItems;
 	};
 
+
 	struct Property : public DescriptorBase
 	{
 		UnicodeString m_Name;
 		std::string m_ClassID;
 		std::string m_KeyID;
 
+		Property() = default;
 		Property(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Property(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string keyID);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -297,7 +319,9 @@ namespace Descriptors
 		UnicodeString m_Name;
 		std::string m_ClassID;
 
+		Class() = default;
 		Class(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Class(std::string key, std::vector<char> osKey, std::string name, std::string classID);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -309,7 +333,9 @@ namespace Descriptors
 		std::string m_TypeID;
 		std::string m_Enum;
 
+		Enumerated() = default;
 		Enumerated(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Enumerated(std::string key, std::vector<char> osKey, std::string typeID, std::string enumerator);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -320,7 +346,9 @@ namespace Descriptors
 	{
 		int32_t m_Identifier{};
 
+		Index() = default;
 		Index(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Index(std::string key, std::vector<char> osKey, int32_t identifier);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -333,7 +361,16 @@ namespace Descriptors
 		std::string m_TypeID;
 		std::string m_Enum;
 
+		EnumeratedReference() = default;
 		EnumeratedReference(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		EnumeratedReference(
+			std::string key, 
+			std::vector<char> osKey, 
+			std::string name, 
+			std::string classID, 
+			std::string typeID, 
+			std::string enumerator
+		);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -345,7 +382,9 @@ namespace Descriptors
 		std::string m_ClassID;
 		uint32_t m_Offset{};
 
+		Offset() = default;
 		Offset(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Offset(std::string key, std::vector<char> osKey, std::string name, std::string classID, uint32_t offset);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -356,7 +395,9 @@ namespace Descriptors
 	{
 		int32_t m_Identifier{};
 
+		Identifier() = default;
 		Identifier(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Identifier(std::string key, std::vector<char> osKey, int32_t identifier);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -371,7 +412,10 @@ namespace Descriptors
 		/// The value of the UnitFloat, please refer to m_UnitType for how to interpret this value
 		double m_Value{};
 
+		UnitFloat() = default;
 		UnitFloat(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		UnitFloat(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, double value);
+
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -383,7 +427,10 @@ namespace Descriptors
 		Impl::UnitFloatType m_UnitType{};
 		std::vector<double> m_Values{};
 
+		UnitFloats() = default;
 		UnitFloats(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		UnitFloats(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, std::vector<double> values);
+
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -396,7 +443,9 @@ namespace Descriptors
 	{
 		std::vector<DescriptorVariant> m_Items;
 
+		List() = default;
 		List(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		List(std::string key, std::vector<char> osKey, std::vector<DescriptorVariant> items);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -406,10 +455,17 @@ namespace Descriptors
 	{
 		std::vector<uint8_t> m_Data{};
 
+		RawData() = default;
 		RawData(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		RawData(std::string key, std::vector<char> osKey, std::vector<uint8_t> data);
 
 		void read(File& document) override;
 		void write(File& document) override;
+	};
+
+	struct Path : public RawData
+	{
+		using RawData::RawData;
 	};
 
 	struct Name : public DescriptorBase
@@ -418,7 +474,9 @@ namespace Descriptors
 		std::string m_ClassID;
 		UnicodeString m_Value;
 
+		Name() = default;
 		Name(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		Name(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string value);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -431,10 +489,16 @@ namespace Descriptors
 		uint32_t m_ItemsCount{};
 		UnicodeString m_Name{};
 		std::string m_ClassID{};
-		std::vector<char> m_OSKey;
-		std::vector<std::pair<std::string, DescriptorVariant>> m_DescriptorItems;
 
+		ObjectArray() = default;
 		ObjectArray(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		ObjectArray(
+			std::string key, 
+			std::vector<char> osKey, 
+			uint32_t itemsCount, 
+			std::string name, 
+			std::string classID,
+			std::vector<std::pair<std::string, DescriptorVariant>> items);
 
 		void read(File& document) override;
 		void write(File& document) override;

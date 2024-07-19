@@ -70,13 +70,10 @@ namespace Descriptors
 	{
 		if (key.size() != 4u)
 			PSAPI_LOG_ERROR("Descriptor", "Invalid length of OSType key passed, expected 4 but got %zu instead", key.size());
-		for (const auto& [type, items] : Impl::descriptorKeys)
+		for (const auto& [type, osKey] : Impl::descriptorKeys)
 		{
-			for (const auto& osKey : items)
-			{
-				if (key == osKey)
-					return type;
-			}
+			if (key == osKey)
+				return type;
 		}
 		PSAPI_LOG_ERROR("Descriptor", "Unable to retrieve a OS type from key '%c%c%c%c'", key[0], key[1], key[2], key[3]);
 		return Impl::OSTypes::RawData;
@@ -335,7 +332,7 @@ namespace Descriptors
 			if (_key == key)
 				return value;
 		}
-		m_DescriptorItems.push_back(std::make_pair(key, DescriptorVariant{}));
+		m_DescriptorItems.push_back(std::make_pair(std::string(key), DescriptorVariant{}));
 		return m_DescriptorItems.back().second;
 	}
 
@@ -452,6 +449,17 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	Property::Property(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string keyID)
+		: DescriptorBase(key, osKey)
+	{
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
+		m_KeyID = keyID;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Property::read(File& document)
 	{
 		m_Name.read(document, 1u);
@@ -467,6 +475,16 @@ namespace Descriptors
 		m_Name.write(document, 1u);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 		Impl::writeLengthDenotedKey(document, m_KeyID);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	UnitFloat::UnitFloat(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, double value)
+		: DescriptorBase(key, osKey)
+	{
+		m_UnitType = type;
+		m_Value = value;
 	}
 
 
@@ -488,7 +506,6 @@ namespace Descriptors
 	}
 
 
-
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void UnitFloat::write(File& document)
@@ -498,6 +515,16 @@ namespace Descriptors
 		std::vector<uint8_t> unitTypeData(unitTypeKey.begin(), unitTypeKey.end());
 		WriteBinaryArray(document, unitTypeData);
 		WriteBinaryData<double>(document, m_Value);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	UnitFloats::UnitFloats(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, std::vector<double> values)
+		: DescriptorBase(key, osKey)
+	{
+		m_UnitType = type;
+		m_Values = values;
 	}
 
 
@@ -535,6 +562,14 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	RawData::RawData(std::string key, std::vector<char> osKey, std::vector<uint8_t> data)
+		: DescriptorBase(key, osKey)
+	{
+		m_Data = data;
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void RawData::read(File& document)
 	{
 		auto size = ReadBinaryData<uint32_t>(document);
@@ -548,6 +583,16 @@ namespace Descriptors
 	{
 		WriteBinaryData<uint32_t>(document, m_Data.size());
 		WriteBinaryArray<uint8_t>(document, m_Data);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Class::Class(std::string key, std::vector<char> osKey, std::string name, std::string classID)
+		: DescriptorBase(key, osKey)
+	{
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
 	}
 
 
@@ -589,6 +634,34 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	Enumerated::Enumerated(std::string key, std::vector<char> osKey, std::string typeID, std::string enumerator)
+		: DescriptorBase(key, osKey)
+	{
+		m_TypeID = typeID;
+		m_Enum = enumerator;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	EnumeratedReference::EnumeratedReference(
+		std::string key,
+		std::vector<char> osKey,
+		std::string name,
+		std::string classID,
+		std::string typeID,
+		std::string enumerator)
+		: DescriptorBase(key, osKey)
+	{
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
+		m_TypeID = typeID;
+		m_Enum = enumerator;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void EnumeratedReference::read(File& document)
 	{
 		m_Name.read(document, 1u);
@@ -611,6 +684,17 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	Offset::Offset(std::string key, std::vector<char> osKey, std::string name, std::string classID, uint32_t offset)
+		: DescriptorBase(key, osKey)
+	{
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
+		m_Offset = offset;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Offset::read(File& document)
 	{
 		m_Name.read(document, 1u);
@@ -627,7 +711,7 @@ namespace Descriptors
 		m_ClassID = Impl::readLengthDenotedKey(document);
 		m_Offset = ReadBinaryData<uint32_t>(document);
 	}
-
+	
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -646,16 +730,46 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	Identifier::Identifier(std::string key, std::vector<char> osKey, int32_t identifier)
+		: DescriptorBase(key, osKey)
+	{
+		m_Identifier = identifier;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Index::Index(std::string key, std::vector<char> osKey, int32_t identifier)
+		: DescriptorBase(key, osKey)
+	{
+		m_Identifier = identifier;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Index::read(File& document)
 	{
 		m_Identifier = ReadBinaryData<int32_t>(document);
 	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void Index::write(File& document)
 	{
 		WriteBinaryData<int32_t>(document, m_Identifier);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Name::Name(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string value)
+		: DescriptorBase(key, osKey)
+	{
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
+		m_Value = UnicodeString(value, 1u);
 	}
 
 
@@ -677,6 +791,16 @@ namespace Descriptors
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 		m_Value.write(document, 1u);
 	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	List::List(std::string key, std::vector<char> osKey, std::vector<DescriptorVariant> items)
+		: DescriptorBase(key, osKey)
+	{
+		m_Items = items;
+	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -720,7 +844,6 @@ namespace Descriptors
 	}
 
 
-
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void ObjectArray::write(File& document)
@@ -735,6 +858,23 @@ namespace Descriptors
 		}
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ObjectArray::ObjectArray(
+		std::string key, 
+		std::vector<char> osKey, 
+		uint32_t itemsCount, 
+		std::string name, 
+		std::string classID,
+		std::vector<std::pair<std::string, DescriptorVariant>> items)
+		: DescriptorBase(key, osKey)
+	{
+		m_ItemsCount = itemsCount;
+		m_Name = UnicodeString(name, 1u);
+		m_ClassID = classID;
+		m_DescriptorItems = items;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
