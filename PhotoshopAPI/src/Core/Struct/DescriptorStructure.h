@@ -18,7 +18,7 @@ namespace Descriptors
 {
 	// Forward declaration for use in some of the DescriptorItems
 	struct Descriptor;
-	struct GlobalObject;	// TODO
+	struct GlobalObject;
 	// Forward declare these items to use them in the DescriptorVariant type
 	struct Property;
 	struct Class;		// TODO implement the different keys
@@ -530,8 +530,8 @@ namespace Descriptors
 		UnicodeString m_Name{};
 
 		Descriptor() = default;
-		Descriptor(std::string key, std::vector<char> oskey) : DescriptorBase(key, oskey) {};
-		Descriptor(std::string key, std::vector<char> osKey, std::vector<std::pair<std::string, DescriptorVariant>> items);
+		Descriptor(std::string key) : DescriptorBase(key, Impl::descriptorKeys.at(Impl::OSTypes::Descriptor)) {};
+		Descriptor(std::string key, std::vector<std::pair<std::string, DescriptorVariant>> items);
 
 		void read(File& document) override;
 		void write(File& document) override;
@@ -539,6 +539,12 @@ namespace Descriptors
 		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const {
 			return 0;
 		};
+	};
+
+
+	struct GlobalObject : public Descriptor
+	{
+
 	};
 
 }
