@@ -67,10 +67,8 @@ void readFileExtractData(const int repeats, const std::filesystem::path& readPat
 				if (auto imageLayer = dynamic_pointer_cast<ImageLayer<T>>(layer))
 				{
 					auto data = imageLayer->getImageData();
-					std::cout << data.size();
 				}
 			}
-			std::cout << std::endl;
 		}
 		Instrumentor::Get().EndSession();
 	}

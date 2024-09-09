@@ -60,7 +60,7 @@ inline void DecompressData(ByteStream& stream, std::span<T> buffer, uint64_t off
 // RLE compression will encode the scanline sizes at the start of the data as well. This would equals to 
 // 2/4 * height bytes of additional data (2 bytes for PSD and 4 for PSB)
 template <typename T>
-inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height)
+inline std::vector<uint8_t> CompressData(std::span<T> uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
 	if (compression == Enum::Compression::Raw)
 	{
@@ -96,7 +96,7 @@ inline std::vector<uint8_t> CompressData(std::vector<T>& uncompressedIn, const E
 {
 	if (compression == Enum::Compression::Raw)
 	{
-		endianEncodeBEArray(uncompressedIn);
+		endianEncodeBEArray(std::span<T>(uncompressedIn));
 		std::vector<uint8_t> data(uncompressedIn.size() * sizeof(T));
 		std::memcpy(reinterpret_cast<void*>(data.data()), reinterpret_cast<void*>(uncompressedIn.data()), data.size());
 		return data;
