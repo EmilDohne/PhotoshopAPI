@@ -449,26 +449,70 @@ public:
 		// blocks to parallelize across with all of our threads.
 		const size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
 
+		// Construct variables for correct exception stack unwinding
+		std::atomic<bool> exceptionOccurred = false;
+		std::mutex exceptionMutex;
+		std::vector<std::string> exceptionMessages;
+
 		if (doCopy)
 		{
 			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
 				[&](auto& pair)
 				{
-					auto& [key, value] = pair;
-					// Get the data using the preallocated buffer
-					value->template getData<T>(std::span<T>(imgData[key]), numThreads);
+					try
+					{
+						auto& [key, value] = pair;
+						// Get the data using the preallocated buffer
+						value->template getData<T>(std::span<T>(imgData[key]), numThreads);
+					}
+					catch (std::runtime_error& e)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back(e.what());
+					}
+					catch (...)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back("Unknown exception caught.");
+					}
 				});
 		}
 		else
 		{
-			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+			std::for_each(std::execution::seq, m_ImageData.begin(), m_ImageData.end(),
 				[&](auto& pair)
 				{
-					auto& [key, value] = pair;
-					// Get the data using the preallocated buffer
-					value->template extractData<T>(std::span<T>(imgData[key]), numThreads);
+					try
+					{
+						// Get the data using the preallocated buffer
+						pair.second->template extractData<T>(std::span<T>(imgData[pair.first]), numThreads);
+					}
+					catch (std::runtime_error& e)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back(e.what());
+					}
+					catch (...)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back("Unknown exception caught.");
+					}
 				});
 		}
+
+
+		if (exceptionOccurred)
+		{
+			for (const auto& msg : exceptionMessages)
+			{
+				PSAPI_LOG_ERROR("ImageLayer", "Exception caught: %s", msg.c_str());
+			}
+		}
+
 		return imgData;
 	}
 
