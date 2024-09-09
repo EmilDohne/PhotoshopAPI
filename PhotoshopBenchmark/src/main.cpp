@@ -66,7 +66,9 @@ void readFileExtractData(const int repeats, const std::filesystem::path& readPat
 			{
 				if (auto imageLayer = dynamic_pointer_cast<ImageLayer<T>>(layer))
 				{
+					extractProfiler.startTimePoint();
 					auto data = imageLayer->getImageData();
+					extractProfiler.endTimePoint();
 				}
 			}
 		}
