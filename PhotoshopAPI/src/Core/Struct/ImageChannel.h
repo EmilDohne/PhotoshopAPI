@@ -39,8 +39,8 @@ PSAPI_NAMESPACE_BEGIN
 struct ImageChannel
 {
 	/// The size of each sub-chunk in the super-chunk. For more information about what a chunk and super-chunk is
-	/// please refer to the c-blosc2 documentation. Defaults to 2MB
-	static const uint64_t m_ChunkSize = 1024 * 1024 * 2;
+	/// please refer to the c-blosc2 documentation. Defaults to 8MB
+	static const uint64_t m_ChunkSize = 1024 * 1024 * 8;
 	/// This does not indicate the compression method of the channel in memory 
 	/// but rather the compression method it writes the PhotoshopFile with
 	Enum::Compression m_Compression = Enum::Compression::Raw;
