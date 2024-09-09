@@ -879,7 +879,7 @@ uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression)
+std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads)
 {
 	PROFILE_FUNCTION();
 
@@ -897,7 +897,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	std::vector<uint8_t> buffer;
 	libdeflate_compressor* compressor = libdeflate_alloc_compressor(ZIP_COMPRESSION_LVL);
 	{
-		PROFILE_SCOPE("Compression Allocate buffer");
+		PROFILE_SCOPE("Allocate compression buffer");
 		size_t maxWidth = 0;
 		size_t maxHeight = 0;
 		for (const auto& channel : m_ImageData)
@@ -933,6 +933,23 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		}
 	}
 
+	// Allocate a buffer we can use as scratch for the channel extraction that way we dont have to regenerate a buffer for each iteration.
+	// If we ever change back for doing the compression per-channel in parallel we have to get rid of this again
+	size_t maxSize = 0;
+	for (const auto& channel : m_ImageData)
+	{
+		size_t size = static_cast<size_t>(channel->getWidth()) * channel->getHeight();
+		if (maxSize < size)
+		{
+			maxSize = size;
+		}
+	}
+	std::vector<T> channelDataBuffer;
+	{
+		PROFILE_SCOPE("Allocate channel buffer");
+		channelDataBuffer = std::vector<T>(maxSize);
+	}
+
 	for (int i = 0; i < m_ImageData.size(); ++i)
 	{
 		// Take ownership of and invalidate the current channel index
@@ -957,9 +974,12 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 			compressionMode = Enum::Compression::ZipPrediction;
 		}
 
+		// Construct a span from our buffer that is exactly sized to make the CompressData calls behave correctly. The wh
+		std::span<T> channelDataSpan = std::span<T>(channelDataBuffer.begin(), channelDataBuffer.begin() + static_cast<size_t>(width) * height);
+
 		// Compress the image data into a binary array and store it in our compressedData vec
-		std::vector<T> imgData = imageChannelPtr->getData<T>();
-		compressedData.push_back(CompressData(imgData, buffer, compressor, compressionMode, header, width, height));
+		imageChannelPtr->getData<T>(channelDataSpan, numThreads);
+		compressedData.push_back(CompressData(channelDataSpan, buffer, compressor, compressionMode, header, width, height));
 
 		// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
 		LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
@@ -1306,17 +1326,22 @@ void LayerInfo::write(File& document, const FileHeader& header, ProgressCallback
 			callback.setTask("Compressing Layer: " + std::string(m_LayerRecords[index].m_LayerName.getString()));
 			std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
 			std::vector<Enum::Compression> lrCompression;
+
+			// If we have some additional threads to spare we pass them into compression as some internal functions can make use of this
+			size_t threadCount = std::thread::hardware_concurrency() / m_ChannelImageData.size();
+			threadCount = threadCount < 1 ? 1 : threadCount;
+
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				compressedData[index] = channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression);
+				compressedData[index] = channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression, threadCount);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				compressedData[index] = channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression);
+				compressedData[index] = channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression, threadCount);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				compressedData[index] = channel.compressData<float32_t>(header, lrChannelInfo, lrCompression);
+				compressedData[index] = channel.compressData<float32_t>(header, lrChannelInfo, lrCompression, threadCount);
 			}
 			else
 			{

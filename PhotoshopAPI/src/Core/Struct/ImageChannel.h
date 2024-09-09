@@ -6,6 +6,7 @@
 #include "Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "CoordinateUtil.h"
+#include "ThreadPool.h"
 
 #include "blosc2.h"
 
@@ -14,6 +15,14 @@
 #include <memory>
 #include <random>
 #include <execution>
+
+// If we compile with C++<20 we replace the stdlib implementation with the compatibility
+// library
+#if (__cplusplus < 202002L)
+#include "tcb_span.hpp"
+#else
+#include <span>
+#endif
 
 
 #define __STDC_FORMAT_MACROS 1
@@ -30,8 +39,8 @@ PSAPI_NAMESPACE_BEGIN
 struct ImageChannel
 {
 	/// The size of each sub-chunk in the super-chunk. For more information about what a chunk and super-chunk is
-	/// please refer to the c-blosc2 documentation
-	static const uint64_t m_ChunkSize = 16384 * 16384;
+	/// please refer to the c-blosc2 documentation. Defaults to 2MB
+	static const uint64_t m_ChunkSize = 1024 * 1024 * 2;
 	/// This does not indicate the compression method of the channel in memory 
 	/// but rather the compression method it writes the PhotoshopFile with
 	Enum::Compression m_Compression = Enum::Compression::Raw;
@@ -41,15 +50,30 @@ struct ImageChannel
 	uint64_t m_OrigByteSize = 0u;	
 
 
+	/// Get the width of the uncompressed ImageChannel
+	int32_t getWidth() const { return m_Width; };
+	/// Get the height of the uncompressed ImageChannel
+	int32_t getHeight() const { return m_Height; };
+	/// Get the x-coordinate of the uncompressed ImageChannel
+	float getCenterX() const { return m_XCoord; };
+	/// Get the y-coordinate of the uncompressed ImageChannel
+	float getCenterY() const { return m_YCoord; };
+	/// Get the total number of chunks held in the ImageChannel
+	uint64_t getNumChunks() const { return m_NumChunks; };
+
+
 	/// Extract the data from the image channel and invalidate it (can only be called once). 
 	/// If the image data does not exist yet we simply return an empty vector<T>. If the data
 	/// was already freed we throw
+	/// 
+	/// \param numThreads The number of threads to use for decompression. By default this is 0 which will set it to hardware_concurrency.
+	///					  If you are calling this in a non-threaded environment this is likely the option you should choose
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	std::vector<T> extractData() {
+	std::vector<T> extractData(size_t numThreads = 0) {
 		PROFILE_FUNCTION();
-		auto buffer = getData<T>();
+		auto buffer = getData<T>(numThreads);
 		if (buffer.size() > 0)
 		{
 			blosc2_schunk_free(m_Data);
@@ -59,42 +83,113 @@ struct ImageChannel
 		return std::vector<T>();
 	}
 
-
-	/// Copy the image data out of the ImageChannel, does not free the data afterwards. Returns an empty vector if the
-	/// data does not exist yet. If the data was already freed we throw
+	/// Extract the data from the image channel and invalidate it (can only be called once). 
+	/// If the image data does not exist yet we simply return an empty vector<T>. If the data
+	/// was already freed we throw
+	/// 
+	/// \param buffer A preallocated buffer whose size matches that of m_OrigByteSize / sizeof(T). If this is not given we throw an error
+	/// \param numThreads The number of threads to use for decompression. By default this is 0 which will set it to hardware_concurrency.
+	///					  If you are calling this in a non-threaded environment this is likely the option you should choose
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	std::vector<T> getData()
+	void extractData(std::span<T> buffer, size_t numThreads = 0) {
+		PROFILE_FUNCTION();
+
+		if (!m_Data)
+		{
+			PSAPI_LOG_WARNING("ImageChannel", "extractData() called without the channel having been initialized yet, returning without having filled the given buffer");
+			return;
+		}
+
+		getData<T>(buffer, numThreads);
+		blosc2_schunk_free(m_Data);
+		m_wasFreed = true;
+	}
+
+
+	/// Copy the image data out of the ImageChannel using a preallocated buffer, does not free the data afterwards. If the data was already freed we throw
+	/// 
+	/// \param buffer A preallocated buffer whose size matches that of m_OrigByteSize / sizeof(T). If this is not given we throw an error
+	/// \param numThreads The number of threads to use for decompression. By default this is 0 which will set it to hardware_concurrency.
+	///					  If you are calling this in a non-threaded environment this is likely the option you should choose
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	template <typename T>
+	void getData(std::span<T> buffer, size_t numThreads = 0)
 	{
 		PROFILE_FUNCTION();
+
 		if (!m_Data)
 		{
 			PSAPI_LOG_WARNING("ImageChannel", "Channel data does not exist yet, was it initialized?");
-			return std::vector<T>();
+			return;
 		}
 		if (m_wasFreed)
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "Data was already freed, cannot extract it anymore");
 		}
+		if (buffer.size() != m_OrigByteSize / sizeof(T))
+		{
+			PSAPI_LOG_ERROR("ImageChannel", "getData() buffer must be exactly the size of m_OrigByteSize / sizeof(T)");
+		}
 
-		std::vector<T> buffer(m_OrigByteSize / sizeof(T), 0);
+		// Set thread number to hardware concurrency if we dont detect threading
+		if (numThreads == 0)
+		{
+			numThreads = std::thread::hardware_concurrency();
+		}
+
+		Internal::ThreadPool pool(numThreads);
 
 		uint64_t remainingSize = m_OrigByteSize;
+		std::vector<blosc2_context*> contexts;
+		std::vector<std::future<void>> futures; // To store future objects for each task
+
+		blosc2_dparams params = BLOSC2_DPARAMS_DEFAULTS;
+
+
 		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
+			// Create a unique context
+			contexts.push_back(blosc2_create_dctx(*m_Data->storage->dparams));
+
 			void* ptr = reinterpret_cast<uint8_t*>(buffer.data()) + nchunk * m_ChunkSize;
 			if (remainingSize > m_ChunkSize)
 			{
-				blosc2_schunk_decompress_chunk(m_Data, nchunk, ptr, m_ChunkSize);
+				futures.emplace_back(pool.enqueue([=]() {
+					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, m_ChunkSize);
+					}));
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
-				blosc2_schunk_decompress_chunk(m_Data, nchunk, ptr, remainingSize);
+				futures.emplace_back(pool.enqueue([=]() {
+					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, remainingSize);
+					}));
 				remainingSize = 0;
 			}
 		}
+
+		// Wait for all tasks to complete
+		for (auto& future : futures) {
+			future.wait();
+		}
+	}
+
+
+	/// Copy the image data out of the ImageChannel, does not free the data afterwards. Returns an empty vector if the
+	/// data does not exist yet. If the data was already freed we throw
+	/// 
+	/// \param numThreads The number of threads to use for decompression. By default this is 0 which will set it to hardware_concurrency.
+	///					  If you are calling this in a non-threaded environment this is likely the option you should choose
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	template <typename T>
+	std::vector<T> getData(size_t numThreads = 0)
+	{
+		std::vector<T> buffer(m_OrigByteSize / sizeof(T));
+		getData(std::span<T>(buffer), numThreads);
 		return buffer;
 	}
 
@@ -178,17 +273,6 @@ struct ImageChannel
 	}
 
 
-	/// Get the width of the uncompressed ImageChannel
-	int32_t getWidth() const { return m_Width; };
-	/// Get the height of the uncompressed ImageChannel
-	int32_t getHeight() const { return m_Height; };
-	/// Get the x-coordinate of the uncompressed ImageChannel
-	float getCenterX() const { return m_XCoord; };
-	/// Get the y-coordinate of the uncompressed ImageChannel
-	float getCenterY() const { return m_YCoord; };
-	/// Get the total number of chunks held in the ImageChannel
-	uint64_t getNumChunks() const { return m_NumChunks; };
-
 	// On destruction free the blosc2 schunk if it wasnt freed yet
 	~ImageChannel() 
 	{
@@ -197,7 +281,10 @@ struct ImageChannel
 		m_wasFreed = true;
 	}
 	ImageChannel() = default;
+
+
 private:
+
 	blosc2_schunk* m_Data = nullptr;
 	/// Total number of chunks in the super-chunk
 	uint64_t m_NumChunks = 0u;
@@ -208,6 +295,8 @@ private:
 	int32_t m_Height = 0u;
 	float m_XCoord = 0.0f;
 	float m_YCoord = 0.0f;
+
+private:
 
 	// Initialize a blosc2 superchunk from a given data span, maybe we could augment this to give control over compression params?
 	// ---------------------------------------------------------------------------------------------------------------------

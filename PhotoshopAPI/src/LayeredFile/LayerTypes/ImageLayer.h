@@ -421,7 +421,9 @@ public:
 	/// \param doCopy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
 	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> getImageData(bool doCopy = true)
 	{
+		PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
+
 		if (Layer<T>::m_LayerMask.has_value())
 		{
 			Enum::ChannelIDInfo maskInfo;
@@ -430,21 +432,36 @@ public:
 			imgData[maskInfo] = Layer<T>::getMaskData(doCopy);
 		}
 
+		// Preallocate the data in parallel for some slight speedups
+		std::mutex imgDataMutex;
+		std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+			[&](auto& pair) {
+				auto& [key, value] = pair;
+				auto vec = std::vector<T>(value->m_OrigByteSize / sizeof(T));
+				{
+					std::lock_guard<std::mutex> lock(imgDataMutex);
+					imgData[key] = std::move(vec);
+				}
+			});
+
+
 		if (doCopy)
 		{
 			for (auto& [key, value] : m_ImageData)
 			{
-				imgData[key] = std::move(value->template getData<T>());
+				// Get the data using our preallocated buffer
+				value->template getData<T>(std::span<T>(imgData[key]));
 			}
 		}
 		else
 		{
 			for (auto& [key, value] : m_ImageData)
 			{
-				imgData[key] = std::move(value->template extractData<T>());
+				// Get the data using our preallocated buffer
+				value->template extractData<T>(std::span<T>(imgData[key]));
 			}
 		}
-		return imgData;
+		return std::move(imgData);
 	}
 
 	/// Change the compression codec of all the image channels
