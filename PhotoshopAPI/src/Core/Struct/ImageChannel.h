@@ -157,14 +157,14 @@ struct ImageChannel
 			void* ptr = reinterpret_cast<uint8_t*>(buffer.data()) + nchunk * m_ChunkSize;
 			if (remainingSize > m_ChunkSize)
 			{
-				futures.emplace_back(pool.enqueue([=]() {
+				futures.emplace_back(pool.enqueue([=, this]() {
 					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, m_ChunkSize);
 					}));
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
-				futures.emplace_back(pool.enqueue([=]() {
+				futures.emplace_back(pool.enqueue([=, this]() {
 					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, remainingSize);
 					}));
 				remainingSize = 0;
