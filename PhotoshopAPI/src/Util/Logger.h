@@ -5,6 +5,7 @@
 #include <vector>
 #include <chrono>
 #include <memory>
+#include <mutex>
 #include <iostream>
 
 #include <cstdarg>
@@ -93,6 +94,7 @@ public:
         auto logMessage = createMessage(time, task, buffer);
 
         {
+            std::lock_guard<std::mutex> lock(m_LogMutex);
             if (severity >= m_Severity)
             {
                 if (severity == Enum::Severity::Error)
@@ -113,6 +115,7 @@ public:
 
 private:
     Enum::Severity m_Severity = Enum::Severity::Debug;
+    std::mutex m_LogMutex;
 
     Logger() {
     }
