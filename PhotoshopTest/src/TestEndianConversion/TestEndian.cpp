@@ -17,8 +17,8 @@ TEST_CASE("Endian Roundtripping 16-bit array")
 	std::vector<NAMESPACE_PSAPI::bpp16_t> channel(width * height, 32768u);
 	std::vector<NAMESPACE_PSAPI::bpp16_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -35,8 +35,8 @@ TEST_CASE("Endian Roundtripping 32-bit array")
 	std::vector<NAMESPACE_PSAPI::bpp32_t> channel(width * height, 1.0f);
 	std::vector<NAMESPACE_PSAPI::bpp32_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -53,8 +53,8 @@ TEST_CASE("Endian Roundtripping 16-bit array large")
 	std::vector<NAMESPACE_PSAPI::bpp16_t> channel(width * height, 32768u);
 	std::vector<NAMESPACE_PSAPI::bpp16_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -71,8 +71,8 @@ TEST_CASE("Endian Roundtripping 32-bit array large")
 	std::vector<NAMESPACE_PSAPI::bpp32_t> channel(width * height, 1.0f);
 	std::vector<NAMESPACE_PSAPI::bpp32_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -89,8 +89,8 @@ TEST_CASE("Endian Roundtripping 16-bit array uneven")
 	std::vector<NAMESPACE_PSAPI::bpp16_t> channel(width * height, 32768u);
 	std::vector<NAMESPACE_PSAPI::bpp16_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -107,8 +107,8 @@ TEST_CASE("Endian Roundtripping 32-bit array uneven")
 	std::vector<NAMESPACE_PSAPI::bpp32_t> channel(width * height, 1.0f);
 	std::vector<NAMESPACE_PSAPI::bpp32_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -125,8 +125,8 @@ TEST_CASE("Endian Roundtripping 16-bit array large uneven")
 	std::vector<NAMESPACE_PSAPI::bpp16_t> channel(width * height, 32768u);
 	std::vector<NAMESPACE_PSAPI::bpp16_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp16_t>(channel));
 
 	CHECK(dataExpected == channel);
 }
@@ -143,8 +143,8 @@ TEST_CASE("Endian Roundtripping 32-bit array large uneven")
 	std::vector<NAMESPACE_PSAPI::bpp32_t> channel(width * height, 1.0f);
 	std::vector<NAMESPACE_PSAPI::bpp32_t> dataExpected = channel;	// We construct a copy here as EndianEncode will invalidate the data
 
-	NAMESPACE_PSAPI::endianEncodeBEArray(channel);
-	NAMESPACE_PSAPI::endianDecodeBEArray(channel);
+	NAMESPACE_PSAPI::endianEncodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
+	NAMESPACE_PSAPI::endianDecodeBEArray(std::span<NAMESPACE_PSAPI::bpp32_t>(channel));
 
 	CHECK(dataExpected == channel);
 }

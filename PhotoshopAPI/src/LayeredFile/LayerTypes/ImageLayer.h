@@ -421,7 +421,9 @@ public:
 	/// \param doCopy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
 	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> getImageData(bool doCopy = true)
 	{
+		PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
+
 		if (Layer<T>::m_LayerMask.has_value())
 		{
 			Enum::ChannelIDInfo maskInfo;
@@ -430,20 +432,87 @@ public:
 			imgData[maskInfo] = Layer<T>::getMaskData(doCopy);
 		}
 
+		// Preallocate the data in parallel for some slight speedups
+		std::mutex imgDataMutex;
+		std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+			[&](auto& pair) {
+				auto& [key, value] = pair;
+				auto vec = std::vector<T>(value->m_OrigByteSize / sizeof(T));
+				{
+					std::lock_guard<std::mutex> lock(imgDataMutex);
+					imgData[key] = std::move(vec);
+				}
+			});
+
+		// We want to let the imagedata decode in as many threads as we have left over given our channels.
+		// This is because images that are smaller than the blosc2 block size or images that dont have enough
+		// blocks to parallelize across with all of our threads.
+		const size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
+
+		// Construct variables for correct exception stack unwinding
+		std::atomic<bool> exceptionOccurred = false;
+		std::mutex exceptionMutex;
+		std::vector<std::string> exceptionMessages;
+
 		if (doCopy)
 		{
-			for (auto& [key, value] : m_ImageData)
-			{
-				imgData[key] = std::move(value->template getData<T>());
-			}
+			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+				[&](auto& pair)
+				{
+					try
+					{
+						auto& [key, value] = pair;
+						// Get the data using the preallocated buffer
+						value->template getData<T>(std::span<T>(imgData[key]), numThreads);
+					}
+					catch (std::runtime_error& e)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back(e.what());
+					}
+					catch (...)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back("Unknown exception caught.");
+					}
+				});
 		}
 		else
 		{
-			for (auto& [key, value] : m_ImageData)
+			std::for_each(std::execution::seq, m_ImageData.begin(), m_ImageData.end(),
+				[&](auto& pair)
+				{
+					try
+					{
+						// Get the data using the preallocated buffer
+						pair.second->template extractData<T>(std::span<T>(imgData[pair.first]), numThreads);
+					}
+					catch (std::runtime_error& e)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back(e.what());
+					}
+					catch (...)
+					{
+						exceptionOccurred = true;
+						std::lock_guard<std::mutex> lock(exceptionMutex);
+						exceptionMessages.push_back("Unknown exception caught.");
+					}
+				});
+		}
+
+
+		if (exceptionOccurred)
+		{
+			for (const auto& msg : exceptionMessages)
 			{
-				imgData[key] = std::move(value->template extractData<T>());
+				PSAPI_LOG_ERROR("ImageLayer", "Exception caught: %s", msg.c_str());
 			}
 		}
+
 		return imgData;
 	}
 

@@ -283,7 +283,7 @@ struct ChannelImageData : public FileSection
 	/// This function must be called before writing the data for the LayerRecord as it reveals the size of the data
 	/// required to write them. We fill out the lrChannelInfo and lrCompression vector as it goes.
 	template <typename T>
-	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression);
+	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads);
 
 	/// Read a single layer instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);

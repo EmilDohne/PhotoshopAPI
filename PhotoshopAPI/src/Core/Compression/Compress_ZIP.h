@@ -37,7 +37,7 @@ namespace ZIP_Impl
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	void PredictionEncode(std::vector<T>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
+	void PredictionEncode(std::span<T> data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
 		if (data.size() > buffer.size() * sizeof(T))
 			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(T), buffer.size());
@@ -66,7 +66,7 @@ namespace ZIP_Impl
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <>
-	inline void PredictionEncode(std::vector<float32_t>& data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
+	inline void PredictionEncode(std::span<float32_t> data, std::span<uint8_t> buffer, const uint32_t width, const uint32_t height)
 	{
 		if (data.size() > buffer.size() * sizeof(float32_t))
 			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(float32_t), buffer.size());
@@ -118,7 +118,7 @@ namespace ZIP_Impl
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	std::vector<uint8_t> Compress(const std::vector<T>& uncompressedData, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
+	std::vector<uint8_t> Compress(const std::span<T> uncompressedData, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
 	{
 		PROFILE_FUNCTION();
 		std::vector<uint8_t> compressedData;
@@ -183,7 +183,7 @@ namespace ZIP_Impl
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
+std::vector<uint8_t> CompressZIP(std::span<T> uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
 {
 	PROFILE_FUNCTION();
 	// Convert uncompressed data to native endianness in-place
@@ -225,7 +225,7 @@ std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<uint8_t> CompressZIPPrediction(std::vector<T>& uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const uint32_t width, const uint32_t height)
+std::vector<uint8_t> CompressZIPPrediction(std::span<T> uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const uint32_t width, const uint32_t height)
 {
 	PROFILE_FUNCTION();
 

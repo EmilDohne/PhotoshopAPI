@@ -296,7 +296,7 @@ namespace RLE_Impl
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, std::span<uint8_t> buffer, const FileHeader& header, const uint32_t width, const uint32_t height)
+std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_t> buffer, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
     PROFILE_FUNCTION();
     endianEncodeBEArray(uncompressedData);
@@ -347,7 +347,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, std::span<uin
                 std::memcpy(dstAddress, srcAddress, compressedDataViews[index].size());
             });
         // We deliberately only copy over the scanline sizes at the end since they need to be endian swapped first
-        endianEncodeBEArray(scanlineSizes);
+        endianEncodeBEArray(std::span<uint16_t>(scanlineSizes));
         std::memcpy(compressedData.data(), reinterpret_cast<uint8_t*>(scanlineSizes.data()), height * sizeof(uint16_t));
     }
     else
@@ -370,7 +370,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, std::span<uin
                 std::memcpy(dstAddress, srcAddress, compressedDataViews[index].size());
             });
         // We deliberately only copy over the scanline sizes at the end since they need to be endian swapped first
-        endianEncodeBEArray(scanlineSizes);
+        endianEncodeBEArray(std::span<uint32_t>(scanlineSizes));
         std::memcpy(compressedData.data(), reinterpret_cast<uint8_t*>(scanlineSizes.data()), height * sizeof(uint32_t));
     }
 
@@ -387,7 +387,7 @@ template<typename T>
 std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
     PROFILE_FUNCTION();
-    endianEncodeBEArray(uncompressedData);
+    endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
     for (int i = 0; i < height; ++i)
@@ -443,7 +443,7 @@ template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
     PROFILE_FUNCTION();
-    endianEncodeBEArray(uncompressedData);
+    endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
     for (int i = 0; i < height; ++i)
@@ -483,7 +483,7 @@ template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
     PROFILE_FUNCTION();
-    endianEncodeBEArray(uncompressedData);
+    endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
     for (int i = 0; i < height; ++i)

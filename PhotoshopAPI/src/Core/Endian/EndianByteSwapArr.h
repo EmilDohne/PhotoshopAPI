@@ -306,7 +306,7 @@ inline void endianDecodeBEArray<uint8_t>(std::span<uint8_t> data)
 // ---------------------------------------------------------------------------------------------------------------------
 #ifdef __AVX2__
 	template<typename T>
-	void endianEncodeBEArray(std::vector<T>& data)
+	void endianEncodeBEArray(std::span<T> data)
 	{
 		PROFILE_FUNCTION();
 		// We want to split up the vector into blocks that can easily fit into a L1 cache 
@@ -361,7 +361,7 @@ inline void endianDecodeBEArray<uint8_t>(std::span<uint8_t> data)
 	}
 #else
 	template<typename T>
-	void endianEncodeBEArray(std::vector<T>& data)
+	void endianEncodeBEArray(std::span<T> data)
 	{
 		PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
@@ -375,7 +375,7 @@ inline void endianDecodeBEArray<uint8_t>(std::span<uint8_t> data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-inline void endianEncodeBEArray(std::vector<uint8_t>& data)
+inline void endianEncodeBEArray(std::span<uint8_t> data)
 {
 }
 

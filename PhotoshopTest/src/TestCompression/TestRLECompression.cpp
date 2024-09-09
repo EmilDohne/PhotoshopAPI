@@ -134,7 +134,7 @@ TEST_CASE("Check RLE MaxCompressedSize")
 
 		// Explicitly make the buffer larger than uncompressed data could ever be
 		std::vector<uint8_t> buffer(data.size() * 2);
-		auto resized_buffer = NAMESPACE_PSAPI::CompressRLE(data, buffer, header, width, height);
+		auto resized_buffer = NAMESPACE_PSAPI::CompressRLE(std::span<uint8_t>(data), buffer, header, width, height);
 		CHECK(expectedSize == resized_buffer.size());
 	}
 	SUBCASE("PSB")
@@ -154,7 +154,7 @@ TEST_CASE("Check RLE MaxCompressedSize")
 
 		// Explicitly make the buffer larger than uncompressed data could ever be
 		std::vector<uint8_t> buffer(data.size() * 2);
-		auto resized_buffer = NAMESPACE_PSAPI::CompressRLE(data, buffer, header, width, height);
+		auto resized_buffer = NAMESPACE_PSAPI::CompressRLE(std::span<uint8_t>(data), buffer, header, width, height);
 		CHECK(expectedSize == resized_buffer.size());
 	}
 }

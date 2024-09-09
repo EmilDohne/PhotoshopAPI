@@ -1,42 +1,42 @@
-readAutomotive Data (8-bit) ~1.27GB: 1028ms
-writeAutomotive Data (8-bit) ~1.27GB: 1937ms
-readAutomotive Data (8-bit) ~1.27GB: 1015ms
-writeAutomotive Data (8-bit) ~1.27GB: 1997ms
-readAutomotive Data (8-bit) ~1.27GB: 1065ms
-writeAutomotive Data (8-bit) ~1.27GB: 2059ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 1038ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2229ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 971ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2259ms
-readAutomotive Data Zip (8-bit) ~1.27GB: 1045ms
-writeAutomotive Data Zip (8-bit) ~1.27GB: 2344ms
-readAutomotive Data (16-bit) ~1.97GB: 3808ms
-writeAutomotive Data (16-bit) ~1.97GB: 6215ms
-readAutomotive Data (16-bit) ~1.97GB: 3792ms
-writeAutomotive Data (16-bit) ~1.97GB: 6241ms
-readAutomotive Data (16-bit) ~1.97GB: 3773ms
-writeAutomotive Data (16-bit) ~1.97GB: 6232ms
-readAutomotive Data (32-bit) ~3.65GB: 13569ms
-writeAutomotive Data (32-bit) ~3.65GB: 14223ms
-readAutomotive Data (32-bit) ~3.65GB: 13493ms
-writeAutomotive Data (32-bit) ~3.65GB: 14500ms
-readAutomotive Data (32-bit) ~3.65GB: 13566ms
-writeAutomotive Data (32-bit) ~3.65GB: 14719ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 503ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 867ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 509ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 1030ms
-readGlacius Hyundai Sample (8-bit) ~.75GB: 595ms
-writeGlacius Hyundai Sample (8-bit) ~.75GB: 1012ms
-readDeep Nested Layers (8-bit) ~.5GB: 399ms
-writeDeep Nested Layers (8-bit) ~.5GB: 754ms
-readDeep Nested Layers (8-bit) ~.5GB: 402ms
-writeDeep Nested Layers (8-bit) ~.5GB: 676ms
-readDeep Nested Layers (8-bit) ~.5GB: 401ms
-writeDeep Nested Layers (8-bit) ~.5GB: 689ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 677ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1289ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 756ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1410ms
-readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 813ms
-writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1415ms
+readAutomotive Data (8-bit) ~1.27GB: 1032ms
+writeAutomotive Data (8-bit) ~1.27GB: 1790ms
+readAutomotive Data (8-bit) ~1.27GB: 1040ms
+writeAutomotive Data (8-bit) ~1.27GB: 1811ms
+readAutomotive Data (8-bit) ~1.27GB: 1038ms
+writeAutomotive Data (8-bit) ~1.27GB: 1788ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1027ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2088ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1055ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2120ms
+readAutomotive Data Zip (8-bit) ~1.27GB: 1083ms
+writeAutomotive Data Zip (8-bit) ~1.27GB: 2182ms
+readAutomotive Data (16-bit) ~1.97GB: 3785ms
+writeAutomotive Data (16-bit) ~1.97GB: 5572ms
+readAutomotive Data (16-bit) ~1.97GB: 3747ms
+writeAutomotive Data (16-bit) ~1.97GB: 5555ms
+readAutomotive Data (16-bit) ~1.97GB: 3711ms
+writeAutomotive Data (16-bit) ~1.97GB: 5811ms
+readAutomotive Data (32-bit) ~3.65GB: 13405ms
+writeAutomotive Data (32-bit) ~3.65GB: 13147ms
+readAutomotive Data (32-bit) ~3.65GB: 13364ms
+writeAutomotive Data (32-bit) ~3.65GB: 12957ms
+readAutomotive Data (32-bit) ~3.65GB: 13414ms
+writeAutomotive Data (32-bit) ~3.65GB: 13016ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 501ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 849ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 567ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 864ms
+readGlacius Hyundai Sample (8-bit) ~.75GB: 514ms
+writeGlacius Hyundai Sample (8-bit) ~.75GB: 907ms
+readDeep Nested Layers (8-bit) ~.5GB: 384ms
+writeDeep Nested Layers (8-bit) ~.5GB: 540ms
+readDeep Nested Layers (8-bit) ~.5GB: 451ms
+writeDeep Nested Layers (8-bit) ~.5GB: 561ms
+readDeep Nested Layers (8-bit) ~.5GB: 441ms
+writeDeep Nested Layers (8-bit) ~.5GB: 561ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 559ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1226ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 502ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1259ms
+readGlacius Hyundai Sample Zip (8-bit) ~.75GB: 492ms
+writeGlacius Hyundai Sample Zip (8-bit) ~.75GB: 1202ms
