@@ -444,24 +444,32 @@ public:
 				}
 			});
 
+		// We want to let the imagedata decode in as many threads as we have left over given our channels.
+		// This is because images that are smaller than the blosc2 block size or images that dont have enough
+		// blocks to parallelize across with all of our threads.
+		const size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
 
 		if (doCopy)
 		{
-			for (auto& [key, value] : m_ImageData)
-			{
-				// Get the data using our preallocated buffer
-				value->template getData<T>(std::span<T>(imgData[key]));
-			}
+			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+				[&](auto& pair)
+				{
+					auto& [key, value] = pair;
+					// Get the data using the preallocated buffer
+					value->template getData<T>(std::span<T>(imgData[key]), numThreads);
+				});
 		}
 		else
 		{
-			for (auto& [key, value] : m_ImageData)
-			{
-				// Get the data using our preallocated buffer
-				value->template extractData<T>(std::span<T>(imgData[key]));
-			}
+			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+				[&](auto& pair)
+				{
+					auto& [key, value] = pair;
+					// Get the data using the preallocated buffer
+					value->template extractData<T>(std::span<T>(imgData[key]), numThreads);
+				});
 		}
-		return std::move(imgData);
+		return imgData;
 	}
 
 	/// Change the compression codec of all the image channels
