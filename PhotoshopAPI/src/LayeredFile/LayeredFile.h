@@ -496,7 +496,7 @@ struct LayeredFile
 {
 	/// The root layers in the file, they may contain multiple levels of sub-layers
 	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
-	
+
 	/// The ICC Profile associated with the file, this may be empty in which case there will be no colour
 	/// profile associated with the file
 	ICCProfile m_ICCProfile;
@@ -508,13 +508,13 @@ struct LayeredFile
 	Enum::BitDepth m_BitDepth = Enum::BitDepth::BD_8;
 
 	/// The color mode of the file. Currently supports RGB only.
-	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;	
+	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 
 	/// The width of the file in pixels. Can be up to 30,000 for PSD and up to 300,000 for PSB
-	uint64_t m_Width = 0u;
+	uint64_t m_Width = 1u;
 
 	/// The height of the file in pixels. Can be up to 30,000 for PSD and up to 300,000 for PSB
-	uint64_t m_Height = 0u;
+	uint64_t m_Height = 1u;
 
 	LayeredFile() = default;
 
@@ -557,6 +557,15 @@ struct LayeredFile
 	/// \param height The height of the file in pixels.
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint8_t>
 	{
+		if (width < 1 || width > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid width for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+		if (height < 1 || height > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid height for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+
 		m_BitDepth = Enum::BitDepth::BD_8;
 		m_ColorMode = colorMode;
 		m_Width = width;
@@ -564,6 +573,15 @@ struct LayeredFile
 	}
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>
 	{
+		if (width < 1 || width > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid width for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+		if (height < 1 || height > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid height for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+
 		m_BitDepth = Enum::BitDepth::BD_16;
 		m_ColorMode = colorMode;
 		m_Width = width;
@@ -571,6 +589,15 @@ struct LayeredFile
 	}
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>
 	{
+		if (width < 1 || width > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid width for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+		if (height < 1 || height > 300000)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid height for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
+		}
+
 		m_BitDepth = Enum::BitDepth::BD_32;
 		m_ColorMode = colorMode;
 		m_Width = width;
