@@ -150,8 +150,20 @@ public:
 		}
 	}
 
-	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters)
+	/// Generate an ImageLayer instance ready to be used in a LayeredFile document. 
+	/// 
+	/// \tparam ExecutionPolicy the execution policy to generate the image layer with, at most parallelizes to imageData.size()
+	/// 
+	/// \param imageData the ImageData to associate with the channel
+	/// \param layerParameters The parameters dictating layer name, width, height, mask etc.
+	/// \param policy The execution policy for the image data compression
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, 
+		std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	ImageLayer(
+		std::unordered_map<Enum::ChannelID, std::vector<T>>&& imageData, 
+		Layer<T>::Params& layerParameters, 
+		const ExecutionPolicy policy = std::execution::par
+	)
 	{
 		PROFILE_FUNCTION();
 		Layer<T>::m_LayerName = layerParameters.layerName;
@@ -173,35 +185,36 @@ public:
 
 
 		// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
-		for (auto& [key, value] : imageData)
-		{
-			Enum::ChannelIDInfo info = {};
-			if (layerParameters.colorMode == Enum::ColorMode::RGB)
-				info = Enum::rgbChannelIDToChannelIDInfo(key);
-			else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
-				info = Enum::cmykChannelIDToChannelIDInfo(key);
-			else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
-				info = Enum::grayscaleChannelIDToChannelIDInfo(key);
-			else
-				PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
-
-			// Channel sizes must match the size of the layer
-			if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
+		std::for_each(policy, imageData.begin(), imageData.end(), [&](auto& pair)
 			{
-				PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
-					value.size(),
-					static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
-			}
-			m_ImageData[info] = std::make_unique<ImageChannel>(
-				layerParameters.compression, 
-				value, 
-				info, 
-				layerParameters.width, 
-				layerParameters.height,
-				static_cast<float>(layerParameters.posX), 
-				static_cast<float>(layerParameters.posY)
-			);
-		}
+				auto& [key, value] = pair;
+				Enum::ChannelIDInfo info = {};
+				if (layerParameters.colorMode == Enum::ColorMode::RGB)
+					info = Enum::rgbChannelIDToChannelIDInfo(key);
+				else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
+					info = Enum::cmykChannelIDToChannelIDInfo(key);
+				else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
+					info = Enum::grayscaleChannelIDToChannelIDInfo(key);
+				else
+					PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
+
+				// Channel sizes must match the size of the layer
+				if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
+					{
+						PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
+							value.size(),
+							static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
+					}
+						m_ImageData[info] = std::make_unique<ImageChannel>(
+							layerParameters.compression,
+							value,
+							info,
+							layerParameters.width,
+							layerParameters.height,
+							static_cast<float>(layerParameters.posX),
+							static_cast<float>(layerParameters.posY)
+						);
+			});
 
 		// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
 		if (layerParameters.colorMode == Enum::ColorMode::RGB)
@@ -259,9 +272,20 @@ public:
 		}
 	}
 
-
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
-	ImageLayer(std::unordered_map<uint16_t, std::vector<T>>&& imageData, Layer<T>::Params& layerParameters)
+	/// 
+	/// \tparam ExecutionPolicy the execution policy to generate the image layer with, at most parallelizes to imageData.size()
+	/// 
+	/// \param imageData the ImageData to associate with the channel
+	/// \param layerParameters The parameters dictating layer name, width, height, mask etc.
+	/// \param policy The execution policy for the image data compression
+	template <typename  ExecutionPolicy = std::execution::parallel_policy,
+		std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	ImageLayer(
+		std::unordered_map<uint16_t, std::vector<T>>&& imageData, 
+		Layer<T>::Params& layerParameters,
+		const ExecutionPolicy policy = std::execution::par
+	)
 	{
 		PROFILE_FUNCTION();
 		Layer<T>::m_LayerName = layerParameters.layerName;
@@ -282,35 +306,36 @@ public:
 		Layer<T>::m_Height = layerParameters.height;
 
 		// Construct a ChannelIDInfo for each of the channels and then an ImageLayer instance to hold the data
-		for (auto& [key, value] : imageData)
-		{
-			Enum::ChannelIDInfo info = {};
-			if (layerParameters.colorMode == Enum::ColorMode::RGB)
-				info = Enum::rgbIntToChannelID(key);
-			else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
-				info = Enum::cmykIntToChannelID(key);
-			else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
-				info = Enum::grayscaleIntToChannelID(key);
-			else
-				PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
-
-			// Channel sizes must match the size of the layer
-			if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
+		std::for_each(policy, imageData.begin(), imageData.end(), [&](auto& pair)
 			{
-				PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
-					value.size(),
-					static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
-			}
-			m_ImageData[info] = std::make_unique<ImageChannel>(
-				layerParameters.compression, 
-				value, 
-				info, 
-				layerParameters.width, 
-				layerParameters.height, 
-				static_cast<float>(layerParameters.posX), 
-				static_cast<float>(layerParameters.posY)
-			);
-		}
+				auto& [key, value] = pair;
+				Enum::ChannelIDInfo info = {};
+				if (layerParameters.colorMode == Enum::ColorMode::RGB)
+					info = Enum::rgbIntToChannelID(key);
+				else if (layerParameters.colorMode == Enum::ColorMode::CMYK)
+					info = Enum::cmykIntToChannelID(key);
+				else if (layerParameters.colorMode == Enum::ColorMode::Grayscale)
+					info = Enum::grayscaleIntToChannelID(key);
+				else
+					PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
+
+				// Channel sizes must match the size of the layer
+				if (static_cast<uint64_t>(layerParameters.width) * layerParameters.height > value.size()) [[unlikely]]
+					{
+						PSAPI_LOG_ERROR("ImageLayer", "Size of ImageChannel does not match the size of width * height, got %" PRIu64 " but expected %" PRIu64 ".",
+							value.size(),
+							static_cast<uint64_t>(layerParameters.width) * layerParameters.height);
+					}
+						m_ImageData[info] = std::make_unique<ImageChannel>(
+							layerParameters.compression,
+							value,
+							info,
+							layerParameters.width,
+							layerParameters.height,
+							static_cast<float>(layerParameters.posX),
+							static_cast<float>(layerParameters.posY)
+						);
+			});
 
 		// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
 		if (layerParameters.colorMode == Enum::ColorMode::RGB)
@@ -418,8 +443,16 @@ public:
 
 	/// Extract all the channels of the ImageLayer into an unordered_map. Includes the mask channel
 	/// 
+	/// \tparam ExecutionPolicy the execution policy to get the image data with
+	/// 
 	/// \param doCopy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
-	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> getImageData(bool doCopy = true)
+	/// \param policy The execution policy for the image data decompression
+	template <typename  ExecutionPolicy = std::execution::parallel_policy,
+		std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
+	std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> getImageData( 
+		bool doCopy = true,
+		const ExecutionPolicy policy = std::execution::par
+	)
 	{
 		PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
@@ -434,7 +467,7 @@ public:
 
 		// Preallocate the data in parallel for some slight speedups
 		std::mutex imgDataMutex;
-		std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+		std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
 			[&](auto& pair) {
 				auto& [key, value] = pair;
 				auto vec = std::vector<T>(value->m_OrigByteSize / sizeof(T));
@@ -447,7 +480,12 @@ public:
 		// We want to let the imagedata decode in as many threads as we have left over given our channels.
 		// This is because images that are smaller than the blosc2 block size or images that dont have enough
 		// blocks to parallelize across with all of our threads.
-		const size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
+		size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
+		numThreads = std::min(static_cast<size_t>(1), numThreads);
+		if constexpr (std::is_same_v<ExecutionPolicy, std::execution::sequenced_policy>)
+		{
+			numThreads = 1;
+		}
 
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -456,7 +494,7 @@ public:
 
 		if (doCopy)
 		{
-			std::for_each(std::execution::par, m_ImageData.begin(), m_ImageData.end(),
+			std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
 				[&](auto& pair)
 				{
 					try
@@ -481,7 +519,7 @@ public:
 		}
 		else
 		{
-			std::for_each(std::execution::seq, m_ImageData.begin(), m_ImageData.end(),
+			std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
 				[&](auto& pair)
 				{
 					try
