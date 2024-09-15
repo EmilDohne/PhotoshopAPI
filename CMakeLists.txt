@@ -16,6 +16,13 @@ option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the Photosho
 option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
 option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" OFF)
 
+
+if (PSAPI_BUILD_PYTHON)
+    # Link in the msvc runtime so that users dont need vcredist when using the python bindings
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+endif()
+
+
 # Build setup
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set (CMAKE_CXX_STANDARD 20)
