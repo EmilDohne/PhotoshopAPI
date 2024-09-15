@@ -31,6 +31,9 @@ struct LayerMask
 template <typename T>
 struct Layer
 {
+	/// Template type accessor which can be used using decltype(layer::value_type)
+	using value_type = T;
+
 	/// Layer Parameters for initialization of a generic layer type. It provides sensible defaults so only what is needed
 	/// needs to be overridden
 	struct Params
