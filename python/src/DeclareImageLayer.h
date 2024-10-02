@@ -302,7 +302,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     {
         throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
     }
-    std::unordered_map<uint16_t, std::vector<T>> img_data_cpp;
+    std::unordered_map<int16_t, std::vector<T>> img_data_cpp;
     // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
     for (auto& [key, value] : image_data)
     {
@@ -310,7 +310,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
         {
             throw py::value_error("Channel '" + std::to_string(key) + "' must have the same size as the layer itself (width * height)");
         }
-        img_data_cpp[static_cast<uint16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
+        img_data_cpp[static_cast<int16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
     }
 
     params.layerName = layer_name;
