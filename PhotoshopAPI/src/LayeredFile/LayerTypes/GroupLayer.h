@@ -202,35 +202,22 @@ struct GroupLayer : public Layer<T>
 	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
 	/// \param layerParameters The parameters for the group layer.
 	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
-	GroupLayer(Layer<T>::Params& layerParameters, bool isCollapsed = false)
+	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
 	{
 		PROFILE_FUNCTION();
-		Layer<T>::m_LayerName = layerParameters.layerName;
-		Layer<T>::m_BlendMode = layerParameters.blendMode;
-		Layer<T>::m_Opacity = layerParameters.opacity;
-		Layer<T>::m_IsVisible = true;
-		Layer<T>::m_CenterX = layerParameters.posX;
-		Layer<T>::m_CenterY = layerParameters.posY;
-		Layer<T>::m_Width = layerParameters.width;
-		Layer<T>::m_Height = layerParameters.height;
+		Layer<T>::m_LayerName = parameters.layerName;
+		Layer<T>::m_BlendMode = parameters.blendMode;
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_CenterX = parameters.posX;
+		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
 
+		m_isCollapsed = isCollapsed;
 
 		// Set the layer mask if present
-		if (layerParameters.layerMask.has_value())
-		{
-			LayerMask mask{};
-			Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-			std::unique_ptr<ImageChannel> maskChannel = std::make_unique<ImageChannel>(
-				layerParameters.compression, 
-				layerParameters.layerMask.value(), 
-				info, 
-				layerParameters.width, 
-				layerParameters.height, 
-				static_cast<float>(layerParameters.posX), 
-				static_cast<float>(layerParameters.posY));
-			mask.maskData = std::move(maskChannel);
-			Layer<T>::m_LayerMask = std::move(mask);
-		}
+		Layer<T>::parseLayerMask(parameters);
 	}
 
 
