@@ -39,7 +39,7 @@ std::shared_ptr<GroupLayer<T>> createGroupLayer(
     {
         throw py::value_error("layer_name parameter cannot exceed a length of 255");
     }
-    if (layer_mask.has_value())
+    if (layer_mask)
     {
         if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
         {
