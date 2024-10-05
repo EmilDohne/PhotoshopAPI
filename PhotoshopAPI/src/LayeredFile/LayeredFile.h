@@ -381,33 +381,29 @@ namespace LayeredFileImpl
 		return nullptr;
 	}
 
+
 	template <typename T>
-	void getNumChannelsRecurse(std::shared_ptr<Layer<T>> parentLayer, std::set<int16_t>& channelIndices)
+	bool hasAlphaRecurse(std::shared_ptr<Layer<T>> parentLayer)
 	{
-		// We must first check if we could recurse down another level. We dont check for masks on the 
-		// group here yet as we do that further down
+		// Check if we can recurse down another level into a group of layers
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
 		{
-			for (const auto layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->m_Layers)
 			{
-				LayeredFileImpl::getNumChannelsRecurse(layerPtr, channelIndices);
+				if (LayeredFileImpl::hasAlphaRecurse(layerPtr))
+				{
+					return true;
+				}
 			}
 		}
-
-		// Check for a pixel mask
-		if (parentLayer->m_LayerMask.has_value())
-		{
-			channelIndices.insert(-2);
-		}
-
-		// Deal with Image channels
 		if (auto imageLayerPtr = std::dynamic_pointer_cast<ImageLayer<T>>(parentLayer))
 		{
-			for (const auto& pair : imageLayerPtr->m_ImageData)
+			if (imageLayerPtr->m_ImageData.contains(Enum::ChannelIDInfo{ .id = Enum::ChannelID::Alpha, .index = -1 }))
 			{
-				channelIndices.insert(pair.first.index);
+				return true;
 			}
 		}
+		return false;
 	}
 
 	template <typename T>
@@ -838,26 +834,31 @@ struct LayeredFile
 	/// \return The total number of channels in the document.
 	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true)
 	{
-		std::set<int16_t> channelIndices = {};
-		for (const auto& layer : m_Layers)
+		bool hasAlpha = false;
+		for (auto& layer : m_Layers)
 		{
-			LayeredFileImpl::getNumChannelsRecurse(layer, channelIndices);
+			hasAlpha &= LayeredFileImpl::hasAlphaRecurse(layer);
 		}
 
-		uint16_t numChannels = channelIndices.size();
-		if (ignoreMaskChannels)
+		uint16_t numChannels = hasAlpha ? 1u : 0u;
+		if (m_ColorMode == Enum::ColorMode::RGB ||
+			m_ColorMode == Enum::ColorMode::Lab)
 		{
-			// Photoshop doesnt consider mask channels for the total amount of channels
-			if (channelIndices.contains(-2))
-				numChannels -= 1u;
-			if (channelIndices.contains(-3))
-				numChannels -= 1u;
+			numChannels += 3u;
 		}
-		if (ignoreAlphaChannel)
+		else if (m_ColorMode == Enum::ColorMode::CMYK)
 		{
-			// Photoshop doesnt store the alpha channels in the merged image data section so we must not count it
-			if (channelIndices.contains(-1))
-				numChannels -= 1u;
+			numChannels += 4u;
+		}
+		else if (
+			m_ColorMode == Enum::ColorMode::Bitmap ||
+			m_ColorMode == Enum::ColorMode::Indexed ||
+			m_ColorMode == Enum::ColorMode::Grayscale ||
+			m_ColorMode == Enum::ColorMode::Duotone ||
+			m_ColorMode == Enum::ColorMode::Multichannel
+			)
+		{
+			numChannels += 1u;
 		}
 		return numChannels;
 	}

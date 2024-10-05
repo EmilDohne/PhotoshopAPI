@@ -60,6 +60,8 @@ struct Layer
 		Enum::Compression compression = Enum::Compression::ZipPrediction; 
 		// The Layers color mode, currently only RGB is supported
 		Enum::ColorMode colorMode = Enum::ColorMode::RGB;
+		// Whether or not the layer is visible
+		bool isVisible = true;
 	};
 
 	std::string m_LayerName;
@@ -84,6 +86,26 @@ struct Layer
 	float m_CenterY;
 
 protected:
+
+	/// Parse the layer mask passed as part of the parameters into m_LayerMask
+	void parseLayerMask(Params& parameters)
+	{
+		if (parameters.layerMask)
+		{
+			LayerMask mask{};
+			Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
+			mask.maskData = std::make_unique<ImageChannel>(
+				parameters.compression,
+				parameters.layerMask.value(),
+				info,
+				parameters.width,
+				parameters.height,
+				static_cast<float>(parameters.posX),
+				static_cast<float>(parameters.posY)
+			);
+			Layer<T>::m_LayerMask = std::move(mask);
+		}
+	}
 
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
 	///
