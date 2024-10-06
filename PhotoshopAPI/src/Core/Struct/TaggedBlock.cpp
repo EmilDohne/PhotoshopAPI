@@ -329,4 +329,201 @@ void ProtectedSettingTaggedBlock::write(File& document, [[maybe_unused]] const F
 	}
 }
 
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+uint64_t LinkedLayerDate::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
+{
+	return sizeof(uint32_t) + 4 * sizeof(uint8_t) + sizeof(float64_t);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LinkedLayerDate::read(File& document)
+{
+	this->year		= ReadBinaryData<uint32_t>(document);
+	this->month		= ReadBinaryData<uint8_t>(document);
+	this->day		= ReadBinaryData<uint8_t>(document);
+	this->hour		= ReadBinaryData<uint8_t>(document);
+	this->minute	= ReadBinaryData<uint8_t>(document);
+	this->seconds	= ReadBinaryData<double>(document);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LinkedLayerDate::write(File& document) const
+{
+	WriteBinaryData<uint32_t>(document, this->year);
+	WriteBinaryData<uint8_t>(document, this->month);
+	WriteBinaryData<uint8_t>(document, this->day);
+	WriteBinaryData<uint8_t>(document, this->hour);
+	WriteBinaryData<uint8_t>(document, this->minute);
+	WriteBinaryData<double>(document, this->seconds);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LinkedLayerDate::LinkedLayerDate()
+{
+	auto now = std::chrono::system_clock::now();
+	std::time_t t = std::chrono::system_clock::to_time_t(now);
+	std::tm* localTime = std::localtime(&t);
+
+	// Set the struct fields
+	year = 1900 + localTime->tm_year;
+	month = 1 + localTime->tm_mon;
+	day = localTime->tm_mday;
+	hour = localTime->tm_hour;
+	minute = localTime->tm_min;
+	seconds = static_cast<double>(localTime->tm_sec);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, const uint16_t padding /*= 1u*/)
+{
+	m_Key = key;
+	m_Offset = offset;
+	m_Signature = signature;
+
+	uint64_t toRead = 0;
+	if (m_Key == Enum::TaggedBlockKey::lrLinked)
+	{
+		uint32_t length = ReadBinaryData<uint32_t>(document);
+		length = RoundUpToMultiple<uint32_t>(length, padding);
+		toRead = length;
+		m_Length = length;
+	}
+	else if (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte)
+	{
+		uint64_t length = ReadBinaryData<uint64_t>(document);
+		length = RoundUpToMultiple<uint64_t>(length, padding);
+		toRead = length;
+		m_Length = length;
+	}
+	else
+	{
+		PSAPI_LOG_ERROR("LinkedLayer", "Unknonw tagged block key, aborting parsing");
+	}
+
+	// A linked Layer tagged block may contain any number of LinkedLayers, and there is no explicit
+	// number of layers we must keep reading LinkedLayers until we've reached the end of the taggedblock
+	uint64_t startOffset = document.getOffset();
+	uint64_t endOffset = document.getOffset() + toRead;
+	while (document.getOffset() < endOffset)
+	{
+		LinkedLayerData data;
+
+		auto size = ReadBinaryData<uint64_t>(document);
+
+		data.m_Type = readType(document);
+		data.m_Version = ReadBinaryData<uint32_t>(document);
+		if (data.m_Version < 1 || data.m_Version > 7)
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unknown Linked Layer version %d encountered, aborting parsing", data.m_Version);
+		}
+
+		PascalString uniqueID;
+		uniqueID.read(document, 1u);
+		data.m_UniqueID = uniqueID.getString();
+
+		auto fileTypeArr = ReadBinaryArray<char>(document, 4u);
+		data.m_FileType = std::string(fileTypeArr.begin(), fileTypeArr.end());
+
+		data.m_FileCreator = ReadBinaryData<uint32_t>(document);
+
+		auto sizeRest = ReadBinaryData<uint64_t>(document);
+		bool hasFileOpenDescriptor = ReadBinaryData<bool>(document);
+		if (hasFileOpenDescriptor)
+		{
+			Descriptors::Descriptor fileOpenDescriptor;
+			fileOpenDescriptor.read(document);
+			data.m_FileOpenDescriptor = fileOpenDescriptor;
+		}
+		if (data.m_Type == LinkedLayerData::Type::External)
+		{
+			Descriptors::Descriptor linkedFileDescriptor;
+			linkedFileDescriptor.read(document);
+			data.m_LinkedFileDescriptor = linkedFileDescriptor;
+		}
+
+		if (data.m_Type == LinkedLayerData::Type::External && data.m_Version > 3)
+		{
+			
+		}
+
+		std::optional<uint64_t> fileSize;
+		if (data.m_Type == LinkedLayerData::Type::External)
+		{
+			fileSize = ReadBinaryData<uint64_t>(document);
+		}
+
+		// Filler/padding bytes
+		if (data.m_Type == LinkedLayerData::Type::Alias)
+		{
+			document.skip(4u);
+		}
+		document.skip(8u);
+
+		// Raw file bytes
+		std::vector<uint8_t> rawFileBytes;
+		if (data.m_Type == LinkedLayerData::Type::External && fileSize)
+		{
+			rawFileBytes = ReadBinaryArray<uint8_t>(document, fileSize.value());
+		}
+
+		std::optional<UnicodeString> childDocumentID;
+		if (data.m_Version > 5)
+		{
+			UnicodeString id;
+			id.read(document, 2u);
+			childDocumentID = id;
+		}
+
+		std::optional<double> assetModTime;
+		if (data.m_Version > 6)
+		{
+			assetModTime = ReadBinaryData<double>(document);
+		}
+
+		std::optional<bool> assetLockedState;
+		if (data.m_Version > 7)
+		{
+			assetModTime = ReadBinaryData<bool>(document);
+		}
+
+		// The file format ref mentions that if the type is External and the version is 2 we read the raw file bytes here but unless the 
+		// Version 2 stored the raw file bytes twice this would seem weird as the call above for the raw file bytes would also still be there
+		// We skip any loading now (also because version 2 is likely approaching 20 years in age now so finding files that old will be a challenge).
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LinkedLayerData::Type LinkedLayerTaggedBlock::readType(File& document)
+{
+	auto keyArr = ReadBinaryArray<char>(document, 4u);
+	std::string key(keyArr.begin(), keyArr.end());
+
+	if (key == "liFD")
+	{
+		return LinkedLayerData::Type::Data;
+	}
+	if (key == "liFE")
+	{
+		return LinkedLayerData::Type::External;
+	}
+	if (key == "liFA")
+	{
+		return LinkedLayerData::Type::Alias;
+	}
+	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.c_str());
+}
+
+
 PSAPI_NAMESPACE_END

@@ -68,6 +68,9 @@ set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
 
+# fmt library for formatting and logging
+add_subdirectory(thirdparty/fmt)
+
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
 target_include_directories(tcb_span SYSTEM INTERFACE thirdparty/compatibility)

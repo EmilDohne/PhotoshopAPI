@@ -7,6 +7,7 @@
 #include "Core/Struct/File.h"
 #include "Core/Struct/Signature.h"
 #include "Core/Struct/UnicodeString.h"
+#include "Core/Struct/DescriptorStructure.h"
 
 #include <memory>
 #include <variant>
@@ -191,6 +192,78 @@ struct ProtectedSettingTaggedBlock : TaggedBlock
 
 	void read(File& document, const uint64_t offset, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
+};
+
+
+namespace LinkedLayer
+{
+	/// Date structure for a linked layer
+	struct Date : public FileSection
+	{
+		uint32_t year{};
+		uint8_t month{};
+		uint8_t day{};
+		uint8_t hour{};
+		uint8_t minute{};
+		float64_t seconds{};
+
+		/// Default initialize this date struct to the current day and time
+		Date();
+
+		void read(File& document);
+		void write(File& document) const;
+
+		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const;
+	};
+
+	/// Data representation of a single LinkedLayer record, there may be multiple of these per LinkedLayerTaggedBlock
+	/// Photoshop knows of multiple versions of these which may or may not contain certain information. When writing 
+	/// these out we only care about version 7 
+	struct Data
+	{
+		enum class Type
+		{
+			Data,
+			External,
+			Alias
+		};
+
+		Type m_Type = Type::Data;		// How the data is (or isnt) stored in the file
+		int32_t m_Version = 7u;			// 1-7
+		std::string m_UniqueID;			// Mirrors the UniqueID on a PlacedLayerTaggedBlock, this must be referenced somewhere
+		UnicodeString m_FileName;		// The actual filename itself, this does not necessarily represent a path to an actual file
+		std::string m_FileType;			// E.g. " png" for png files etc.
+		uint32_t m_FileCreator{};		// Unknown what this is, seems to just be filled with 255 across all 4 bytes
+
+		std::optional<Descriptors::Descriptor> m_FileOpenDescriptor;
+		std::optional<Descriptors::Descriptor> m_LinkedFileDescriptor;
+
+		std::optional<Date> m_Date;
+
+		std::vector<uint8_t> m_RawFileBytes;	// May be empty, this doesnt exist on all of the LinkedLayer Data sections
+
+		std::optional<UnicodeString> m_ChildDocumentID;
+		std::optional<float64_t> m_AssetModTime;
+		std::optional<bool> m_IsLocked;
+	};
+}
+
+/// LinkedLayers are how Photoshop stores smart objects, these are stored on the Global Tagged blocks and store the information
+/// related to a smart object such as the FilePath, data size, file information etc.
+/// It additionally stores a unique ID for each of the layers which get mirrored in the PlacedLayer TaggedBlock such that on layer parsing
+/// we can map the layer specific PlacedLayerTaggedBlock -> LinkedLayerTaggedBlock.
+/// 
+/// Photoshop has 3 different ways of storing SmartObject data, either as Linked into the file, Linked to an external file or as an Alias (unknown)
+struct LinkedLayerTaggedBlock : TaggedBlock
+{
+	std::vector<LinkedLayer::Data> m_LayerData;	// A single LinkedLayer block may have multiple file descriptions stored in it
+
+	void read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, const uint16_t padding = 1u);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
+
+private:
+
+	LinkedLayer::Data::Type readType(File& document);
 };
 
 PSAPI_NAMESPACE_END

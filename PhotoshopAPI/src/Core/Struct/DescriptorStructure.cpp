@@ -55,12 +55,20 @@ namespace Descriptors
 		// this is sadly not true and instead theres a large list of "known" keys which will have their length field set 
 		// to 0 and otherwise they are simply set to 4
 		if (vec.size() == 4u)
+		{
 			if (std::find(knownFourByteKeys.begin(), knownFourByteKeys.end(), key) != std::end(knownFourByteKeys))
+			{
 				WriteBinaryData<uint32_t>(document, 0u);
+			}
 			else
+			{
 				WriteBinaryData<uint32_t>(document, 4u);
+			}
+		}
 		else
+		{
 			WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(vec.size()));
+		}
 		WriteBinaryArray(document, vec);
 	}
 
@@ -88,7 +96,9 @@ namespace Descriptors
 		// after this we dispatch to the actual read function
 		std::string key = "";
 		if (readKey)
+		{
 			key = Impl::readLengthDenotedKey(document);
+		}
 		auto ostype = Impl::readKey(document);
 		auto osTypeEnum = getOSTypeFromKey(ostype);
 		if (osTypeEnum == Impl::OSTypes::Double)
@@ -128,7 +138,11 @@ namespace Descriptors
 			unitFloats.read(document);
 			return std::make_tuple(key, unitFloats);
 		}
-		else if (osTypeEnum == Impl::OSTypes::Class)
+		else if (
+			osTypeEnum == Impl::OSTypes::Class_1 ||
+			osTypeEnum == Impl::OSTypes::Class_2 ||
+			osTypeEnum == Impl::OSTypes::Class_3
+			)
 		{
 			Class clss(key, ostype);
 			clss.read(document);
@@ -136,7 +150,7 @@ namespace Descriptors
 		}
 		else if (osTypeEnum == Impl::OSTypes::Descriptor)
 		{
-			Descriptor descriptor(key, ostype);
+			Descriptor descriptor(key);
 			descriptor.read(document);
 			return std::make_tuple(key, descriptor);
 		}
@@ -220,34 +234,36 @@ namespace Descriptors
 	void Impl::WriteDescriptorVariant(File& document, const std::string& key, DescriptorVariant& value, bool writeKey /*= true*/)
 	{
 		if (writeKey)
+		{
 			Impl::writeLengthDenotedKey(document, key);
+		}
 
 		if (std::holds_alternative<double>(value))
 		{
 			auto item = std::get<double>(value);
-			auto key = Impl::descriptorKeys.at(Impl::OSTypes::Double)[0];
-			WriteBinaryArray(document, key);
+			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Double);
+			WriteBinaryArray(document, descriptorKey);
 			WriteBinaryData<double>(document, item);
 		}
 		else if (std::holds_alternative<int32_t>(value))
 		{
 			auto item = std::get<int32_t>(value);
-			auto key = Impl::descriptorKeys.at(Impl::OSTypes::Integer)[0];
-			WriteBinaryArray(document, key);
+			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Integer);
+			WriteBinaryArray(document, descriptorKey);
 			WriteBinaryData<int32_t>(document, item);
 		}
 		else if (std::holds_alternative<int64_t>(value))
 		{
 			auto item = std::get<int64_t>(value);
-			auto key = Impl::descriptorKeys.at(Impl::OSTypes::LargeInteger)[0];
-			WriteBinaryArray(document, key);
+			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::LargeInteger);
+			WriteBinaryArray(document, descriptorKey);
 			WriteBinaryData<int64_t>(document, item);
 		}
 		else if (std::holds_alternative<bool>(value))
 		{
 			auto item = std::get<bool>(value);
-			auto key = Impl::descriptorKeys.at(Impl::OSTypes::Boolean)[0];
-			WriteBinaryArray(document, key);
+			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Boolean);
+			WriteBinaryArray(document, descriptorKey);
 			WriteBinaryData<bool>(document, item);
 		}
 		else if (std::holds_alternative<RawData>(value))
@@ -310,8 +326,8 @@ namespace Descriptors
 		}
 		else if (std::holds_alternative<UnicodeString>(value))
 		{
-			auto key = Impl::descriptorKeys.at(Impl::OSTypes::String)[0];
-			WriteBinaryArray(document, key);
+			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::String);
+			WriteBinaryArray(document, descriptorKey);
 			const auto& str = std::get<UnicodeString>(value);
 			str.write(document, 1u);
 		}
@@ -906,8 +922,8 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptor::Descriptor(std::string key, std::vector<char> osKey, std::vector<std::pair<std::string, DescriptorVariant>> items)
-		: DescriptorBase(key, osKey)
+	Descriptor::Descriptor(std::string key, std::vector<std::pair<std::string, DescriptorVariant>> items)
+		: DescriptorBase(key, Impl::descriptorKeys.at(Impl::OSTypes::Descriptor))
 	{
 		m_DescriptorItems = std::move(items);
 	}
