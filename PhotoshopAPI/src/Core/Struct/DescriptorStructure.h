@@ -23,23 +23,18 @@ namespace Descriptors
 	struct Property;
 	struct Class;		// TODO implement the different keys
 	struct Enumerated;
-	struct Double;		// TODO add thin wrapper
-	struct Integer;		// TODO add thin wrapper
-	struct LargeInteger;// TODO add thin wrapper
-	struct Boolean;		// TODO add thin wrapper
-	struct String;		// TODO add thin wrapper
 	struct Index;
 	struct Name;
+	struct Reference;
 	struct EnumeratedReference;
 	struct ObjectArray;
 	struct Offset;
 	struct RawData;
-	struct Path;		// TODO
+	struct Path;
 	struct Identifier;
 	struct UnitFloat;
 	struct UnitFloats;
 	struct List;
-	struct Reference;	// TODO
 
 	/// std::variant type which holds all the types that may be encountered within a Descriptor Structure.
 	/// This includes Descriptors themselves
@@ -49,14 +44,14 @@ namespace Descriptors
 		Reference,
 		RawData,
 		Path,
-		Double,
+		double,
 		UnitFloat,
 		UnitFloats,
 		Enumerated,
-		Integer,
-		LargeInteger,
-		Boolean,
-		String,
+		int32_t,
+		int64_t,
+		bool,
+		UnicodeString,
 		Class,
 		Property,
 		EnumeratedReference,
@@ -87,7 +82,6 @@ namespace Descriptors
 		/// start of each descriptor item
 		enum class OSTypes
 		{
-			Reference,
 			Descriptor,
 			GlobalObject,
 			ObjectArray, // Undocumented but basically the same as Descriptor
@@ -121,32 +115,32 @@ namespace Descriptors
 		static const std::unordered_map<OSTypes, std::vector<char>> descriptorKeys
 		{
 			// OSType keys
-			{ OSTypes::Descriptor,			{{ 'O', 'b', 'j', 'c' }}},	// Descriptor
-			{ OSTypes::GlobalObject,		{{ 'G', 'l', 'b', 'O' }}},	// GlobalObject (same as Descriptor)
-			{ OSTypes::ObjectArray,			{{ 'O', 'b', 'A', 'r' }}},	// ObjectArray
-			{ OSTypes::List,				{{ 'V', 'l', 'L', 's' }}},	// List
-			{ OSTypes::Reference,			{{ 'o', 'b', 'j', ' ' }}},	// Reference (same as List)
-			{ OSTypes::Double,				{{ 'd', 'o', 'u', 'b' }}},	// Double
-			{ OSTypes::UnitFloat,			{{ 'U', 'n', 't', 'F' }}},	// Unit Float
-			{ OSTypes::UnitFloats,			{{ 'U', 'n', 'F', 'l' }}},	// Unit Float
-			{ OSTypes::String,				{{ 'T', 'E', 'X', 'T' }}},	// String
-			{ OSTypes::Enumerated,			{{ 'e', 'n', 'u', 'm' }}},	// Enumerated
-			{ OSTypes::Integer,				{{ 'l', 'o', 'n', 'g' }}},	// Integer (int32_t)
-			{ OSTypes::LargeInteger,		{{ 'c', 'o', 'm', 'p' }}},	// Large integer (int64_t)
-			{ OSTypes::Boolean,				{{ 'b', 'o', 'o', 'l' }}},	// Boolean
-			{ OSTypes::Class_1,				{{ 't', 'y', 'p', 'e' }}},	// Class
-			{ OSTypes::Class_2,				{{ 'G', 'l', 'b', 'C' }}},	// Class
-			{ OSTypes::Class_3,				{{ 'C', 'l', 's', 's' }}},	// Class
-			{ OSTypes::Alias,				{{ 'a', 'l', 'i', 's' }}},	// Alias
-			{ OSTypes::RawData,				{{ 't', 'd', 't', 'a' }}},	// Raw data
-			{ OSTypes::Path,				{{ 'P', 't', 'h', ' ' }}},	// Path (same as raw data)
+			{ OSTypes::Descriptor,			{ 'O', 'b', 'j', 'c' }},	// Descriptor
+			{ OSTypes::GlobalObject,		{ 'G', 'l', 'b', 'O' }},	// GlobalObject (same as Descriptor)
+			{ OSTypes::ObjectArray,			{ 'O', 'b', 'A', 'r' }},	// ObjectArray
+			{ OSTypes::List,				{ 'V', 'l', 'L', 's' }},	// List
+			{ OSTypes::Reference,			{ 'o', 'b', 'j', ' ' }},	// Reference (same as List)
+			{ OSTypes::Double,				{ 'd', 'o', 'u', 'b' }},	// Double
+			{ OSTypes::UnitFloat,			{ 'U', 'n', 't', 'F' }},	// Unit Float
+			{ OSTypes::UnitFloats,			{ 'U', 'n', 'F', 'l' }},	// Unit Float
+			{ OSTypes::String,				{ 'T', 'E', 'X', 'T' }},	// String
+			{ OSTypes::Enumerated,			{ 'e', 'n', 'u', 'm' }},	// Enumerated
+			{ OSTypes::Integer,				{ 'l', 'o', 'n', 'g' }},	// Integer (int32_t)
+			{ OSTypes::LargeInteger,		{ 'c', 'o', 'm', 'p' }},	// Large integer (int64_t)
+			{ OSTypes::Boolean,				{ 'b', 'o', 'o', 'l' }},	// Boolean
+			{ OSTypes::Class_1,				{ 't', 'y', 'p', 'e' }},	// Class
+			{ OSTypes::Class_2,				{ 'G', 'l', 'b', 'C' }},	// Class
+			{ OSTypes::Class_3,				{ 'C', 'l', 's', 's' }},	// Class
+			{ OSTypes::Alias,				{ 'a', 'l', 'i', 's' }},	// Alias
+			{ OSTypes::RawData,				{ 't', 'd', 't', 'a' }},	// Raw data
+			{ OSTypes::Path,				{ 'P', 't', 'h', ' ' }},	// Path (same as raw data)
 			// OSType Reference Keys	
-			{ OSTypes::Property,			{{ 'p', 'r', 'o', 'p' }}}, // Property
-			{ OSTypes::EnumeratedReference, {{ 'E', 'n', 'm', 'r' }}}, // Enumerated Reference
-			{ OSTypes::Offset,				{{ 'r', 'e', 'l', 'e' }}}, // Offset
-			{ OSTypes::Identifier,			{{ 'I', 'd', 'n', 't' }}}, // Identifier
-			{ OSTypes::Index,				{{ 'i', 'n', 'd', 'x' }}}, // Index
-			{ OSTypes::Name,				{{ 'n', 'a', 'm', 'e' }}}  // Name
+			{ OSTypes::Property,			{ 'p', 'r', 'o', 'p' }},	// Property
+			{ OSTypes::EnumeratedReference, { 'E', 'n', 'm', 'r' }},	// Enumerated Reference
+			{ OSTypes::Offset,				{ 'r', 'e', 'l', 'e' }},	// Offset
+			{ OSTypes::Identifier,			{ 'I', 'd', 'n', 't' }},	// Identifier
+			{ OSTypes::Index,				{ 'i', 'n', 'd', 'x' }},	// Index
+			{ OSTypes::Name,				{ 'n', 'a', 'm', 'e' }}		// Name
 		};
 
 
@@ -314,6 +308,7 @@ namespace Descriptors
 		void write(File& document) override;
 	};
 
+
 	struct Class : public DescriptorBase
 	{
 		UnicodeString m_Name;
@@ -354,6 +349,7 @@ namespace Descriptors
 		void write(File& document) override;
 	};
 
+
 	struct EnumeratedReference : public DescriptorBase
 	{
 		UnicodeString m_Name;
@@ -375,6 +371,7 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) override;
 	};
+
 
 	struct Offset : public DescriptorBase
 	{
@@ -451,6 +448,13 @@ namespace Descriptors
 		void write(File& document) override;
 	};
 
+	/// Exactly the same as a List
+	struct Reference : public List
+	{
+		using List::List;
+	};
+
+
 	struct RawData : public DescriptorBase
 	{
 		std::vector<uint8_t> m_Data{};
@@ -463,10 +467,12 @@ namespace Descriptors
 		void write(File& document) override;
 	};
 
+
 	struct Path : public RawData
 	{
 		using RawData::RawData;
 	};
+
 
 	struct Name : public DescriptorBase
 	{
