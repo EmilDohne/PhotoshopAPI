@@ -38,6 +38,37 @@ struct GroupLayer : public Layer<T>
 	/// Specifies whether or not the layer is collapsed or open
 	bool m_isCollapsed = false;		
 
+
+	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
+	/// \param layerParameters The parameters for the group layer.
+	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
+	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
+	{
+		PROFILE_FUNCTION();
+		Layer<T>::m_LayerName = parameters.layerName;
+		Layer<T>::m_BlendMode = parameters.blendMode;
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_CenterX = parameters.posX;
+		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+
+		m_isCollapsed = isCollapsed;
+
+		// Set the layer mask if present
+		Layer<T>::parseLayerMask(parameters);
+
+		// Throw an error if the width and height are set but no mask is passed. This is technically not necessary as 
+		// writing a file with width and height but no image data is a no-op but we want to enforce good practice
+		if (!Layer<T>::m_LayerMask && (Layer<T>::m_Width > 0 || Layer<T>::m_Height > 0))
+		{
+			PSAPI_LOG_ERROR("GroupLayer", "Non-zero height or width passed but no mask specified. Got {width: %d, height: %d} but expected {0, 0}", 
+				static_cast<int>(Layer<T>::m_Width), static_cast<int>(Layer<T>::m_Height));
+		}
+	}
+
+
 	/// \brief Adds a layer to the group, checking for duplicates in the process.
 	/// \param layeredFile The layered file containing the group.
 	/// \param layer The layer to be added.
@@ -200,27 +231,6 @@ struct GroupLayer : public Layer<T>
 		{
 			m_isCollapsed = true;
 		}
-	}
-
-	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
-	/// \param layerParameters The parameters for the group layer.
-	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
-	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
-	{
-		PROFILE_FUNCTION();
-		Layer<T>::m_LayerName = parameters.layerName;
-		Layer<T>::m_BlendMode = parameters.blendMode;
-		Layer<T>::m_Opacity = parameters.opacity;
-		Layer<T>::m_IsVisible = parameters.isVisible;
-		Layer<T>::m_CenterX = parameters.posX;
-		Layer<T>::m_CenterY = parameters.posY;
-		Layer<T>::m_Width = parameters.width;
-		Layer<T>::m_Height = parameters.height;
-
-		m_isCollapsed = isCollapsed;
-
-		// Set the layer mask if present
-		Layer<T>::parseLayerMask(parameters);
 	}
 
 
