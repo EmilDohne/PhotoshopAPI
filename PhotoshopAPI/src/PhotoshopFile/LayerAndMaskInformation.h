@@ -56,6 +56,11 @@ namespace LayerRecords
 	{
 		Enum::ChannelIDInfo m_ChannelID;
 		uint64_t m_Size;	// This appears to include the length of the compression marker
+
+		inline bool operator==(const ChannelInformation& other) const 
+		{
+			return m_ChannelID == other.m_ChannelID;
+		}
 	};
 
 
