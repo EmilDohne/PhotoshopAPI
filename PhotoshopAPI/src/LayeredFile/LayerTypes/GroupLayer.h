@@ -38,6 +38,37 @@ struct GroupLayer : public Layer<T>
 	/// Specifies whether or not the layer is collapsed or open
 	bool m_isCollapsed = false;		
 
+
+	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
+	/// \param layerParameters The parameters for the group layer.
+	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
+	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
+	{
+		PROFILE_FUNCTION();
+		Layer<T>::m_LayerName = parameters.layerName;
+		Layer<T>::m_BlendMode = parameters.blendMode;
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_CenterX = parameters.posX;
+		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+
+		m_isCollapsed = isCollapsed;
+
+		// Set the layer mask if present
+		Layer<T>::parseLayerMask(parameters);
+
+		// Throw an error if the width and height are set but no mask is passed. This is technically not necessary as 
+		// writing a file with width and height but no image data is a no-op but we want to enforce good practice
+		if (!Layer<T>::m_LayerMask && (Layer<T>::m_Width > 0 || Layer<T>::m_Height > 0))
+		{
+			PSAPI_LOG_ERROR("GroupLayer", "Non-zero height or width passed but no mask specified. Got {width: %d, height: %d} but expected {0, 0}", 
+				static_cast<int>(Layer<T>::m_Width), static_cast<int>(Layer<T>::m_Height));
+		}
+	}
+
+
 	/// \brief Adds a layer to the group, checking for duplicates in the process.
 	/// \param layeredFile The layered file containing the group.
 	/// \param layer The layer to be added.
@@ -105,7 +136,6 @@ struct GroupLayer : public Layer<T>
 	{
 		PascalString lrName = Layer<T>::generatePascalString();
 		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
-		uint16_t channelCount = static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
@@ -134,6 +164,10 @@ struct GroupLayer : public Layer<T>
 			taggedBlocks.emplace(blockStorage);
 		}
 
+		// Applications such as krita expect empty channels to be in-place for the given colormode
+		// to actually parse the file. 
+		Layer<T>::generateEmptyChannels(channelInfoVec, channelDataVec, colorMode);
+
 		if (Layer<T>::m_BlendMode != Enum::BlendMode::Passthrough)
 		{
 			LayerRecord lrRecord = LayerRecord(
@@ -142,7 +176,7 @@ struct GroupLayer : public Layer<T>
 				extents.left,
 				extents.bottom,
 				extents.right,
-				channelCount,
+				channelInfoVec.size(),
 				channelInfoVec,
 				Layer<T>::m_BlendMode,
 				Layer<T>::m_Opacity,
@@ -163,7 +197,7 @@ struct GroupLayer : public Layer<T>
 				extents.left,
 				extents.bottom,
 				extents.right,
-				channelCount,
+				channelInfoVec.size(),
 				channelInfoVec,
 				Enum::BlendMode::Normal,
 				Layer<T>::m_Opacity,
@@ -197,27 +231,6 @@ struct GroupLayer : public Layer<T>
 		{
 			m_isCollapsed = true;
 		}
-	}
-
-	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
-	/// \param layerParameters The parameters for the group layer.
-	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
-	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
-	{
-		PROFILE_FUNCTION();
-		Layer<T>::m_LayerName = parameters.layerName;
-		Layer<T>::m_BlendMode = parameters.blendMode;
-		Layer<T>::m_Opacity = parameters.opacity;
-		Layer<T>::m_IsVisible = parameters.isVisible;
-		Layer<T>::m_CenterX = parameters.posX;
-		Layer<T>::m_CenterY = parameters.posY;
-		Layer<T>::m_Width = parameters.width;
-		Layer<T>::m_Height = parameters.height;
-
-		m_isCollapsed = isCollapsed;
-
-		// Set the layer mask if present
-		Layer<T>::parseLayerMask(parameters);
 	}
 
 
