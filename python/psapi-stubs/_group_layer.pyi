@@ -26,6 +26,7 @@ class GroupLayer_8bit(Layer_8bit):
         ...
 
     def __init__(
+        self: GroupLayer_8bit,    
         layer_name: str,
         layer_mask: Optional[numpy.ndarray] = ...,
         width: int = ...,
@@ -77,6 +78,7 @@ class GroupLayer_16bit(Layer_16bit):
         ...
 
     def __init__(
+        self: GroupLayer_16bit,    
         layer_name: str,
         layer_mask: Optional[numpy.ndarray] = ...,
         width: int = ...,
@@ -128,6 +130,7 @@ class GroupLayer_32bit(Layer_32bit):
         ...
 
     def __init__(
+        self: GroupLayer_32bit,    
         layer_name: str,
         layer_mask: Optional[numpy.ndarray] = ...,
         width: int = ...,
