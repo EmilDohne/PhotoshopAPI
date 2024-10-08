@@ -244,6 +244,61 @@ protected:
 		return std::optional(std::move(data));
 	}
 
+	/// \brief Generate Default zero-length channels for the given colormode.
+	/// 
+	/// This should only be used on layers that do not already contain imagedata such as a GroupLayer<T> or a SectionDividerLayer<T> as some applications
+	/// such as krita require zero-length layers to be present
+	/// 
+	/// \param channelInfoVec The channel infos to append to, will only add channels if the default keys dont already exist
+	/// \param channelDataVec The channel data to append to, will only add channels if the default keys dont already exist
+	/// \param colormode	  The colormode associated with the layer, dictates how many layers are actually written out
+	void generateEmptyChannels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<ImageChannel>>& channelDataVec, const Enum::ColorMode& colormode)
+	{
+		auto processChannel = [&](Enum::ChannelIDInfo channelid, int16_t i)
+			{
+				LayerRecords::ChannelInformation channelinfo = { .m_ChannelID = channelid, .m_Size = 0u };
+				// Skip existing channels
+				if (std::find(channelInfoVec.begin(), channelInfoVec.end(), channelinfo) != channelInfoVec.end())
+				{
+					PSAPI_LOG_DEBUG("Layer", "Skipped generation of default channel with ID: %d as it was already present on the data", static_cast<int>(i));
+					return;
+				}
+
+				std::vector<T> empty(0);
+				auto channel = std::make_unique<ImageChannel>(Enum::Compression::Raw, empty, channelid, 0u, 0u, 0.0f, 0.0f);
+				channelInfoVec.push_back(channelinfo);
+				channelDataVec.push_back(std::move(channel));
+			};
+
+		if (colormode == Enum::ColorMode::RGB)	
+		{
+			// Fill channels {-1, 0, 1, 2}
+			for (int16_t i = -1; i <= 2; ++i)
+			{
+				auto channelid = Enum::rgbIntToChannelID(i);
+				processChannel(channelid, i);
+			}
+		}
+		else if (colormode == Enum::ColorMode::CMYK)
+		{
+			// Fill channels {-1, 0, 1, 2, 3}
+			for (int16_t i = -1; i <= 3; ++i)
+			{
+				auto channelid = Enum::cmykIntToChannelID(i);
+				processChannel(channelid, i);
+			}
+		}
+		else if (colormode == Enum::ColorMode::Grayscale)
+		{
+			// Fill channels {-1, 0}
+			for (int16_t i = -1; i <= 0; ++i)
+			{
+				auto channelid = Enum::grayscaleIntToChannelID(i);
+				processChannel(channelid, i);
+			}
+		}
+	}
+
 public:
 
 	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
