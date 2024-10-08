@@ -111,6 +111,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(lrUnicodeNameBlock);
 			return lrUnicodeNameBlock;
 		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrLinked || taggedBlock.value() == Enum::TaggedBlockKey::lrLinked_8Byte)
+		{
+			auto lrLinkedTaggedBlock = std::make_shared<LinkedLayerTaggedBlock>();
+			lrLinkedTaggedBlock->read(document, header, offset, taggedBlock.value(), signature, padding);
+			this->m_TaggedBlocks.push_back(lrLinkedTaggedBlock);
+			return lrLinkedTaggedBlock;
+		}
 		else
 		{
 			auto baseTaggedBlock = std::make_shared<TaggedBlock>();
