@@ -333,7 +333,7 @@ void ProtectedSettingTaggedBlock::write(File& document, [[maybe_unused]] const F
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LinkedLayerDate::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
+uint64_t LinkedLayer::Date::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	return sizeof(uint32_t) + 4 * sizeof(uint8_t) + sizeof(float64_t);
 }
@@ -341,7 +341,7 @@ uint64_t LinkedLayerDate::calculateSize(std::shared_ptr<FileHeader> header /*= n
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayerDate::read(File& document)
+void LinkedLayer::Date::read(File& document)
 {
 	this->year		= ReadBinaryData<uint32_t>(document);
 	this->month		= ReadBinaryData<uint8_t>(document);
@@ -354,7 +354,7 @@ void LinkedLayerDate::read(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayerDate::write(File& document) const
+void LinkedLayer::Date::write(File& document) const
 {
 	WriteBinaryData<uint32_t>(document, this->year);
 	WriteBinaryData<uint8_t>(document, this->month);
@@ -367,7 +367,7 @@ void LinkedLayerDate::write(File& document) const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayerDate::LinkedLayerDate()
+LinkedLayer::Date::Date()
 {
 	auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -380,6 +380,123 @@ LinkedLayerDate::LinkedLayerDate()
 	hour = localTime->tm_hour;
 	minute = localTime->tm_min;
 	seconds = static_cast<double>(localTime->tm_sec);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LinkedLayer::Data::read(File& document)
+{
+	auto size = ReadBinaryData<uint64_t>(document);
+
+	m_Type = readType(document);
+	m_Version = ReadBinaryData<uint32_t>(document);
+	if (m_Version < 1 || m_Version > 7)
+	{
+		PSAPI_LOG_ERROR("LinkedLayer", "Unknown Linked Layer version %d encountered, aborting parsing", m_Version);
+	}
+
+	// Read the UniqueID identifying which layer this belongs to
+	PascalString uniqueID;
+	uniqueID.read(document, 1u);
+	m_UniqueID = uniqueID.getString();
+
+	m_FileName.read(document, 2u);
+
+	// Read the file type such as " png", " jpg" etc. 
+	auto fileTypeArr = ReadBinaryArray<char>(document, 4u);
+	m_FileType = std::string(fileTypeArr.begin(), fileTypeArr.end());
+
+	// Unkown what exactly this is
+	m_FileCreator = ReadBinaryData<uint32_t>(document);
+
+	// Read the size of the rest of the data as well as the Descriptors
+	auto dataSize = ReadBinaryData<uint64_t>(document);
+	bool hasFileOpenDescriptor = ReadBinaryData<bool>(document);
+	if (hasFileOpenDescriptor)
+	{
+		auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+		Descriptors::Descriptor fileOpenDescriptor;
+		fileOpenDescriptor.read(document);
+		m_FileOpenDescriptor = fileOpenDescriptor;
+	}
+
+	// Decode the actual "data" section of the LinkedLayer
+	if (m_Type == Type::External)
+	{
+		auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+		Descriptors::Descriptor linkedFileDescriptor;
+		linkedFileDescriptor.read(document);
+		m_LinkedFileDescriptor = linkedFileDescriptor;
+
+		if (m_Version > 3)
+		{
+			Date date;
+			date.read(document);
+			m_Date = date;
+		}
+		uint64_t fileSize = ReadBinaryData<uint64_t>(document);
+		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, fileSize);
+	}
+	else if (m_Type == Type::Alias)
+	{
+		document.skip(8u);
+	}
+	else if (m_Type == Type::Data)
+	{
+		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, dataSize);
+	}
+	
+	// Read data likely pertaining to assets linked in from the asset library.
+	if (m_Version >= 5)
+	{
+		UnicodeString id;
+		id.read(document, 2u);
+		m_ChildDocumentID = id;
+	}
+	if (m_Version >= 6)
+	{
+		m_AssetModTime = ReadBinaryData<double>(document);
+	}
+	if (m_Version >= 7)
+	{
+		m_AssetIsLocked = ReadBinaryData<bool>(document);
+	}
+
+	// The file format ref mentions that if the type is External and the version is 2 we read the raw file bytes here but unless the 
+	// Version 2 stored the raw file bytes twice this would seem weird as the call above for the raw file bytes would also still be there
+	// We skip any loading now (also because version 2 is likely approaching 20 years in age now so finding files that old will be a challenge).
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LinkedLayer::Data::Type LinkedLayer::Data::readType(File& document)
+{
+	auto keyArr = ReadBinaryArray<char>(document, 4u);
+	std::string key(keyArr.begin(), keyArr.end());
+
+	if (key == "liFD")
+	{
+		return LinkedLayer::Data::Type::Data;
+	}
+	if (key == "liFE")
+	{
+		return LinkedLayer::Data::Type::External;
+	}
+	if (key == "liFA")
+	{
+		return LinkedLayer::Data::Type::Alias;
+	}
+	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.c_str());
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void LinkedLayer::Data::write(File& document) const
+{
+
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -416,114 +533,18 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 	uint64_t endOffset = document.getOffset() + toRead;
 	while (document.getOffset() < endOffset)
 	{
-		LinkedLayerData data;
-
-		auto size = ReadBinaryData<uint64_t>(document);
-
-		data.m_Type = readType(document);
-		data.m_Version = ReadBinaryData<uint32_t>(document);
-		if (data.m_Version < 1 || data.m_Version > 7)
-		{
-			PSAPI_LOG_ERROR("LinkedLayer", "Unknown Linked Layer version %d encountered, aborting parsing", data.m_Version);
-		}
-
-		PascalString uniqueID;
-		uniqueID.read(document, 1u);
-		data.m_UniqueID = uniqueID.getString();
-
-		auto fileTypeArr = ReadBinaryArray<char>(document, 4u);
-		data.m_FileType = std::string(fileTypeArr.begin(), fileTypeArr.end());
-
-		data.m_FileCreator = ReadBinaryData<uint32_t>(document);
-
-		auto sizeRest = ReadBinaryData<uint64_t>(document);
-		bool hasFileOpenDescriptor = ReadBinaryData<bool>(document);
-		if (hasFileOpenDescriptor)
-		{
-			Descriptors::Descriptor fileOpenDescriptor;
-			fileOpenDescriptor.read(document);
-			data.m_FileOpenDescriptor = fileOpenDescriptor;
-		}
-		if (data.m_Type == LinkedLayerData::Type::External)
-		{
-			Descriptors::Descriptor linkedFileDescriptor;
-			linkedFileDescriptor.read(document);
-			data.m_LinkedFileDescriptor = linkedFileDescriptor;
-		}
-
-		if (data.m_Type == LinkedLayerData::Type::External && data.m_Version > 3)
-		{
-			
-		}
-
-		std::optional<uint64_t> fileSize;
-		if (data.m_Type == LinkedLayerData::Type::External)
-		{
-			fileSize = ReadBinaryData<uint64_t>(document);
-		}
-
-		// Filler/padding bytes
-		if (data.m_Type == LinkedLayerData::Type::Alias)
-		{
-			document.skip(4u);
-		}
-		document.skip(8u);
-
-		// Raw file bytes
-		std::vector<uint8_t> rawFileBytes;
-		if (data.m_Type == LinkedLayerData::Type::External && fileSize)
-		{
-			rawFileBytes = ReadBinaryArray<uint8_t>(document, fileSize.value());
-		}
-
-		std::optional<UnicodeString> childDocumentID;
-		if (data.m_Version > 5)
-		{
-			UnicodeString id;
-			id.read(document, 2u);
-			childDocumentID = id;
-		}
-
-		std::optional<double> assetModTime;
-		if (data.m_Version > 6)
-		{
-			assetModTime = ReadBinaryData<double>(document);
-		}
-
-		std::optional<bool> assetLockedState;
-		if (data.m_Version > 7)
-		{
-			assetModTime = ReadBinaryData<bool>(document);
-		}
-
-		// The file format ref mentions that if the type is External and the version is 2 we read the raw file bytes here but unless the 
-		// Version 2 stored the raw file bytes twice this would seem weird as the call above for the raw file bytes would also still be there
-		// We skip any loading now (also because version 2 is likely approaching 20 years in age now so finding files that old will be a challenge).
+		LinkedLayer::Data data;
+		data.read(document);
+		m_LayerData.push_back(std::move(data));
 	}
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayerData::Type LinkedLayerTaggedBlock::readType(File& document)
+void LinkedLayerTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
 {
-	auto keyArr = ReadBinaryArray<char>(document, 4u);
-	std::string key(keyArr.begin(), keyArr.end());
 
-	if (key == "liFD")
-	{
-		return LinkedLayerData::Type::Data;
-	}
-	if (key == "liFE")
-	{
-		return LinkedLayerData::Type::External;
-	}
-	if (key == "liFA")
-	{
-		return LinkedLayerData::Type::Alias;
-	}
-	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.c_str());
 }
-
 
 PSAPI_NAMESPACE_END

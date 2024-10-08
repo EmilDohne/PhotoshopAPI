@@ -240,11 +240,19 @@ namespace LinkedLayer
 
 		std::optional<Date> m_Date;
 
-		std::vector<uint8_t> m_RawFileBytes;	// May be empty, this doesnt exist on all of the LinkedLayer Data sections
+		std::vector<uint8_t> m_RawFileBytes;	// May be empty, this only appears on an External LinkedLayer
 
+		// Only available in version 5, 6 and 7 of the descriptor respectively
 		std::optional<UnicodeString> m_ChildDocumentID;
 		std::optional<float64_t> m_AssetModTime;
-		std::optional<bool> m_IsLocked;
+		std::optional<bool> m_AssetIsLocked;
+
+		void read(File& document);
+		void write(File& document) const;
+
+	private:
+
+		Type readType(File& document);
 	};
 }
 
@@ -260,10 +268,6 @@ struct LinkedLayerTaggedBlock : TaggedBlock
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, const uint16_t padding = 1u);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
-
-private:
-
-	LinkedLayer::Data::Type readType(File& document);
 };
 
 PSAPI_NAMESPACE_END
