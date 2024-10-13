@@ -69,23 +69,25 @@ struct Layer
 	/// A pixel layer mask
 	std::optional<LayerMask> m_LayerMask;
 
-	Enum::BlendMode m_BlendMode;
+	Enum::BlendMode m_BlendMode = Enum::BlendMode::Normal;
 
 	/// Marks whether or not the layer is visible or not
-	bool m_IsVisible; 
+	bool m_IsVisible{};
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
-	uint8_t m_Opacity;	
+	uint8_t m_Opacity{};
 
-	uint32_t m_Width;
+	uint32_t m_Width{};
 
-	uint32_t m_Height;
+	uint32_t m_Height{};
 
-	float m_CenterX;
+	float m_CenterX{};
 
-	float m_CenterY;
+	float m_CenterY{};
 
 protected:
+
+	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
 	void parseLayerMask(Params& parameters)
@@ -314,6 +316,7 @@ public:
 	/// \param header The FileHeader providing overall file information.
 	Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 	{
+		m_ColorMode = header.m_ColorMode;
 		m_LayerName = layerRecord.m_LayerName.getString();
 		// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
 		// blendmode if it is present
@@ -466,8 +469,10 @@ public:
 	/// Changes the compression mode of all channels in this layer to the given compression mode
 	virtual void setCompression(const Enum::Compression compCode)
 	{
-		if (m_LayerMask.has_value())
-		m_LayerMask.value().maskData->m_Compression = compCode;
+		if (m_LayerMask)
+		{
+			m_LayerMask.value().maskData->m_Compression = compCode;
+		}
 	}
 
 	virtual ~Layer() = default;
