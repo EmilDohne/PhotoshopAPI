@@ -621,23 +621,8 @@ void LayerRecord::read(File& document, const FileHeader& header, ProgressCallbac
 	for (int i = 0; i < m_ChannelCount; i++)
 	{
 		LayerRecords::ChannelInformation channelInfo{};
-		switch (header.m_ColorMode)
-		{
-		case Enum::ColorMode::RGB:
-			channelInfo.m_ChannelID = Enum::rgbIntToChannelID(ReadBinaryData<uint16_t>(document));
-			break;
-		case Enum::ColorMode::CMYK:
-			channelInfo.m_ChannelID = Enum::cmykIntToChannelID(ReadBinaryData<uint16_t>(document));
-			break;
-		case Enum::ColorMode::Grayscale:
-			channelInfo.m_ChannelID = Enum::grayscaleIntToChannelID(ReadBinaryData<uint16_t>(document));
-			break;
-		default:
-			int16_t index = ReadBinaryData<uint16_t>(document);
-			PSAPI_LOG_WARNING("LayerRecord", "Currently unsupported ColorMode encountered, storing ChannelID::Custom");
-				channelInfo.m_ChannelID = { Enum::ChannelID::Custom, index };
-			break;
-		}
+		auto index = ReadBinaryData<int16_t>(document);
+		channelInfo.m_ChannelID = Enum::toChannelIDInfo(index, header.m_ColorMode);
 
 		std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 		channelInfo.m_Size = ExtractWidestValue<uint32_t, uint64_t>(size);
