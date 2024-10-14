@@ -13,6 +13,7 @@
 #include "Core/Struct/TaggedBlock.h"
 #include "Core/Struct/TaggedBlockStorage.h"
 #include "LayeredFile/LayeredFile.h"
+#include "LayeredFile/LayerTypes/Layer.h"
 
 #include <vector>
 #include <variant>
@@ -45,6 +46,7 @@ struct GroupLayer : public Layer<T>
 	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
 	{
 		PROFILE_FUNCTION();
+		Layer<T>::m_ColorMode = parameters.colorMode;
 		Layer<T>::m_LayerName = parameters.layerName;
 		Layer<T>::m_BlendMode = parameters.blendMode;
 		Layer<T>::m_Opacity = parameters.opacity;
