@@ -277,7 +277,7 @@ protected:
 			// Fill channels {-1, 0, 1, 2}
 			for (int16_t i = -1; i <= 2; ++i)
 			{
-				auto channelid = Enum::rgbIntToChannelID(i);
+				auto channelid = Enum::Impl::rgbIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -286,7 +286,7 @@ protected:
 			// Fill channels {-1, 0, 1, 2, 3}
 			for (int16_t i = -1; i <= 3; ++i)
 			{
-				auto channelid = Enum::cmykIntToChannelID(i);
+				auto channelid = Enum::Impl::cmykIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -295,7 +295,7 @@ protected:
 			// Fill channels {-1, 0}
 			for (int16_t i = -1; i <= 0; ++i)
 			{
-				auto channelid = Enum::grayscaleIntToChannelID(i);
+				auto channelid = Enum::Impl::grayscaleIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -453,7 +453,7 @@ public:
 	}
 	
 	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
-	std::vector<T> getMaskData(const bool doCopy = true)
+	std::vector<T> getMask(const bool doCopy = true)
 	{
 		if (m_LayerMask.has_value())
 		{
@@ -465,6 +465,22 @@ public:
 		PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
 		return std::vector<T>();
 	}
+
+	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable.
+	/// This method is depracated, please use getMask() instead
+	[[deprecated("Replaced by getMask() for better consistency")]]
+	std::vector<T> getMaskData(const bool doCopy = true)
+	{
+		return getMask(doCopy);
+	}
+
+
+
+	/// Check whether a mask channel exists on the Layer
+	bool hasMask() { return m_LayerMask.has_value(); };
+
+	/// Get the colormode associated with the layer
+	Enum::ColorMode getColorMode() { return m_ColorMode; };
 
 	/// Changes the compression mode of all channels in this layer to the given compression mode
 	virtual void setCompression(const Enum::Compression compCode)
