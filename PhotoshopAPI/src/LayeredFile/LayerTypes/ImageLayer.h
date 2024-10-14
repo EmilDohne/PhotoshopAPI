@@ -11,6 +11,14 @@
 #include <optional>
 #include <iostream>
 
+// If we compile with C++<20 we replace the stdlib implementation with the compatibility
+// library
+#if (__cplusplus < 202002L)
+#include "tcb_span.hpp"
+#else
+#include <span>
+#endif
+
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
 
@@ -24,7 +32,7 @@ namespace
 	// Returns false if a specific key is not found
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	bool checkChannelKeys(const std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>& data, const std::vector<Enum::ChannelIDInfo>& requiredKeys)
+	inline bool checkChannelKeys(const std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>& data, const std::vector<Enum::ChannelIDInfo>& requiredKeys)
 	{
 		for (const auto& requiredKey : requiredKeys)
 		{
@@ -63,31 +71,22 @@ public:
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
 	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy = std::execution::par)
 	{
-		// Change the data from being int16_t mapped to instead being mapped to a ChannelIDInfo so we can forward it
+		// Change the data from being Enum::ChannelID mapped to instead being mapped to a ChannelIDInfo so we can forward it
 		// to the other constructor
 		data_type remapped;
 		for (auto& [key, value] : data)
 		{
-			Enum::ChannelIDInfo info = {};
-			if (parameters.colorMode == Enum::ColorMode::RGB)
+			// Check in a strict manner whether the channel is even valid for the colormode
+			if (!Enum::channelValidForColorMode(key, parameters.colorMode))
 			{
-				info = Enum::rgbChannelIDToChannelIDInfo(key);
+				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel '%s' as it is not valid for the '%s' colormode. Skipping creation of this channel",
+					Enum::channelIDToString(key).c_str(), Enum::colorModeToString(parameters.colorMode).c_str());
+				continue;
 			}
-			else if (parameters.colorMode == Enum::ColorMode::CMYK)
-			{
-				info = Enum::cmykChannelIDToChannelIDInfo(key);
-			}
-			else if (parameters.colorMode == Enum::ColorMode::Grayscale)
-			{
-				info = Enum::grayscaleChannelIDToChannelIDInfo(key);
-			}
-			else
-			{
-				PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
-			}
+			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colorMode);
 			remapped[info] = std::move(value);
 		}
-		construct(std::move(remapped), parameters, policy);
+		this->construct(std::move(remapped), parameters, policy);
 	}
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
@@ -105,26 +104,17 @@ public:
 		data_type remapped;
 		for (auto& [key, value] : data)
 		{
-			Enum::ChannelIDInfo info = {};
-			if (parameters.colorMode == Enum::ColorMode::RGB)
+			// Check in a strict manner whether the channel is even valid for the colormode
+			if (!Enum::channelValidForColorMode(key, parameters.colorMode))
 			{
-				info = Enum::rgbIntToChannelID(key);
+				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel with index %d as it is not valid for the '%s' colormode. Skipping creation of this channel",
+					key, Enum::colorModeToString(parameters.colorMode).c_str());
+				continue;
 			}
-			else if (parameters.colorMode == Enum::ColorMode::CMYK)
-			{
-				info = Enum::cmykIntToChannelID(key);
-			}
-			else if (parameters.colorMode == Enum::ColorMode::Grayscale)
-			{
-				info = Enum::grayscaleIntToChannelID(key);
-			}
-			else
-			{
-				PSAPI_LOG_ERROR("ImageLayer", "Currently PhotoshopAPI only supports RGB, CMYK and Grayscale ColorMode");
-			}
+			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colorMode);
 			remapped[info] = std::move(value);
 		}
-		construct(std::move(remapped), parameters, policy);
+		this->construct(std::move(remapped), parameters, policy);
 	}
 
 	/// Initialize our imageLayer by first parsing the base Layer instance and then moving
@@ -160,7 +150,7 @@ public:
 	{
 		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
 		{
-			return this->getMaskData(doCopy);
+			return this->getMask(doCopy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
@@ -184,7 +174,7 @@ public:
 	{
 		if (channelIndex == -2)
 		{
-			return this->getMaskData(doCopy);
+			return this->getMask(doCopy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
@@ -217,7 +207,7 @@ public:
 			Enum::ChannelIDInfo maskInfo;
 			maskInfo.id = Enum::ChannelID::UserSuppliedLayerMask;
 			maskInfo.index = -2;
-			imgData[maskInfo] = Layer<T>::getMaskData(doCopy);
+			imgData[maskInfo] = Layer<T>::getMask(doCopy);
 		}
 
 		// Preallocate the data in parallel for some slight speedups
@@ -309,6 +299,54 @@ public:
 		return imgData;
 	}
 
+	/// Set or replace the data for a certain channel without rebuilding the whole ImageLayer. If the channel provided
+	/// exists in m_ImageData we replace it, if it doesn't we insert it. 
+	/// The channel must be both be valid for the given colormode as well as having the same size as m_Width * m_Height
+	/// 
+	/// \param channelID	The channel to insert or replace, must be valid for the given colormode. I.e. cannot be Enum::ChannelID::Cyan for an RGB layer/file
+	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
+	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
+	void setChannel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	{
+		PROFILE_FUNCTION();
+		if (!channelValidForColorMode(channelID, Layer<T>::m_ColorMode))
+		{
+			PSAPI_LOG_ERROR("ImageLayer", "Unable to construct channel '%s' as it is not valid for the '%s' colormode. Skipping creation of this channel",
+				Enum::channelIDToString(channelID).c_str(), Enum::colorModeToString(Layer<T>::m_ColorMode).c_str());
+			return;
+		}
+		if (data.size() != static_cast<size_t>(Layer<T>::m_Width) * Layer<T>::m_Height)
+		{
+			PSAPI_LOG_ERROR("ImageLayer", "Error while setting channel '%s': data size does not match the layers' width * height", Enum::channelIDToString(channelID).c_str());
+		}
+
+		auto idinfo = Enum::toChannelIDInfo(channelID, Layer<T>::m_ColorMode);
+		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
+		{
+			LayerMask mask{};
+			mask.maskData = std::make_unique<ImageChannel>(compression, data, idinfo, Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY);
+			Layer<T>::m_LayerMask = std::move(mask);
+		}
+		else
+		{
+			m_ImageData[idinfo] = std::make_unique<ImageChannel>(compression, data, idinfo, Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY);
+		}
+	}
+
+	/// Set or replace the data for a certain channel without rebuilding the whole ImageLayer. If the channel provided
+	/// exists in m_ImageData we replace it, if it doesn't we insert it. 
+	/// The channel must be both be valid for the given colormode as well as having the same size as m_Width * m_Height
+	/// 
+	/// \param index		The index to insert or replace, must be valid for the given colormode. I.e. cannot be 4 for an RGB layer/file
+	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
+	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
+	void setChannel(const int16_t index, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	{
+		auto idinfo = Enum::toChannelIDInfo(index, Layer<T>::m_ColorMode);
+		this->setChannel(idinfo.id, data, compression);
+	}
+
+
 	/// Change the compression codec of all the image channels
 	void setCompression(const Enum::Compression compCode) override
 	{
@@ -377,6 +415,7 @@ private:
 	void construct(data_type&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy)
 	{
 		PROFILE_FUNCTION();
+		Layer<T>::m_ColorMode = parameters.colorMode;
 		Layer<T>::m_LayerName = parameters.layerName;
 		if (parameters.blendMode == Enum::BlendMode::Passthrough)
 		{

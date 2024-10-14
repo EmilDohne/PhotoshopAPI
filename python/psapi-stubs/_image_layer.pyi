@@ -69,6 +69,12 @@ class ImageLayer_8bit(Layer_8bit):
     def get_channel_by_index(self: ImageLayer_8bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
         ...
 
+    def set_channel_by_id(self: ImageLayer_8bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
+        ...
+
+    def set_channel_by_index(self: ImageLayer_8bit, key: int, value: numpy.ndarray) -> None:
+        ...
+
     def get_image_data(self: ImageLayer_8bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
 
@@ -77,6 +83,10 @@ class ImageLayer_8bit(Layer_8bit):
 
     def __getitem__(self: ImageLayer_8bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
         ...
+        
+    def __setitem__(self: ImageLayer_8bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
+        ...
+
 
 
 class ImageLayer_16bit(Layer_16bit):
@@ -142,6 +152,12 @@ class ImageLayer_16bit(Layer_16bit):
     def get_channel_by_index(self: ImageLayer_16bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
         ...
 
+    def set_channel_by_id(self: ImageLayer_16bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
+        ...
+
+    def set_channel_by_index(self: ImageLayer_16bit, key: int, value: numpy.ndarray) -> None:
+        ...
+
     def get_image_data(self: ImageLayer_16bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
 
@@ -149,6 +165,9 @@ class ImageLayer_16bit(Layer_16bit):
         ...
 
     def __getitem__(self: ImageLayer_16bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
+        ...
+        
+    def __setitem__(self: ImageLayer_16bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
         ...
 
 
@@ -214,6 +233,12 @@ class ImageLayer_32bit(Layer_32bit):
 
     def get_channel_by_index(self: ImageLayer_32bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
         ...
+        
+    def set_channel_by_id(self: ImageLayer_32bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
+        ...
+
+    def set_channel_by_index(self: ImageLayer_32bit, key: int, value: numpy.ndarray) -> None:
+        ...
 
     def get_image_data(self: ImageLayer_32bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
@@ -222,4 +247,7 @@ class ImageLayer_32bit(Layer_32bit):
         ...
 
     def __getitem__(self: ImageLayer_32bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
+        ...
+
+    def __setitem__(self: ImageLayer_32bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
         ...

@@ -14,6 +14,14 @@
 #include <iostream>
 #include <vector>
 
+// If we compile with C++<20 we replace the stdlib implementation with the compatibility
+// library
+#if (__cplusplus < 202002L)
+#include "tcb_span.hpp"
+#else
+#include <span>
+#endif
+
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
@@ -323,6 +331,60 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     params.compression = compression;
     params.colorMode = color_mode;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+}
+
+
+template <typename T>
+void setChannelOnLayer(
+    ImageLayer<T>& layer,
+    Enum::ChannelID id,
+    const py::array<const T>& data
+)
+{
+    std::vector<size_t> shape;
+    for (size_t i = 0; i < data.ndim(); ++i)
+    {
+        shape.push_back(data.shape(i));
+    }
+    if (shape.size() != 2 && shape.size() != 1)
+    {
+        throw py::value_error("data parameter must have either 1 or 2 dimensions, not " + std::to_string(shape.size()));
+    }
+
+    // Extract the size of one channel and compare it against the size of the data
+    size_t channelSize = 0;
+    if (shape.size() == 1)
+    {
+        channelSize = shape[0];
+        if (channelSize != static_cast<size_t>(width) * height)
+        {
+            throw py::value_error("data parameter is expected to be of shape (height * width) or (height, width)" \
+                " but the provided 1st dimension does not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected: " \
+                + std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
+        }
+    }
+    if (shape.size() == 2)
+    {
+        channelSize = shape[0] * shape[1];
+        if (channelSize != static_cast<size_t>(width) * height)
+        {
+            throw py::value_error("data parameter is expected to be of shape (height * width) or (height, width)" \
+                " but the provided 1st amd 2nd dimension do not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected: " \
+                + std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
+        }
+    }
+
+    // Force the array to be c-contiguous if it isnt, using pybind11
+    if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
+    {
+        PSAPI_LOG_WARNING("ImageLayer", "Provided data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
+        data = data.template cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
+    }
+
+    // Finally convert the channel to a cpp span and set the channel data
+    const T* startPtr = image_data.data() + i * channelSize;
+    std::span<const T> dataSpan(startPtr, channelSize * sizeof(T));
+    layer.setChannel(id, dataSpan);
 }
 
 
@@ -715,6 +777,62 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             }
             return py::array_t<T>(shape, ptr);
         }, py::arg("key"), R"pbdoc(
+        
+	)pbdoc");
+
+
+    imageLayer.def("__setitem__", [](Class& self, const int key, const py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(value, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The ID or index of the channel
+        :type key: :class:`psapi.enum.ChannelID` | int
+
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
+        
+	)pbdoc");
+
+    imageLayer.def("__setitem__", [](Class& self, const Enum::ChannelID key, const py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(value, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+	)pbdoc");
+
+
+    imageLayer.def("set_channel_by_index", [](Class& self, const int key, const py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(value, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The index of the channel
+        :type key: :class: int
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
+
+	)pbdoc");
+
+    imageLayer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, const py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(value, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The index of the channel
+        :type key: :class:`psapi.enum.ChannelID`
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
 
 	)pbdoc");
 
