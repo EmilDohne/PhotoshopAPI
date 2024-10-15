@@ -77,6 +77,30 @@ class ImageLayer_8bit(Layer_8bit):
 
     def get_image_data(self: ImageLayer_8bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
+        
+    @overload
+    def set_image_data(
+        self: ImageLayer_8bit,
+        image_data: numpy.ndarray,
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_8bit,
+        image_data: dict[int, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_8bit,
+        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
 
     def set_compression(self: ImageLayer_8bit, compression: psapi.enum.Compression) -> None:
         ...
@@ -160,6 +184,30 @@ class ImageLayer_16bit(Layer_16bit):
 
     def get_image_data(self: ImageLayer_16bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
+        
+    @overload
+    def set_image_data(
+        self: ImageLayer_16bit,
+        image_data: numpy.ndarray,
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_16bit,
+        image_data: dict[int, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_16bit,
+        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
 
     def set_compression(self: ImageLayer_16bit, compression: psapi.enum.Compression) -> None:
         ...
@@ -241,6 +289,30 @@ class ImageLayer_32bit(Layer_32bit):
         ...
 
     def get_image_data(self: ImageLayer_32bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+        ...
+        
+    @overload
+    def set_image_data(
+        self: ImageLayer_32bit,
+        image_data: numpy.ndarray,
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_32bit,
+        image_data: dict[int, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
+        ...
+
+    @overload
+    def set_image_data(
+        self: ImageLayer_32bit,
+        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
+        compression: psapi.enum.Compression = ...
+    ) -> None:
         ...
 
     def set_compression(self: ImageLayer_32bit, compression: psapi.enum.Compression) -> None:

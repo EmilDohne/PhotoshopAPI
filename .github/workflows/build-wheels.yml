@@ -70,6 +70,7 @@ jobs:
             python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
             python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py
+            python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py
 
     - name: Verify clean directory
       run: git diff --exit-code
