@@ -53,7 +53,7 @@ set(BUILD_BENCHMARKS OFF)
 set(BUILD_EXAMPLES OFF)
 add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 
-# Add target for blosc2 headers and disable warnings as C++ compilers complain a lot about these header files
+# Add target for blosc2 headers
 add_library(blosc2_include INTERFACE)
 target_include_directories(blosc2_include INTERFACE thirdparty/c-blosc2/include)
 
