@@ -38,8 +38,8 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-             cflags: /fsanitize=address
-             cxxflags: /fsanitize=address
+             cflags: /fsanitize=address /Zi
+             cxxflags: /fsanitize=address /Zi
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
@@ -64,6 +64,8 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
 
