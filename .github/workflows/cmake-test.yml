@@ -26,18 +26,26 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
+             cflags: ""
+             cxxflags: ""
              compilercxx: clang++
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+             cflags: /fsanitize=address
+             cxxflags: /fsanitize=address
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
@@ -63,6 +71,8 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
     - name: Copy Testfiles on Windows

@@ -23,6 +23,10 @@ int main()
 #endif
 	doctest::Context context;
 
+	// TMP trip asan
+	int x[100];
+	x[100] = 5;
+
 	// set defaults
 	context.setOption("abort-after", 5);	// stop test execution after 5 failed 
 
