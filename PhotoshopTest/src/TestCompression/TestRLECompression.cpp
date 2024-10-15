@@ -4,7 +4,7 @@
 #include "Core/Compression/Compress_RLE.h"
 #include "Core/Compression/Decompress_RLE.h"
 
-
+#include <iostream>
 #include <vector>
 
 
@@ -33,6 +33,12 @@ TEST_CASE("Test PackBits roundtripping")
 // ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Test Wikipedia Example")
 {
+	// TMP trip asan
+	int x[100];
+	x[100] = 5;
+
+	std::cout << x[50] << std::endl;
+
 	// Equates to 'FE AA 02 80 00 2A FD AA 03 80 00 2A 22 F7 AA' in hexadecimal
 	std::vector<uint8_t> data = { 170u, 170u, 170u, 128u, 0u, 42u, 170u, 170u, 170u, 170u, 128u, 0u, 42u, 34u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u, 170u };
 	// We insert an extra 128u at the end of the sequence here since we actually 
