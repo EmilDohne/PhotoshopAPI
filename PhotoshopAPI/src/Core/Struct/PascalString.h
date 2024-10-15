@@ -341,7 +341,7 @@ inline static std::string convertStrToUTF8(EncodingType encoding, const std::str
 /// Convert a utf-8 encoded string to another encoding. For the moment we simply parse the data through as is
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-inline static std::string ConvertUTF8ToStr(EncodingType encoding, const std::string str)
+inline static std::string ConvertUTF8ToStr([[maybe_unused]] EncodingType encoding, const std::string str)
 {
     return str;
 }
@@ -354,7 +354,7 @@ inline static std::string ConvertUTF8ToStr(EncodingType encoding, const std::str
 /// can be e.g. MacOS Roman or Windows 1252. The decoding gets done at the boundary and the string is in UTF-8 format
 struct PascalString : public FileSection
 {
-	PascalString() { FileSection::m_Size = 2u; m_String = ""; };
+	PascalString() { FileSection::size(2u); m_String = ""; };
 	// Initialize a padded PascalString based on its size
 	PascalString(std::string name, const uint8_t padding);
 
@@ -369,7 +369,7 @@ struct PascalString : public FileSection
 	const std::string_view getStringView() const noexcept;
 
 	void read(File& document, const uint8_t padding) noexcept;
-	void write(File& document, const uint8_t padding) const;
+	void write(File& document) const;
 private:
 	std::string m_String;
 };

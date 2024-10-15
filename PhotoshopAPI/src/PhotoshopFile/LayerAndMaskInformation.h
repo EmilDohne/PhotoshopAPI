@@ -259,7 +259,7 @@ struct GlobalLayerMaskInfo : public FileSection
 
 	// Skip the contents of the Global Layer and Mask Info based on the length marker
 	void read(File& document, const uint64_t offset);
-	void write(File& document, const FileHeader& header);
+	void write(File& document);
 };
 
 
@@ -419,7 +419,7 @@ struct LayerInfo : public FileSection
 	/// \param sectionSize This parameter must be present when isFromAdditionalLayerInfo = true
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 	/// Write the layer info section to file with the given padding
-	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback);
 
 	/// Find the index to a layer based on a layer name that is given
 	/// 

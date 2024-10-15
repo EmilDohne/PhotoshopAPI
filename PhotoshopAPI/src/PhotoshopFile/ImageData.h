@@ -21,7 +21,7 @@ namespace ImageDataImpl
 		if (header.m_Version == Enum::Version::Psd)
 		{
 			std::vector<uint16_t> scanlineSizes;
-			std::vector<uint8_t> compressedData = CompressRLEImageDataPsd(uncompressedData, header, header.m_Width, header.m_Height, scanlineSizes);
+			std::vector<uint8_t> compressedData = CompressRLEImageDataPsd(uncompressedData, header.m_Width, header.m_Height, scanlineSizes);
 			// First write all the scanline sizes, then the compressed data
 			for (int i = 0; i < numChannels; ++i)
 			{
@@ -39,7 +39,7 @@ namespace ImageDataImpl
 		else
 		{
 			std::vector<uint32_t> scanlineSizes;
-			std::vector<uint8_t> compressedData = CompressRLEImageDataPsb(uncompressedData, header, header.m_Width, header.m_Height, scanlineSizes);
+			std::vector<uint8_t> compressedData = CompressRLEImageDataPsb(uncompressedData, header.m_Width, header.m_Height, scanlineSizes);
 			// First write all the scanline sizes, then the compressed data
 			for (int i = 0; i < numChannels; ++i)
 			{

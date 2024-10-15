@@ -22,7 +22,7 @@ PSAPI_NAMESPACE_BEGIN
 struct UnicodeString : public FileSection
 {
 	/// Initialize an empty section.
-	UnicodeString() { FileSection::m_Size = 4u; m_String = ""; m_UTF16String = {}; };
+	UnicodeString() { FileSection::size(4u); m_String = ""; m_UTF16String = {}; };
 
 	/// Construct a UnicodeString from the given UTF8 encoded string aligning 
 	/// the section to the given padding.
@@ -52,7 +52,7 @@ struct UnicodeString : public FileSection
 
 	/// Write the stored UTF16 string to disk with a 4-byte length aligned to the 
 	/// given padding
-	void write(File& document, const uint8_t padding) const;
+	void write(File& document) const;
 private:
 	// UTF-8 representation of the string
 	std::string m_String;

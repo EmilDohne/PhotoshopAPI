@@ -23,9 +23,9 @@ void PhotoshopFile::read(File& document, ProgressCallback& callback)
 	// incrementing the callback on them
 	m_Header.read(document);
 	m_ColorModeData.read(document);
-	m_ImageResources.read(document, m_ColorModeData.m_Offset + m_ColorModeData.m_Size);
+	m_ImageResources.read(document, m_ColorModeData.offset() + m_ColorModeData.size());
 
-	m_LayerMaskInfo.read(document, m_Header, callback, m_ImageResources.m_Offset + m_ImageResources.m_Size);
+	m_LayerMaskInfo.read(document, m_Header, callback, m_ImageResources.offset() + m_ImageResources.size());
 }
 
 

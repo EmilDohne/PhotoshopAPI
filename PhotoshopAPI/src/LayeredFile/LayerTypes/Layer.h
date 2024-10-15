@@ -131,21 +131,21 @@ protected:
 			int32_t width = m_LayerMask.value().maskData->getWidth();
 			int32_t height = m_LayerMask.value().maskData->getHeight();
 			ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
-			lrMaskData.m_Size += 16u;
+			lrMaskData.addSize(16u);
 
 			// Default color
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 
 			// This is the size for the mask bitflags
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 			// This is the size for the mask parameters
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 			bool hasMaskDensity = m_LayerMask.value().maskDensity.has_value();
 			uint8_t maskDensity = 0u;
 			if (hasMaskDensity)
 			{
 				maskDensity = m_LayerMask.value().maskDensity.value();
-				lrMaskData.m_Size += 1u;
+				lrMaskData.addSize(1u);
 			}
 
 			bool hasMaskFeather = m_LayerMask.value().maskFeather.has_value();
@@ -153,7 +153,7 @@ protected:
 			if (hasMaskFeather)
 			{
 				maskFeather = m_LayerMask.value().maskFeather.value();
-				lrMaskData.m_Size += 8u;
+				lrMaskData.addSize(8u);
 
 			}
 
@@ -210,7 +210,7 @@ protected:
 
 		// Generate our unicode layer name block, we always include this as its size is trivial and this avoids 
 		// any issues with names being truncated
-		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, 4u);
+		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
 		blockVec.push_back(unicodeNamePtr);
 
 		return blockVec;
@@ -218,14 +218,9 @@ protected:
 
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).
 	///
-	/// The blending ranges depend on the specified ColorMode. This function returns the default
-	/// blending ranges for the given color mode.
-	///
-	/// \param colorMode The ColorMode to determine the blending ranges.
 	/// \return A LayerBlendingRanges object representing the layer blending ranges.
-	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode)
+	LayerRecords::LayerBlendingRanges generateBlendingRanges()
 	{
-		using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
 		LayerRecords::LayerBlendingRanges blendingRanges{};
 		return blendingRanges;
 	}
@@ -417,7 +412,7 @@ public:
 	/// \param colorMode The desired ColorMode for the PhotoshopFile.
 	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const FileHeader& header)
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop([[maybe_unused]] const Enum::ColorMode colorMode, const FileHeader& header)
 	{
 		std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 		ChannelImageData channelData{};
@@ -445,7 +440,7 @@ public:
 			0u,		// Clipping
 			LayerRecords::BitFlags(false, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
-			Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
+			Layer<T>::generateBlendingRanges(),	// Generate some defaults
 			std::move(taggedBlocks)		// Additional layer information
 		);
 

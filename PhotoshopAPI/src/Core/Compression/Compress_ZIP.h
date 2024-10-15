@@ -42,7 +42,7 @@ namespace ZIP_Impl
 		if (data.size() > buffer.size() * sizeof(T))
 			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(T), buffer.size());
 		PROFILE_FUNCTION();
-		for (int y = 0; y < height; ++y)
+		for (uint32_t y = 0; y < height; ++y)
 		{
 			// Initialize the prediction encoding for the current scanline
 			T prev = data[static_cast<uint64_t>(width) * y];
@@ -125,12 +125,18 @@ namespace ZIP_Impl
 		// These represent the header bytes of the zlib stream
 		const uint8_t compressionType = 0x78;
 		uint8_t compressionByte;
-		if (ZIP_COMPRESSION_LVL < 2)
+		if constexpr (ZIP_COMPRESSION_LVL < 2)
+		{
 			compressionByte = 0x01;
-		else if (ZIP_COMPRESSION_LVL < 6)
+		}
+		else if constexpr(ZIP_COMPRESSION_LVL < 6)
+		{
 			compressionByte = 0x5E;
-		else if (ZIP_COMPRESSION_LVL < 8)
+		}
+		else if constexpr (ZIP_COMPRESSION_LVL < 8)
+		{
 			compressionByte = 0x9C;
+		}
 		else
 			compressionByte = 0xDA;
 		// Manually write the zlib header 

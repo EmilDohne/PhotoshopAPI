@@ -71,8 +71,6 @@ inline ChannelExtents generateChannelExtents(const ChannelCoordinates coordinate
 
 	// The document always uses 0 based extents. so if a document is 64x64 pixels the extents would be 
 	// [0, 0, 64, 64] making our calculations much easier
-	int32_t documentTop = 0;
-	int32_t documentLeft = 0;
 	int32_t documentBottom = header.m_Height;
 	int32_t documentRight = header.m_Width;
 

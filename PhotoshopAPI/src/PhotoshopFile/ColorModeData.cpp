@@ -12,6 +12,7 @@
 #include <vector>
 
 #include <cstdint>
+#include <cassert>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -32,15 +33,14 @@ void ColorModeData::read(File& document)
 {
 	PROFILE_FUNCTION();
 
-	m_Offset = 26;
-	document.setOffset(m_Offset);
-
-	m_Size = static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u;
+	FileSection::initialize(26u, 0u);
+	document.setOffset(FileSection::offset());
+	FileSection::size(static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u);
 
 	// Just dump the data without parsing it
-	if (m_Size > 0)
+	if (FileSection::size() > 0u)
 	{
-		m_Data = ReadBinaryArray<uint8_t>(document, m_Size);
+		m_Data = ReadBinaryArray<uint8_t>(document, FileSection::size());
 	}
 	else
 	{
@@ -55,13 +55,14 @@ void ColorModeData::write(File& document, FileHeader& header)
 {
 	// This data should be empty for all but 32 bit documents or Indexed color mode sections
 	PROFILE_FUNCTION();
-	m_Offset = 26;
+	FileSection::initialize(26u, 0u);
 	
 	if (header.m_ColorMode == Enum::ColorMode::Indexed)
 	{
-		WriteBinaryData<uint32_t>(document, m_Data.size());
+		assert(m_Data.size() < std::numeric_limits<uint32_t>::max());
+		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Data.size()));
 		WriteBinaryArray<uint8_t>(document, std::move(m_Data));
-		m_Size = m_Data.size() + 4u;
+		FileSection::size(m_Data.size() + 4u);
 	}
 	else if (header.m_Depth == Enum::BitDepth::BD_32)
 	{
@@ -83,9 +84,10 @@ void ColorModeData::write(File& document, FileHeader& header)
 			PSAPI_LOG_ERROR("ChannelImageData", "Data size was not 112");
 		}
 		m_Data = data;
-		WriteBinaryData<uint32_t>(document, data.size());
+		assert(m_Data.size() < std::numeric_limits<uint32_t>::max());
+		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Data.size()));
 		WriteBinaryArray<uint8_t>(document, std::move(data));
-		m_Size = data.size() + 4u;
+		FileSection::size(m_Data.size() + 4u);
 
 	}
 	else
@@ -95,7 +97,7 @@ void ColorModeData::write(File& document, FileHeader& header)
 			PSAPI_LOG_ERROR("ColorModeData", "Invalid size for ColorMode data detected, only indexed colours have data in this \
 				section (32-bit files get handled internally)");
 		}
-		m_Size = 4u;
+		FileSection::size(4u);
 		WriteBinaryData<uint32_t>(document, 0u);
 	}
 }

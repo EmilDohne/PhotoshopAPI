@@ -141,7 +141,7 @@ struct GroupLayer : public Layer<T>
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
-		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
+		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
 
 
 		// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
@@ -178,7 +178,7 @@ struct GroupLayer : public Layer<T>
 				extents.left,
 				extents.bottom,
 				extents.right,
-				channelInfoVec.size(),
+				static_cast<uint16_t>(channelInfoVec.size()),
 				channelInfoVec,
 				Layer<T>::m_BlendMode,
 				Layer<T>::m_Opacity,
@@ -199,7 +199,7 @@ struct GroupLayer : public Layer<T>
 				extents.left,
 				extents.bottom,
 				extents.right,
-				channelInfoVec.size(),
+				static_cast<uint16_t>(channelInfoVec.size()),
 				channelInfoVec,
 				Enum::BlendMode::Normal,
 				Layer<T>::m_Opacity,

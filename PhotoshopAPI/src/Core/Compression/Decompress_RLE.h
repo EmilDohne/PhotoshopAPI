@@ -190,10 +190,10 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     // Generate spans for every individual scanline to decompress them individually
     std::vector<std::span<const uint8_t>> compressedDataSpans(height);
     std::vector<std::span<uint8_t>> decompressedDataSpans(height);
-    std::vector<unsigned int> verticalIter;
+    std::vector<uint64_t> verticalIter;
     {
         uint64_t compressedStartIdx = 0;
-        for (uint64_t i = 0; i < height; ++i)
+        for (uint64_t i = 0; i < static_cast<uint64_t>(height); ++i)
         {
             uint64_t compressedEndIdx = compressedStartIdx + scanlineSizes[i];
             compressedDataSpans[i] = std::span<const uint8_t>(compressedData.begin() + compressedStartIdx, compressedData.begin() + compressedEndIdx);

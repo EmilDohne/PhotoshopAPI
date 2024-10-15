@@ -370,7 +370,7 @@ public:
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags(false, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
-		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges(colorMode);
+		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
 
 		// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
 		auto blockVec = this->generateTaggedBlocks();

@@ -40,7 +40,7 @@ ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& res
 	// Resource blocks are usually trivially copyable so we dont really need to worry
 	// about moving here
 	m_ResourceBlocks = std::move(resourceBlocks);
-	m_Size = this->calculateSize();
+	FileSection::size(this->calculateSize());
 }
 
 
@@ -49,11 +49,11 @@ ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& res
 void ImageResources::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	m_Offset = offset;
+	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
-	m_Size = RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u;
+	FileSection::size(RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u);
 
-	uint32_t toRead = static_cast<uint32_t>(m_Size) - 4u;
+	uint32_t toRead = FileSection::size<uint32_t>() - 4u;
 	while (toRead > 0)
 	{
 		// Parse the resource block which will only read blocks we 
@@ -67,9 +67,8 @@ void ImageResources::read(File& document, const uint64_t offset)
 // --------------------------------------------------------------------------------
 void ImageResources::write(File& document)
 {
-	m_Offset = document.getOffset();
-	m_Size = RoundUpToMultiple<uint32_t>(m_Size, 2u);
-	WriteBinaryData<uint32_t>(document, m_Size - 4u);
+	FileSection::initialize(document.getOffset(), RoundUpToMultiple<uint32_t>(FileSection::size<uint32_t>(), 2u));
+	WriteBinaryData<uint32_t>(document, FileSection::size<uint32_t>() - 4u);
 
 	for (auto& blockPtr : m_ResourceBlocks)
 	{
@@ -100,7 +99,7 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 	{
 		auto blockPtr = std::make_unique<ResolutionInfoBlock>();
 		blockPtr->read(document, blockOffset);
-		uint32_t blockSize = blockPtr->m_Size;
+		uint32_t blockSize = blockPtr->size<uint32_t>();
 		m_ResourceBlocks.emplace_back(std::move(blockPtr));
 		return blockSize;
 	}
@@ -108,7 +107,7 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 	{
 		auto blockPtr = std::make_unique<ICCProfileBlock>();
 		blockPtr->read(document, blockOffset);
-		uint32_t blockSize = blockPtr->m_Size;
+		uint32_t blockSize = blockPtr->size<uint32_t>();
 		m_ResourceBlocks.emplace_back(std::move(blockPtr));
 		return blockSize;
 	}
@@ -121,7 +120,7 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 		document.skip(dataSize);
 		
 		// Calculate the size of the block and return it
-		uint32_t size = 4u + 2u + name.m_Size + 4u + dataSize;
+		uint32_t size = 4u + 2u + name.size<uint32_t>() + 4u + dataSize;
 		return size;
 	}
 }
