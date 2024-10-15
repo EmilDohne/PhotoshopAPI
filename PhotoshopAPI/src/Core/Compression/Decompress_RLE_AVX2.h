@@ -45,7 +45,7 @@ namespace RLE_Impl
                 const uint8_t repeatValue = compressedData[i + 1];
                 __m256i ymmValue = _mm256_set1_epi8(repeatValue);
 
-                uint8_t remaining = 257 - value;
+                uint8_t remaining = static_cast<uint8_t>(257u - value);
 
                 // Process in chunks of 32 bytes
                 for (; remaining >= 32; remaining -= 32)

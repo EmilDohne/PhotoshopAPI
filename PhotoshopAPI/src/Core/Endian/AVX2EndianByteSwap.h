@@ -66,7 +66,7 @@ void byteShuffleAVX2_BE(uint8_t* data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-inline void byteShuffleAVX2_LE(uint8_t* data)
+inline void byteShuffleAVX2_LE([[maybe_unused]] uint8_t* data)
 {
 }
 
@@ -75,7 +75,7 @@ inline void byteShuffleAVX2_LE(uint8_t* data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<>
-inline void byteShuffleAVX2_LE<uint8_t>(uint8_t* data)
+inline void byteShuffleAVX2_LE<uint8_t>([[maybe_unused]] uint8_t* data)
 {
 }
 

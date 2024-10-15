@@ -21,14 +21,14 @@ PascalString::PascalString(std::string name, const uint8_t padding)
 	// We must limit the string size like this as the length marker is only 1 byte and therefore has limited storage capabilities. Since we write
 	// out the Unicode Layer name for layers anyways this isnt too bothersome
 	std::string truncatedName = name;
-	if (name.size() > 254u - 254u % padding)
+	if (truncatedName.size() > 254u - 254u % padding)
 	{
 		PSAPI_LOG_WARNING("PascalString", "A pascal string can have a maximum length of 254, got %u. Truncating to fit", m_String.size());
 		truncatedName = name.substr(0, 254 - 254 % padding);
 	}
 
-	uint8_t stringSize = truncatedName.size();
-	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
+	uint8_t stringSize = static_cast<uint8_t>(truncatedName.size());
+	FileSection::size(RoundUpToMultiple<uint8_t>(stringSize + 1u, padding));
 	m_String = truncatedName;
 }
 
@@ -37,12 +37,7 @@ PascalString::PascalString(std::string name, const uint8_t padding)
 // ---------------------------------------------------------------------------------------------------------------------
 uint64_t PascalString::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
-	// We actually already take care of initializing the size in the constructor therefore it is valid
-	if (m_Size > std::numeric_limits<uint8_t>::max())
-	{
-		PSAPI_LOG_ERROR("PascalString", "Size of string exceeds the maximum for a uint8_t, expected a max of 255 but got %" PRIu64 " instead.", m_Size);
-	}
-	return m_Size;
+	return FileSection::size<uint8_t>();
 }
 
 
@@ -66,21 +61,21 @@ const std::string_view PascalString::getStringView() const noexcept
 void PascalString::read(File& document, const uint8_t padding) noexcept
 {
 	uint8_t stringSize = ReadBinaryData<uint8_t>(document);
-	m_Size = RoundUpToMultiple<uint8_t>(stringSize + 1u, padding);
+	FileSection::size(RoundUpToMultiple<uint8_t>(stringSize + 1u, padding));
 	std::vector<uint8_t> stringData = ReadBinaryArray<uint8_t>(document, stringSize);
 	auto PascalString = std::string(stringData.begin(), stringData.end());
 	m_String = convertStrToUTF8(EncodingType::Windows_1252, PascalString);
 
 	// Skip the padding bytes
-	document.skip(m_Size - 1u - stringSize);
+	document.skip(FileSection::size() - 1u - stringSize);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void PascalString::write(File& document, const uint8_t padding) const
+void PascalString::write(File& document) const
 {
-	if (m_Size == 0)
+	if (FileSection::size() == 0)
 	{
 		PSAPI_LOG_ERROR("PascalString", "Size field is 0 which is not allowed since it will always be at least 1, was the PascalString initialized correctly?");
 	}
@@ -92,8 +87,9 @@ void PascalString::write(File& document, const uint8_t padding) const
 	std::vector<uint8_t> stringData(nativeStr.begin(), nativeStr.end());
 	WriteBinaryArray<uint8_t>(document, std::move(stringData));
 
-	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, m_Size - nativeStr.size() - 1u);
+	// Finally, write the padding bytes, excluding the size marker
+	// Since we store padding on creation we dont need to worry about passing it here
+	WritePadddingBytes(document, FileSection::size() - nativeStr.size() - 1u);
 }
 
 

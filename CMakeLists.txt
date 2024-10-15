@@ -57,6 +57,7 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 add_library(blosc2_include INTERFACE)
 target_include_directories(blosc2_include INTERFACE thirdparty/c-blosc2/include)
 
+
 # Add doctest
 add_library(doctest INTERFACE)
 target_include_directories(doctest INTERFACE thirdparty/doctest/doctest)

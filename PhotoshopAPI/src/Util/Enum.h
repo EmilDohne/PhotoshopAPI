@@ -174,41 +174,41 @@ namespace Enum
 	namespace {
 		inline std::unordered_map<uint16_t, ImageResource> imageResourceMap = 
 		{
-			{1, ImageResource::NotImplemented},
-			{1005, ImageResource::ResolutionInfo},
-			{1006, ImageResource::AlphaChannelNames},
-			{1010, ImageResource::BackgroundColor},
-			{1011, ImageResource::PrintFlags},
-			{1013, ImageResource::ColorHalftoningInfo},
-			{1016, ImageResource::ColorTransferFunctions},
-			{1024, ImageResource::LayerStateInformation},
-			{1026, ImageResource::LayerGroupInformation},
-			{1028, ImageResource::IPTCRecord},
-			{1032, ImageResource::GridAndGuidesInformation},
-			{1036, ImageResource::ThumbnailResource},
-			{1037, ImageResource::GlobalAngle},
-			{1039, ImageResource::ICCProfile},
-			{1041, ImageResource::ICCUntaggedProfile},
-			{1043, ImageResource::SpotHalftone},
-			{1044, ImageResource::IDSeed},
-			{1045, ImageResource::UnicodeAlphaNames},
-			{1049, ImageResource::GlobalAltitude},
-			{1050, ImageResource::Slices},
-			{1053, ImageResource::AlphaIdentifiers},
-			{1054, ImageResource::URLList},
-			{1057, ImageResource::VersionInfo},
-			{1058, ImageResource::ExifData1},
-			{1060, ImageResource::XMPMetadata},
-			{1061, ImageResource::CaptionDigest},
-			{1062, ImageResource::PrintScale},
-			{1064, ImageResource::PixelAspectRatio},
-			{1067, ImageResource::AlternateSpotColors},
-			{1069, ImageResource::LayerSelectionID},
-			{1072, ImageResource::LayerGroupEnabledID},
-			{1077, ImageResource::DisplayInfo},
-			{1082, ImageResource::PrintInformation},
-			{1083, ImageResource::PrintStyle},
-			{10000, ImageResource::PrintFlagsInfo}
+			{static_cast<uint16_t>(1u), ImageResource::NotImplemented},
+			{static_cast<uint16_t>(1005u), ImageResource::ResolutionInfo},
+			{static_cast<uint16_t>(1006u), ImageResource::AlphaChannelNames},
+			{static_cast<uint16_t>(1010u), ImageResource::BackgroundColor},
+			{static_cast<uint16_t>(1011u), ImageResource::PrintFlags},
+			{static_cast<uint16_t>(1013u), ImageResource::ColorHalftoningInfo},
+			{static_cast<uint16_t>(1016u), ImageResource::ColorTransferFunctions},
+			{static_cast<uint16_t>(1024u), ImageResource::LayerStateInformation},
+			{static_cast<uint16_t>(1026u), ImageResource::LayerGroupInformation},
+			{static_cast<uint16_t>(1028u), ImageResource::IPTCRecord},
+			{static_cast<uint16_t>(1032u), ImageResource::GridAndGuidesInformation},
+			{static_cast<uint16_t>(1036u), ImageResource::ThumbnailResource},
+			{static_cast<uint16_t>(1037u), ImageResource::GlobalAngle},
+			{static_cast<uint16_t>(1039u), ImageResource::ICCProfile},
+			{static_cast<uint16_t>(1041u), ImageResource::ICCUntaggedProfile},
+			{static_cast<uint16_t>(1043u), ImageResource::SpotHalftone},
+			{static_cast<uint16_t>(1044u), ImageResource::IDSeed},
+			{static_cast<uint16_t>(1045u), ImageResource::UnicodeAlphaNames},
+			{static_cast<uint16_t>(1049u), ImageResource::GlobalAltitude},
+			{static_cast<uint16_t>(1050u), ImageResource::Slices},
+			{static_cast<uint16_t>(1053u), ImageResource::AlphaIdentifiers},
+			{static_cast<uint16_t>(1054u), ImageResource::URLList},
+			{static_cast<uint16_t>(1057u), ImageResource::VersionInfo},
+			{static_cast<uint16_t>(1058u), ImageResource::ExifData1},
+			{static_cast<uint16_t>(1060u), ImageResource::XMPMetadata},
+			{static_cast<uint16_t>(1061u), ImageResource::CaptionDigest},
+			{static_cast<uint16_t>(1062u), ImageResource::PrintScale},
+			{static_cast<uint16_t>(1064u), ImageResource::PixelAspectRatio},
+			{static_cast<uint16_t>(1067u), ImageResource::AlternateSpotColors},
+			{static_cast<uint16_t>(1069u), ImageResource::LayerSelectionID},
+			{static_cast<uint16_t>(1072u), ImageResource::LayerGroupEnabledID},
+			{static_cast<uint16_t>(1077u), ImageResource::DisplayInfo},
+			{static_cast<uint16_t>(1082u), ImageResource::PrintInformation},
+			{static_cast<uint16_t>(1083u), ImageResource::PrintStyle},
+			{static_cast<uint16_t>(10000u), ImageResource::PrintFlagsInfo}
 
 		};
 	}
@@ -236,14 +236,14 @@ namespace Enum
 	// Since this struct is so simple we do bidirectional mapping directly here
 	inline std::unordered_map<uint16_t, ResolutionUnit> resolutionUnitMap =
 	{
-		{1u, ResolutionUnit::PixelsPerInch},
-		{2u, ResolutionUnit::PixelsPerCm},
+		{static_cast<uint16_t>(1u), ResolutionUnit::PixelsPerInch},
+		{static_cast<uint16_t>(2u), ResolutionUnit::PixelsPerCm},
 	};
 	// Since this struct is so simple we do bidirectional mapping directly here
 	inline std::unordered_map<ResolutionUnit, uint16_t> resolutionUnitMapRev =
 	{
-		{ResolutionUnit::PixelsPerInch, 1u},
-		{ResolutionUnit::PixelsPerCm, 2u},
+		{ResolutionUnit::PixelsPerInch, static_cast<uint16_t>(1u)},
+		{ResolutionUnit::PixelsPerCm, static_cast<uint16_t>(2u)},
 	};
 
 
@@ -258,20 +258,20 @@ namespace Enum
 	// Since this struct is so simple we do bidirectional mapping directly here
 	inline std::unordered_map<uint16_t, DisplayUnit> displayUnitMap =
 	{
-		{1u, DisplayUnit::Inches},
-		{2u, DisplayUnit::Cm},
-		{3u, DisplayUnit::Points},
-		{4u, DisplayUnit::Picas},
-		{5u, DisplayUnit::Columns}
+		{static_cast<uint16_t>(1u), DisplayUnit::Inches},
+		{static_cast<uint16_t>(2u), DisplayUnit::Cm},
+		{static_cast<uint16_t>(3u), DisplayUnit::Points},
+		{static_cast<uint16_t>(4u), DisplayUnit::Picas},
+		{static_cast<uint16_t>(5u), DisplayUnit::Columns}
 	};
 	// Since this struct is so simple we do bidirectional mapping directly here
 	inline std::unordered_map<DisplayUnit, uint16_t> displayUnitMapRev =
 	{
-		{DisplayUnit::Inches, 1u},
-		{DisplayUnit::Cm, 2u},
-		{DisplayUnit::Points, 3u},
-		{DisplayUnit::Picas, 4u},
-		{DisplayUnit::Columns, 5u}
+		{DisplayUnit::Inches, static_cast<uint16_t>(1u)},
+		{DisplayUnit::Cm, static_cast<uint16_t>(2u)},
+		{DisplayUnit::Points, static_cast<uint16_t>(3u)},
+		{DisplayUnit::Picas, static_cast<uint16_t>(4u)},
+		{DisplayUnit::Columns, static_cast<uint16_t>(5u)}
 	};
 
 }
@@ -553,6 +553,7 @@ namespace Enum
 			return true;
 		}
 		PSAPI_LOG_ERROR("ImageLayer", "Unable to check ChannelID for the provided colormode as this is not currently implemented");
+		return false;
 	}
 
 

@@ -7,6 +7,8 @@
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
 
+#include <cassert>
+
 PSAPI_NAMESPACE_BEGIN
 
 
@@ -31,7 +33,7 @@ ResolutionInfoBlock::ResolutionInfoBlock()
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
 	m_Name = {"", 2u};
 	m_DataSize = 16u;	// 8-bytes for each horizontal and vertical
-	m_Size = ResourceBlock::calculateSize();
+	FileSection::size(ResourceBlock::calculateSize());
 }
 
 
@@ -42,7 +44,7 @@ ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit 
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
 	m_Name = { "", 2u };
 	m_DataSize = 16u;	// 8-bytes for each horizontal and vertical
-	m_Size = ResourceBlock::calculateSize();
+	FileSection::size(ResourceBlock::calculateSize());
 	
 	m_HorizontalRes = { resolution };
 	m_HorizontalResUnit = resolutionUnit;
@@ -59,11 +61,11 @@ ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit 
 void ResolutionInfoBlock::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	m_Offset = offset;
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
-	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;
+	auto size = static_cast<uint64_t>(4u) + 2u + m_Name.size() + 4u + m_DataSize;
+	FileSection::initialize(offset, size);
 
 	if (m_DataSize != 16u) [[unlikely]]
 	{
@@ -91,7 +93,7 @@ void ResolutionInfoBlock::write(File& document)
 	WriteBinaryData<uint32_t>(document, sig.m_Value);
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
-	m_Name.write(document, 2u);
+	m_Name.write(document);
 	WriteBinaryData<uint32_t>(document, m_DataSize);
 
 	// Write the ResolutionInfo struct
@@ -115,8 +117,9 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 {
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name = { "", 2u };
-	m_DataSize = RoundUpToMultiple<uint32_t>(iccProfile.size(), 2u);
-	m_Size = ResourceBlock::calculateSize();
+	assert(iccProfile.size() < std::numeric_limits<uint32_t>::max());
+	m_DataSize = RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(iccProfile.size()), 2u);
+	FileSection::size(ResourceBlock::calculateSize());
 
 	m_RawICCProfile = std::move(iccProfile);
 }
@@ -126,11 +129,11 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 void ICCProfileBlock::read(File& document, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	m_Offset = offset;
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
-	m_Size = static_cast<uint64_t>(4u) + 2u + m_Name.m_Size + 4u + m_DataSize;
+	auto size = static_cast<uint64_t>(4u) + 2u + m_Name.size() + 4u + m_DataSize;
+	FileSection::initialize(offset, size);
 
 	m_RawICCProfile = ReadBinaryArray<uint8_t>(document, m_DataSize);
 }
@@ -146,7 +149,7 @@ void ICCProfileBlock::write(File& document)
 	WriteBinaryData<uint32_t>(document, sig.m_Value);
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
-	m_Name.write(document, 2u);
+	m_Name.write(document);
 	WriteBinaryData<uint32_t>(document, m_DataSize);	// This value is already padded
 
 	WriteBinaryArray<uint8_t>(document, std::move(m_RawICCProfile));

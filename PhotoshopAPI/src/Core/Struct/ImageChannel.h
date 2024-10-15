@@ -15,6 +15,7 @@
 #include <memory>
 #include <random>
 #include <execution>
+#include <cassert>
 
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
 // library
@@ -158,14 +159,25 @@ struct ImageChannel
 			if (remainingSize > m_ChunkSize)
 			{
 				futures.emplace_back(pool.enqueue([=, this]() {
-					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, m_ChunkSize);
+					blosc2_decompress_ctx(
+						contexts.back(), 
+						m_Data->data[nchunk], 
+						std::numeric_limits<int32_t>::max(), 
+						ptr, 
+						m_ChunkSize);
 					}));
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
+				assert(remainingSize < std::numeric_limits<int32_t>::max());
 				futures.emplace_back(pool.enqueue([=, this]() {
-					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, remainingSize);
+					blosc2_decompress_ctx(
+						contexts.back(), 
+						m_Data->data[nchunk], 
+						std::numeric_limits<int32_t>::max(), 
+						ptr, 
+						static_cast<int32_t>(remainingSize));
 					}));
 				remainingSize = 0;
 			}
@@ -310,7 +322,7 @@ private:
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
-		uint64_t numChunks = ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize);
+		uint64_t numChunks = static_cast<uint64_t>(ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize));
 		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
 		if (numChunks == 0)
 		{
@@ -349,9 +361,10 @@ private:
 			}
 			else
 			{
+				assert(remainingSize < std::numeric_limits<int32_t>::max());
 				// C-blosc2 returns the total number of chunks here. We const cast as the function does not 
 				// modify the data yet takes a void* rather than a const void*
-				nchunks = blosc2_schunk_append_buffer(m_Data, const_cast<void*>(ptr), remainingSize);
+				nchunks = blosc2_schunk_append_buffer(m_Data, const_cast<void*>(ptr), static_cast<int32_t>(remainingSize));
 				remainingSize = 0;
 			}
 			if (nchunks != nchunk + 1) [[unlikely]]

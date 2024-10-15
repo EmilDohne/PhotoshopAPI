@@ -132,7 +132,7 @@ namespace RLE_Impl
         }
 
         // Store and return
-        scanlineSize = compressedData.size();
+        scanlineSize = static_cast<uint32_t>(compressedData.size());
         return compressedData;
     }
 
@@ -309,7 +309,7 @@ std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_
     std::vector<std::span<const uint8_t>> uncompressedDataViews;
     std::vector<std::span<uint8_t>> compressedDataViews;
     std::vector<uint32_t> verticalIter;
-    for (int i = 0; i < height; ++i)
+    for (uint32_t i = 0; i < height; ++i)
     {
         std::span<const uint8_t> uncompressedView(reinterpret_cast<const uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));
         uncompressedDataViews.push_back(uncompressedView);
@@ -332,7 +332,7 @@ std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_
         std::vector<size_t> scanlineOffsets;
         std::vector<uint16_t> scanlineSizes;
         size_t totalSize = height * sizeof(uint16_t);
-        for (int y = 0; y < height; ++y)
+        for (uint32_t y = 0; y < height; ++y)
         {
             scanlineOffsets.push_back(totalSize);
             scanlineSizes.push_back(static_cast<uint16_t>(compressedDataViews[y].size()));
@@ -355,7 +355,7 @@ std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_
         std::vector<size_t> scanlineOffsets;
         std::vector<uint32_t> scanlineSizes;
         size_t totalSize = height * sizeof(uint32_t);
-        for (int y = 0; y < height; ++y)
+        for (uint32_t y = 0; y < height; ++y)
         {
             scanlineOffsets.push_back(totalSize);
             scanlineSizes.push_back(static_cast<uint32_t>(compressedDataViews[y].size()));
@@ -440,13 +440,13 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
+std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
     PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
-    for (int i = 0; i < height; ++i)
+    for (uint32_t i = 0; i < height; ++i)
     {
         // Generate a span for each scanline
         std::span<uint8_t> data(reinterpret_cast<uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));
@@ -480,13 +480,13 @@ std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, c
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
+std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
     PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
-    for (int i = 0; i < height; ++i)
+    for (uint32_t i = 0; i < height; ++i)
     {
         // Generate a span for each scanline
         std::span<uint8_t> data(reinterpret_cast<uint8_t*>(uncompressedData.data() + width * i), width * sizeof(T));

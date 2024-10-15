@@ -34,7 +34,7 @@
 // TODO make it so you can disable this via cmake
 #if PSAPI_PROFILING
 #define PROFILE_SCOPE(name) NAMESPACE_PSAPI::InstrumentationTimer timer##__LINE__(name)
-#define PROFILE_FUNCTION() PROFILE_SCOPE(__FUNCTION__)
+#define PROFILE_FUNCTION() NAMESPACE_PSAPI::InstrumentationTimer timerFunc("__FUNCTION__")
 #else
 #define PROFILE_SCOPE(name)
 #define PROFILE_FUNCTION()
@@ -148,7 +148,7 @@ public:
         long long start = std::chrono::time_point_cast<std::chrono::microseconds>(m_StartTimepoint).time_since_epoch().count();
         long long end = std::chrono::time_point_cast<std::chrono::microseconds>(endTimepoint).time_since_epoch().count();
 
-        uint32_t threadID = std::hash<std::thread::id>{}(std::this_thread::get_id());
+        uint32_t threadID = static_cast<uint32_t>(std::hash<std::thread::id>{}(std::this_thread::get_id()));
         Instrumentor::Get().WriteProfile({ m_Name, start, end, threadID });
 
         m_Stopped = true;

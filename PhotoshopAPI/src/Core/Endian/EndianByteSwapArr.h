@@ -213,7 +213,7 @@ inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-inline void endianDecodeBEArray<uint8_t>(std::vector<uint8_t>& data)
+inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::vector<uint8_t>& data)
 {
 }
 
@@ -294,7 +294,7 @@ void endianDecodeBEArray(std::span<T> data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-inline void endianDecodeBEArray<uint8_t>(std::span<uint8_t> data)
+inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::span<uint8_t> data)
 {
 }
 
@@ -375,7 +375,7 @@ inline void endianDecodeBEArray<uint8_t>(std::span<uint8_t> data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-inline void endianEncodeBEArray(std::span<uint8_t> data)
+inline void endianEncodeBEArray([[maybe_unused]] std::span<uint8_t> data)
 {
 }
 

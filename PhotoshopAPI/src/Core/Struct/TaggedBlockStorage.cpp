@@ -26,7 +26,7 @@ uint64_t TaggedBlockStorage::calculateSize(std::shared_ptr<FileHeader> header /*
 	for (const auto& block : m_TaggedBlocks)
 	{
 		// Size gets initialized upon creation of the tagged block so we can just read the value back
-		size += block->getTotalSize();
+		size += block->totalSize<uint64_t>();
 	}
 	return size;
 }
@@ -93,21 +93,21 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrSectionDivider)
 		{
 			auto lrSectionTaggedBlock = std::make_shared<LrSectionTaggedBlock>();
-			lrSectionTaggedBlock->read(document, header, offset, signature, padding);
+			lrSectionTaggedBlock->read(document, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lrSectionTaggedBlock);
 			return lrSectionTaggedBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrReferencePoint)
 		{
 			auto lrReferencePointBlock = std::make_shared<ReferencePointTaggedBlock>();
-			lrReferencePointBlock->read(document, header, offset, signature, padding);
+			lrReferencePointBlock->read(document, offset, signature);
 			this->m_TaggedBlocks.push_back(lrReferencePointBlock);
 			return lrReferencePointBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrUnicodeName)
 		{
 			auto lrUnicodeNameBlock = std::make_shared<UnicodeLayerNameTaggedBlock>();
-			lrUnicodeNameBlock->read(document, header, offset, signature, padding);
+			lrUnicodeNameBlock->read(document, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lrUnicodeNameBlock);
 			return lrUnicodeNameBlock;
 		}
