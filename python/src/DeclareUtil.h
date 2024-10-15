@@ -42,7 +42,7 @@ void declareChannelIDInfo(py::module& m)
 		[](const Enum::ChannelIDInfo& self) { return self.id; },
 		[](Enum::ChannelIDInfo& self, const Enum::ChannelID& other, const Enum::ColorMode& color_mode)
 		{
-			auto result = Enum::channelIDToChannelIDInfo(other, color_mode);
+			auto result = Enum::toChannelIDInfo(other, color_mode);
 			self.id = result.id;
 			self.index = result.index;
 		}, R"pbdoc(
@@ -54,7 +54,7 @@ void declareChannelIDInfo(py::module& m)
 		[](const Enum::ChannelIDInfo& self) { return self.index; },
 		[](Enum::ChannelIDInfo& self, const int other, const Enum::ColorMode& color_mode)
 		{
-			auto result = Enum::intToChannelIDInfo(static_cast<int16_t>(other), color_mode);
+			auto result = Enum::toChannelIDInfo(static_cast<int16_t>(other), color_mode);
 			self.id = result.id;
 			self.index = result.index;
 		}, R"pbdoc(

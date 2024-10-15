@@ -413,3 +413,193 @@ TEST_CASE("Set layer invalid size channel"
 	layer->setChannel(Enum::ChannelID::Red, channel);
 }
 #endif
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Set layer data with Enum::ChannelID")
+{
+	using namespace NAMESPACE_PSAPI;
+	using type = bpp16_t;
+	constexpr int32_t width = 64;
+	constexpr int32_t height = 64;
+	constexpr int32_t size = width * height;
+
+	std::unordered_map<int16_t, std::vector<type>> data =
+	{
+		{-2, std::vector<type>(size)},
+		{0, std::vector<type>(size)},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+	};
+	auto params = typename Layer<type>::Params
+	{
+		.layerName = "Layer",
+		.width = width,
+		.height = height,
+	};
+
+	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+
+	CHECK(layer->m_Width == width);
+	CHECK(layer->m_Height == height);
+	CHECK(layer->m_LayerName == "Layer");
+	CHECK(layer->m_LayerMask);
+
+
+	std::vector<type> channel(size, 65535u);
+	std::unordered_map<Enum::ChannelID, std::vector<type>> data_new =
+	{
+		{Enum::ChannelID::UserSuppliedLayerMask, std::vector<type>(size)},
+		{Enum::ChannelID::Red, channel},
+		{Enum::ChannelID::Green, std::vector<type>(size)},
+		{Enum::ChannelID::Blue, std::vector<type>(size)},
+	};
+	layer->setImageData(std::move(data_new));
+	CHECK(layer->hasMask());
+	CHECK(layer->getChannel(Enum::ChannelID::Red, false) == channel);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Set layer data with int16_t")
+{
+	using namespace NAMESPACE_PSAPI;
+	using type = bpp16_t;
+	constexpr int32_t width = 64;
+	constexpr int32_t height = 64;
+	constexpr int32_t size = width * height;
+
+	std::unordered_map<int16_t, std::vector<type>> data =
+	{
+		{-2, std::vector<type>(size)},
+		{0, std::vector<type>(size)},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+	};
+	auto params = typename Layer<type>::Params
+	{
+		.layerName = "Layer",
+		.width = width,
+		.height = height,
+	};
+
+	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+
+	CHECK(layer->m_Width == width);
+	CHECK(layer->m_Height == height);
+	CHECK(layer->m_LayerName == "Layer");
+	CHECK(layer->m_LayerMask);
+
+	std::vector<type> channel(size, 65535u);
+	std::unordered_map<int16_t, std::vector<type>> data_new =
+	{
+		{-2, std::vector<type>(size)},
+		{0, channel},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+	};
+	layer->setImageData(std::move(data_new));
+	CHECK(layer->hasMask());
+	CHECK(layer->getChannel(Enum::ChannelID::Red, false) == channel);
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+#ifndef ARM_MAC_ARCH
+TEST_CASE("Set layer invalid channel"
+	* doctest::no_breaks(true)
+	* doctest::no_output(true)
+	* doctest::should_fail(true))
+{
+	using namespace NAMESPACE_PSAPI;
+	using type = bpp16_t;
+	constexpr int32_t width = 64;
+	constexpr int32_t height = 64;
+	constexpr int32_t size = width * height;
+
+	std::unordered_map<int16_t, std::vector<type>> data =
+	{
+		{-2, std::vector<type>(size)},
+		{0, std::vector<type>(size)},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+	};
+	auto params = typename Layer<type>::Params
+	{
+		.layerName = "Layer",
+		.width = width,
+		.height = height,
+	};
+
+	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+
+	CHECK(layer->m_Width == width);
+	CHECK(layer->m_Height == height);
+	CHECK(layer->m_LayerName == "Layer");
+	CHECK(layer->m_LayerMask);
+
+	std::vector<type> channel(size, 65535u);
+	std::unordered_map<int16_t, std::vector<type>> data_new =
+	{
+		{-2, std::vector<type>(size)},
+		{0, channel},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+		{3, std::vector<type>(size)},
+	};
+	layer->setImageData(std::move(data_new));
+}
+#endif
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+#ifndef ARM_MAC_ARCH
+TEST_CASE("Set layer invalid size channel"
+	* doctest::no_breaks(true)
+	* doctest::no_output(true)
+	* doctest::should_fail(true))
+{
+	using namespace NAMESPACE_PSAPI;
+	using type = bpp16_t;
+	constexpr int32_t width = 64;
+	constexpr int32_t height = 64;
+	constexpr int32_t size = width * height;
+
+	std::unordered_map<int16_t, std::vector<type>> data =
+	{
+		{-2, std::vector<type>(size)},
+		{0, std::vector<type>(size)},
+		{1, std::vector<type>(size)},
+		{2, std::vector<type>(size)},
+	};
+	auto params = typename Layer<type>::Params
+	{
+		.layerName = "Layer",
+		.width = width,
+		.height = height,
+	};
+
+	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+
+	CHECK(layer->m_Width == width);
+	CHECK(layer->m_Height == height);
+	CHECK(layer->m_LayerName == "Layer");
+	CHECK(layer->m_LayerMask);
+
+	std::vector<type> channel(size, 65535u);
+	std::unordered_map<int16_t, std::vector<type>> data_new =
+	{
+		{-2, std::vector<type>(size)},
+		{0, channel},
+		{1, std::vector<type>(size + 5)},
+		{2, std::vector<type>(size)},
+	};
+	layer->setImageData(std::move(data_new));
+}
+#endif

@@ -347,6 +347,152 @@ public:
 	}
 
 
+	/// Set the image data for the whole file without rebuilding the layer. This function is useful if e.g. you modified the data
+	/// and want to insert it back in-place. The same constraints apply as for the constructor. I.e. all indices must be valid for the 
+	/// colormode of the layer and the size of each channel must be exactly width * height.
+	/// If you wish to rescale the layer please first modify the layers width and height, after which the data can be set.
+	/// 
+	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
+	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
+	/// \param policy		The execution policy for the channel creation
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	void setImageData(std::unordered_map<int16_t, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	{
+		// Construct variables for correct exception stack unwinding
+		std::atomic<bool> exceptionOccurred = false;
+		std::mutex exceptionMutex;
+		std::vector<std::string> exceptionMessages;
+
+		m_ImageData.clear();
+		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+			{
+				auto& [key, data] = pair;
+				const auto dataSpan = std::span<const T>(data.begin(), data.end());
+				try
+				{
+					this->setChannel(key, dataSpan, compression);
+				}
+				catch (std::runtime_error& e)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back(e.what());
+				}
+				catch (...)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back("Unknown exception caught.");
+				}
+			});
+
+		if (exceptionOccurred)
+		{
+			for (const auto& msg : exceptionMessages)
+			{
+				PSAPI_LOG_ERROR("ImageLayer", "Exception caught: %s", msg.c_str());
+			}
+		}
+	}
+
+	/// Set the image data for the whole file without rebuilding the layer. This function is useful if e.g. you modified the data
+	/// and want to insert it back in-place. The same constraints apply as for the constructor. I.e. all indices must be valid for the 
+	/// colormode of the layer and the size of each channel must be exactly width * height.
+	/// If you wish to rescale the layer please first modify the layers width and height, after which the data can be set.
+	/// 
+	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
+	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
+	/// \param policy		The execution policy for the channel creation
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	void setImageData(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	{
+		// Construct variables for correct exception stack unwinding
+		std::atomic<bool> exceptionOccurred = false;
+		std::mutex exceptionMutex;
+		std::vector<std::string> exceptionMessages;
+
+		m_ImageData.clear();
+		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+			{
+				auto& [key, data] = pair;
+				const auto dataSpan = std::span<const T>(data.begin(), data.end());
+				try
+				{
+					this->setChannel(key, dataSpan, compression);
+				}
+				catch (std::runtime_error& e)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back(e.what());
+				}
+				catch (...)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back("Unknown exception caught.");
+				}
+			});
+
+		if (exceptionOccurred)
+		{
+			for (const auto& msg : exceptionMessages)
+			{
+				PSAPI_LOG_ERROR("ImageLayer", "Exception caught: %s", msg.c_str());
+			}
+		}
+	}
+
+
+	/// Set the image data for the whole file without rebuilding the layer. This function is useful if e.g. you modified the data
+	/// and want to insert it back in-place. The same constraints apply as for the constructor. I.e. all indices must be valid for the 
+	/// colormode of the layer and the size of each channel must be exactly width * height.
+	/// If you wish to rescale the layer please first modify the layers width and height, after which the data can be set.
+	/// 
+	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
+	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
+	/// \param policy		The execution policy for the channel creation
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	void setImageData(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	{
+		// Construct variables for correct exception stack unwinding
+		std::atomic<bool> exceptionOccurred = false;
+		std::mutex exceptionMutex;
+		std::vector<std::string> exceptionMessages;
+
+		m_ImageData.clear();
+		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+			{
+				auto& [key, data] = pair;
+				const auto dataSpan = std::span<const T>(data.begin(), data.end());
+				try
+				{
+					this->setChannel(key.id, dataSpan, compression);
+				}
+				catch (std::runtime_error& e)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back(e.what());
+				}
+				catch (...)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back("Unknown exception caught.");
+				}
+			});
+
+		if (exceptionOccurred)
+		{
+			for (const auto& msg : exceptionMessages)
+			{
+				PSAPI_LOG_ERROR("ImageLayer", "Exception caught: %s", msg.c_str());
+			}
+		}
+	}
+
+
 	/// Change the compression codec of all the image channels
 	void setCompression(const Enum::Compression compCode) override
 	{
