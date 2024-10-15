@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 #include <optional>
+#include <algorithm>
 
 PSAPI_NAMESPACE_BEGIN
 

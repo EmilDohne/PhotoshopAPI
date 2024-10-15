@@ -149,18 +149,17 @@ struct ImageChannel
 
 		blosc2_dparams params = BLOSC2_DPARAMS_DEFAULTS;
 
-
 		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
 			// Create a unique context
-			contexts.push_back(blosc2_create_dctx(*m_Data->storage->dparams));
+			contexts.emplace_back(blosc2_create_dctx(*m_Data->storage->dparams));
 
 			void* ptr = reinterpret_cast<uint8_t*>(buffer.data()) + nchunk * m_ChunkSize;
 			if (remainingSize > m_ChunkSize)
 			{
 				futures.emplace_back(pool.enqueue([=, this]() {
 					blosc2_decompress_ctx(
-						contexts.back(), 
+						contexts.back(),
 						m_Data->data[nchunk], 
 						std::numeric_limits<int32_t>::max(), 
 						ptr, 
@@ -173,7 +172,7 @@ struct ImageChannel
 				assert(remainingSize < std::numeric_limits<int32_t>::max());
 				futures.emplace_back(pool.enqueue([=, this]() {
 					blosc2_decompress_ctx(
-						contexts.back(), 
+						contexts.back(),
 						m_Data->data[nchunk], 
 						std::numeric_limits<int32_t>::max(), 
 						ptr, 
@@ -186,6 +185,12 @@ struct ImageChannel
 		// Wait for all tasks to complete
 		for (auto& future : futures) {
 			future.wait();
+		}
+
+		// Free the decompression contexts
+		for (auto* ctx : contexts)
+		{
+			blosc2_free_ctx(ctx);
 		}
 	}
 
