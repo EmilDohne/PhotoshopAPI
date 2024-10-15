@@ -175,19 +175,19 @@ struct LayerRecord : public FileSection
 	PascalString m_LayerName;
 
 	/// The top edge of the layer bounding box
-	int32_t m_Top;
+	int32_t m_Top{};
 
 	/// The left edge of the layer bounding box
-	int32_t m_Left;
+	int32_t m_Left{};
 
 	/// The bottom edge of the layer bounding box
-	int32_t m_Bottom;
+	int32_t m_Bottom{};
 
 	/// The right edge of the layer bounding box
-	int32_t m_Right;
+	int32_t m_Right{};
 
 	/// The absolute amount of channels stored in the layer
-	uint16_t m_ChannelCount;
+	uint16_t m_ChannelCount{};
 	/// The channel information telling us the channel ID as well as the 
 	/// size of the channel for when we read the ChannelImageData
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;

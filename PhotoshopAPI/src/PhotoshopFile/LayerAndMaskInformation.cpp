@@ -1006,7 +1006,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 	ChannelCoordinates extent = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
 	uint32_t maxWidth = extent.width;
 	uint32_t maxHeight = extent.height;
-	if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
+	if (layerRecord.m_LayerMaskData && layerRecord.m_LayerMaskData.value().m_LayerMask)
 	{
 		const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 		// Generate our coordinates from the mask extents instead

@@ -84,7 +84,7 @@ jobs:
 
     - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
       working-directory: ${{github.workspace}}/build/PhotoshopTest
-      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure
+      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure --output-on-failure
 
     - name: Run Valgrind on Ubuntu
       if: matrix.os == 'ubuntu-24.04'
