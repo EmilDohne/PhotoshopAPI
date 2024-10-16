@@ -26,26 +26,26 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: ""
-             cxxflags: ""
+             cflags: "-fsanitize=address"
+             cxxflags: "-fsanitize=address"
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
-             cflags: ""
-             cxxflags: ""
+             cflags: "-fsanitize=address"
+             cxxflags: "-fsanitize=address"
              compilercxx: clang++
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-             cflags: /fsanitize=address /Zi
-             cxxflags: /fsanitize=address /Zi
+             cflags: ""
+             cxxflags: ""
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: ""
-             cxxflags: ""
+             cflags: "-fsanitize=address"
+             cxxflags: "-fsanitize=address"
 
     steps:
     - uses: actions/checkout@v4
@@ -77,6 +77,8 @@ jobs:
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    # On windows we need to copy the test files differently as it generates sub-folders
+    # for the copied test files
     - name: Copy Testfiles on Windows
       if: runner.os == 'Windows'
       working-directory: ${{github.workspace}}/build/PhotoshopTest
@@ -85,11 +87,3 @@ jobs:
     - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
       working-directory: ${{github.workspace}}/build/PhotoshopTest
       run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure --output-on-failure
-
-    - name: Run Valgrind on Ubuntu
-      if: matrix.os == 'ubuntu-24.04'
-      working-directory: ${{github.workspace}}/build/PhotoshopTest
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y valgrind
-        valgrind --leak-check=full ./PhotoshopTest

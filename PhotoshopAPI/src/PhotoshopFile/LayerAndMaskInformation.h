@@ -136,8 +136,8 @@ namespace LayerRecords
 	// exist only on one of the masks rather than both as they cover both cases
 	struct LayerMaskData : public FileSection
 	{
-		std::optional<LayerMask> m_LayerMask;
-		std::optional<LayerMask> m_VectorMask;
+		std::optional<LayerMask> m_LayerMask = std::nullopt;
+		std::optional<LayerMask> m_VectorMask = std::nullopt;
 
 		LayerMaskData() = default;
 
@@ -200,7 +200,7 @@ struct LayerRecord : public FileSection
 	LayerRecords::BitFlags m_BitFlags;
 
 	/// If one or both of the layer masks has some special data on it (feather or blur) it will be stored in this structure
-	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
+	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData = std::nullopt;
 
 	/// The channel blending ranges for all the default channels (r, g and b in rgb color mode). Photoshop appears
 	/// to always write out the maximum possible channels (5) as the section size is trivial. We match this behaviour
