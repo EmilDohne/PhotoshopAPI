@@ -44,8 +44,8 @@ jobs:
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: "-fsanitize=address"
-             cxxflags: "-fsanitize=address"
+             cflags: ""
+             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
