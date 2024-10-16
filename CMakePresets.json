@@ -15,10 +15,6 @@
           "type": "equals",
           "lhs": "${hostSystemName}",
           "rhs": "Windows"
-        },
-        "environment": {
-          "CFLAGS": "/fsanitize=address /Zi",
-          "CXXFLAGS": "/fsanitize=address /Zi"
         }
       },
       {

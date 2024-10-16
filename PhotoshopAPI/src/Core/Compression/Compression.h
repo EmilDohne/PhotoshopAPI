@@ -64,6 +64,10 @@ inline std::vector<uint8_t> CompressData(std::span<T> uncompressedIn, std::span<
 {
 	if (compression == Enum::Compression::Raw)
 	{
+		if (uncompressedIn.size() == 0)
+		{
+			return {};
+		}
 		endianEncodeBEArray(uncompressedIn);
 		std::vector<uint8_t> data(uncompressedIn.size() * sizeof(T));
 		std::memcpy(reinterpret_cast<void*>(data.data()), reinterpret_cast<void*>(uncompressedIn.data()), data.size());
