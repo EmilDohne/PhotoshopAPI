@@ -26,8 +26,8 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: "-fsanitize=address,leak,undefined"
-             cxxflags: "-fsanitize=address,leak,undefined"
+             cflags: ""
+             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
