@@ -10,6 +10,8 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 
+#include <cassert>
+
 PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -43,7 +45,7 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /* = 1u */)
+void TaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /* = 1u */)
 {
 
 	// Signatures are specified as being either '8BIM' or '8B64'. However, it isnt specified when we use which one.
@@ -77,7 +79,7 @@ void TaggedBlock::write(File& document, const FileHeader& header, ProgressCallba
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding)
+void LrSectionTaggedBlock::read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding)
 {
 	m_Key = Enum::TaggedBlockKey::lrSectionDivider;
 	m_Offset = offset;
@@ -92,9 +94,14 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 		PSAPI_LOG_ERROR("TaggedBlock", "Layer Section Divider type has to be between 0 and 3, got %u instead", type);
 	};
 	auto sectionDividerType = Enum::getSectionDivider<uint32_t, Enum::SectionDivider>(type);
-	if (!sectionDividerType.has_value())
+	if (sectionDividerType)
+	{
+		m_Type = sectionDividerType.value();
+	}
+	else
+	{
 		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value");
-	m_Type = sectionDividerType.value();
+	}
 
 
 	// This overrides the layer blend mode if it is present.
@@ -118,22 +125,27 @@ void LrSectionTaggedBlock::read(File& document, const FileHeader& header, const 
 		document.skip(4u);
 	}
 
-	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
+	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 };
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LrSectionTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+void LrSectionTaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("lsct").m_Value);
-	WriteBinaryData<uint32_t>(document, m_TotalLength - 12u);
+	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
 
 	auto sectionDividerType = Enum::getSectionDivider<Enum::SectionDivider, uint32_t>(m_Type);
-	if (!sectionDividerType.has_value())
+	if (sectionDividerType)
+	{
+		WriteBinaryData<uint32_t>(document, sectionDividerType.value());
+	}
+	else
+	{
 		PSAPI_LOG_ERROR("TaggedBlock", "Could not find Layer Section Divider type by value");
-	WriteBinaryData<uint32_t>(document, sectionDividerType.value());
+	}
 	
 	// For some reason the blend mode has another 4 bytes for a 8BIM key
 	if (m_BlendMode.has_value())
@@ -163,20 +175,20 @@ void Lr16TaggedBlock::read(File& document, const FileHeader& header, ProgressCal
 	m_Length = length;
 	m_Data.read(document, header, callback, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+	TaggedBlock::totalSize(length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version));
 };
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr16TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+void Lr16TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr16").m_Value);
 
 	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
 	// care of that
-	m_Data.write(document, header, callback, padding);
+	m_Data.write(document, header, callback);
 }
 
 
@@ -192,26 +204,26 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, ProgressCal
 	m_Length = length;
 	m_Data.read(document, header, callback, document.getOffset(), true, std::get<uint64_t>(m_Length));
 
-	m_TotalLength = length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version);
+	TaggedBlock::totalSize(length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version));
 };
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void Lr32TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+void Lr32TaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("Lr32").m_Value);
 
 	// We dont need to write a size marker for this data as the size marker of the LayerInfo takes
 	// care of that
-	m_Data.write(document, header, callback, padding);
+	m_Data.write(document, header, callback);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding /*= 1u*/)
+void ReferencePointTaggedBlock::read(File& document,const uint64_t offset, const Signature signature)
 {
 	m_Key = Enum::TaggedBlockKey::lrReferencePoint;
 	m_Offset = offset;
@@ -225,17 +237,17 @@ void ReferencePointTaggedBlock::read(File& document, const FileHeader& header, c
 	m_Length = length;
 	m_ReferenceX = ReadBinaryData<float64_t>(document);
 	m_ReferenceY = ReadBinaryData<float64_t>(document);
-	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
+	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /* = 1u */)
+void ReferencePointTaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /* = 1u */)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("fxrp").m_Value);
-	WriteBinaryData<uint32_t>(document, m_TotalLength - 12u);
+	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
 
 	WriteBinaryData<float64_t>(document, m_ReferenceX);
 	WriteBinaryData<float64_t>(document, m_ReferenceY);
@@ -244,7 +256,7 @@ void ReferencePointTaggedBlock::write(File& document, const FileHeader& header, 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void UnicodeLayerNameTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding /*= 1u*/)
+void UnicodeLayerNameTaggedBlock::read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding /*= 1u*/)
 {
 	m_Key = Enum::TaggedBlockKey::lrUnicodeName;
 	m_Offset = offset;
@@ -256,20 +268,20 @@ void UnicodeLayerNameTaggedBlock::read(File& document, const FileHeader& header,
 	// null character appended
 	m_Name.read(document, 4u);
 
-	m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
+	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void UnicodeLayerNameTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+void UnicodeLayerNameTaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("luni").m_Value);
-	WriteBinaryData<uint32_t>(document, m_TotalLength - 12u);
+	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
 	// Internally it appears that UnicodeStrings are always padded to a 4-byte boundary which decides whether there is a two bye
 	// null character appended
-	m_Name.write(document, 4u);
+	m_Name.write(document);
 }
 
 PSAPI_NAMESPACE_END

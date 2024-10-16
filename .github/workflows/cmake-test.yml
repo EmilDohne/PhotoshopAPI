@@ -13,7 +13,7 @@ on:
       - published
 
 env:
-  BUILD_TYPE: Release
+  BUILD_TYPE: Debug
 
 jobs:
   test:
@@ -26,18 +26,26 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
+             cflags: "-fsanitize=address,leak,undefined"
+             cxxflags: "-fsanitize=address,leak,undefined"
              compilercxx: clang++
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+             cflags: ""
+             cxxflags: ""
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
@@ -56,6 +64,8 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
         cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
 
@@ -63,8 +73,12 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
 
+    # On windows we need to copy the test files differently as it generates sub-folders
+    # for the copied test files
     - name: Copy Testfiles on Windows
       if: runner.os == 'Windows'
       working-directory: ${{github.workspace}}/build/PhotoshopTest
@@ -72,4 +86,4 @@ jobs:
 
     - name: Test  ${{ matrix.os }}-${{ matrix.compilercxx }}
       working-directory: ${{github.workspace}}/build/PhotoshopTest
-      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure
+      run: ctest -C ${{env.BUILD_TYPE}} --extra-verbose --stop-on-failure --output-on-failure

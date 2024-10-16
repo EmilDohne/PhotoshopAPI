@@ -29,10 +29,10 @@ struct ByteStream
 	inline uint64_t getSize() const { return m_Size; };
 
 	// Read n amount of bytes into the given buffer
-	void read(char* buffer, uint64_t size);
+	void read(std::span<uint8_t> buffer);
 	// Unlike the above read method this does not actually change the 
 	// m_Offset variable 
-	void read(char* buffer, uint64_t offset, uint64_t size);
+	void read(std::span<uint8_t> buffer, uint64_t offset);
 
 	std::span<uint8_t> read(uint64_t size);
 	std::span<uint8_t> read(uint64_t offset, uint64_t size);

@@ -33,7 +33,7 @@ public:
 
 	SectionDividerLayer() = default;
 
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
+	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, [[maybe_unused]] const FileHeader& header) override
 	{
 		auto blockVec = this->generateTaggedBlocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
@@ -58,14 +58,14 @@ public:
 			0,		// left
 			0,		// bottom
 			0,		// right
-			channelInfoVec.size(),
+			static_cast<uint16_t>(channelInfoVec.size()),
 			channelInfoVec,
 			Enum::BlendMode::Normal,
 			255u,	// Opacity
 			0u,		// Clipping
 			LayerRecords::BitFlags{},
 			std::nullopt,
-			Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
+			Layer<T>::generateBlendingRanges(),	// Generate some defaults
 			std::move(taggedBlocks)
 		);
 

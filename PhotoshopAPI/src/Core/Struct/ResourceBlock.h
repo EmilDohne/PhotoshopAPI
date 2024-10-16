@@ -25,7 +25,7 @@ struct ResourceBlock : public FileSection
 	/// Size of the data, padded to 2-bytes
 	uint32_t m_DataSize = 0;
 
-	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {m_Size = this->calculateSize(); };
+	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {FileSection::size(this->calculateSize()); };
 	
 	// This calculates the size of m_Size only, not m_DataSize!
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;

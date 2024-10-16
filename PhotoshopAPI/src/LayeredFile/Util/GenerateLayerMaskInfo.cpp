@@ -48,7 +48,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile
 	GlobalLayerMaskInfo maskInfo{};
 
 	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo, header));
+	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
 	TaggedBlockStorage blockStorage(blockPtrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
@@ -67,7 +67,7 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFil
 	GlobalLayerMaskInfo maskInfo{};
 
 	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo, header));
+	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
 	TaggedBlockStorage blockStorage(blockPtrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));

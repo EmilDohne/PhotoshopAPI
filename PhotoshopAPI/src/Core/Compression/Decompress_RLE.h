@@ -9,6 +9,7 @@
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "Profiling/Perf/Instrumentor.h"
+#include "FileUtil.h"
 
 #include <vector>
 #include <limits>
@@ -154,7 +155,7 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     if (header.m_Version == Enum::Version::Psd)
     {
         std::vector<uint16_t> buff(height);
-        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
+        stream.read(Util::toWritableBytes(buff), offset);
         endianDecodeBEArray<uint16_t>(buff);
         for (auto item : buff)
         {
@@ -165,7 +166,7 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     else
     {
         std::vector<uint32_t> buff(height);
-        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
+        stream.read(Util::toWritableBytes(buff), offset);
         endianDecodeBEArray<uint32_t>(buff);
         for (auto item : buff)
         {
@@ -190,10 +191,10 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     // Generate spans for every individual scanline to decompress them individually
     std::vector<std::span<const uint8_t>> compressedDataSpans(height);
     std::vector<std::span<uint8_t>> decompressedDataSpans(height);
-    std::vector<unsigned int> verticalIter;
+    std::vector<uint64_t> verticalIter;
     {
         uint64_t compressedStartIdx = 0;
-        for (uint64_t i = 0; i < height; ++i)
+        for (uint64_t i = 0; i < static_cast<uint64_t>(height); ++i)
         {
             uint64_t compressedEndIdx = compressedStartIdx + scanlineSizes[i];
             compressedDataSpans[i] = std::span<const uint8_t>(compressedData.begin() + compressedStartIdx, compressedData.begin() + compressedEndIdx);

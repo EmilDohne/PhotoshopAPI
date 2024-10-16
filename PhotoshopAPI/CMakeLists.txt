@@ -15,6 +15,11 @@ target_link_libraries(PhotoshopAPI PUBLIC Blosc2::blosc2_static blosc2_include m
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)
 	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2 /Zc:__cplusplus /utf-8)
+    # Bump up warning levels and enable the following extra exceptions:
+    # w44062 is for if a switch misses some enum members.
+    # w44464 is for #include containing .. in the path
+    # w45264 is for using std:move when returning a temporary.
+    target_compile_options(PhotoshopAPI PRIVATE /W4 /WX /w44062 /w44464 /w45264)
 else()
     target_compile_options(PhotoshopAPI PUBLIC -O3)
     include(CheckCXXCompilerFlag)

@@ -179,8 +179,8 @@ TEST_CASE("Extract mask channel from group")
 	auto groupLayerPtr = findLayerAs<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("MaskGroup/MaskLayer", layeredFile);
 
-	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMaskData();
-	std::vector<bpp8_t> imageMaskChannel = imageLayerPtr->getMaskData();
+	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMask();
+	std::vector<bpp8_t> imageMaskChannel = imageLayerPtr->getMask();
 	// Photoshop internally optimizes these mask channels which is why we have half the height 
 	std::vector<bpp8_t> expectedMask(layeredFile.m_Width * layeredFile.m_Height / 2, 0u);
 
@@ -200,8 +200,8 @@ TEST_CASE("Extract mask channel from group")
 		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
 		auto groupLayerPtr = findLayerAs<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 
-		std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMaskData(false);
-		std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMaskData(false);
+		std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMask(false);
+		std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMask(false);
 	
 	}
 #endif
@@ -214,6 +214,6 @@ TEST_CASE("Double extract mask channel from group")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
 	auto groupLayerPtr = findLayerAs<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 
-	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMaskData();
-	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMaskData();
+	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->getMask();
+	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->getMask();
 }

@@ -15,6 +15,7 @@
 #include <memory>
 #include <random>
 #include <execution>
+#include <cassert>
 
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
 // library
@@ -148,24 +149,34 @@ struct ImageChannel
 
 		blosc2_dparams params = BLOSC2_DPARAMS_DEFAULTS;
 
-
 		for (uint64_t nchunk = 0; nchunk < m_NumChunks; ++nchunk)
 		{
 			// Create a unique context
-			contexts.push_back(blosc2_create_dctx(*m_Data->storage->dparams));
+			contexts.emplace_back(blosc2_create_dctx(*m_Data->storage->dparams));
 
 			void* ptr = reinterpret_cast<uint8_t*>(buffer.data()) + nchunk * m_ChunkSize;
 			if (remainingSize > m_ChunkSize)
 			{
 				futures.emplace_back(pool.enqueue([=, this]() {
-					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, m_ChunkSize);
+					blosc2_decompress_ctx(
+						contexts.back(),
+						m_Data->data[nchunk], 
+						std::numeric_limits<int32_t>::max(), 
+						ptr, 
+						m_ChunkSize);
 					}));
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
+				assert(remainingSize < std::numeric_limits<int32_t>::max());
 				futures.emplace_back(pool.enqueue([=, this]() {
-					blosc2_decompress_ctx(contexts.back(), m_Data->data[nchunk], std::numeric_limits<int32_t>::max(), ptr, remainingSize);
+					blosc2_decompress_ctx(
+						contexts.back(),
+						m_Data->data[nchunk], 
+						std::numeric_limits<int32_t>::max(), 
+						ptr, 
+						static_cast<int32_t>(remainingSize));
 					}));
 				remainingSize = 0;
 			}
@@ -174,6 +185,12 @@ struct ImageChannel
 		// Wait for all tasks to complete
 		for (auto& future : futures) {
 			future.wait();
+		}
+
+		// Free the decompression contexts
+		for (auto* ctx : contexts)
+		{
+			blosc2_free_ctx(ctx);
 		}
 	}
 
@@ -227,7 +244,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	ImageChannel(Enum::Compression compression, std::vector<T>& imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
+	ImageChannel(Enum::Compression compression, const std::vector<T>& imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
 	{
 		if (width > 300000u)
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid width parsed to image channel. Photoshop channels can be 300,000 pixels wide, got %" PRIu32 " instead",
@@ -245,7 +262,7 @@ struct ImageChannel
 		{
 			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
 		}
-		initializeBlosc2Schunk<T>(imageData, width, height);
+		initializeBlosc2Schunk<T>(std::span<const T>(imageData.begin(), imageData.end()), width, height);
 	}
 
 
@@ -253,7 +270,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	ImageChannel(Enum::Compression compression, std::span<T>& imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
+	ImageChannel(Enum::Compression compression, const std::span<T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
 	{
 		if (width > 300000u)
 			PSAPI_LOG_ERROR("ImageChannel", "Invalid width parsed to image channel. Photoshop channels can be 300,000 pixels wide, got %" PRIu32 " instead",
@@ -269,7 +286,7 @@ struct ImageChannel
 		m_ChannelID = channelID;
 		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
 			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
-		initializeBlosc2Schunk(imageData, width, height);
+		initializeBlosc2Schunk(std::span<const T>(imageData.begin(), imageData.end()), width, height);
 	}
 
 
@@ -302,7 +319,7 @@ private:
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T> 
-	void initializeBlosc2Schunk(std::span<T> imageData, const int32_t width, const int32_t height)
+	void initializeBlosc2Schunk(const std::span<const T> imageData, const int32_t width, const int32_t height)
 	{
 		PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
@@ -310,7 +327,7 @@ private:
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;
 		blosc2_dparams dparams = BLOSC2_DPARAMS_DEFAULTS;
 		// Calculate the number of chunks from the input
-		uint64_t numChunks = ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize);
+		uint64_t numChunks = static_cast<uint64_t>(ceil((static_cast<double>(width) * height * sizeof(T)) / m_ChunkSize));
 		// This could either be a no-op or a chunk that is smaller than m_ChunkSize
 		if (numChunks == 0)
 		{
@@ -338,18 +355,21 @@ private:
 		uint64_t remainingSize = static_cast<uint64_t>(width) * height * sizeof(T);
 		for (int nchunk = 0; nchunk < numChunks; ++nchunk)
 		{
-			void* ptr = reinterpret_cast<uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
+			const void* ptr = reinterpret_cast<const uint8_t*>(imageData.data()) + nchunk * m_ChunkSize;
 			int64_t nchunks;
 			if (remainingSize > m_ChunkSize)
 			{
-				// C-blosc2 returns the total number of chunks here
-				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, m_ChunkSize);
+				// C-blosc2 returns the total number of chunks here. We const cast as the function does not 
+				// modify the data yet takes a void* rather than a const void*
+				nchunks = blosc2_schunk_append_buffer(m_Data, const_cast<void*>(ptr), m_ChunkSize);
 				remainingSize -= m_ChunkSize;
 			}
 			else
 			{
-				// C-blos2 returns the total number of chunks here
-				nchunks = blosc2_schunk_append_buffer(m_Data, ptr, remainingSize);
+				assert(remainingSize < std::numeric_limits<int32_t>::max());
+				// C-blosc2 returns the total number of chunks here. We const cast as the function does not 
+				// modify the data yet takes a void* rather than a const void*
+				nchunks = blosc2_schunk_append_buffer(m_Data, const_cast<void*>(ptr), static_cast<int32_t>(remainingSize));
 				remainingSize = 0;
 			}
 			if (nchunks != nchunk + 1) [[unlikely]]

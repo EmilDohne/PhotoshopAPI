@@ -69,23 +69,25 @@ struct Layer
 	/// A pixel layer mask
 	std::optional<LayerMask> m_LayerMask;
 
-	Enum::BlendMode m_BlendMode;
+	Enum::BlendMode m_BlendMode = Enum::BlendMode::Normal;
 
 	/// Marks whether or not the layer is visible or not
-	bool m_IsVisible; 
+	bool m_IsVisible{};
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
-	uint8_t m_Opacity;	
+	uint8_t m_Opacity{};
 
-	uint32_t m_Width;
+	uint32_t m_Width{};
 
-	uint32_t m_Height;
+	uint32_t m_Height{};
 
-	float m_CenterX;
+	float m_CenterX{};
 
-	float m_CenterY;
+	float m_CenterY{};
 
 protected:
+
+	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
 	void parseLayerMask(Params& parameters)
@@ -129,21 +131,21 @@ protected:
 			int32_t width = m_LayerMask.value().maskData->getWidth();
 			int32_t height = m_LayerMask.value().maskData->getHeight();
 			ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
-			lrMaskData.m_Size += 16u;
+			lrMaskData.addSize(16u);
 
 			// Default color
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 
 			// This is the size for the mask bitflags
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 			// This is the size for the mask parameters
-			lrMaskData.m_Size += 1u;
+			lrMaskData.addSize(1u);
 			bool hasMaskDensity = m_LayerMask.value().maskDensity.has_value();
 			uint8_t maskDensity = 0u;
 			if (hasMaskDensity)
 			{
 				maskDensity = m_LayerMask.value().maskDensity.value();
-				lrMaskData.m_Size += 1u;
+				lrMaskData.addSize(1u);
 			}
 
 			bool hasMaskFeather = m_LayerMask.value().maskFeather.has_value();
@@ -151,7 +153,7 @@ protected:
 			if (hasMaskFeather)
 			{
 				maskFeather = m_LayerMask.value().maskFeather.value();
-				lrMaskData.m_Size += 8u;
+				lrMaskData.addSize(8u);
 
 			}
 
@@ -208,7 +210,7 @@ protected:
 
 		// Generate our unicode layer name block, we always include this as its size is trivial and this avoids 
 		// any issues with names being truncated
-		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, 4u);
+		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
 		blockVec.push_back(unicodeNamePtr);
 
 		return blockVec;
@@ -216,14 +218,9 @@ protected:
 
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).
 	///
-	/// The blending ranges depend on the specified ColorMode. This function returns the default
-	/// blending ranges for the given color mode.
-	///
-	/// \param colorMode The ColorMode to determine the blending ranges.
 	/// \return A LayerBlendingRanges object representing the layer blending ranges.
-	LayerRecords::LayerBlendingRanges generateBlendingRanges(const Enum::ColorMode colorMode)
+	LayerRecords::LayerBlendingRanges generateBlendingRanges()
 	{
-		using Data = std::vector<std::tuple<uint8_t, uint8_t, uint8_t, uint8_t>>;
 		LayerRecords::LayerBlendingRanges blendingRanges{};
 		return blendingRanges;
 	}
@@ -275,7 +272,7 @@ protected:
 			// Fill channels {-1, 0, 1, 2}
 			for (int16_t i = -1; i <= 2; ++i)
 			{
-				auto channelid = Enum::rgbIntToChannelID(i);
+				auto channelid = Enum::Impl::rgbIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -284,7 +281,7 @@ protected:
 			// Fill channels {-1, 0, 1, 2, 3}
 			for (int16_t i = -1; i <= 3; ++i)
 			{
-				auto channelid = Enum::cmykIntToChannelID(i);
+				auto channelid = Enum::Impl::cmykIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -293,7 +290,7 @@ protected:
 			// Fill channels {-1, 0}
 			for (int16_t i = -1; i <= 0; ++i)
 			{
-				auto channelid = Enum::grayscaleIntToChannelID(i);
+				auto channelid = Enum::Impl::grayscaleIntToChannelID(i);
 				processChannel(channelid, i);
 			}
 		}
@@ -314,6 +311,7 @@ public:
 	/// \param header The FileHeader providing overall file information.
 	Layer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 	{
+		m_ColorMode = header.m_ColorMode;
 		m_LayerName = layerRecord.m_LayerName.getString();
 		// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
 		// blendmode if it is present
@@ -414,7 +412,7 @@ public:
 	/// \param colorMode The desired ColorMode for the PhotoshopFile.
 	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop(Enum::ColorMode colorMode, const FileHeader& header)
+	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop([[maybe_unused]] const Enum::ColorMode colorMode, const FileHeader& header)
 	{
 		std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 		ChannelImageData channelData{};
@@ -442,7 +440,7 @@ public:
 			0u,		// Clipping
 			LayerRecords::BitFlags(false, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
-			Layer<T>::generateBlendingRanges(colorMode),	// Generate some defaults
+			Layer<T>::generateBlendingRanges(),	// Generate some defaults
 			std::move(taggedBlocks)		// Additional layer information
 		);
 
@@ -450,7 +448,7 @@ public:
 	}
 	
 	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
-	std::vector<T> getMaskData(const bool doCopy = true)
+	std::vector<T> getMask(const bool doCopy = true)
 	{
 		if (m_LayerMask.has_value())
 		{
@@ -463,11 +461,29 @@ public:
 		return std::vector<T>();
 	}
 
+	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable.
+	/// This method is depracated, please use getMask() instead
+	[[deprecated("Replaced by getMask() for better consistency")]]
+	std::vector<T> getMaskData(const bool doCopy = true)
+	{
+		return getMask(doCopy);
+	}
+
+
+
+	/// Check whether a mask channel exists on the Layer
+	bool hasMask() { return m_LayerMask.has_value(); };
+
+	/// Get the colormode associated with the layer
+	Enum::ColorMode getColorMode() { return m_ColorMode; };
+
 	/// Changes the compression mode of all channels in this layer to the given compression mode
 	virtual void setCompression(const Enum::Compression compCode)
 	{
-		if (m_LayerMask.has_value())
-		m_LayerMask.value().maskData->m_Compression = compCode;
+		if (m_LayerMask)
+		{
+			m_LayerMask.value().maskData->m_Compression = compCode;
+		}
 	}
 
 	virtual ~Layer() = default;

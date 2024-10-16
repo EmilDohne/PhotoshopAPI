@@ -22,7 +22,24 @@ struct TaggedBlock
 	uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
 	std::variant<uint32_t, uint64_t> m_Length;
 
-	uint64_t getTotalSize() const noexcept{ return m_TotalLength; };
+	// Get the total size in a bounds checked manner
+	template <typename T = size_t>
+	T totalSize() const
+	{
+		static_assert(std::is_integral_v<T>, "Return must be of integral type");
+		// Since m_Size is unsigned we only need to check against max
+		if (m_TotalLength > std::numeric_limits<T>::max())
+		{
+			PSAPI_LOG_ERROR("TaggedBlock", "Unable to access tagged block size with template argument T as it would overflow it");
+			return {};
+		}
+		return static_cast<T>(m_TotalLength);
+	}
+
+	void totalSize(size_t value) { m_TotalLength = value; }
+
+	void addTotalSize(size_t increment) { m_TotalLength += increment; }
+
 	Enum::TaggedBlockKey getKey() const noexcept{ return m_Key; };
 
 	virtual ~TaggedBlock() = default;
@@ -30,12 +47,14 @@ struct TaggedBlock
 
 	// Read a TaggedBlock from a file
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const Enum::TaggedBlockKey key, const uint16_t padding = 1u);
-	virtual void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u);
+	virtual void write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding = 1u);
 protected:
 	Enum::TaggedBlockKey m_Key = Enum::TaggedBlockKey::Unknown;
+
+private:
 	// The length of the tagged block with all the the signature, key and length marker
 	// use this value to determine how long the total structure is
-	uint64_t m_TotalLength = 0u;
+	size_t m_TotalLength = 0u;
 };
 
 
@@ -54,18 +73,18 @@ struct LrSectionTaggedBlock : TaggedBlock
 		m_BlendMode(blendMode) 
 	{
 		m_Key = Enum::TaggedBlockKey::lrSectionDivider;
-		m_TotalLength = 4u;		// Signature
-		m_TotalLength += 4u;	// Key
-		m_TotalLength += 4u;	// Length marker
-		m_TotalLength += 4u;	// LrSection type
+		TaggedBlock::totalSize(4u);		// Signature
+		TaggedBlock::addTotalSize(4u);	// Key
+		TaggedBlock::addTotalSize(4u);	// Length marker
+		TaggedBlock::addTotalSize(4u);	// LrSection type
 		if (blendMode.has_value())
 		{
-			m_TotalLength += 4u;	// LrSection Signature
-			m_TotalLength += 4u;	// LrSection Blendmode Key
+			TaggedBlock::addTotalSize(4u);	// LrSection Signature
+			TaggedBlock::addTotalSize(4u);	// LrSection Blendmode Key
 		}
 	};
 	
-	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
@@ -77,10 +96,10 @@ struct Lr16TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr16TaggedBlock() = default;
-	Lr16TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo))
+	Lr16TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo))
 	{
 		// We cant actually calculate the size of the tagged block here as that would require the channels to be compressed first
-		m_TotalLength = 0u;
+		TaggedBlock::totalSize(0u);
 	};
 	
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
@@ -96,10 +115,10 @@ struct Lr32TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr32TaggedBlock() = default;
-	Lr32TaggedBlock(LayerInfo& lrInfo, const FileHeader& header) : m_Data(std::move(lrInfo)) 
+	Lr32TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) 
 	{
 		// We cant actually calculate the size of the tagged block here as that would require the channels to be compressed first
-		m_TotalLength = 0u;
+		TaggedBlock::totalSize(0u);
 	};
 	
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
@@ -130,10 +149,10 @@ struct ReferencePointTaggedBlock : TaggedBlock
 	ReferencePointTaggedBlock(double refX, double refY) : m_ReferenceX(refX), m_ReferenceY(refY) 
 	{
 		// This is the size of 2 doubles + 4 bytes for the signature, 4 bytes for the key and 4 bytes for the length
-		m_TotalLength = 16u + 4u + 4u + 4u;
+		TaggedBlock::totalSize(16u + 4u + 4u + 4u);
 	};
 
-	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void read(File& document, const uint64_t offset, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 
@@ -149,10 +168,10 @@ struct UnicodeLayerNameTaggedBlock : TaggedBlock
 	UnicodeLayerNameTaggedBlock(std::string name, const uint8_t padding = 1u)
 	{
 		m_Name = UnicodeString(name, padding);
-		m_TotalLength = 12u + m_Name.calculateSize();
+		TaggedBlock::totalSize(12u + m_Name.calculateSize());
 	}
 
-	void read(File& document, const FileHeader& header, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
+	void read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 };
 

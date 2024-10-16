@@ -136,8 +136,8 @@ namespace LayerRecords
 	// exist only on one of the masks rather than both as they cover both cases
 	struct LayerMaskData : public FileSection
 	{
-		std::optional<LayerMask> m_LayerMask;
-		std::optional<LayerMask> m_VectorMask;
+		std::optional<LayerMask> m_LayerMask = std::nullopt;
+		std::optional<LayerMask> m_VectorMask = std::nullopt;
 
 		LayerMaskData() = default;
 
@@ -175,19 +175,19 @@ struct LayerRecord : public FileSection
 	PascalString m_LayerName;
 
 	/// The top edge of the layer bounding box
-	int32_t m_Top;
+	int32_t m_Top{};
 
 	/// The left edge of the layer bounding box
-	int32_t m_Left;
+	int32_t m_Left{};
 
 	/// The bottom edge of the layer bounding box
-	int32_t m_Bottom;
+	int32_t m_Bottom{};
 
 	/// The right edge of the layer bounding box
-	int32_t m_Right;
+	int32_t m_Right{};
 
 	/// The absolute amount of channels stored in the layer
-	uint16_t m_ChannelCount;
+	uint16_t m_ChannelCount{};
 	/// The channel information telling us the channel ID as well as the 
 	/// size of the channel for when we read the ChannelImageData
 	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
@@ -200,7 +200,7 @@ struct LayerRecord : public FileSection
 	LayerRecords::BitFlags m_BitFlags;
 
 	/// If one or both of the layer masks has some special data on it (feather or blur) it will be stored in this structure
-	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData;
+	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData = std::nullopt;
 
 	/// The channel blending ranges for all the default channels (r, g and b in rgb color mode). Photoshop appears
 	/// to always write out the maximum possible channels (5) as the section size is trivial. We match this behaviour
@@ -259,7 +259,7 @@ struct GlobalLayerMaskInfo : public FileSection
 
 	// Skip the contents of the Global Layer and Mask Info based on the length marker
 	void read(File& document, const uint64_t offset);
-	void write(File& document, const FileHeader& header);
+	void write(File& document);
 };
 
 
@@ -419,7 +419,7 @@ struct LayerInfo : public FileSection
 	/// \param sectionSize This parameter must be present when isFromAdditionalLayerInfo = true
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);
 	/// Write the layer info section to file with the given padding
-	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback);
 
 	/// Find the index to a layer based on a layer name that is given
 	/// 

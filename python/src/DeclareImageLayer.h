@@ -1,5 +1,6 @@
 #include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "LayeredFile/LayerTypes/Layer.h"
+#include "Util/Enum.h"
 #include "Macros.h"
 
 #include <pybind11/pybind11.h>
@@ -13,6 +14,14 @@
 #include <unordered_map>
 #include <iostream>
 #include <vector>
+
+// If we compile with C++<20 we replace the stdlib implementation with the compatibility
+// library
+#if (__cplusplus < 202002L)
+#include "tcb_span.hpp"
+#else
+#include <span>
+#endif
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
@@ -135,11 +144,11 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     py::array_t<T>& image_data,
     const std::string& layer_name,
     const std::optional<py::array_t<T>> layer_mask,
-    int width,  // This is only relevant if a layer mask is set
-    int height, // This is only relevant if a layer mask is set
+    int width,
+    int height,
     const Enum::BlendMode blend_mode,
-    int pos_x, // This is only relevant if a layer mask is set
-    int pos_y, // This is only relevant if a layer mask is set
+    int pos_x,
+    int pos_y,
     int opacity,
     const Enum::Compression compression,
     const Enum::ColorMode color_mode
@@ -197,11 +206,11 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
     std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
     const std::string& layer_name,
     const std::optional<py::array_t<T>> layer_mask,
-    int width,  // This is only relevant if a layer mask is set
-    int height, // This is only relevant if a layer mask is set
+    int width,
+    int height,
     const Enum::BlendMode blend_mode,
-    int pos_x, // This is only relevant if a layer mask is set
-    int pos_y, // This is only relevant if a layer mask is set
+    int pos_x,
+    int pos_y,
     int opacity,
     const Enum::Compression compression,
     const Enum::ColorMode color_mode
@@ -265,11 +274,11 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     std::unordered_map<int, py::array_t<T>>& image_data,
     const std::string& layer_name,
     const std::optional<py::array_t<T>> layer_mask,
-    int width,  // This is only relevant if a layer mask is set
-    int height, // This is only relevant if a layer mask is set
+    int width,  
+    int height, 
     const Enum::BlendMode blend_mode,
-    int pos_x, // This is only relevant if a layer mask is set
-    int pos_y, // This is only relevant if a layer mask is set
+    int pos_x,
+    int pos_y,
     int opacity,
     const Enum::Compression compression,
     const Enum::ColorMode color_mode
@@ -323,6 +332,120 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     params.compression = compression;
     params.colorMode = color_mode;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
+}
+
+
+
+template <typename T>
+void setImageDataFromIntMapping(
+    ImageLayer<T>& layer,
+    std::unordered_map<int, py::array_t<T>>& image_data,
+    const Enum::Compression compression
+)
+{
+    std::unordered_map<int16_t, std::vector<T>> img_data_cpp;
+    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
+    for (auto& [key, value] : image_data)
+    {
+        if (value.size() != static_cast<uint64_t>(layer.m_Width) * layer.m_Height)
+        {
+            throw py::value_error("Channel '" + std::to_string(key) + "' must have the same size as the layer itself (width * height)");
+        }
+        if (key > std::numeric_limits<int16_t>::max())
+        {
+            throw py::value_error("Channel '" + std::to_string(key) + "' index is invalid, would exceed size of int16_t");
+        }
+        img_data_cpp[static_cast<int16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
+    }
+    layer.setImageData(std::move(img_data_cpp), compression);
+}
+
+
+template <typename T>
+void setImageDataFromIDMapping(
+    ImageLayer<T>& layer,
+    std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
+    const Enum::Compression compression
+    )
+{
+    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
+    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
+    for (auto& [key, value] : image_data)
+    {
+        if (value.size() != static_cast<uint64_t>(layer.m_Width) * layer.m_Height)
+        {
+            throw py::value_error("Channel '" + Enum::channelIDToString(key) + "' must have the same size as the layer itself (width * height)");
+        }
+        img_data_cpp[key] = std::vector<T>(value.data(), value.data() + value.size());
+    }
+    layer.setImageData(std::move(img_data_cpp), compression);
+}
+
+
+template <typename T>
+void setImageDataFromNpArray(
+    ImageLayer<T>& layer,
+    py::array_t<T>& image_data,
+    const Enum::Compression compression
+    )
+{
+    auto img_data_cpp = generateImageData(image_data, layer.m_Width, layer.m_Height, layer.getColorMode());
+    layer.setImageData(std::move(img_data_cpp), compression);
+}
+
+
+
+template <typename T>
+void setChannelOnLayer(
+    ImageLayer<T>& layer,
+    Enum::ChannelID id,
+    py::array_t<const T>& data
+)
+{
+    std::vector<size_t> shape;
+    for (size_t i = 0; i < data.ndim(); ++i)
+    {
+        shape.push_back(data.shape(i));
+    }
+    if (shape.size() != 2 && shape.size() != 1)
+    {
+        throw py::value_error("data parameter must have either 1 or 2 dimensions, not " + std::to_string(shape.size()));
+    }
+
+    // Extract the size of one channel and compare it against the size of the data
+    size_t channelSize = 0;
+    if (shape.size() == 1)
+    {
+        channelSize = shape[0];
+        if (channelSize != static_cast<size_t>(layer.m_Width) * layer.m_Height)
+        {
+            throw py::value_error("data parameter is expected to be of shape (layer.m_Height * layer.m_Width) or (layer.m_Height, layer.m_Width)" \
+                " but the provided 1st dimension does not match the provided layer.m_Width * layer.m_Height, got: " + std::to_string(channelSize) + " but instead expected: " \
+                + std::to_string(static_cast<size_t>(layer.m_Width) * layer.m_Height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect layer.m_Width or layer.m_Height");
+        }
+    }
+    if (shape.size() == 2)
+    {
+        channelSize = shape[0] * shape[1];
+        if (channelSize != static_cast<size_t>(layer.m_Width) * layer.m_Height)
+        {
+            throw py::value_error("data parameter is expected to be of shape (layer.m_Height * layer.m_Width) or (layer.m_Height, layer.m_Width)" \
+                " but the provided 1st amd 2nd dimension do not match the provided layer.m_Width * layer.m_Height, got: " + std::to_string(channelSize) + " but instead expected: " \
+                + std::to_string(static_cast<size_t>(layer.m_Width) * layer.m_Height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect layer.m_Width or layer.m_Height");
+        }
+    }
+
+    // Force the array to be c-contiguous if it isnt, using pybind11
+    if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
+    {
+        PSAPI_LOG_WARNING("ImageLayer", "Provided data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
+        data = data.template cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
+    }
+
+    // Finally convert the channel to a cpp span and set the channel data
+    const T* startPtr = data.data();
+    std::span<const T> dataSpan(startPtr, channelSize * sizeof(T));
+    layer.setChannel(id, dataSpan);
 }
 
 
@@ -715,6 +838,62 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             }
             return py::array_t<T>(shape, ptr);
         }, py::arg("key"), R"pbdoc(
+        
+	)pbdoc");
+
+
+    imageLayer.def("__setitem__", [](Class& self, const int key, py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(static_cast<int16_t>(key), self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The ID or index of the channel
+        :type key: :class:`psapi.enum.ChannelID` | int
+
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
+        
+	)pbdoc");
+
+    imageLayer.def("__setitem__", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(key, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+	)pbdoc");
+
+
+    imageLayer.def("set_channel_by_index", [](Class& self, const int key, py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(static_cast<int16_t>(key), self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The index of the channel
+        :type key: :class: int
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
+
+	)pbdoc");
+
+    imageLayer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
+        {
+            auto idinfo = Enum::toChannelIDInfo(key, self.getColorMode());
+            setChannelOnLayer(self, idinfo.id, value);
+        }, py::arg("key"), py::arg("value"), R"pbdoc(
+
+        Set/replace the channel for a layer at the provided index. 
+                
+        :param key: The index of the channel
+        :type key: :class:`psapi.enum.ChannelID`
+        :param value: The channel data with dimensions (height, width)
+        :type value: np.ndarray
 
 	)pbdoc");
 
@@ -741,6 +920,104 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
         :return: The extracted image data
         :rtype: dict[psapi.util.ChannelIDInfo, numpy.ndarray]
+
+	)pbdoc");
+
+
+    imageLayer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<Enum::ChannelID, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIDMapping<T>),
+        py::arg("image_data"),
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        R"pbdoc(
+
+        Replace an image layers' data from image data passed as dict with psapi.enum.ChannelID as key. This function 
+        expects all channels to have the same size as the layers width and height similar to the constructor. If 
+        you wish to resize and then replace please modify both the layers width and height first. After which you
+        can replace it 
+
+        :param image_data: 
+            The image data as a dictionary with channel IDs as enums. E.g. for a RGB image layer 
+
+            .. code-block:: python
+
+                data = {
+                    psapi.enum.ChannelID.red : numpy.ndarray,
+                    psapi.enum.ChannelID.green : numpy.ndarray,
+                    psapi.enum.ChannelID.blue : numpy.ndarray
+                }
+
+        :type image_data: dict[numpy.ndarray]
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels. Defaults to ZipPrediction
+        :type compression: psapi.enum.Compression
+
+        :raises:
+            ValueError: if the channel size is not the same as width * height
+
+	)pbdoc");
+
+    imageLayer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<int, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIntMapping<T>),
+        py::arg("image_data"),
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        R"pbdoc(
+
+        Replace an image layers' data from image data passed as dict with int as key. This function 
+        expects all channels to have the same size as the layers width and height similar to the constructor. If 
+        you wish to resize and then replace please modify both the layers width and height first. After which you
+        can replace it 
+
+        :param image_data: 
+            The image data as a dictionary with channel IDs as enums. E.g. for a RGB image layer 
+
+            .. code-block:: python
+
+                data = {
+                    psapi.enum.ChannelID.red : numpy.ndarray,
+                    psapi.enum.ChannelID.green : numpy.ndarray,
+                    psapi.enum.ChannelID.blue : numpy.ndarray
+                }
+
+        :type image_data: dict[numpy.ndarray]
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels. Defaults to ZipPrediction
+        :type compression: psapi.enum.Compression
+
+        :raises:
+            ValueError: if the channel size is not the same as width * height
+
+	)pbdoc");
+
+    imageLayer.def("set_image_data", py::overload_cast<Class&, py::array_t<T>&, const Enum::Compression>(&setImageDataFromNpArray<T>),
+        py::arg("image_data"),
+        py::arg("compression") = Enum::Compression::ZipPrediction,
+        R"pbdoc(
+
+        Replace an image layers' data from image data passed as numpy array. This function 
+        expects all channels to have the same size as the layers width and height similar to the constructor. If 
+        you wish to resize and then replace please modify both the layers width and height first. After which you
+        can replace it 
+
+         :param image_data: 
+            The image data as 2- or 3-Dimensional numpy array where the first dimension is the number of channels.
+    
+            If its a 2D ndarray the second dimension must hold the image data in row-major order with the size being height*width. 
+            An example could be the following shape: (3, 1024) for an RGB layer that is 32*32px. 
+
+            If its a 3D ndarray the second and third dimension hold height and width respectively.
+            An example could be the following shape: (3, 32, 32) for the same RGB layer
+
+            We also support adding alpha channels this way, those are always stored as the last channel and are optional. E.g. for RGB
+            there could be a ndarray like this (4, 32, 32) and it would automatically identify the last channel as alpha. For the individual
+            color modes there is always a set of required channels such as R, G and B for RGB or C, M, Y, K for CMYK with the optional alpha
+            that can be appended to the end.
+
+            The size **must** be the same as the width and height parameter
+        :type image_data: numpy.ndarray
+
+        :param compression: The compression to apply to all the channels of the layer, including mask channels. Defaults to ZipPrediction
+        :type compression: psapi.enum.Compression
+
+        :raises:
+            ValueError: if the channel size is not the same as width * height
 
 	)pbdoc");
 

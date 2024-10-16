@@ -1,0 +1,59 @@
+name: Valgrind
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+     - dev
+  pull_request:
+    branches:
+     - master
+  release:
+    types:
+      - published
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  valgrind:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+           - name: Ubuntu GCC
+             os: ubuntu-24.04
+             compiler: gcc-13
+             compilercxx: g++-13
+           - name: Ubuntu Clang
+             os: ubuntu-24.04
+             compiler: clang
+             compilercxx: clang++
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
+      env:
+        CC: ${{ matrix.compiler }}
+        CXX: ${{ matrix.compilercxx }}
+      run: |
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
+
+    - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
+      env:
+        CC: ${{ matrix.compiler }}
+        CXX: ${{ matrix.compilercxx }}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      
+    - name: Run Valgrind
+      if: matrix.os == 'ubuntu-24.04'
+      working-directory: ${{github.workspace}}/build/PhotoshopTest
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y valgrind
+        valgrind --leak-check=full ./PhotoshopTest
+      continue-on-error: false

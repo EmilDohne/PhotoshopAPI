@@ -22,7 +22,7 @@ struct ImageResources : public FileSection
 	/// irrelevant information to keep memory usage low
 	std::vector<std::unique_ptr<ResourceBlock>> m_ResourceBlocks;
 
-	ImageResources() { m_Size = 4u; };
+	ImageResources() { FileSection::size(4u); };
 	ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& resourceBlocks);
 
 	ImageResources(const ImageResources&) = delete;

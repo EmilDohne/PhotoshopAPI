@@ -7,31 +7,47 @@ PSAPI_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-void File::read(char* buffer, uint64_t size)
+void File::read(std::span<uint8_t> buffer)
 {
-	std::lock_guard<std::mutex> guard(m_Mutex);
-	if (m_Offset + size > m_Size) [[unlikely]]
-		{
-			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, m_Offset, m_Size);
-		}
+	PROFILE_FUNCTION();
+	if (buffer.size() == 0)
+	{
+		return;
+	}
 
-	m_Document.read(buffer, size);
-	m_Offset += size;
+	std::lock_guard<std::mutex> guard(m_Mutex);
+	if (m_Offset + buffer.size() > m_Size) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", buffer.size(), m_Offset, m_Size);
+	}
+
+	m_Document.read(reinterpret_cast<char*>(buffer.data()), buffer.size());
+	m_Offset += buffer.size();
 }
 
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-void File::readFromOffset(char* buffer, const uint64_t offset, const uint64_t size)
+void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 {
 	PROFILE_FUNCTION();
-	if (offset + size > m_Size) [[unlikely]]
+	if (buffer.size() == 0)
 	{
-		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, offset, m_Size);
+		return;
 	}
+
+	if (offset + buffer.size() > m_Size) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", buffer.size(), offset, m_Size);
+	}
+	if (offset + buffer.size() > m_DocumentMMap.size()) [[unlikely]]
+	{
+		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", buffer.size(), offset, m_DocumentMMap.size());
+	}
+
 	// We use the memory-mapped file version here to access in parallel
 	const uint8_t* srcPtr = m_DocumentMMap.data() + offset;
-	std::memcpy(buffer, srcPtr, size);
+	std::memcpy(buffer.data(), srcPtr, buffer.size());
 }
 
 

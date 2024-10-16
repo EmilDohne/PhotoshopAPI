@@ -21,20 +21,19 @@ uint64_t AdditionalLayerInfo::calculateSize(std::shared_ptr<FileHeader> header /
 // ---------------------------------------------------------------------------------------------------------------------
 void AdditionalLayerInfo::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const uint64_t maxLength, const uint16_t padding)
 {
-	m_Offset = offset;
+	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
-	m_Size = 0u;
 
 	int64_t toRead = maxLength;
 	while (toRead >= 12u)
 	{
 		const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, callback, padding);
-		toRead -= taggedBlock->getTotalSize();
-		m_Size += taggedBlock->getTotalSize();
+		toRead -= taggedBlock->totalSize();
+		FileSection::size(FileSection::size() + taggedBlock->totalSize());
 	}
 	if (toRead >= 0)
 	{
-		m_Size += toRead;
+		FileSection::size(FileSection::size() + toRead);
 		document.skip(toRead);
 		return;
 	} 

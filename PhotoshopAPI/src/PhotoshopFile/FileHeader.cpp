@@ -18,8 +18,7 @@ void FileHeader::read(File& document)
 {
 	PROFILE_FUNCTION();
 
-	m_Offset = 0;
-	m_Size = 26;
+	FileSection::initialize(0, 26u);
 
 	uint32_t signature = ReadBinaryData<uint32_t>(document);
 	m_Signature = Signature(signature);
@@ -112,8 +111,7 @@ void FileHeader::write(File& document)
 {
 	PROFILE_FUNCTION();
 
-	m_Offset = 0;
-	m_Size = 26;
+	FileSection::initialize(0, 26u);
 
 	// Write the signature, must be 8BPS
 	WriteBinaryData<uint32_t>(document, Signature("8BPS").m_Value);
