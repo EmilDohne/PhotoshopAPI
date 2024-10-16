@@ -20,6 +20,7 @@ ReadBinaryArray<T>						// Read a large amount of binary data into a std::vector
 #include "Logger.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
+#include "FileUtil.h"
 
 #include <fstream>
 #include <variant>
@@ -35,9 +36,10 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 T ReadBinaryData(File& document)
 {
-	uint8_t data[sizeof(T)]{};
-	document.read(reinterpret_cast<char *>(data), sizeof(T));
-	return endianDecodeBE<T>(data);
+	T val{};
+	auto valSpan = Util::toWritableBytes(val);
+	document.read(valSpan);
+	return endianDecodeBE<T>(valSpan.data());
 }
 
 
@@ -47,9 +49,10 @@ T ReadBinaryData(File& document)
 template <typename T>
 T ReadBinaryData(ByteStream& stream)
 {
-	uint8_t data[sizeof(T)]{};
-	stream.read(reinterpret_cast<char*>(data), sizeof(T));
-	return endianDecodeBE<T>(data);
+	T val{};
+	auto valSpan = Util::toWritableBytes(val);
+	stream.read(valSpan);
+	return endianDecodeBE<T>(valSpan.data());
 }
 
 
@@ -63,13 +66,19 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(File& document, const Enum::Vers
 	switch (version)
 	{
 	case Enum::Version::Psd:
-		uint8_t dataPsd[sizeof(TPsd)];
-		document.read(reinterpret_cast<char*>(dataPsd), sizeof(TPsd));
-		return endianDecodeBE<TPsd>(dataPsd);
+	{
+		TPsd valPsd{};
+		auto dataSpanPsd = Util::toWritableBytes(valPsd);
+		document.read(dataSpanPsd);
+		return endianDecodeBE<TPsd>(dataSpanPsd.data());
+	}
 	case Enum::Version::Psb:
-		uint8_t dataPsb[sizeof(TPsb)];
-		document.read(reinterpret_cast<char*>(dataPsb), sizeof(TPsb));
-		return endianDecodeBE<TPsb>(dataPsb);
+	{
+		TPsb valPsb{};
+		auto dataSpanPsb = Util::toWritableBytes(valPsb);
+		document.read(dataSpanPsb);
+		return endianDecodeBE<TPsb>(dataSpanPsb.data());
+	}
 	default:
 		return static_cast<TPsb>(0);
 	}
@@ -86,13 +95,19 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(ByteStream& stream, const Enum::
 	switch (version)
 	{
 	case Enum::Version::Psd:
-		uint8_t dataPsd[sizeof(TPsd)];
-		stream.read(reinterpret_cast<char*>(dataPsd), sizeof(TPsd));
-		return endianDecodeBE<TPsd>(dataPsd);
+	{
+		TPsd valPsd{};
+		auto dataSpanPsd = Util::toWritableBytes(valPsd);
+		stream.read(dataSpanPsd);
+		return endianDecodeBE<TPsd>(dataSpanPsd.data());
+	}
 	case Enum::Version::Psb:
-		uint8_t dataPsb[sizeof(TPsb)];
-		stream.read(reinterpret_cast<char*>(dataPsb), sizeof(TPsb));
-		return endianDecodeBE<TPsb>(dataPsb);
+	{
+		TPsb valPsb{};
+		auto dataSpanPsb = Util::toWritableBytes(valPsb);
+		stream.read(dataSpanPsb);
+		return endianDecodeBE<TPsb>(dataSpanPsb.data());
+	}
 	default:
 		return static_cast<TPsb>(0);
 	}
@@ -114,7 +129,7 @@ std::vector<T> ReadBinaryArray(File& document, uint64_t size)
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(Util::toWritableBytes(data));
 	endianEncodeBEArray<T>(data);
 
 	return data;
@@ -141,7 +156,7 @@ std::vector<T> ReadBinaryArray(File& document, uint64_t offset, uint64_t size)
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(Util::toWritableBytes(data));
 	endianEncodeBEArray<T>(data);
 
 	document.setOffset(initialOffset);
@@ -168,7 +183,12 @@ void ReadBinaryArray(File& document, std::span<T> buffer, uint64_t offset, uint6
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
 			size, sizeof(T));
 	}
-	document.read(reinterpret_cast<char*>(buffer.data()), size);
+	if (buffer.size() / sizeof(T) != size)
+	{
+		PSAPI_LOG_ERROR("ReadBinaryArray", "Invalid size parameter passed, expected %zu bytes but instead got %" PRIu64 " bytes", buffer.size() / sizeof(T), size);
+	}
+
+	document.read(Util::toWritableBytes(buffer));
 	endianEncodeBEArray<T>(buffer);
 
 	document.setOffset(initialOffset);
@@ -191,7 +211,7 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	stream.read(reinterpret_cast<char*>(data.data()), size);
+	stream.read(Util::toWritableBytes(data));
 	for (T item : data)
 	{
 		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
@@ -214,7 +234,7 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t siz
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.read(Util::toWritableBytes(data), offset);
 	endianDecodeBEArray(data);
 	return data;
 }
@@ -233,7 +253,7 @@ void ReadBinaryArray(ByteStream& stream, std::span<T> buffer, uint64_t offset, u
 	}
 
 	std::vector<T> data(size / sizeof(T));
-	stream.read(reinterpret_cast<char*>(buffer.data()), offset, size);
+	stream.read(Util::toWritableBytes(data), offset);
 	endianDecodeBEArray<T>(buffer);
 }
 
@@ -246,7 +266,7 @@ template<>
 inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<uint8_t> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(data);
 	return data;
 }
 
@@ -258,7 +278,7 @@ template<>
 inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t size)
 {
 	std::vector<int8_t> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(Util::toWritableBytes(data));
 	return data;
 }
 
@@ -272,7 +292,7 @@ inline std::vector<uint8_t> ReadBinaryArray(File& document, uint64_t offset, uin
 	uint64_t initialOffset = document.getOffset();
 	document.setOffset(offset);
 	std::vector<uint8_t> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(data);
 	document.setOffset(initialOffset);
 	return data;
 }
@@ -287,7 +307,7 @@ inline std::vector<int8_t> ReadBinaryArray(File& document, uint64_t offset, uint
 	uint64_t initialOffset = document.getOffset();
 	document.setOffset(offset);
 	std::vector<int8_t> data(size);
-	document.read(reinterpret_cast<char*>(data.data()), size);
+	document.read(Util::toWritableBytes(data));
 	document.setOffset(initialOffset);
 	return data;
 }
@@ -300,7 +320,7 @@ template<>
 inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t size)
 {
 	std::vector<uint8_t> data(size);
-	stream.read(reinterpret_cast<char*>(data.data()), size);
+	stream.read(data);
 	return data;
 }
 
@@ -312,7 +332,7 @@ template<>
 inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t size)
 {
 	std::vector<int8_t> data(size);
-	stream.read(reinterpret_cast<char*>(data.data()), size);
+	stream.read(Util::toWritableBytes(data));
 	return data;
 }
 
@@ -324,7 +344,7 @@ template<>
 inline std::vector<uint8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<uint8_t> data(size);
-	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.read(data, offset);
 	return data;
 }
 
@@ -336,7 +356,7 @@ template<>
 inline std::vector<int8_t> ReadBinaryArray(ByteStream& stream, uint64_t offset, uint64_t size)
 {
 	std::vector<int8_t> data(size);
-	stream.read(reinterpret_cast<char*>(data.data()), offset, size);
+	stream.read(Util::toWritableBytes(data), offset);
 	return data;
 }
 

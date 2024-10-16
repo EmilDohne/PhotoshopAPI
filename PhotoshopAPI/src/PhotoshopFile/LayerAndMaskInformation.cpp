@@ -6,6 +6,7 @@
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
 #include "StringUtil.h"
+#include "FileUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
 
 #include "libdeflate.h"
@@ -1063,10 +1064,14 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			}
 		}
 		// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing
-		uint16_t compressionNum = 0;
-		stream.read(reinterpret_cast<char*>(&compressionNum), channelOffset, sizeof(uint16_t));
-		compressionNum = endianDecodeBE<uint16_t>(reinterpret_cast<const uint8_t*>(&compressionNum));
-		Enum::Compression channelCompression = Enum::compressionMap.at(compressionNum);
+		Enum::Compression channelCompression = Enum::Compression::ZipPrediction;
+		{
+			uint16_t compressionNum = 0;
+			auto compressionNumSpan = Util::toWritableBytes(compressionNum);
+			stream.read(compressionNumSpan, channelOffset);
+			compressionNum = endianDecodeBE<uint16_t>(compressionNumSpan.data());
+			channelCompression = Enum::compressionMap.at(compressionNum);
+		}
 		m_ChannelCompression[index] = channelCompression;
 		FileSection::size(FileSection::size() + channel.m_Size);
 

@@ -9,6 +9,7 @@
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "Profiling/Perf/Instrumentor.h"
+#include "FileUtil.h"
 
 #include <vector>
 #include <limits>
@@ -154,7 +155,7 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     if (header.m_Version == Enum::Version::Psd)
     {
         std::vector<uint16_t> buff(height);
-        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint16_t));
+        stream.read(Util::toWritableBytes(buff), offset);
         endianDecodeBEArray<uint16_t>(buff);
         for (auto item : buff)
         {
@@ -165,7 +166,7 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
     else
     {
         std::vector<uint32_t> buff(height);
-        stream.read(reinterpret_cast<char*>(buff.data()), offset, height * sizeof(uint32_t));
+        stream.read(Util::toWritableBytes(buff), offset);
         endianDecodeBEArray<uint32_t>(buff);
         for (auto item : buff)
         {

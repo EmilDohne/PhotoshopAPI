@@ -42,14 +42,14 @@ struct File
 	/// properly allocated before running the function
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	void read(char* buffer, uint64_t size);
+	void read(std::span<uint8_t> buffer);
 	
 	/// Read a specified number of bytes using a memory mapped file representation meaning
 	/// this function is safe to call from any thread. This does not move around the 
 	/// internal offset marker unlike setOffsetAndRead.
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	void readFromOffset(char* buffer, const uint64_t offset, const uint64_t size);
+	void readFromOffset(std::span<uint8_t> buffer, const uint64_t offset);
 
 	/// Write n bytes to the file from the input span.
 	// --------------------------------------------------------------------------------
