@@ -321,7 +321,7 @@ namespace LayeredFileImpl
 
 	/// Recursively build a flat layer hierarchy
 	template <typename T>
-	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers)
+	void generateFlatLayersRecurse(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers, bool insertSectionDivider)
 	{
 		for (const auto& layer : nestedLayers)
 		{
@@ -329,10 +329,13 @@ namespace LayeredFileImpl
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
 				flatLayers.push_back(layer);
-				LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers);
+				LayeredFileImpl::generateFlatLayersRecurse(groupLayerPtr->m_Layers, flatLayers, insertSectionDivider);
 				// If the layer is a group we actually want to insert a section divider at the end of it. This makes reconstructing the layer
 				// hierarchy much easier later on. We dont actually need to give this a name 
-				flatLayers.push_back(std::make_shared<SectionDividerLayer<T>>());
+				if (insertSectionDivider)
+				{
+					flatLayers.push_back(std::make_shared<SectionDividerLayer<T>>());
+				}
 			}
 			else
 			{
@@ -345,10 +348,10 @@ namespace LayeredFileImpl
 	/// Build a flat layer hierarchy from a nested layer structure and return this vector. Layer order
 	/// is not guaranteed
 	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers)
+	std::vector<std::shared_ptr<Layer<T>>> generateFlatLayers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, bool insertSectionDivider)
 	{
 		std::vector<std::shared_ptr<Layer<T>>> flatLayers;
-		LayeredFileImpl::generateFlatLayersRecurse(nestedLayers, flatLayers);
+		LayeredFileImpl::generateFlatLayersRecurse(nestedLayers, flatLayers, insertSectionDivider);
 
 		return flatLayers;
 	}
@@ -802,9 +805,9 @@ struct LayeredFile
 			{
 				std::vector<std::shared_ptr<Layer<T>>> layerVec;
 				layerVec.push_back(layer.value());
-				return LayeredFileImpl::generateFlatLayers(layerVec);
+				return LayeredFileImpl::generateFlatLayers(layerVec, true);
 			}
-			return LayeredFileImpl::generateFlatLayers(m_Layers);
+			return LayeredFileImpl::generateFlatLayers(m_Layers, true);
 		}
 		else if (order == LayerOrder::reverse)
 		{
@@ -812,11 +815,39 @@ struct LayeredFile
 			{
 				std::vector<std::shared_ptr<Layer<T>>> layerVec;
 				layerVec.push_back(layer.value());
-				std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(layerVec);
+				std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(layerVec, true);
 				std::reverse(flatLayers.begin(), flatLayers.end());
 				return flatLayers;
 			}
-			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers);
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers, true);
+			std::reverse(flatLayers.begin(), flatLayers.end());
+			return flatLayers;
+		}
+		PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse");
+		return std::vector<std::shared_ptr<Layer<T>>>();
+	}
+
+
+	/// Get a view over the flattened layer stack, helpful for iterating and applying properties to all 
+	/// layers such as visibility overrides etc.
+	/// 
+	/// After any layer modification actions this list may no longer be up-to-date so it would have to be re-generated.
+	/// It is highly discouraged to use this flattened layer vector for any layer hierarchy modifications
+	/// 
+	/// \param order The traversal order, forward would be equivalent to a top down traversal. Defaults to LayerOrder::forward
+	/// \param generateSectionDividers 
+	///		Whether to generate a section divider layer at the end of each group. 
+	///		Unless you intend to write this to Photoshop this should be false
+	/// \return The layer hierarchy as a flattened vector that can be iterated over.
+	std::vector<std::shared_ptr<Layer<T>>> flatLayers(const LayerOrder order = LayerOrder::forward, bool generateSectionDividers = false)
+	{
+		if (order == LayerOrder::forward)
+		{
+			return LayeredFileImpl::generateFlatLayers(m_Layers, false);
+		}
+		else if (order == LayerOrder::reverse)
+		{
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers, false);
 			std::reverse(flatLayers.begin(), flatLayers.end());
 			return flatLayers;
 		}

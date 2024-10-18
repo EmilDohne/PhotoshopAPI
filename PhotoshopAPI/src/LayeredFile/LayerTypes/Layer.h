@@ -60,8 +60,10 @@ struct Layer
 		Enum::Compression compression = Enum::Compression::ZipPrediction; 
 		// The Layers color mode, currently only RGB is supported
 		Enum::ColorMode colorMode = Enum::ColorMode::RGB;
-		// Whether or not the layer is visible
+		// Whether the layer is visible
 		bool isVisible = true;
+		// Whether the layer is locked
+		bool isLocked = false;
 	};
 
 	std::string m_LayerName;
@@ -73,6 +75,9 @@ struct Layer
 
 	/// Marks whether or not the layer is visible or not
 	bool m_IsVisible{};
+
+	/// Whether the layer is locked inside of photoshop
+	bool m_IsLocked = false;
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
 	uint8_t m_Opacity{};
@@ -213,6 +218,10 @@ protected:
 		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
 		blockVec.push_back(unicodeNamePtr);
 
+		// Generate our LockedSettings Tagged block
+		auto protectionSettingsPtr = std::make_shared<ProtectedSettingTaggedBlock>(m_IsLocked);
+		blockVec.push_back(protectionSettingsPtr);
+
 		return blockVec;
 	}
 
@@ -332,9 +341,24 @@ public:
 			{
 				m_BlendMode = layerRecord.m_BlendMode;
 			}
+
+			// Parse the layer protection settings
+			auto protectionSettings = additionalLayerInfo.getTaggedBlock<ProtectedSettingTaggedBlock>(Enum::TaggedBlockKey::lrProtectedSetting);
+			if (protectionSettings)
+			{
+				m_IsLocked = protectionSettings.value()->m_IsLocked;
+			}
+			else
+			{
+				m_IsLocked = false;
+			}
 		}
 		// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 		m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
+		if (m_IsLocked && !layerRecord.m_BitFlags.m_isTransparencyProtected)
+		{
+			PSAPI_LOG_WARNING("Layer", "Mismatch in parsing of protected layer settings detected. Expected both the layer to be locked and the transparency to be locked");
+		}
 		m_Opacity = layerRecord.m_Opacity;
 
 		// Generate our coordinates from the extents
@@ -438,7 +462,7 @@ public:
 			m_BlendMode,
 			m_Opacity,
 			0u,		// Clipping
-			LayerRecords::BitFlags(false, !m_IsVisible, false),
+			LayerRecords::BitFlags(m_IsLocked, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
 			Layer<T>::generateBlendingRanges(),	// Generate some defaults
 			std::move(taggedBlocks)		// Additional layer information

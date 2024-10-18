@@ -514,7 +514,7 @@ public:
 		uint16_t channelCount = m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 
 		uint8_t clipping = 0u;	// No clipping mask for now
-		LayerRecords::BitFlags bitFlags(false, !Layer<T>::m_IsVisible, false);
+		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
 
@@ -574,6 +574,7 @@ private:
 		}
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_IsLocked = parameters.isLocked;
 		Layer<T>::m_CenterX = parameters.posX;
 		Layer<T>::m_CenterY = parameters.posY;
 		Layer<T>::m_Width = parameters.width;

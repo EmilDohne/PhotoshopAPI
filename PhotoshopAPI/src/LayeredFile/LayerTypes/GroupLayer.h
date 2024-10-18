@@ -51,6 +51,7 @@ struct GroupLayer : public Layer<T>
 		Layer<T>::m_BlendMode = parameters.blendMode;
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_IsLocked = parameters.isLocked;
 		Layer<T>::m_CenterX = parameters.posX;
 		Layer<T>::m_CenterY = parameters.posY;
 		Layer<T>::m_Width = parameters.width;
@@ -139,7 +140,7 @@ struct GroupLayer : public Layer<T>
 		PascalString lrName = Layer<T>::generatePascalString();
 		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 		uint8_t clipping = 0u;	// No clipping mask for now
-		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(false, !Layer<T>::m_IsVisible, false);
+		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
 
