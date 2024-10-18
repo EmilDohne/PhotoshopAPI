@@ -50,6 +50,14 @@ struct PhotoshopFile
 	/// \param document the file object to write the data to
 	/// \param callback a callback which will report back the current progress of the write operation
 	void write(File& document, ProgressCallback& callback);
+
+	/// \brief Scan the header of the PhotoshopFile and get the appropriate bitdepth
+	///
+	/// This is a very lightweight function to, at runtime be able to distinguish between different bitdepths
+	/// 
+	/// \param file The path to the psd or psb file
+	/// \returns The bitdepth of the file
+	static Enum::BitDepth findBitdepth(std::filesystem::path file);
 };
 
 
