@@ -86,6 +86,23 @@ namespace Enum
 		{static_cast<uint16_t>(32u), BitDepth::BD_32},
 	};
 
+	inline uint16_t bitDepthToUint(Enum::BitDepth bitdepth)
+	{
+		switch (bitdepth)
+		{
+		case Enum::BitDepth::BD_1:
+			return static_cast<uint16_t>(1u);
+		case Enum::BitDepth::BD_8:
+			return static_cast<uint16_t>(8u);
+		case Enum::BitDepth::BD_16:
+			return static_cast<uint16_t>(16u);
+		case Enum::BitDepth::BD_32:
+			return static_cast<uint16_t>(32u);
+		default:
+			return static_cast<uint16_t>(0u);
+		}
+	}
+
 	enum class ColorMode
 	{
 		Bitmap,

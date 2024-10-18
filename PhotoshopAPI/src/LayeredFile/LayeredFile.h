@@ -597,6 +597,11 @@ struct LayeredFile
 			PSAPI_LOG_ERROR("LayeredFile", "Invalid height for Photoshop file provided, must be in the range of 1-300,000 pixels. Got: %" PRIu64 " pixels", width);
 		}
 
+		if (colorMode == Enum::ColorMode::CMYK)
+		{
+			PSAPI_LOG_ERROR("LayeredFile", "Invalid bitdepth of 32 specified for CMYK colormode. Only 16- and 32-bit are supported");
+		}
+
 		m_BitDepth = Enum::BitDepth::BD_32;
 		m_ColorMode = colorMode;
 		m_Width = width;
@@ -928,6 +933,31 @@ struct LayeredFile
 		auto inputFile = File(filePath);
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		psDocumentPtr->read(inputFile, callback);
+
+		if constexpr (std::is_same_v<T, bpp8_t>)
+		{
+			if (psDocumentPtr->m_Header.m_Depth != Enum::BitDepth::BD_8)
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Tried to read a %d-bit file with a 8-bit LayeredFile instantiation",
+					Enum::bitDepthToUint(psDocumentPtr->m_Header.m_Depth));
+			}
+		}
+		else if constexpr (std::is_same_v<T, bpp16_t>)
+		{
+			if (psDocumentPtr->m_Header.m_Depth != Enum::BitDepth::BD_16)
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Tried to read a %d-bit file with a 16-bit LayeredFile instantiation",
+					Enum::bitDepthToUint(psDocumentPtr->m_Header.m_Depth));
+			}
+		}
+		else if constexpr (std::is_same_v<T, bpp32_t>)
+		{
+			if (psDocumentPtr->m_Header.m_Depth != Enum::BitDepth::BD_32)
+			{
+				PSAPI_LOG_ERROR("LayeredFile", "Tried to read a %d-bit file with a 32-bit LayeredFile instantiation",
+					Enum::bitDepthToUint(psDocumentPtr->m_Header.m_Depth));
+			}
+		}
 		LayeredFile<T> layeredFile = { std::move(psDocumentPtr) };
 		return layeredFile;
 	}
@@ -960,6 +990,13 @@ struct LayeredFile
 		File::FileParams params = {};
 		params.doRead = false;
 		params.forceOverwrite = forceOvewrite;
+
+		if (layeredFile.m_ICCProfile.getDataSize() == 0 && layeredFile.m_ColorMode == Enum::ColorMode::CMYK)
+		{
+			PSAPI_LOG_WARNING("LayeredFile",
+				"Writing out a CMYK file without an embedded ICC Profile. The output image data will likely look very wrong");
+		}
+
 		auto outputFile = File(filePath, params);
 		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
 		psdOutDocumentPtr->write(outputFile, callback);
