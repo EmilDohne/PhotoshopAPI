@@ -201,3 +201,45 @@ TEST_CASE("Check Roundtripping Masks")
 		checkFileRoundtripping(inDir, outDir, fileName);
 	}
 }
+
+
+TEST_CASE("Check Roundtripping CMYK")
+{
+	static std::vector<std::filesystem::path> fileNames =
+	{
+		"CMYK_8.psd",
+		"CMYK_8.psb",
+		"CMYK_16.psd",
+		"CMYK_16.psb"
+	};
+
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/CMYK";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
+
+	for (const auto& fileName : fileNames)
+	{
+		checkFileRoundtripping(inDir, outDir, fileName);
+	}
+}
+
+
+TEST_CASE("Check Roundtripping Grayscale")
+{
+	static std::vector<std::filesystem::path> fileNames =
+	{
+		"Grayscale_8.psd",
+		"Grayscale_8.psb",
+		"Grayscale_16.psd",
+		"Grayscale_16.psb",
+		"Grayscale_32.psd",
+		"Grayscale_32.psb"
+	};
+
+	const std::filesystem::path inDir = std::filesystem::current_path() / "documents/Grayscale";
+	const std::filesystem::path outDir = std::filesystem::current_path() / "documents/TestRoundtrippingOutput";
+
+	for (const auto& fileName : fileNames)
+	{
+		checkFileRoundtripping(inDir, outDir, fileName);
+	}
+}
