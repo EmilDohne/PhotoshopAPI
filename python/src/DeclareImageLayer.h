@@ -151,7 +151,9 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     int pos_y,
     int opacity,
     const Enum::Compression compression,
-    const Enum::ColorMode color_mode
+    const Enum::ColorMode color_mode,
+	bool is_visible,
+	bool is_locked
 )
 {
     typename Layer<T>::Params params;
@@ -195,6 +197,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
     params.opacity = opacity;
     params.compression = compression;
     params.colorMode = color_mode;
+	params.isVisible = is_visible;
+	params.isLocked = is_locked;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -213,7 +217,9 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
     int pos_y,
     int opacity,
     const Enum::Compression compression,
-    const Enum::ColorMode color_mode
+    const Enum::ColorMode color_mode,
+	bool is_visible,
+	bool is_locked
 )
 {
     typename Layer<T>::Params params;
@@ -263,6 +269,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
     params.opacity = opacity;
     params.compression = compression;
     params.colorMode = color_mode;
+	params.isVisible = is_visible;
+	params.isLocked = is_locked;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -281,7 +289,9 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     int pos_y,
     int opacity,
     const Enum::Compression compression,
-    const Enum::ColorMode color_mode
+    const Enum::ColorMode color_mode,
+	bool is_visible,
+	bool is_locked
 )
 {
     typename Layer<T>::Params params;
@@ -331,6 +341,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
     params.opacity = opacity;
     params.compression = compression;
     params.colorMode = color_mode;
+	params.isVisible = is_visible;
+	params.isLocked = is_locked;
     return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -487,6 +499,10 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         center_y : float
             The center of the layer in regards to the canvas, a layer at center_y = 0 is
             perfectly centered around the document
+        is_locked: bool
+            The locked state of the layer, this locks all pixel channels
+        is_visible: bool
+            Whether the layer is visible
         
     )pbdoc";
 
@@ -505,7 +521,9 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("pos_y") = 0,
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
-        py::arg("color_mode") = Enum::ColorMode::RGB, R"pbdoc(
+        py::arg("color_mode") = Enum::ColorMode::RGB,
+		py::arg("is_visible") = true,
+		py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as numpy.ndarray
 
@@ -566,6 +584,12 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
         :type color_mode: psapi.enum.ColorMode
 
+        :param is_visible: Whether the group is visible
+        :type is_visible: bool
+
+        :param is_locked: Whether the group is locked
+        :type is_locked: bool
+
         :raises:
             ValueError: if length of layer name is greater than 255
 
@@ -592,7 +616,9 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("pos_y") = 0,
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
-        py::arg("color_mode") = Enum::ColorMode::RGB, R"pbdoc(
+        py::arg("color_mode") = Enum::ColorMode::RGB,
+		py::arg("is_visible") = true,
+		py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as dict with integers as key
 
@@ -649,6 +675,12 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
         :type color_mode: psapi.enum.ColorMode
 
+        :param is_visible: Whether the group is visible
+        :type is_visible: bool
+
+        :param is_locked: Whether the group is locked
+        :type is_locked: bool
+
         :raises:
             ValueError: if length of layer name is greater than 255
 
@@ -675,7 +707,9 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("pos_y") = 0,
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
-        py::arg("color_mode") = Enum::ColorMode::RGB, R"pbdoc(
+        py::arg("color_mode") = Enum::ColorMode::RGB,
+		py::arg("is_visible") = true,
+		py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as dict with psapi.enum.ChannelID as key
 
@@ -731,6 +765,12 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
         :param color_mode: The color mode of the Layer, this must be identical to the color mode of the document. Defaults to RGB
         :type color_mode: psapi.enum.ColorMode
+
+        :param is_visible: Whether the group is visible
+        :type is_visible: bool
+
+        :param is_locked: Whether the group is locked
+        :type is_locked: bool
 
         :raises:
             ValueError: if length of layer name is greater than 255

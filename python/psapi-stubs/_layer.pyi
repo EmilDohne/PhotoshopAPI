@@ -66,6 +66,22 @@ class Layer_8bit:
     def center_y(self: Layer_8bit, value: float) -> None:
         ...
 
+    @property
+    def is_visible(self: Layer_8bit) -> bool:
+        ...
+
+    @is_visible.setter
+    def is_visible(self: Layer_8bit, value: bool) -> None:
+        ...
+
+    @property
+    def is_locked(self: Layer_8bit) -> bool:
+        ...
+
+    @is_locked.setter
+    def is_locked(self: Layer_8bit, value: bool) -> None:
+        ...
+
     def get_mask_data(self: Layer_8bit, do_copy: bool = ...) -> numpy.ndarray:
         ...
 
@@ -130,6 +146,22 @@ class Layer_16bit:
 
     @center_y.setter
     def center_y(self: Layer_16bit, value: float) -> None:
+        ...
+
+    @property
+    def is_visible(self: Layer_16bit) -> bool:
+        ...
+
+    @is_visible.setter
+    def is_visible(self: Layer_16bit, value: bool) -> None:
+        ...
+
+    @property
+    def is_locked(self: Layer_16bit) -> bool:
+        ...
+
+    @is_locked.setter
+    def is_locked(self: Layer_16bit, value: bool) -> None:
         ...
 
     def get_mask_data(self: Layer_16bit, do_copy: bool = ...) -> numpy.ndarray:
@@ -197,6 +229,24 @@ class Layer_32bit:
     @center_y.setter
     def center_y(self: Layer_32bit, value: float) -> None:
         ...
+
+    
+    @property
+    def is_visible(self: Layer_32bit) -> bool:
+        ...
+
+    @is_visible.setter
+    def is_visible(self: Layer_32bit, value: bool) -> None:
+        ...
+
+    @property
+    def is_locked(self: Layer_32bit) -> bool:
+        ...
+
+    @is_locked.setter
+    def is_locked(self: Layer_32bit, value: bool) -> None:
+        ...
+
 
     def get_mask_data(self: Layer_32bit, do_copy: bool = ...) -> numpy.ndarray:
         ...

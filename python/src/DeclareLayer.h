@@ -54,6 +54,10 @@ void declareLayer(py::module& m, const std::string& extension) {
         center_y : float
             The center of the layer in regards to the canvas, a layer at center_y = 0 is
             perfectly centered around the document
+        is_locked: bool
+            The locked state of the layer, this locks all pixel channels
+        is_visible: bool
+            Whether the layer is visible
     
 
 	)pbdoc";
@@ -84,6 +88,8 @@ void declareLayer(py::module& m, const std::string& extension) {
     layer.def_readwrite("height", &Class::m_Height);
     layer.def_readwrite("center_x", &Class::m_CenterX);
     layer.def_readwrite("center_y", &Class::m_CenterY);
+    layer.def_readwrite("is_locked", &Class::m_IsLocked);
+    layer.def_readwrite("is_visible", &Class::m_IsVisible);
 
     layer.def("get_mask_data", [](Class& self, const bool do_copy)
         {
