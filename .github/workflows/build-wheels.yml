@@ -57,7 +57,7 @@ jobs:
 
           {os: macos-latest, dist: cp310-macosx_arm64},
           {os: macos-latest, dist: cp311-macosx_arm64},
-          {os: macos-latest, dist: cp312-macosx_arm64},
+          {os: macos-latest, dist: cp312-macosx_arm64}
           ]
 
     steps:
