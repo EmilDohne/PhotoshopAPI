@@ -844,20 +844,9 @@ struct LayeredFile
 	///		Whether to generate a section divider layer at the end of each group. 
 	///		Unless you intend to write this to Photoshop this should be false
 	/// \return The layer hierarchy as a flattened vector that can be iterated over.
-	std::vector<std::shared_ptr<Layer<T>>> flatLayers(const LayerOrder order = LayerOrder::forward, bool generateSectionDividers = false)
+	std::vector<std::shared_ptr<Layer<T>>> flatLayers()
 	{
-		if (order == LayerOrder::forward)
-		{
-			return LayeredFileImpl::generateFlatLayers(m_Layers, false);
-		}
-		else if (order == LayerOrder::reverse)
-		{
-			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers, false);
-			std::reverse(flatLayers.begin(), flatLayers.end());
-			return flatLayers;
-		}
-		PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse");
-		return std::vector<std::shared_ptr<Layer<T>>>();
+		return flatLayersImpl(LayerOrder::forward, false);
 	}
 
 	/// \brief Gets the total number of channels in the document.
@@ -1018,6 +1007,22 @@ struct LayeredFile
 	}
 
 private:
+
+	std::vector<std::shared_ptr<Layer<T>>> flatLayersImpl(const LayerOrder order, bool generateSectionDividers)
+	{
+		if (order == LayerOrder::forward)
+		{
+			return LayeredFileImpl::generateFlatLayers(m_Layers, false);
+		}
+		else if (order == LayerOrder::reverse)
+		{
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generateFlatLayers(m_Layers, false);
+			std::reverse(flatLayers.begin(), flatLayers.end());
+			return flatLayers;
+		}
+		PSAPI_LOG_ERROR("LayeredFile", "Invalid layer order specified, only accepts forward or reverse");
+		return std::vector<std::shared_ptr<Layer<T>>>();
+	}
 
 	/// \brief Checks if moving the child layer to the provided parent layer is valid.
 	///
