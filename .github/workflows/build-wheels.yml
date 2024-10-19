@@ -71,6 +71,7 @@ jobs:
             python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py
             python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py
+            python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py
 
     - name: Verify clean directory
       run: git diff --exit-code
