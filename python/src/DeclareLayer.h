@@ -1,5 +1,6 @@
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "Macros.h"
+#include "PyUtil/ImageConversion.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -11,6 +12,14 @@
 
 #include <memory>
 #include <optional>
+
+// If we compile with C++<20 we replace the stdlib implementation with the compatibility
+// library
+#if (__cplusplus < 202002L)
+#include "tcb_span.hpp"
+#else
+#include <span>
+#endif
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
@@ -36,8 +45,8 @@ void declareLayer(py::module& m, const std::string& extension) {
 
         name : str
             The name of the layer, cannot be longer than 255
-        layer_mask : np.ndarray
-            The pixel mask applied to the layer, read only
+        mask : np.ndarray
+            The pixel mask applied to the layer
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
         opacity : int
@@ -63,24 +72,16 @@ void declareLayer(py::module& m, const std::string& extension) {
 	)pbdoc";
 
     layer.def_readwrite("name", &Class::m_LayerName);
-    layer.def_property_readonly("layer_mask", [](Class& self)
+    layer.def_property("mask", [](Class& self)
         {
             std::vector<T> data = self.getMaskData();
-            if (data.size() != 0)
-            {
-                // If the size is greater than 0 that means we have a maskchannel
-                // which is why we can access .value() directly
-                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData->getWidth());
-                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData->getHeight());
-
-                // Get pointer to copied data and size
-                T* ptr = data.data();
-                std::vector<size_t> shape = { height, width };
-
-                return py::array_t<T>(shape, ptr);
-            }
-            return py::array_t<T>(0, nullptr);
+			return to_py_array(data, self.m_Width, self.m_Height);
+        }, [](Class& self, py::array_t<T> data)
+        {
+            auto view = from_py_array(tag::view{}, data, self.m_Width, self.m_Height);
+			self.setMask(view);
         });
+		
     layer.def_readwrite("blend_mode", &Class::m_BlendMode);
     layer.def_readwrite("is_visible", &Class::m_IsVisible);
     layer.def_readwrite("opacity", &Class::m_Opacity);
@@ -91,35 +92,9 @@ void declareLayer(py::module& m, const std::string& extension) {
     layer.def_readwrite("is_locked", &Class::m_IsLocked);
     layer.def_readwrite("is_visible", &Class::m_IsVisible);
 
-    layer.def("get_mask_data", [](Class& self, const bool do_copy)
-        {
-            std::vector<T> data = self.getMaskData(do_copy);
-            if (data.size() != 0)
-            { 
-                // If the size is greater than 0 that means we have a maskchannel
-                // which is why we can access .value() directly
-                auto width = static_cast<size_t>(self.m_LayerMask.value().maskData->getWidth());
-                auto height = static_cast<size_t>(self.m_LayerMask.value().maskData->getHeight());
+	layer.def("has_mask", &Class::hasMask, R"pbdoc(
 
-                // Get pointer to copied data and size
-                T* ptr = data.data();
-                std::vector<size_t> shape = { height, width};
-
-                return py::array_t<T>(shape, ptr);
-            }
-            return py::array_t<T>(0, nullptr);
-        },py::arg("do_copy") = true, R"pbdoc(
-
-        Get the pixel mask data associated with the layer (if it exists), if it doesnt
-        a warning gets raised and a null-size numpy.ndarray is returned.
-
-        The size of the mask is not necessarily the same as the layer
-
-        :param do_copy: Whether or not to copy the image data on extraction, if False the mask channel is freed
-        :type do_copy: bool
-
-        :return: The extracted channel with dimensions (mask_height, mask_width)
-        :rtype: numpy.ndarray        
+        Check whether the layer has a mask channel associated with it.
 
 	)pbdoc");
 }

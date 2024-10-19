@@ -1,6 +1,8 @@
 #include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "Util/Enum.h"
+#include "PyUtil/ImageConversion.h"
+#include "Implementation/ImageLayer.h"
 #include "Macros.h"
 
 #include <pybind11/pybind11.h>
@@ -27,447 +29,13 @@ namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
 
-// Generate CPP image data based on the provided numpy array which can either come as 2d or 3d array.
-template <typename T>
-std::unordered_map<Enum::ChannelID, std::vector<T>> generateImageData(py::array_t<T>& image_data, int width, int height, const Enum::ColorMode color_mode)
-{
-    // Generate an unordered map with implicit bindings for the channels using a 2d or 3d numpy array
-    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
-
-    // This will e.g. be (3, 1024, 1024) for a 3 channel 1024x1024 image
-    std::vector<size_t> shape;
-    for (size_t i = 0; i < image_data.ndim(); ++i)
-    {
-        shape.push_back(image_data.shape(i));
-    }
-    if (shape.size() != 2 && shape.size() != 3)
-    {
-        throw py::value_error("image_data parameter must have either 2 or 3 dimensions, not " + std::to_string(shape.size()));
-    }
-
-    
-
-    // Extract the size of one channel and compare it against the size of the data
-    size_t channelSize = 0;
-    if (shape.size() == 2)
-    {
-        channelSize = shape[1]; // Width * Height for a 2D image
-        if (channelSize != static_cast<size_t>(width) * height)
-        {
-            throw py::value_error("image_data parameter is expected to be of shape (channels, height * width) or (channels, height, width)" \
-" but the provided 2nd dimension does not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected: " \
-+ std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
-        }
-    }
-    else if (shape.size() == 3)
-    {
-        channelSize = shape[1] * shape[2]; // Width * Height for a 3D image
-        if (channelSize != static_cast<size_t>(width) * height)
-        {
-            throw py::value_error("image_data parameter is expected to be of shape (channels, height * width) or (channels, height, width)" \
-" but the provided 2nd and 3rd dimension do not match the provided width * height, got: " + std::to_string(channelSize) + " but instead expected : " \
-+ std::to_string(static_cast<size_t>(width) * height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect width or height");
-        }
-    }
-
-    // Force the array to be c-contiguous if it isnt using pybind11
-    if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (image_data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
-    {
-        PSAPI_LOG_WARNING("ImageLayer", "Provided image_data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
-        image_data = image_data.template cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
-    }
-
-    // For RGB we have two options, either there is an alpha channel with the RGB channels or not.
-    if (color_mode == Enum::ColorMode::RGB)
-    {
-        if (shape[0] != 3 && shape[0] != 4)
-        {
-            throw py::value_error("Passed array must have either 3 or 4 channels, not " + std::to_string(shape[0]));
-        }
-        std::vector<Enum::ChannelID> rgbChannelIDs = { Enum::ChannelID::Red, Enum::ChannelID::Green, Enum::ChannelID::Blue, Enum::ChannelID::Alpha };
-        for (size_t i = 0; i < shape[0]; ++i)
-        {
-            std::vector<T> channelData(channelSize);
-            const T* startPtr = image_data.data() + i * channelSize;
-            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
-            img_data_cpp[rgbChannelIDs[i]] = channelData;
-        }
-        return img_data_cpp;
-    }
-
-    // We add preliminary support for CMYK but it is not fully supported yet!
-    if (color_mode == Enum::ColorMode::CMYK)
-    {
-        if (shape[0] != 4 && shape[0] != 5)
-        {
-            throw py::value_error("Passed array must have either 4 or 5 channels, not " + std::to_string(shape[0]));
-        }
-        std::vector<Enum::ChannelID> cmykChannelIds = { Enum::ChannelID::Cyan, Enum::ChannelID::Magenta, Enum::ChannelID::Yellow, Enum::ChannelID::Black, Enum::ChannelID::Alpha };
-        for (size_t i = 0; i < shape[0]; ++i)
-        {
-            std::vector<T> channelData(channelSize);
-            const T* startPtr = image_data.data() + i * channelSize;
-            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
-
-            img_data_cpp[cmykChannelIds[i]] = channelData;
-        }
-        return img_data_cpp;
-    }
-
-    // We add preliminary support for greyscale but it is not fully supported yet!
-    if (color_mode == Enum::ColorMode::Grayscale)
-    {
-        if (shape[0] != 1 && shape[0] != 2)
-        {
-            throw py::value_error("Passed array must have either 1 or 2 channels, not " + std::to_string(shape[0]));
-        }
-        std::vector<Enum::ChannelID> greyChannelIDs = { Enum::ChannelID::Gray, Enum::ChannelID::Alpha};
-        for (size_t i = 0; i < shape[0]; ++i)
-        {
-            std::vector<T> channelData(channelSize);
-            const T* startPtr = image_data.data() + i * channelSize;
-            std::memcpy(reinterpret_cast<uint8_t*>(channelData.data()), reinterpret_cast<const uint8_t*>(startPtr), channelSize * sizeof(T));
-
-            img_data_cpp[greyChannelIDs[i]] = channelData;
-        }
-        return img_data_cpp;
-    }
-
-    throw py::value_error("Unsupported color mode encountered when trying to parse numpy array to image dict");
-}
-
-
-// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
-// than a separate structure as well as creating an interface for numpy.
-template <typename T>
-std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
-    py::array_t<T>& image_data,
-    const std::string& layer_name,
-    const std::optional<py::array_t<T>> layer_mask,
-    int width,
-    int height,
-    const Enum::BlendMode blend_mode,
-    int pos_x,
-    int pos_y,
-    int opacity,
-    const Enum::Compression compression,
-    const Enum::ColorMode color_mode,
-	bool is_visible,
-	bool is_locked
-)
-{
-    typename Layer<T>::Params params;
-    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
-    // so we must ensure the range ourselves
-    if (layer_name.size() > 255)
-    {
-        throw py::value_error("layer_name parameter cannot exceed a length of 255");
-    }
-    if (layer_mask.has_value())
-    {
-        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
-        {
-            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
-        }
-        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
-    }
-    if (width < 0)
-    {
-        throw py::value_error("width cannot be a negative value");
-    }
-    if (height < 0)
-    {
-        throw py::value_error("height cannot be a negative value");
-    }
-    if (opacity < 0 || opacity > 255)
-    {
-        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
-    }
-    
-    // Generate an unordered dict from the image data trying to automatically decode channels into their corresponding
-    // channel mappings 
-    auto img_data_cpp = generateImageData(image_data, width, height, color_mode);
-
-    params.layerName = layer_name;
-    params.blendMode = blend_mode;
-    params.posX = pos_x;
-    params.posY = pos_y;
-    params.width = width;
-    params.height = height;
-    params.opacity = opacity;
-    params.compression = compression;
-    params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
-    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
-}
-
-
-// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
-// than a separate structure as well as creating an interface for numpy.
-template <typename T>
-std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
-    std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
-    const std::string& layer_name,
-    const std::optional<py::array_t<T>> layer_mask,
-    int width,
-    int height,
-    const Enum::BlendMode blend_mode,
-    int pos_x,
-    int pos_y,
-    int opacity,
-    const Enum::Compression compression,
-    const Enum::ColorMode color_mode,
-	bool is_visible,
-	bool is_locked
-)
-{
-    typename Layer<T>::Params params;
-    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
-    // so we must ensure the range ourselves
-    if (layer_name.size() > 255)
-    {
-        throw py::value_error("layer_name parameter cannot exceed a length of 255");
-    }
-    if (layer_mask.has_value())
-    {
-        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
-        {
-            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
-        }
-        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
-    }
-    if (width < 0)
-    {
-        throw py::value_error("width cannot be a negative value");
-    }
-    if (height < 0)
-    {
-        throw py::value_error("height cannot be a negative value");
-    }
-    if (opacity < 0 || opacity > 255)
-    {
-        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
-    }
-    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
-    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
-    for (auto& [key, value] : image_data)
-    {
-        if (value.size() != static_cast<uint64_t>(width) * height)
-        {
-            throw py::value_error("Channel '" + Enum::channelIDToString(key) + "' must have the same size as the layer itself (width * height)");
-        }
-        img_data_cpp[key] = std::vector<T>(value.data(), value.data() + value.size());
-    }
-
-    params.layerName = layer_name;
-    params.blendMode = blend_mode;
-    params.posX = pos_x;
-    params.posY = pos_y;
-    params.width = width;
-    params.height = height;
-    params.opacity = opacity;
-    params.compression = compression;
-    params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
-    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
-}
-
-
-// Create an alternative constructor which inlines the Layer<T>::Params since the more pythonic version would be to have kwargs rather 
-// than a separate structure as well as creating an interface for numpy.
-template <typename T>
-std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
-    std::unordered_map<int, py::array_t<T>>& image_data,
-    const std::string& layer_name,
-    const std::optional<py::array_t<T>> layer_mask,
-    int width,  
-    int height, 
-    const Enum::BlendMode blend_mode,
-    int pos_x,
-    int pos_y,
-    int opacity,
-    const Enum::Compression compression,
-    const Enum::ColorMode color_mode,
-	bool is_visible,
-	bool is_locked
-)
-{
-    typename Layer<T>::Params params;
-    // Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
-    // so we must ensure the range ourselves
-    if (layer_name.size() > 255)
-    {
-        throw py::value_error("layer_name parameter cannot exceed a length of 255");
-    }
-    if (layer_mask.has_value())
-    {
-        if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
-        {
-            throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
-        }
-        params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
-    }
-    if (width < 0)
-    {
-        throw py::value_error("width cannot be a negative value");
-    }
-    if (height < 0)
-    {
-        throw py::value_error("height cannot be a negative value");
-    }
-    if (opacity < 0 || opacity > 255)
-    {
-        throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
-    }
-    std::unordered_map<int16_t, std::vector<T>> img_data_cpp;
-    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
-    for (auto& [key, value] : image_data)
-    {
-        if (value.size() != static_cast<uint64_t>(width) * height)
-        {
-            throw py::value_error("Channel '" + std::to_string(key) + "' must have the same size as the layer itself (width * height)");
-        }
-        img_data_cpp[static_cast<int16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
-    }
-
-    params.layerName = layer_name;
-    params.blendMode = blend_mode;
-    params.posX = pos_x;
-    params.posY = pos_y;
-    params.width = width;
-    params.height = height;
-    params.opacity = opacity;
-    params.compression = compression;
-    params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
-    return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
-}
-
-
-
-template <typename T>
-void setImageDataFromIntMapping(
-    ImageLayer<T>& layer,
-    std::unordered_map<int, py::array_t<T>>& image_data,
-    const Enum::Compression compression
-)
-{
-    std::unordered_map<int16_t, std::vector<T>> img_data_cpp;
-    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
-    for (auto& [key, value] : image_data)
-    {
-        if (value.size() != static_cast<uint64_t>(layer.m_Width) * layer.m_Height)
-        {
-            throw py::value_error("Channel '" + std::to_string(key) + "' must have the same size as the layer itself (width * height)");
-        }
-        if (key > std::numeric_limits<int16_t>::max())
-        {
-            throw py::value_error("Channel '" + std::to_string(key) + "' index is invalid, would exceed size of int16_t");
-        }
-        img_data_cpp[static_cast<int16_t>(key)] = std::vector<T>(value.data(), value.data() + value.size());
-    }
-    layer.setImageData(std::move(img_data_cpp), compression);
-}
-
-
-template <typename T>
-void setImageDataFromIDMapping(
-    ImageLayer<T>& layer,
-    std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
-    const Enum::Compression compression
-    )
-{
-    std::unordered_map<Enum::ChannelID, std::vector<T>> img_data_cpp;
-    // Convert our image data to c++ vector data, the constructor checks for the right amount of channels
-    for (auto& [key, value] : image_data)
-    {
-        if (value.size() != static_cast<uint64_t>(layer.m_Width) * layer.m_Height)
-        {
-            throw py::value_error("Channel '" + Enum::channelIDToString(key) + "' must have the same size as the layer itself (width * height)");
-        }
-        img_data_cpp[key] = std::vector<T>(value.data(), value.data() + value.size());
-    }
-    layer.setImageData(std::move(img_data_cpp), compression);
-}
-
-
-template <typename T>
-void setImageDataFromNpArray(
-    ImageLayer<T>& layer,
-    py::array_t<T>& image_data,
-    const Enum::Compression compression
-    )
-{
-    auto img_data_cpp = generateImageData(image_data, layer.m_Width, layer.m_Height, layer.getColorMode());
-    layer.setImageData(std::move(img_data_cpp), compression);
-}
-
-
-
-template <typename T>
-void setChannelOnLayer(
-    ImageLayer<T>& layer,
-    Enum::ChannelID id,
-    py::array_t<const T>& data
-)
-{
-    std::vector<size_t> shape;
-    for (size_t i = 0; i < data.ndim(); ++i)
-    {
-        shape.push_back(data.shape(i));
-    }
-    if (shape.size() != 2 && shape.size() != 1)
-    {
-        throw py::value_error("data parameter must have either 1 or 2 dimensions, not " + std::to_string(shape.size()));
-    }
-
-    // Extract the size of one channel and compare it against the size of the data
-    size_t channelSize = 0;
-    if (shape.size() == 1)
-    {
-        channelSize = shape[0];
-        if (channelSize != static_cast<size_t>(layer.m_Width) * layer.m_Height)
-        {
-            throw py::value_error("data parameter is expected to be of shape (layer.m_Height * layer.m_Width) or (layer.m_Height, layer.m_Width)" \
-                " but the provided 1st dimension does not match the provided layer.m_Width * layer.m_Height, got: " + std::to_string(channelSize) + " but instead expected: " \
-                + std::to_string(static_cast<size_t>(layer.m_Width) * layer.m_Height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect layer.m_Width or layer.m_Height");
-        }
-    }
-    if (shape.size() == 2)
-    {
-        channelSize = shape[0] * shape[1];
-        if (channelSize != static_cast<size_t>(layer.m_Width) * layer.m_Height)
-        {
-            throw py::value_error("data parameter is expected to be of shape (layer.m_Height * layer.m_Width) or (layer.m_Height, layer.m_Width)" \
-                " but the provided 1st amd 2nd dimension do not match the provided layer.m_Width * layer.m_Height, got: " + std::to_string(channelSize) + " but instead expected: " \
-                + std::to_string(static_cast<size_t>(layer.m_Width) * layer.m_Height) + ".\nThis is likely due to having an incorrectly shaped array or providing an incorrect layer.m_Width or layer.m_Height");
-        }
-    }
-
-    // Force the array to be c-contiguous if it isnt, using pybind11
-    if (py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_ != (data.flags() & py::detail::npy_api::constants::NPY_ARRAY_C_CONTIGUOUS_))
-    {
-        PSAPI_LOG_WARNING("ImageLayer", "Provided data parameter was detected to not be c-style contiguous, forcing this conversion in-place");
-        data = data.template cast<py::array_t<T, py::array::c_style | py::array::forcecast>>();
-    }
-
-    // Finally convert the channel to a cpp span and set the channel data
-    const T* startPtr = data.data();
-    std::span<const T> dataSpan(startPtr, channelSize * sizeof(T));
-    layer.setChannel(id, dataSpan);
-}
-
-
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
 void declareImageLayer(py::module& m, const std::string& extension) {
-	using Class = ImageLayer<T>;
-	std::string className = "ImageLayer" + extension;
-	py::class_<Class, Layer<T>, std::shared_ptr<Class>> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    using Class = ImageLayer<T>;
+    std::string className = "ImageLayer" + extension;
+    py::class_<Class, Layer<T>, std::shared_ptr<Class>> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
     imageLayer.doc() = R"pbdoc(
         
@@ -477,8 +45,16 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         Attributes
         -----------
 
-        image_data : dict[numpy.ndarray]
-            A dictionary of the image data mapped by :class:`psapi.util.ChannelIDInfo`
+        image_data : dict[int, numpy.ndarray]
+            Read-only property: A dictionary of the image data mapped by int.
+            Accessing this will load all the image data into memory so use it sparingly and 
+            instead try using the num_channels or channels properties.
+        num_channels: int
+            Read-only property: The number of channels held by image_data
+        channels: list[int]
+            Read-only property: The channel indices held by this image layer. 
+            Unlike accessing image_data this does not extract the image data and is therefore
+            near-zero cost.
         name : str
             The name of the layer, cannot be longer than 255
         layer_mask : LayerMask_*bit
@@ -522,8 +98,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
         py::arg("color_mode") = Enum::ColorMode::RGB,
-		py::arg("is_visible") = true,
-		py::arg("is_locked") = false, R"pbdoc(
+        py::arg("is_visible") = true,
+        py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as numpy.ndarray
 
@@ -617,8 +193,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
         py::arg("color_mode") = Enum::ColorMode::RGB,
-		py::arg("is_visible") = true,
-		py::arg("is_locked") = false, R"pbdoc(
+        py::arg("is_visible") = true,
+        py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as dict with integers as key
 
@@ -708,8 +284,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         py::arg("opacity") = 255,
         py::arg("compression") = Enum::Compression::ZipPrediction,
         py::arg("color_mode") = Enum::ColorMode::RGB,
-		py::arg("is_visible") = true,
-		py::arg("is_locked") = false, R"pbdoc(
+        py::arg("is_visible") = true,
+        py::arg("is_locked") = false, R"pbdoc(
 
         Construct an image layer from image data passed as dict with psapi.enum.ChannelID as key
 
@@ -793,12 +369,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID id, const bool do_copy = true)
         {
             std::vector<T> data = self.getChannel(id, do_copy);
-
-            // Get pointer to copied data and size
-            T* ptr = data.data();
-            std::vector<size_t> shape = { self.m_Height, self.m_Width };
-
-            return py::array_t<T>(shape, ptr);
+            return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, py::arg("id"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel ID.
@@ -817,12 +388,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def("get_channel_by_index", [](Class& self, const int index, const bool do_copy = true)
         {
             std::vector<T> data = self.getChannel(static_cast<int16_t>(index), do_copy);
-
-            // Get pointer to copied data and size
-            T* ptr = data.data();
-            std::vector<size_t> shape = { self.m_Height, self.m_Width };
-
-            return py::array_t<T>(shape, ptr);
+            return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, py::arg("index"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel index.
@@ -841,17 +407,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def("__getitem__", [](Class& self, const Enum::ChannelID key)
         {
             std::vector<T> data = self.getChannel(key, true);
-
-            // Get pointer to copied data and size
-            T* ptr = data.data();
-            std::vector<size_t> shape = { self.m_Height, self.m_Width };
-
-            if (data.size() != self.m_Height * self.m_Width)
-            {
-                throw py::key_error("Unable to retrieve channel " + Enum::channelIDToString(key));
-            }
-
-            return py::array_t<T>(shape, ptr);
+            return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, py::arg("key"), R"pbdoc(
 
         Extract a specified channel from the layer given its channel index.
@@ -867,25 +423,16 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     imageLayer.def("__getitem__", [](Class& self, const int key)
         {
             std::vector<T> data = self.getChannel(key, true);
-
-            // Get pointer to copied data and size
-            T* ptr = data.data();
-            std::vector<size_t> shape = { self.m_Height, self.m_Width };
-
-            if (data.size() != self.m_Height * self.m_Width)
-            {
-                throw py::key_error("Unable to retrieve channel index " + std::to_string(key));
-            }
-            return py::array_t<T>(shape, ptr);
+            return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, py::arg("key"), R"pbdoc(
         
 	)pbdoc");
 
 
-    imageLayer.def("__setitem__", [](Class& self, const int key, py::array_t<const T>& value)
+    imageLayer.def("__setitem__", [](Class& self, const int key, py::array_t<T>& value)
         {
-            auto idinfo = Enum::toChannelIDInfo(static_cast<int16_t>(key), self.getColorMode());
-            setChannelOnLayer(self, idinfo.id, value);
+            auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
+			self.setChannel(static_cast<int16_t>(key), view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -900,8 +447,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("__setitem__", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
-            auto idinfo = Enum::toChannelIDInfo(key, self.getColorMode());
-            setChannelOnLayer(self, idinfo.id, value);
+			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
+			self.setChannel(key, view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
 	)pbdoc");
@@ -909,8 +456,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("set_channel_by_index", [](Class& self, const int key, py::array_t<const T>& value)
         {
-            auto idinfo = Enum::toChannelIDInfo(static_cast<int16_t>(key), self.getColorMode());
-            setChannelOnLayer(self, idinfo.id, value);
+			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
+			self.setChannel(static_cast<int16_t>(key), view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -924,8 +471,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
-            auto idinfo = Enum::toChannelIDInfo(key, self.getColorMode());
-            setChannelOnLayer(self, idinfo.id, value);
+			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
+			self.setChannel(key, view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -943,12 +490,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             std::unordered_map<int, py::array_t<T>> outData;
             for (auto& [key, value] : data)
             {
-                auto width = static_cast<size_t>(self.m_Width);
-                auto height = static_cast<size_t>(self.m_Height);
-                std::vector<size_t> shape = { height, width };
-                T* ptr = value.data();
-                // Unfortunately I dont think this can be trivially move constructed
-                outData[key.index] = py::array_t<T>(shape, ptr);
+                outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
             }
             return outData;
         }, py::arg("do_copy") = true, R"pbdoc(
@@ -1072,19 +614,29 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def_property_readonly("image_data", [](Class& self)
         {
-            auto data = self.getImageData();
-            std::unordered_map<int, py::array_t<T>> outData;
-            for (auto& [key, value] : data)
-            {
-                auto width = static_cast<size_t>(self.m_Width);
-                auto height = static_cast<size_t>(self.m_Height);
-                std::vector<size_t> shape = { height, width };
-                T* ptr = value.data();
-                // Unfortunately I dont think this can be trivially move constructed
-                outData[key.index] = py::array_t<T>(shape, ptr);
-            }
-            return outData;
+			auto data = self.getImageData(true);
+			std::unordered_map<int, py::array_t<T>> outData;
+			for (auto& [key, value] : data)
+			{
+				outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
+			}
+			return outData;
         }, R"pbdoc(
 
 	)pbdoc");
+
+    imageLayer.def_property_readonly("num_channels", [](Class& self)
+        {
+            return self.m_ImageData.size();
+		});
+
+    imageLayer.def_property_readonly("channels", [](Class& self)
+        {
+            std::vector<int16_t> indices;
+            for (const auto& [key, _] : self.m_ImageData)
+            {
+                indices.push_back(key.index);
+            }
+            return indices;
+        });
 }

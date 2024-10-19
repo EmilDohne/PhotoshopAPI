@@ -220,7 +220,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, & Class::setCompression);
 	layeredFile.def_property_readonly("num_channels", &Class::getNumChannels);
 	layeredFile.def_property_readonly("layers", [](const Class& self) {return self.m_Layers; });
-	layeredFile.def_property_readonly("flat_layers", &Class.flatLayers);
+	layeredFile.def_property_readonly("flat_layers", &Class::flatLayers);
 	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.m_BitDepth; });
 	layeredFile.def_property("dpi",
 			[](const Class& self) { return self.m_DotsPerInch; },

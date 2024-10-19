@@ -11,6 +11,14 @@ class ImageLayer_8bit(Layer_8bit):
     @property
     def image_data(self: ImageLayer_8bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
+
+    @property
+    def num_channels(self: ImageLayer_8bit) -> int:
+        ...
+
+    @property
+    def channels(self: ImageLayer_8bit) -> list[int]:
+        ...
     
     @overload
     def __init__(
@@ -119,6 +127,14 @@ class ImageLayer_16bit(Layer_16bit):
     def image_data(self: ImageLayer_16bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
 
+    @property
+    def num_channels(self: ImageLayer_16bit) -> int:
+        ...
+
+    @property
+    def channels(self: ImageLayer_16bit) -> list[int]:
+        ...
+
     @overload
     def __init__(
         self: ImageLayer_16bit,
@@ -225,6 +241,14 @@ class ImageLayer_32bit(Layer_32bit):
     def image_data(self: ImageLayer_32bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
         ...
     
+    @property
+    def num_channels(self: ImageLayer_32bit) -> int:
+        ...
+
+    @property
+    def channels(self: ImageLayer_32bit) -> list[int]:
+        ...
+
     @overload
     def __init__(
         self: ImageLayer_32bit,
