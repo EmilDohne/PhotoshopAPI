@@ -290,6 +290,30 @@ struct ImageChannel
 	}
 
 
+	/// Take a reference to a decompressed image span and initialize the blosc2 superchunk 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	template <typename T>
+	ImageChannel(Enum::Compression compression, const std::span<const T> imageData, const Enum::ChannelIDInfo channelID, const int32_t width, const int32_t height, const float xcoord, const float ycoord)
+	{
+		if (width > 300000u)
+			PSAPI_LOG_ERROR("ImageChannel", "Invalid width parsed to image channel. Photoshop channels can be 300,000 pixels wide, got %" PRIu32 " instead",
+				width);
+		if (height > 300000u)
+			PSAPI_LOG_ERROR("ImageChannel", "Invalid height parsed to image channel. Photoshop channels can be 300,000 pixels high, got %" PRIu32 " instead",
+				height);
+		m_Compression = compression;
+		m_Width = width;
+		m_Height = height;
+		m_XCoord = xcoord;
+		m_YCoord = ycoord;
+		m_ChannelID = channelID;
+		if (imageData.size() != static_cast<uint64_t>(width) * height) [[unlikely]]
+			PSAPI_LOG_ERROR("ImageChannel", "provided imageData does not match the expected size of %" PRIu64 " but is instead %i", static_cast<uint64_t>(width) * height, imageData.size());
+			initializeBlosc2Schunk(imageData, width, height);
+	}
+
+
 	// On destruction free the blosc2 schunk if it wasnt freed yet
 	~ImageChannel() 
 	{
