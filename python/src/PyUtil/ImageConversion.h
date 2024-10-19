@@ -210,7 +210,7 @@ namespace Util
 			inline void check_shape_3d(std::vector<size_t> shape, size_t expected_channels, size_t expected_width, size_t expected_height)
 			{
 				assert(shape.size() == 3);
-				if (shape[0] != expected_height)
+				if (shape[0] != expected_channels)
 				{
 					throw py::value_error("Invalid 1st dimension size encounted, expected " + format_number(expected_channels) + \
 						" but instead got " + format_number(shape[0]) + ". This number should represent the layers' number of channels");
