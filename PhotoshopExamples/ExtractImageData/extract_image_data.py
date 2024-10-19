@@ -23,14 +23,14 @@ def main() -> None:
     print(f"Extracted image data: {channel_r}, {channel_g}, {channel_b}")
 
     # or if we just want all the data as dict 
-    img_data: dict[int, np.ndarray] = img_layer.image_data()
+    img_data: dict[int, np.ndarray] = img_layer.image_data
     print(f"Image data retrieved as dict: {img_data}")
 
     # Similarly we can also extract masks in many different ways
     mask_layer: psapi.ImageLayer_8bit = layered_file["Group"]["EmptyLayerWithMask"]
     mask_data = mask_layer[-2]  # -2 is the index for mask channels
     mask_data = mask_layer.get_channel_by_id(psapi.enum.ChannelID.mask) # If we want to be more explicit
-    mask_data = mask_layer.get_mask() 
+    mask_data = mask_layer.mask 
     # Dont worry if the mask data shows up as empty since photoshop has optimized this mask channel away due to it being full white
 
     # There is also no reason to actually store the mask layer, we can simply chain indexing calls
