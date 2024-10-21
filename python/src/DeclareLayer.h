@@ -76,7 +76,7 @@ void declareLayer(py::module& m, const std::string& extension) {
             std::vector<T> data = self.getMask();
             if (data.empty())
             {
-                throw py::value_error("Mask channel is empty, unable to extract it");
+                return py::array_t<T>();
             }
 			return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, [](Class& self, py::array_t<T> data)
