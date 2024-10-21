@@ -9,7 +9,7 @@ from ._layer import Layer_8bit, Layer_16bit, Layer_32bit
 class ImageLayer_8bit(Layer_8bit):
 
     @property
-    def image_data(self: ImageLayer_8bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def image_data(self: ImageLayer_8bit) -> dict[int, numpy.ndarray]:
         ...
 
     @property
@@ -83,7 +83,7 @@ class ImageLayer_8bit(Layer_8bit):
     def set_channel_by_index(self: ImageLayer_8bit, key: int, value: numpy.ndarray) -> None:
         ...
 
-    def get_image_data(self: ImageLayer_8bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def get_image_data(self: ImageLayer_8bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
         ...
         
     @overload
@@ -124,7 +124,7 @@ class ImageLayer_8bit(Layer_8bit):
 class ImageLayer_16bit(Layer_16bit):
     
     @property
-    def image_data(self: ImageLayer_16bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def image_data(self: ImageLayer_16bit) -> dict[int, numpy.ndarray]:
         ...
 
     @property
@@ -198,7 +198,7 @@ class ImageLayer_16bit(Layer_16bit):
     def set_channel_by_index(self: ImageLayer_16bit, key: int, value: numpy.ndarray) -> None:
         ...
 
-    def get_image_data(self: ImageLayer_16bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def get_image_data(self: ImageLayer_16bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
         ...
         
     @overload
@@ -238,7 +238,7 @@ class ImageLayer_16bit(Layer_16bit):
 class ImageLayer_32bit(Layer_32bit):
 
     @property
-    def image_data(self: ImageLayer_32bit) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def image_data(self: ImageLayer_32bit) -> dict[int, numpy.ndarray]:
         ...
     
     @property
@@ -312,7 +312,7 @@ class ImageLayer_32bit(Layer_32bit):
     def set_channel_by_index(self: ImageLayer_32bit, key: int, value: numpy.ndarray) -> None:
         ...
 
-    def get_image_data(self: ImageLayer_32bit, do_copy: bool = ...) -> dict[psapi.util.ChannelIDInfo, numpy.ndarray]:
+    def get_image_data(self: ImageLayer_32bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
         ...
         
     @overload

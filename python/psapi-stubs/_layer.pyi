@@ -86,6 +86,9 @@ class Layer_8bit:
     def is_locked(self: Layer_8bit, value: bool) -> None:
         ...
 
+    def has_mask(self: Layer_8bit) -> bool:
+        ...
+
     def get_mask_data(self: Layer_8bit, do_copy: bool = ...) -> numpy.ndarray:
         ...
 
@@ -172,6 +175,12 @@ class Layer_16bit:
     def is_locked(self: Layer_16bit, value: bool) -> None:
         ...
 
+    def has_mask(self: Layer_16bit) -> bool:
+        ...
+
+    def get_mask_data(self: Layer_16bit, do_copy: bool = ...) -> numpy.ndarray:
+        ...
+
 
 
 class Layer_32bit:
@@ -254,5 +263,11 @@ class Layer_32bit:
 
     @is_locked.setter
     def is_locked(self: Layer_32bit, value: bool) -> None:
+        ...
+
+    def has_mask(self: Layer_32bit) -> bool:
+        ...
+
+    def get_mask_data(self: Layer_32bit, do_copy: bool = ...) -> numpy.ndarray:
         ...
         

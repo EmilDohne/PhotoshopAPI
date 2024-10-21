@@ -33,7 +33,6 @@ void declareLayer(py::module& m, const std::string& extension) {
     std::string className = "Layer" + extension;
     // Designate shared_ptr as the holder type so pybind11 doesnt cast to unique_ptr giving us a heap corruption error
     py::class_<Class, std::shared_ptr<Class>> layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
-
     layer.doc() = R"pbdoc(
 
         Base type that all layers inherit from, this class should not be instantiated
@@ -74,8 +73,12 @@ void declareLayer(py::module& m, const std::string& extension) {
     layer.def_readwrite("name", &Class::m_LayerName);
     layer.def_property("mask", [](Class& self)
         {
-            std::vector<T> data = self.getMaskData();
-			return to_py_array(data, self.m_Width, self.m_Height);
+            std::vector<T> data = self.getMask();
+            if (data.empty())
+            {
+                throw py::value_error("Mask channel is empty, unable to extract it");
+            }
+			return to_py_array(std::move(data), self.m_Width, self.m_Height);
         }, [](Class& self, py::array_t<T> data)
         {
             auto view = from_py_array(tag::view{}, data, self.m_Width, self.m_Height);
@@ -91,7 +94,6 @@ void declareLayer(py::module& m, const std::string& extension) {
     layer.def_readwrite("center_y", &Class::m_CenterY);
     layer.def_readwrite("is_locked", &Class::m_IsLocked);
     layer.def_readwrite("is_visible", &Class::m_IsVisible);
-
 	layer.def("has_mask", &Class::hasMask, R"pbdoc(
 
         Check whether the layer has a mask channel associated with it.

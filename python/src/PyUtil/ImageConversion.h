@@ -90,7 +90,7 @@ namespace Util
 			{
 				throw py::value_error(
 					"Invalid array size received, expected " + format_number(total_size) + " but instead got " + \
-					format_number(sum)
+					format_number(sum) + ". This should match the layers' height and width and if passing multiple channels also the number of channels"
 					);
 			}
 			return shape;
