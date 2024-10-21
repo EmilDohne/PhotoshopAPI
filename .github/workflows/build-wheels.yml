@@ -82,6 +82,7 @@ jobs:
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
         # We "Test" the python executable by running all our example files, this would be done a little better in the future
         CIBW_TEST_COMMAND: >
+            python -m pip install -r {project}/python/psapi-test/requirements.txt &&
             python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
             python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
             python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
@@ -89,7 +90,6 @@ jobs:
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py &&
             python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py &&
             python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py &&
-            python -m pip install -r {project}/python/psapi-test/requirements.txt &&
             nosetests {project}/python/psapi-test --verbose
 
     - name: Verify clean directory
