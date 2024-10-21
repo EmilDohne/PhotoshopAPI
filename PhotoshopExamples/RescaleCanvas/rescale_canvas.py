@@ -1,6 +1,6 @@
 # Example of replacing image data on a layer
 import os
-from typing import Uniom
+from typing import Union
 
 import numpy as np
 import cv2
