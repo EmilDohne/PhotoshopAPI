@@ -1,15 +1,17 @@
 # Example of replacing image data on a layer
 import os
+from typing import Uniom
+
 import numpy as np
 import cv2
 import psapi
 
 
-def is_image_layer(layer: psapi.Layer_8bit | psapi.Layer_16bit | psapi.Layer_32bit) -> bool:
+def is_image_layer(layer: Union[psapi.Layer_8bit, psapi.Layer_16bit, psapi.Layer_32bit]) -> bool:
     return isinstance(layer, (psapi.ImageLayer_8bit, psapi.ImageLayer_16bit, psapi.ImageLayer_32bit))
 
 
-def scale_dimensions(layer: psapi.Layer_8bit | psapi.Layer_16bit | psapi.Layer_32bit, scaling_factor: float) -> None:
+def scale_dimensions(layer: Union[psapi.Layer_8bit, psapi.Layer_16bit, psapi.Layer_32bit], scaling_factor: float) -> None:
     """
     Apply the scaling factor to width, height, center_x and center_y of the layer
     """
