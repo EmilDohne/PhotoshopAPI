@@ -89,8 +89,7 @@ jobs:
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py &&
             python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py &&
             python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py &&
-            # Run the actual tests
-            python -m pip install -r {project}/python/psapi-test/requirements.txt
+            python -m pip install -r {project}/python/psapi-test/requirements.txt &&
             nosetests {project}/python/psapi-test --verbose
 
     - name: Verify clean directory
