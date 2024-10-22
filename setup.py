@@ -155,6 +155,7 @@ setup(
     version=__version__,
     author="Emil Dohne",
     description="A performant read/write parser of Photoshop Files (*.psd and *.psb)",
+    url = "https://github.com/EmilDohne/PhotoshopAPI",
     long_description=long_description,
     long_description_content_type="text/markdown",
     ext_modules=[CMakeExtension("psapi")],

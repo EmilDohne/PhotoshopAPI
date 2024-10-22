@@ -379,9 +379,13 @@ public:
 				LayerMask lrMask{};
 				auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
 				if (channelPtr)
+				{
 					lrMask.maskData = std::move(channelPtr);
+				}
 				else
+				{
 					PSAPI_LOG_ERROR("Layer", "Unable to extract mask channel for layer '%s'", m_LayerName.c_str());
+				}
 				channelPtr = nullptr;
 
 				// If no mask parameters are present we just use sensible defaults and skip
@@ -397,6 +401,19 @@ public:
 				lrMask.defaultColor = layerMaskParams.m_DefaultColor;
 				lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
 				lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
+
+
+				// Forward the masks height as the layers width and height
+				// As photoshop does not store this explicitly
+				if (m_Width == 0 && m_Height == 0)
+				{
+					ChannelExtents extents{ layerMaskParams.m_Top, layerMaskParams.m_Left, layerMaskParams.m_Bottom, layerMaskParams.m_Right };
+					ChannelCoordinates coordinates = generateChannelCoordinates(extents, header);
+					m_Width = coordinates.width;
+					m_Height = coordinates.height;
+					m_CenterX = coordinates.centerX;
+					m_CenterY = coordinates.centerY;
+				}
 
 				// Set the layer mask by moving our temporary struct
 				m_LayerMask = std::optional(std::move(lrMask));
@@ -494,9 +511,21 @@ public:
 	}
 
 
-
 	/// Check whether a mask channel exists on the Layer
 	bool hasMask() { return m_LayerMask.has_value(); };
+
+	/// Set the layers' mask 
+	void setMask(std::span<const T> data)
+	{
+		LayerMask newMask{};
+		if (data.size() != static_cast<size_t>(m_Width) * m_Height)
+		{
+			PSAPI_LOG_ERROR("Layer", "Unable to set mask channel as new masks' size is not the same as the layers' width and height");
+		}
+		auto idinfo = Enum::toChannelIDInfo(Enum::ChannelID::UserSuppliedLayerMask, m_ColorMode);
+		newMask.maskData = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, idinfo, m_Width, m_Height, m_CenterX, m_CenterY);
+		m_LayerMask.emplace(std::move(newMask));
+	}
 
 	/// Get the colormode associated with the layer
 	Enum::ColorMode getColorMode() { return m_ColorMode; };

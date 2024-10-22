@@ -37,6 +37,10 @@ class LayeredFile_8bit:
         ...
 
     @property
+    def layers_flat(self: LayeredFile_8bit) -> list[Layer_8bit]:
+        ...
+
+    @property
     def bit_depth(self: LayeredFile_8bit) -> psapi.enum.BitDepth:
         ...
 
@@ -131,6 +135,10 @@ class LayeredFile_16bit:
         ...
 
     @property
+    def layers_flat(self: LayeredFile_16bit) -> list[Layer_16bit]:
+        ...
+
+    @property
     def bit_depth(self: LayeredFile_16bit) -> psapi.enum.BitDepth:
         ...
 
@@ -222,6 +230,10 @@ class LayeredFile_32bit:
 
     @property
     def layers(self: LayeredFile_32bit) -> list[Layer_32bit]:
+        ...
+
+    @property
+    def layers_flat(self: LayeredFile_32bit) -> list[Layer_32bit]:
         ...
 
     @property

@@ -59,8 +59,13 @@ struct GroupLayer : public Layer<T>
 
 		m_isCollapsed = isCollapsed;
 
-		// Set the layer mask if present
 		Layer<T>::parseLayerMask(parameters);
+
+		// If the mask was passed but not a width and height we throw an error 
+		if (Layer<T>::m_LayerMask && Layer<T>::m_Width == 0 && Layer<T>::m_Height == 0)
+		{
+			PSAPI_LOG_ERROR("GroupLayer", "Mask parameter specified but width and height are not set to the masks' dimensions");
+		}
 
 		// Throw an error if the width and height are set but no mask is passed. This is technically not necessary as 
 		// writing a file with width and height but no image data is a no-op but we want to enforce good practice

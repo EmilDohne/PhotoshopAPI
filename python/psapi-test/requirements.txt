@@ -1,0 +1,3 @@
+numpy >= 1.21
+opencv-python >= 4.10.0.84
+pynose >= 1.5.3

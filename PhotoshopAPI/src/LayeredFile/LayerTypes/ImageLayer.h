@@ -317,7 +317,9 @@ public:
 		}
 		if (data.size() != static_cast<size_t>(Layer<T>::m_Width) * Layer<T>::m_Height)
 		{
-			PSAPI_LOG_ERROR("ImageLayer", "Error while setting channel '%s': data size does not match the layers' width * height", Enum::channelIDToString(channelID).c_str());
+			PSAPI_LOG_ERROR("ImageLayer", 
+				"Error while setting channel '%s': data size does not match the layers' width * height. Expected a size of %zu but instead got %zu", 
+				Enum::channelIDToString(channelID).c_str(), static_cast<size_t>(Layer<T>::m_Width) * Layer<T>::m_Height, data.size());
 		}
 
 		auto idinfo = Enum::toChannelIDInfo(channelID, Layer<T>::m_ColorMode);

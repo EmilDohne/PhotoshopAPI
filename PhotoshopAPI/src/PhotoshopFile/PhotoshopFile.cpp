@@ -50,4 +50,20 @@ void PhotoshopFile::write(File& document, ProgressCallback& callback)
 	callback.increment();
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+Enum::BitDepth PhotoshopFile::findBitdepth(std::filesystem::path file)
+{
+	if (file.extension() != ".psb" && file.extension() != ".psd")
+	{
+		PSAPI_LOG_ERROR("PhotoshopFile", "Invalid file extension '%s' encountered. Only '.psd' and '.psb' are supported", file.extension().string().c_str());
+	}
+
+	File document(file);
+	FileHeader header;
+	header.read(document);
+	return header.m_Depth;
+}
+
 PSAPI_NAMESPACE_END

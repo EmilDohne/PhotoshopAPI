@@ -108,6 +108,11 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 
 		layers : list[Layer_*bit]
 			Read-only property to retrieve a list of all the layers in the root of the file
+		
+		flat_layers: list[Layer_*bit]
+			Read-only property to retrieve a flat list of all the layers in the file, convenience function 
+			for iterating them all at once. Do not attempt to modify the layer structure itself while iterating
+			over this flattened layer list as this wil lead to undefined behaviour
 
 		dpi : int
 			The document DPI settings
@@ -215,6 +220,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, & Class::setCompression);
 	layeredFile.def_property_readonly("num_channels", &Class::getNumChannels);
 	layeredFile.def_property_readonly("layers", [](const Class& self) {return self.m_Layers; });
+	layeredFile.def_property_readonly("flat_layers", &Class::flatLayers);
 	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.m_BitDepth; });
 	layeredFile.def_property("dpi",
 			[](const Class& self) { return self.m_DotsPerInch; },
