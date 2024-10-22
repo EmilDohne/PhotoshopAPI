@@ -1,9 +1,10 @@
 import sys
 
-from psapi import Layer_8bit, Layer_16bit, Layer_32bit
-from psapi import ImageLayer_8bit, ImageLayer_16bit, ImageLayer_32bit
-from psapi import GroupLayer_8bit, GroupLayer_16bit, GroupLayer_32bit
-from psapi import LayeredFile_8bit, LayeredFile_16bit, LayeredFile_32bit
+
+from . import Layer_8bit, Layer_16bit, Layer_32bit
+from . import ImageLayer_8bit, ImageLayer_16bit, ImageLayer_32bit
+from . import GroupLayer_8bit, GroupLayer_16bit, GroupLayer_32bit
+from . import LayeredFile_8bit, LayeredFile_16bit, LayeredFile_32bit
 
 
 # Convenience type abbreviations for type hints in functions expecting or returning psapi.Layer types
@@ -17,7 +18,7 @@ if sys.version_info >= (3, 10):
     Layer       = Layer_8bit | Layer_16bit | Layer_32bit
     ImageLayer  = ImageLayer_8bit | ImageLayer_16bit | ImageLayer_32bit
     GroupLayer  = GroupLayer_8bit | GroupLayer_16bit | GroupLayer_32bit
-
+    
     LayeredFile = LayeredFile_8bit | LayeredFile_16bit | LayeredFile_32bit
 else:
     # Fallback to Union syntax for older Python versions
