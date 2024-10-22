@@ -570,6 +570,7 @@ struct LayeredFile
 		m_Width = width;
 		m_Height = height;
 	}
+
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, uint16_t>
 	{
 		if (width < 1 || width > 300000)
@@ -586,6 +587,7 @@ struct LayeredFile
 		m_Width = width;
 		m_Height = height;
 	}
+
 	LayeredFile(Enum::ColorMode colorMode, uint64_t width, uint64_t height) requires std::same_as<T, float32_t>
 	{
 		if (width < 1 || width > 300000)
@@ -609,7 +611,6 @@ struct LayeredFile
 	}
 
 	/// \brief Finds a layer based on the given path.
-	///
 	/// The path should be separated by forward slashes, e.g., "Group1/GroupNested/ImageLayer".
 	/// Returns a reference to the specific layer if found; otherwise, returns nullptr and issues a warning.
 	///
@@ -637,7 +638,6 @@ struct LayeredFile
 		return nullptr;
 	}
 
-	/// 
 	/// \brief Inserts a layer into the root of the layered file.
 	///
 	/// If you wish to add a layer to a group, use GroupLayer::addLayer() on a group node retrieved by \ref findLayer().
@@ -794,10 +794,7 @@ struct LayeredFile
 	}
 
 	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
-	/// Use this function if you wish to get the most up to date flat layer stack that is in the given
-	/// \brief Generates a flat layer stack from either the current root or a given layer.
-	///
-	/// Use this function to get the most up-to-date flat layer stack based on the given order.
+	/// It should be preferred to use \ref flatLayers() instead of this function.
 	///
 	/// \param layer Optional layer to start the generation from (default is root). If you provide e.g. a group this will only build the below layer tree
 	/// \param order The order in which layers should be stacked.
@@ -839,10 +836,6 @@ struct LayeredFile
 	/// After any layer modification actions this list may no longer be up-to-date so it would have to be re-generated.
 	/// It is highly discouraged to use this flattened layer vector for any layer hierarchy modifications
 	/// 
-	/// \param order The traversal order, forward would be equivalent to a top down traversal. Defaults to LayerOrder::forward
-	/// \param generateSectionDividers 
-	///		Whether to generate a section divider layer at the end of each group. 
-	///		Unless you intend to write this to Photoshop this should be false
 	/// \return The layer hierarchy as a flattened vector that can be iterated over.
 	std::vector<std::shared_ptr<Layer<T>>> flatLayers()
 	{
@@ -855,7 +848,7 @@ struct LayeredFile
 	/// for ignoreAlphaChannel
 	///
 	/// \param ignoreMaskChannels Flag to exclude mask channels from the count.
-	/// \param ignoreMaskChannel Flag to exclude the transparency alpha channel from the count.
+	/// \param ignoreAlphaChannel Flag to exclude the transparency alpha channel from the count.
 	/// \return The total number of channels in the document.
 	uint16_t getNumChannels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true)
 	{
