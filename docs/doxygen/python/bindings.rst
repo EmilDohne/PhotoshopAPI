@@ -21,7 +21,6 @@ therefore not all functions can be translated directly
 	enums.rst
 	utility.rst
 	type-hinting.rst
-	layer-identification.rst
 
 
 To get started with using these bindings, simply ``pip install PhotoshopAPI`` and then follow along with the examples in PhotoshopExamples

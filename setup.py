@@ -161,7 +161,7 @@ setup(
     ext_modules=[CMakeExtension("psapi")],
     cmdclass={"build_ext": CMakeBuild},
     package_dir = {"": "python"},
-    packages=["psapi-stubs", "psapi"],
+    packages=["psapi-stubs"],
     package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi"]},
     zip_safe=False,
     install_requires= [
