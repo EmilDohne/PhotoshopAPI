@@ -80,7 +80,8 @@ jobs:
         CIBW_ARCHS: auto64
         CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
-        # We "Test" the python executable by running all our example files, this would be done a little better in the future
+        # Test not only by running the test suite but also by executing every example we provide. This is to ensure
+        # our examples are working and users can rely on them for starting off points
         CIBW_TEST_COMMAND: >
             python -m pip install -r {project}/python/psapi-test/requirements.txt &&
             python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
