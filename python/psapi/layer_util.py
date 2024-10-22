@@ -1,4 +1,4 @@
-import psapi
+from psapi.types import Layer
 
 
 def is_image_layer(layer: psapi.types.Layer) -> bool:

@@ -1,6 +1,9 @@
 import sys
 
-import psapi
+from psapi import Layer_8bit, Layer_16bit, Layer_32bit
+from psapi import ImageLayer_8bit, ImageLayer_16bit, ImageLayer_32bit
+from psapi import GroupLayer_8bit, GroupLayer_16bit, GroupLayer_32bit
+from psapi import LayeredFile_8bit, LayeredFile_16bit, LayeredFile_32bit
 
 
 # Convenience type abbreviations for type hints in functions expecting or returning psapi.Layer types
@@ -11,16 +14,16 @@ import psapi
 #
 if sys.version_info >= (3, 10):
     # Use | syntax for Python 3.10+
-    Layer       = psapi.Layer_8bit | psapi.Layer_16bit | psapi.Layer_32bit
-    ImageLayer  = psapi.ImageLayer_8bit | psapi.ImageLayer_16bit | psapi.ImageLayer_32bit
-    GroupLayer  = psapi.GroupLayer_8bit | psapi.GroupLayer_16bit | psapi.GroupLayer_32bit
+    Layer       = Layer_8bit | Layer_16bit | Layer_32bit
+    ImageLayer  = ImageLayer_8bit | ImageLayer_16bit | ImageLayer_32bit
+    GroupLayer  = GroupLayer_8bit | GroupLayer_16bit | GroupLayer_32bit
 
-    LayeredFile = psapi.LayeredFile_8bit | psapi.LayeredFile_16bit | psapi.LayeredFile_32bit
+    LayeredFile = LayeredFile_8bit | LayeredFile_16bit | LayeredFile_32bit
 else:
     # Fallback to Union syntax for older Python versions
     from typing import Union
-    Layer       = Union[psapi.Layer_8bit, psapi.Layer_16bit, psapi.Layer_32bit]
-    ImageLayer  = Union[psapi.ImageLayer_8bit, psapi.ImageLayer_16bit, psapi.ImageLayer_32bit]
-    GroupLayer  = Union[psapi.GroupLayer_8bit, psapi.GroupLayer_16bit, psapi.GroupLayer_32bit]
+    Layer       = Union[Layer_8bit, Layer_16bit, Layer_32bit]
+    ImageLayer  = Union[ImageLayer_8bit, ImageLayer_16bit, ImageLayer_32bit]
+    GroupLayer  = Union[GroupLayer_8bit, GroupLayer_16bit, GroupLayer_32bit]
 
-    LayeredFile = Union[psapi.LayeredFile_8bit, psapi.LayeredFile_16bit, psapi.LayeredFile_32bit]
+    LayeredFile = Union[LayeredFile_8bit, LayeredFile_16bit, LayeredFile_32bit]
