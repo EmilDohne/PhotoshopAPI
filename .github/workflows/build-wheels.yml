@@ -28,9 +28,9 @@ jobs:
     - name: Check metadata
       run: pipx run twine check dist/*
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: PhotoshopAPI_Py
+        name: PhotoshopAPI_Py-srcdist
         path: dist/*.tar.gz
 
 
@@ -98,10 +98,29 @@ jobs:
       shell: bash
 
     - name: Upload wheels
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: PhotoshopAPI_Py
+        name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
+
+  mock-publish:
+    name: Mock Upload release to PyPI
+    permissions:
+      id-token: write
+    needs: [build_wheels, build_sdist]
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.x"
+
+    - uses: actions/download-artifact@v4
+      with:
+        path: PhotoshopAPI_Py
+        pattern: PhotoshopAPI_Py-*
+        merge-multiple: true
+    - run: ls -R PhotoshopAPI_Py
 
 
   pypi-publish:
@@ -117,9 +136,10 @@ jobs:
       with:
         python-version: "3.x"
 
-    - uses: actions/download-artifact@v4.1.7
+    - uses: actions/download-artifact@v4
       with:
-        name: PhotoshopAPI_Py
-        path: dist
+        path: PhotoshopAPI_Py
+        pattern: PhotoshopAPI_Py-*
+        merge-multiple: true
 
     - uses: pypa/gh-action-pypi-publish@release/v1
