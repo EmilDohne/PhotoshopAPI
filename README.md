@@ -48,19 +48,19 @@ Supported:
 - Read and write of \*.psd and \*.psb files
 - Creating and modifying simple and complex nested layer structures
 - Pixel Masks
-- Modifying layer attributes (name, blend mode etc.)
+- Modifying layer attributes (name, blend mode, image data etc.)
 - Setting the Display ICC Profile
 - Setting the DPI of the document
 - 8-, 16- and 32-bit files
-- RGB Color Mode
+- RGB, CMYK and Grayscale color modes
 - All compression modes known to Photoshop
 
 Planned:
-- Support for Adjustment Layers
+- Support for Adjustment Layers (planned `v0.6.0`)
 - Support for Vector Masks
 - Support for Text Layers
-- Support for Smart Object Layers
-- CMYK, Indexed, Duotone and Greyscale Color Modes
+- Support for Smart Object Layers (planned `v0.6.0`)
+- Indexed and Duotone Color Modes
 
 Not Supported:
 - Files written by the PhotoshopAPI do not contain a valid merged image in order to save size meaning they will not behave properly when opened in
@@ -107,7 +107,7 @@ The PhotoshopAPI is built with performance as one of its foremost concerns. Usin
 SIMD instructions to leverage all the computing power your computer can afford. 
 
 As the feature set increases this will keep being one of the key requirements.
-For detailed benchmarks running on a variety of different configurations please visit the [docs](https://photoshopapi.readthedocs.io/)
+For detailed benchmarks please visit the [docs](https://photoshopapi.readthedocs.io/)
 
 Below you can find some of the benchmarks comparing the PhotoshopAPI ('PSAPI') against Photoshop in read/write performance
 
@@ -120,8 +120,8 @@ Below you can find some of the benchmarks comparing the PhotoshopAPI ('PSAPI') a
 Quickstart
 ==========
 
-The primary struct to familiarize yourself with when using the PhotoshopAPI is the LayeredFile as well as all its Layer derivatives (such as ImageLayer and 
-GroupLayer), all of these are template structs for each of the available bit depths. 
+The primary struct to familiarize yourself with when using the PhotoshopAPI is the `LayeredFile` as well as all its Layer derivatives (such as `ImageLayer` and 
+`GroupLayer`), all of these are template structs for each of the available bit depths. 
 
 To get a feel of what is possible with the API as well as how to use it please refer to ``PhotoshopExample/`` directory. To familiarize
 yourself with the main concepts, as well as recommended workflows check out the [docs](https://photoshopapi.readthedocs.io/) or the [examples](https://github.com/EmilDohne/PhotoshopAPI/tree/master/PhotoshopExamples).
