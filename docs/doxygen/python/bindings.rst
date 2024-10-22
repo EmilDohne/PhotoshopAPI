@@ -20,7 +20,6 @@ therefore not all functions can be translated directly
 	photoshopfile.rst
 	enums.rst
 	utility.rst
-	type-hinting.rst
 
 
 To get started with using these bindings, simply ``pip install PhotoshopAPI`` and then follow along with the examples in PhotoshopExamples
