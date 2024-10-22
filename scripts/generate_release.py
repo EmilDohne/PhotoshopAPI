@@ -100,17 +100,10 @@ def generate_clean_release(out_path: str, build_dir: str, header_dir: str) -> No
         "linux": "libblosc2.a",
         "darwin": "libblosc2.a"
     }
-    
-    simdutf_platform_mapping = {
-        "win32": "simdutf.lib",
-        "linux": "simdutf.a",
-        "darwin": "simdutf.a"
-    }
 
     _find_file_and_copy(psapi_platform_mapping.get(sys.platform, psapi_platform_mapping["linux"]), build_dir, lib_path)
     _find_file_and_copy(libdeflate_platform_mapping.get(sys.platform, libdeflate_platform_mapping["linux"]), build_dir, lib_path)
     _find_file_and_copy(blosc2_platform_mapping.get(sys.platform, blosc2_platform_mapping["linux"]), build_dir, lib_path)
-    _find_file_and_copy(simdutf_platform_mapping.get(sys.platform, simdutf_platform_mapping["linux"]), build_dir, lib_path)
 
     # Copy over the headers which are already pre-sorted
     shutil.copytree(header_dir, os.path.join(out_path, "include"), dirs_exist_ok=True)
