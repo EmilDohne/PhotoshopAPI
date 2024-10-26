@@ -170,7 +170,7 @@ inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template<typename T>
-T endianEncodeBE(const T src)
+T endianEncodeBE([[maybe_unused]] const T src)
 {
     PSAPI_LOG_ERROR("endianByteSwap", "No Byte Swap defined for the given type");
     return T{};
