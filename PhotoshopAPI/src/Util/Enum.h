@@ -745,7 +745,8 @@ namespace Enum
 		lrPatternData,
 		lrLinked,
 		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide length field
-		lrSmartObject,	// Represents the keys 'SoLd' and 'SoLE', there is also 'PlLd' and 'plLd' which were phased out in CS3 which is why we wont support them
+		lrPlaced,	// Represents the keys 'SoLd'
+		lrPlacedData,	// Represents the keys 'PlLd' and 'plLd'
 		// Additional layer specific data
 		lrCompositorUsed,
 		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
@@ -812,8 +813,9 @@ namespace Enum
 			{"lnkD", TaggedBlockKey::lrLinked},
 			{"lnk3", TaggedBlockKey::lrLinked},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
-			{"SoLd", TaggedBlockKey::lrSmartObject},
-			{"SoLE", TaggedBlockKey::lrSmartObject},
+			{"SoLd", TaggedBlockKey::lrPlacedData},
+			{"PlLd", TaggedBlockKey::lrPlaced},
+			{"plLd", TaggedBlockKey::lrPlaced},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
 			{"cinf", TaggedBlockKey::lrCompositorUsed},
 			{"Mtrn", TaggedBlockKey::lrSavingMergedTransparency},

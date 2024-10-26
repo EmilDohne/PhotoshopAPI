@@ -163,6 +163,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	FileSection::size(RoundUpToMultiple<uint32_t>(numBytes + sizeof(uint32_t), padding));
 	// This UTF16 data is now in UTF16LE format (rather than the UTF16BE stored on disk)
 	std::vector<char16_t> utf16Data = ReadBinaryArray<char16_t>(document, numBytes);
+
 	m_UTF16String = std::u16string(utf16Data.begin(), utf16Data.end());
 
 	// We check for empty strings here as simdutf would return 0 on the convert_utf8_to_utf16le which

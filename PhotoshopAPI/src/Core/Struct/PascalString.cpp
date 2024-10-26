@@ -56,6 +56,17 @@ const std::string_view PascalString::getStringView() const noexcept
 	return m_String;
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::string PascalString::readString(File& document, const uint8_t padding) noexcept
+{
+	PascalString str;
+	str.read(document, padding);
+	return str.getString();
+}
+
+
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 void PascalString::read(File& document, const uint8_t padding) noexcept

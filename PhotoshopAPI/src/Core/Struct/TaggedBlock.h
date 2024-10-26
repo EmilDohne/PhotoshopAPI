@@ -9,12 +9,44 @@
 #include "Core/Struct/UnicodeString.h"
 #include "Core/Struct/DescriptorStructure.h"
 
+#include "Core/FileIO/Write.h"
+
 #include <memory>
 #include <variant>
 
 PSAPI_NAMESPACE_BEGIN
 
 
+namespace Impl
+{
+	/// Write a length block that is either 4- or 8-bytes by simply subtracting the end and start offset
+	/// and re-writing the length block at the given offset. If the size does not match the padding we insert padding bytes and write those too
+	template <typename T> requires std::is_same_v<T, uint32_t> || std::is_same_v<T, uint64_t>
+	void writeLengthBlock(File& document, size_t lenBlockOffset, size_t endOffset, size_t padding)
+	{
+		if (endOffset < lenBlockOffset)
+		{
+			PSAPI_LOG_ERROR("TaggedBlock", "Internal Error: Unable to write length block as end offset is supposedly before the length block");
+		}
+
+		auto size = endOffset - lenBlockOffset;
+		WritePadddingBytes(document, size % padding);
+		size += size % padding;
+		endOffset = document.getOffset();
+
+
+		if (size > std::numeric_limits<T>::max())
+		{
+			PSAPI_LOG_ERROR("TaggedBlock",
+				"Unable to write out length block as its size would exceed the size of the numeric limits of T, can at most write %zu bytes but tried to write %zu bytes instead",
+				static_cast<size_t>(std::numeric_limits<T>::max()), size);
+		}
+
+		document.setOffset(lenBlockOffset);
+		WriteBinaryData<T>(document, static_cast<T>(size));
+		document.setOffset(endOffset);
+	}
+}
 
 // Generic Tagged Block which does not hold any data. If you wish to parse further tagged blocks extend this struct and add an implementation
 struct TaggedBlock
@@ -195,6 +227,91 @@ struct ProtectedSettingTaggedBlock : TaggedBlock
 };
 
 
+namespace PlacedLayer
+{
+	enum class Type
+	{
+		Unknown = 0,
+		Vector = 1,
+		Raster = 2,
+		ImageStack = 3
+	};
+
+	static bidirectional_unordered_map<uint32_t, Type> s_TypeMap =
+	{
+		{0, Type::Unknown},
+		{1, Type::Vector},
+		{2, Type::Raster},
+		{3, Type::ImageStack}
+	};
+
+	static bidirectional_unordered_map<uint32_t, std::string> s_TypeStrMap =
+	{
+		{0, "Unknown"},
+		{1, "Vector"},
+		{2, "Raster"},
+		{3, "ImageStack"}
+	};
+
+	struct Point
+	{
+		double x{};
+		double y{};
+
+		void read(File& document);
+		void write(File& document);
+	};
+
+	struct Transform
+	{
+		Point topleft;
+		Point topright;
+		Point bottomleft;
+		Point bottomright;
+
+		void read(File& document);
+		void write(File& document);
+	};
+}
+
+/// Placed layer tagged blocks are the per-layer counterparts to the global LinkedLayerTaggedBlock. These hold information on
+/// the uuid associated with the image data as well as transforms, warp information etc.
+struct PlacedLayerTaggedBlock : TaggedBlock
+{
+	PascalString m_UniqueID{};
+	PlacedLayer::Type m_Type{};
+	PlacedLayer::Transform m_Transform{};
+	Descriptors::Descriptor m_WarpInformation;
+
+	void read(File& document,const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
+
+
+private:
+	uint32_t m_Version = 3;
+	uint32_t m_PageNumber{};
+	uint32_t m_TotalPages{};
+	uint32_t m_AnitAliasPolicy{};
+
+};
+
+
+/// This supposedly supersedes the PlacedLayerTaggedBlock since Photoshop CS3 but it appears that those two are always there in conjunction.
+/// Likely to keep backwards compatibility
+struct PlacedLayerDataTaggedBlock : TaggedBlock
+{
+	Descriptors::Descriptor m_Descriptor;
+
+	void read(File& document, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature);
+	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
+
+
+private:
+	uint32_t m_Version = 4;
+
+};
+
+
 namespace LinkedLayer
 {
 	/// Date structure for a linked layer
@@ -229,7 +346,7 @@ namespace LinkedLayer
 		};
 
 		Type m_Type = Type::Data;		// How the data is (or isnt) stored in the file
-		int32_t m_Version = 7u;			// 1-7
+		int32_t m_Version = 7u;			// 1-7. In our case should always be 7 for write
 		std::string m_UniqueID;			// Mirrors the UniqueID on a PlacedLayerTaggedBlock, this must be referenced somewhere
 		UnicodeString m_FileName;		// The actual filename itself, this does not necessarily represent a path to an actual file
 		std::string m_FileType;			// E.g. " png" for png files etc.
@@ -248,11 +365,15 @@ namespace LinkedLayer
 		std::optional<bool> m_AssetIsLocked;
 
 		void read(File& document);
-		void write(File& document) const;
+		/// Write the LinkedLayerData struct. Unlike the other write methods this is non-const since otherwise we would have to copy
+		/// on write the raw file data. 
+		void write(File& document);
 
 	private:
+		uint64_t m_Size = 0u;
 
-		Type readType(File& document);
+		Type readType(File& document) const;
+		void writeType(File& document, Type type) const;
 	};
 }
 

@@ -11,6 +11,7 @@
 #include "Core/FileIO/Write.h"
 
 #include <cassert>
+#include <ctime>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -330,6 +331,201 @@ void ProtectedSettingTaggedBlock::write(File& document, [[maybe_unused]] const F
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayer::Point::read(File& document)
+{
+	this->x = ReadBinaryData<double>(document);
+	this->y = ReadBinaryData<double>(document);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayer::Point::write(File& document)
+{
+	WriteBinaryData<double>(document, this->x);
+	WriteBinaryData<double>(document, this->y);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayer::Transform::read(File& document)
+{
+	this->topleft.read(document);
+	this->topright.read(document);
+	this->bottomright.read(document);
+	this->bottomleft.read(document);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayer::Transform::write(File& document)
+{
+	this->topleft.write(document);
+	this->topright.write(document);
+	this->bottomright.write(document);
+	this->bottomleft.write(document);
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayerTaggedBlock::read(File& document, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature)
+{
+	m_Key = key;
+	m_Offset = offset;
+	m_Signature = signature;
+
+	m_Length = ReadBinaryData<uint32_t>(document);
+	TaggedBlock::totalSize(static_cast<size_t>(std::get<uint32_t>(m_Length)) + 4u + 4u + 4u);
+
+	// The type is always going to be 'plcL' according to the docs
+	auto type = Signature::read(document);
+	if (type != "plcL")
+	{
+		PSAPI_LOG_ERROR("PlacedLayer", "Unknown placed layer type '%s' encountered", type.string().c_str());
+	}
+
+	m_Version = ReadBinaryData<uint32_t>(document);
+	if (m_Version != 3)
+	{
+		PSAPI_LOG_ERROR("PlacedLayer", "Unknown placed layer version %d encountered", m_Version);
+	}
+
+	m_UniqueID.read(document, 1u);
+
+	m_PageNumber = ReadBinaryData<uint32_t>(document);
+	m_TotalPages = ReadBinaryData<uint32_t>(document);
+	m_AnitAliasPolicy = ReadBinaryData<uint32_t>(document);
+
+	auto layerType = ReadBinaryData<uint32_t>(document);
+	if (layerType > 3)
+	{
+		PSAPI_LOG_ERROR("PlacedLayer", "Unknown placed layer LayerType %d encountered", layerType);
+	}
+	m_Type = PlacedLayer::s_TypeMap.at(layerType);
+	if (m_Type != PlacedLayer::Type::Raster)
+	{
+		PSAPI_LOG_WARNING("PlacedLayer", "Currently unimplemented LayerType '%s' encountered", PlacedLayer::s_TypeStrMap.at(layerType).c_str());
+	}
+
+	m_Transform.read(document);
+
+	auto warpVersion = ReadBinaryData<uint32_t>(document);
+	auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+	if (warpVersion != 0 || descriptorVersion != 16)
+	{
+		PSAPI_LOG_ERROR("PlacedLayer", "Unknown warp or descriptor version encountered. Warp version: %d. Descriptor Version: %d. Expected 0 and 16 for these respectively", warpVersion, descriptorVersion);
+	}
+	m_WarpInformation.read(document);
+
+	// This section is padded so we simply skip to the end
+	document.setOffset(offset + TaggedBlock::totalSize<uint64_t>());
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayerTaggedBlock::write(File& document, const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
+{
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("PlLd").m_Value);
+	
+	auto lenOffset = document.getOffset();
+	if (header.m_Version == Enum::Version::Psd)
+	{
+		WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
+	}
+	else
+	{
+		WriteBinaryData<uint64_t>(document, TaggedBlock::totalSize<uint64_t>() - 12u);
+	}
+
+	WriteBinaryData<uint32_t>(document, Signature("plcL").m_Value);
+	WriteBinaryData<uint32_t>(document, m_Version);
+	m_UniqueID.write(document);
+
+	WriteBinaryData<uint32_t>(document, m_PageNumber);
+	WriteBinaryData<uint32_t>(document, m_TotalPages);
+	WriteBinaryData<uint32_t>(document, m_AnitAliasPolicy);
+
+	WriteBinaryData<uint32_t>(document, PlacedLayer::s_TypeMap.at(m_Type));
+	
+	m_Transform.write(document);
+
+	WriteBinaryData<uint32_t>(document, 0u);
+	WriteBinaryData<uint32_t>(document, 16u);
+	m_WarpInformation.write(document);
+
+	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
+	// zero-sized length block and writes it back out but now with the actual section length
+	if (header.m_Version == Enum::Version::Psd)
+	{
+		Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), 4u);
+	}
+	else
+	{
+		Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 4u);
+	}
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature)
+{
+	m_Key = key;
+	m_Offset = offset;
+	m_Signature = signature;
+
+	m_Length = ReadBinaryData<uint32_t>(document);
+	TaggedBlock::totalSize(static_cast<size_t>(std::get<uint32_t>(m_Length)) + 4u + 4u + 4u);
+
+	// The identifier is always going to be 'soLD' according to the docs
+	auto identifier = Signature::read(document);
+	if (identifier != "soLD")
+	{
+		PSAPI_LOG_ERROR("PlacedLayerData", "Unknown placed layer identifier '%s' encountered", identifier.string().c_str());
+	}
+
+	m_Version = ReadBinaryData<uint32_t>(document);
+	auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+	if (m_Version != 4 || descriptorVersion != 16)
+	{
+		PSAPI_LOG_ERROR("PlacedLayer", "Unknown version or descriptor version encountered. Version: %d. Descriptor Version: %d. Expected 4 and 16 for these respectively", m_Version, descriptorVersion);
+	}
+
+	m_Descriptor.read(document);
+	// Manually skip to the end as this section may be padded
+	document.setOffset(offset + TaggedBlock::totalSize<uint64_t>());
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void PlacedLayerDataTaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
+{
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("SoLd").m_Value);
+
+	auto lenOffset = document.getOffset();
+	WriteBinaryData<uint32_t>(document, 0u);
+
+	// Write key, version and descriptor version
+	Signature("soLD").write(document);
+	WriteBinaryData<uint32_t>(document, m_Version);
+	WriteBinaryData<uint32_t>(document, 16u);
+
+	m_Descriptor.write(document);
+
+	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
+	// zero-sized length block and writes it back out but now with the actual section length
+	Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), padding);
+}
+
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -371,14 +567,15 @@ LinkedLayer::Date::Date()
 {
 	auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
-	std::tm* localTime = std::localtime(&t);
+	auto localTime = std::make_unique<std::tm>();
+	localtime_s(localTime.get(), &t);
 
 	// Set the struct fields
 	year = 1900 + localTime->tm_year;
-	month = 1 + localTime->tm_mon;
-	day = localTime->tm_mday;
-	hour = localTime->tm_hour;
-	minute = localTime->tm_min;
+	month = static_cast<uint8_t>(1 + localTime->tm_mon);
+	day = static_cast<uint8_t>(localTime->tm_mday);
+	hour = static_cast<uint8_t>(localTime->tm_hour);
+	minute = static_cast<uint8_t>(localTime->tm_min);
 	seconds = static_cast<double>(localTime->tm_sec);
 }
 
@@ -387,7 +584,7 @@ LinkedLayer::Date::Date()
 // ---------------------------------------------------------------------------------------------------------------------
 void LinkedLayer::Data::read(File& document)
 {
-	auto size = ReadBinaryData<uint64_t>(document);
+	m_Size = ReadBinaryData<uint64_t>(document);
 
 	m_Type = readType(document);
 	m_Version = ReadBinaryData<uint32_t>(document);
@@ -397,15 +594,12 @@ void LinkedLayer::Data::read(File& document)
 	}
 
 	// Read the UniqueID identifying which layer this belongs to
-	PascalString uniqueID;
-	uniqueID.read(document, 1u);
-	m_UniqueID = uniqueID.getString();
-
+	m_UniqueID = PascalString::readString(document, 1u);
 	m_FileName.read(document, 2u);
 
-	// Read the file type such as " png", " jpg" etc. 
-	auto fileTypeArr = ReadBinaryArray<char>(document, 4u);
-	m_FileType = std::string(fileTypeArr.begin(), fileTypeArr.end());
+	// Read the file type such as " png", " jpg" etc.
+	// This may be empty in some cases such as exr, likely when photoshop itself doesnt have a parser for the file
+	m_FileType = Signature::read(document).string();
 
 	// Unkown what exactly this is
 	m_FileCreator = ReadBinaryData<uint32_t>(document);
@@ -416,6 +610,10 @@ void LinkedLayer::Data::read(File& document)
 	if (hasFileOpenDescriptor)
 	{
 		auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+		if (descriptorVersion != 16u)
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptorVersion);
+		}
 		Descriptors::Descriptor fileOpenDescriptor;
 		fileOpenDescriptor.read(document);
 		m_FileOpenDescriptor = fileOpenDescriptor;
@@ -425,6 +623,10 @@ void LinkedLayer::Data::read(File& document)
 	if (m_Type == Type::External)
 	{
 		auto descriptorVersion = ReadBinaryData<uint32_t>(document);
+		if (descriptorVersion != 16u)
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptorVersion);
+		}
 		Descriptors::Descriptor linkedFileDescriptor;
 		linkedFileDescriptor.read(document);
 		m_LinkedFileDescriptor = linkedFileDescriptor;
@@ -435,8 +637,8 @@ void LinkedLayer::Data::read(File& document)
 			date.read(document);
 			m_Date = date;
 		}
-		uint64_t fileSize = ReadBinaryData<uint64_t>(document);
-		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, fileSize);
+		uint64_t externalDataFileSize = ReadBinaryData<uint64_t>(document);
+		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, externalDataFileSize);
 	}
 	else if (m_Type == Type::Alias)
 	{
@@ -462,20 +664,88 @@ void LinkedLayer::Data::read(File& document)
 	{
 		m_AssetIsLocked = ReadBinaryData<bool>(document);
 	}
-
-	// The file format ref mentions that if the type is External and the version is 2 we read the raw file bytes here but unless the 
-	// Version 2 stored the raw file bytes twice this would seem weird as the call above for the raw file bytes would also still be there
-	// We skip any loading now (also because version 2 is likely approaching 20 years in age now so finding files that old will be a challenge).
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayer::Data::Type LinkedLayer::Data::readType(File& document)
+void LinkedLayer::Data::write(File& document)
 {
-	auto keyArr = ReadBinaryArray<char>(document, 4u);
-	std::string key(keyArr.begin(), keyArr.end());
+	auto lenOffset = document.getOffset();
+	WriteBinaryData<uint64_t>(document, 0);
 
+	writeType(document, m_Type);
+	WriteBinaryData<uint32_t>(document, m_Version);
+
+	PascalString(m_UniqueID, 1u).write(document);
+	m_FileName.write(document);
+
+	Signature(m_FileType).write(document);
+	WriteBinaryData<uint32_t>(document, m_FileCreator);
+	WriteBinaryData(document, m_RawFileBytes.size());	// This may be 0
+	WriteBinaryData<bool>(document, m_FileOpenDescriptor.has_value());
+
+	if (m_FileOpenDescriptor)
+	{
+		m_FileOpenDescriptor.value().write(document);
+	}
+
+	// Write out the data related to the different types of linked data
+	if (m_Type == Type::External)
+	{
+		if (m_LinkedFileDescriptor)
+		{
+			m_LinkedFileDescriptor.value().write(document);
+		}
+		else
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "External file link set as m_Type but m_LinkedFileDescriptor is not populated");
+		}
+		// If we didnt populate a specific date we write the default initialized date which is just the current timestamp
+		if (m_Version > 3)
+		{
+			m_Date.value_or(Date{}).write(document);
+		}
+		// The documentation mentions that if version is equals to 2 the file data would instead be at the end of the section.
+		// Because we however wouldn't write any more data after this point if it was version 2 this point is irrelevant
+		WriteBinaryData<uint64_t>(document, m_RawFileBytes.size());
+		WriteBinaryArray<uint8_t>(document, m_RawFileBytes);
+	}
+	else if (m_Type == Type::Alias)
+	{
+		WritePadddingBytes(document, 8u);
+	}
+	else if (m_Type == Type::Data)
+	{
+		WriteBinaryArray<uint8_t>(document, m_RawFileBytes);
+	}
+
+
+	if (m_Version >= 5)
+	{
+		m_ChildDocumentID.value_or(UnicodeString("", 2u)).write(document);
+	}
+	if (m_Version >= 6)
+	{
+		WriteBinaryData<float64_t>(document, m_AssetModTime.value_or(static_cast<float64_t>(20240923.1f)));
+	}
+	if (m_Version >= 7)
+	{
+		WriteBinaryData<bool>(document, m_AssetIsLocked.value_or(false));
+	}
+
+	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
+	// zero-sized length block and writes it back out but now with the actual section length
+	Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 1u);
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LinkedLayer::Data::Type LinkedLayer::Data::readType(File& document) const
+{
+	auto key = Signature::read(document);
 	if (key == "liFD")
 	{
 		return LinkedLayer::Data::Type::Data;
@@ -488,16 +758,33 @@ LinkedLayer::Data::Type LinkedLayer::Data::readType(File& document)
 	{
 		return LinkedLayer::Data::Type::Alias;
 	}
-	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.c_str());
+	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.string().c_str());
+	return LinkedLayer::Data::Type::Data;
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Data::write(File& document) const
+void LinkedLayer::Data::writeType(File& document, Type type) const
 {
-
+	if (type == Type::Data)
+	{
+		Signature("liFD").write(document);
+	}
+	else if (type == Type::External)
+	{
+		Signature("liFE").write(document);
+	}
+	else if (type == Type::Alias)
+	{
+		Signature("liFA").write(document);
+	}
+	else
+	{
+		PSAPI_LOG_ERROR("LinkedLayer", "Unknown LinkedLayer type encountered while writing to file, aborting write.");
+	}
 }
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -508,28 +795,29 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 	m_Signature = signature;
 
 	uint64_t toRead = 0;
-	if (m_Key == Enum::TaggedBlockKey::lrLinked)
+	if (m_Key == Enum::TaggedBlockKey::lrLinked || (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte && header.m_Version == Enum::Version::Psd))
 	{
 		uint32_t length = ReadBinaryData<uint32_t>(document);
 		length = RoundUpToMultiple<uint32_t>(length, padding);
 		toRead = length;
 		m_Length = length;
+		TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 	}
-	else if (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte)
+	else if (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte && header.m_Version == Enum::Version::Psb)
 	{
 		uint64_t length = ReadBinaryData<uint64_t>(document);
 		length = RoundUpToMultiple<uint64_t>(length, padding);
 		toRead = length;
 		m_Length = length;
+		TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 	}
 	else
 	{
-		PSAPI_LOG_ERROR("LinkedLayer", "Unknonw tagged block key, aborting parsing");
+		PSAPI_LOG_ERROR("LinkedLayer", "Unknown tagged block key, aborting parsing");
 	}
 
 	// A linked Layer tagged block may contain any number of LinkedLayers, and there is no explicit
 	// number of layers we must keep reading LinkedLayers until we've reached the end of the taggedblock
-	uint64_t startOffset = document.getOffset();
 	uint64_t endOffset = document.getOffset() + toRead;
 	while (document.getOffset() < endOffset)
 	{
@@ -542,9 +830,36 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayerTaggedBlock::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding /*= 1u*/)
+void LinkedLayerTaggedBlock::write(File& document, const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
+	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature("lnk2").m_Value);
 
+	auto lenOffset = document.getOffset();
+	if (header.m_Version == Enum::Version::Psd)
+	{
+		WriteBinaryData<uint32_t>(document, 0u);
+	}
+	else
+	{
+		WriteBinaryData<uint64_t>(document, 0u);
+	}
+
+	for (auto& item : m_LayerData)
+	{
+		item.write(document);
+	}
+
+	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
+	// zero-sized length block and writes it back out but now with the actual section length
+	if (header.m_Version == Enum::Version::Psd)
+	{
+		Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), 1u);
+	}
+	else
+	{
+		Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 1u);
+	}
 }
 
 PSAPI_NAMESPACE_END

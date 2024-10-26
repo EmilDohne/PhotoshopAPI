@@ -368,6 +368,8 @@ struct PascalString : public FileSection
 	/// Return a view over the string held by this struct
 	const std::string_view getStringView() const noexcept;
 
+    static std::string readString(File& document, const uint8_t padding) noexcept;
+
 	void read(File& document, const uint8_t padding) noexcept;
 	void write(File& document) const;
 private:

@@ -59,6 +59,9 @@ template std::shared_ptr<LrSectionTaggedBlock> TaggedBlockStorage::getTaggedBloc
 template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<UnicodeLayerNameTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<ProtectedSettingTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<PlacedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<PlacedLayerDataTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<LinkedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -68,8 +71,12 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
 	if (signature != Signature("8BIM") && signature != Signature("8B64"))
 	{
-		PSAPI_LOG_ERROR("LayerRecord", "Signature does not match '8BIM' or '8B64', got '%s' instead",
-			uint32ToString(signature.m_Value).c_str());
+		auto getPrintableChar = [](char c) { return c ? c : ' '; };
+		PSAPI_LOG_ERROR("TaggedBlock", "Signature does not match '8BIM' or '8B64', got '%c%c%c%c' instead",
+			getPrintableChar(signature.m_Representation[0]),
+			getPrintableChar(signature.m_Representation[1]),
+			getPrintableChar(signature.m_Representation[2]),
+			getPrintableChar(signature.m_Representation[3]));
 	}
 	std::string keyStr = uint32ToString(ReadBinaryData<uint32_t>(document));
 	std::optional<Enum::TaggedBlockKey> taggedBlock = Enum::getTaggedBlockKey<std::string, Enum::TaggedBlockKey>(keyStr);
@@ -111,21 +118,33 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			this->m_TaggedBlocks.push_back(lrUnicodeNameBlock);
 			return lrUnicodeNameBlock;
 		}
-<<<<<<< HEAD
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrProtectedSetting)
 		{
 			auto lrProtectionTaggedBlock = std::make_shared<ProtectedSettingTaggedBlock>();
 			lrProtectionTaggedBlock->read(document, offset, signature);
 			this->m_TaggedBlocks.push_back(lrProtectionTaggedBlock);
 			return lrProtectionTaggedBlock;
-=======
+		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrPlaced)
+		{
+			auto lrPlacedBlock = std::make_shared<PlacedLayerTaggedBlock>();
+			lrPlacedBlock->read(document, offset, taggedBlock.value(), signature);
+			this->m_TaggedBlocks.push_back(lrPlacedBlock);
+			return lrPlacedBlock;
+		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrPlacedData)
+		{
+			auto lrPlacedDataBlock = std::make_shared<PlacedLayerDataTaggedBlock>();
+			lrPlacedDataBlock->read(document, offset, taggedBlock.value(), signature);
+			this->m_TaggedBlocks.push_back(lrPlacedDataBlock);
+			return lrPlacedDataBlock;
+		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrLinked || taggedBlock.value() == Enum::TaggedBlockKey::lrLinked_8Byte)
 		{
 			auto lrLinkedTaggedBlock = std::make_shared<LinkedLayerTaggedBlock>();
 			lrLinkedTaggedBlock->read(document, header, offset, taggedBlock.value(), signature, padding);
 			this->m_TaggedBlocks.push_back(lrLinkedTaggedBlock);
 			return lrLinkedTaggedBlock;
->>>>>>> Add (read) support for LinkedLayers
 		}
 		else
 		{

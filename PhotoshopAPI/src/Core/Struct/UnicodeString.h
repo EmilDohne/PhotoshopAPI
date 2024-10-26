@@ -50,8 +50,8 @@ struct UnicodeString : public FileSection
 	/// representation
 	void read(File& document, const uint8_t padding);
 
-	/// Write the stored UTF16 string to disk with a 4-byte length aligned to the 
-	/// given padding
+	/// Write the stored UTF16 string to disk with a 4-byte length with the padding
+	/// defined in the constructor
 	void write(File& document) const;
 private:
 	// UTF-8 representation of the string

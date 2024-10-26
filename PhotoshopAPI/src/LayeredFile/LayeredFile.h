@@ -84,7 +84,7 @@ namespace LayeredFileImpl
 	/// initialized with the given layer record and corresponding channel image data.
 	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
+	std::shared_ptr<Layer<T>> identifyLayerType(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
 	{
 		// Short ciruit here as we have an image layer for sure
 		if (!layerRecord.m_AdditionalLayerInfo.has_value())
@@ -125,10 +125,11 @@ namespace LayeredFileImpl
 		}
 
 		// Check for Smart Object Layers
-		auto smartObjectTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrSmartObject);
-		if (typeToolTaggedBlock.has_value())
+		auto lrPlacedTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrPlaced);
+		auto lrPlacedDataTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrPlacedData);
+		if (lrPlacedTaggedBlock.has_value() || lrPlacedDataTaggedBlock.has_value())
 		{
-			return std::make_shared<SmartObjectLayer<T>>();
+			return std::make_shared<SmartObjectLayer<T>>(layerRecord, channelImageData, header, globalAdditionalLayerInfo);
 		}
 
 		// Check if it is one of many adjustment layers
@@ -219,7 +220,8 @@ namespace LayeredFileImpl
 		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
 		std::vector<ChannelImageData>::reverse_iterator& channelImageDataIterator,
-		const FileHeader& header
+		const FileHeader& header,
+		const AdditionalLayerInfo& globalAdditionalLayerInfo
 	)
 	{
 		std::vector<std::shared_ptr<Layer<T>>> root;
@@ -230,12 +232,12 @@ namespace LayeredFileImpl
 			auto& layerRecord = *layerRecordsIterator;
 			auto& channelImage = *channelImageDataIterator;
 
-			std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header);
+			std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header, globalAdditionalLayerInfo);
 
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
 				// Recurse a level down
-				groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header);
+				groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header, globalAdditionalLayerInfo);
 				root.push_back(groupLayerPtr);
 			}
 			else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -252,9 +254,8 @@ namespace LayeredFileImpl
 				++layerRecordsIterator;
 				++channelImageDataIterator;
 			}
-			catch (const std::exception& ex)
+			catch ([[maybe_unused]] const std::exception& ex)
 			{
-				PSAPI_UNUSED(ex);
 				PSAPI_LOG_ERROR("LayeredFile", "Unhandled exception when trying to decrement the layer iterator");
 			}
 		}
@@ -314,9 +315,33 @@ namespace LayeredFileImpl
 		// Layer divider in this case being an empty layer with a 'lsct' tagged block with Type set to 3
 		auto layerRecordsIterator = layerRecords->rbegin();
 		auto channelImageDataIterator = channelImageData->rbegin();
-		std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(*layerRecords, *channelImageData, layerRecordsIterator, channelImageDataIterator, file->m_Header);
 
-		return root;
+		if (file->m_LayerMaskInfo.m_AdditionalLayerInfo)
+		{
+			std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(
+				*layerRecords,
+				*channelImageData,
+				layerRecordsIterator,
+				channelImageDataIterator,
+				file->m_Header,
+				file->m_LayerMaskInfo.m_AdditionalLayerInfo.value()
+			);
+			return root;
+		}
+		else
+		{
+			AdditionalLayerInfo tmp{};
+			std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(
+				*layerRecords,
+				*channelImageData,
+				layerRecordsIterator,
+				channelImageDataIterator,
+				file->m_Header,
+				tmp
+			);
+			return root;
+		}
+
 	}
 
 	/// Recursively build a flat layer hierarchy
