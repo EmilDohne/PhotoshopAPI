@@ -11,7 +11,11 @@
 #include <vector>
 #include <set>
 
+#include "json.hpp"
+
 PSAPI_NAMESPACE_BEGIN
+
+using json_ordered = nlohmann::ordered_json;
 
 
 namespace Descriptors
@@ -210,7 +214,7 @@ namespace Descriptors
 		/// \param value	The value you intend to write to disk, will write the child items as well if present
 		/// \param readKey	Whether to write the key to disk or discard it (such as with lists), this does not propagate to any child 
 		///					nodes and only applies to the given node
-		void WriteDescriptorVariant(File& document, const std::string& key, DescriptorVariant& value, bool writeKey = true);
+		void WriteDescriptorVariant(File& document, const std::string& key, const DescriptorVariant& value, bool writeKey = true);
 	}
 
 
@@ -228,10 +232,18 @@ namespace Descriptors
 		/// Write the DescriptorItem to disk encoding it as well as any of its child nodes (if present)
 		///
 		/// \param document The file instance to write to, must be open for write access
-		virtual void write(File& document) = 0;
+		virtual void write(File& document) const = 0;
 		/// Calculate the total size of the struct as well as its child nodes if it were
 		/// to be written to disk as-is
 		virtual void calculateSize() {};	// TODO: pure virtual 
+
+		/// Recursively convert the descriptor into a json object for easy visualization 
+		/// of the data or writing to disk for debugging
+		virtual json_ordered to_json() const = 0;
+
+		/// Converts the DewscriptorVariant into a json handling both types inherited from 
+		/// DescriptorBase as well as standard types such as double, bool etc.
+		static json_ordered to_json(const DescriptorVariant& variant);
 
 		/// Retrieve the key associated with the given descriptor item. This may be empty in the case of a list.
 		/// In most cases retrieving this should not be necessary
@@ -243,6 +255,17 @@ namespace Descriptors
 	protected:
 		std::string m_Key{};
 		std::vector<char> m_OSKey{};
+
+		/// Get a json representation of the implementation, this includes things like 
+		/// Class name, m_Key, m_OSKey
+		/// 
+		/// The json structure then looks something like this:
+		/// {
+		///		"_data_type": "Descriptor",
+		///		"_key": m_Key,
+		///		"_os_key": m_OSKey,
+		/// }
+		json_ordered get_json_repr(std::string data_type) const;
 	};
 
 
@@ -263,6 +286,7 @@ namespace Descriptors
 		/// 
 		/// \returns A reference to the ItemVariant at the given key
 		DescriptorVariant& at(const std::string_view key);
+		const DescriptorVariant& at(const std::string_view key) const;
 
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
 		void insert(std::pair<std::string, DescriptorVariant> item) noexcept;
@@ -275,7 +299,7 @@ namespace Descriptors
 		void insert_or_assign(std::string key, DescriptorVariant value) noexcept;
 
 		/// Remove an item by its logical index, throws if the index is not valid
-		void remove(int index);
+		void remove(size_t index);
 		/// Remove an item by its key, throws if the key is not valid
 		void remove(std::string_view key);
 
@@ -305,7 +329,9 @@ namespace Descriptors
 		Property(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string keyID);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -319,7 +345,9 @@ namespace Descriptors
 		Class(std::string key, std::vector<char> osKey, std::string name, std::string classID);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -333,7 +361,10 @@ namespace Descriptors
 		Enumerated(std::string key, std::vector<char> osKey, std::string typeID, std::string enumerator);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 
@@ -346,7 +377,9 @@ namespace Descriptors
 		Index(std::string key, std::vector<char> osKey, int32_t identifier);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -369,7 +402,10 @@ namespace Descriptors
 		);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 
@@ -384,7 +420,9 @@ namespace Descriptors
 		Offset(std::string key, std::vector<char> osKey, std::string name, std::string classID, uint32_t offset);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -397,7 +435,9 @@ namespace Descriptors
 		Identifier(std::string key, std::vector<char> osKey, int32_t identifier);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -415,7 +455,9 @@ namespace Descriptors
 
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 	// Same as a UnitFloat but stores multiple values instead of a single one.
@@ -430,7 +472,10 @@ namespace Descriptors
 
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 
@@ -445,7 +490,10 @@ namespace Descriptors
 		List(std::string key, std::vector<char> osKey, std::vector<DescriptorVariant> items);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 	/// Exactly the same as a List
@@ -464,7 +512,10 @@ namespace Descriptors
 		RawData(std::string key, std::vector<char> osKey, std::vector<uint8_t> data);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 
@@ -485,7 +536,10 @@ namespace Descriptors
 		Name(std::string key, std::vector<char> osKey, std::string name, std::string classID, std::string value);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
+
 	};
 
 
@@ -507,7 +561,9 @@ namespace Descriptors
 			std::vector<std::pair<std::string, DescriptorVariant>> items);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
+
+		json_ordered to_json() const override;
 	};
 
 
@@ -540,11 +596,9 @@ namespace Descriptors
 		Descriptor(std::string key, std::vector<std::pair<std::string, DescriptorVariant>> items);
 
 		void read(File& document) override;
-		void write(File& document) override;
+		void write(File& document) const override;
 
-		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const {
-			return 0;
-		};
+		json_ordered to_json() const override;
 	};
 
 

@@ -6,6 +6,8 @@
 
 #include "Util/DescriptorUtil.h"
 
+#include "fmt/core.h"
+
 PSAPI_NAMESPACE_BEGIN
 
 
@@ -172,6 +174,12 @@ namespace Descriptors
 			enumeratedReference.read(document);
 			return std::make_tuple(key, enumeratedReference);
 		}
+		else if (osTypeEnum == Impl::OSTypes::Reference)
+		{
+			Reference reference(key, ostype);
+			reference.read(document);
+			return std::make_tuple(key, reference);
+		}
 		else if (osTypeEnum == Impl::OSTypes::RawData)
 		{
 			RawData rawdata(key, ostype);
@@ -231,7 +239,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Impl::WriteDescriptorVariant(File& document, const std::string& key, DescriptorVariant& value, bool writeKey /*= true*/)
+	void Impl::WriteDescriptorVariant(File& document, const std::string& key, const DescriptorVariant& value, bool writeKey /*= true*/)
 	{
 		if (writeKey)
 		{
@@ -329,13 +337,87 @@ namespace Descriptors
 			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::String);
 			WriteBinaryArray(document, descriptorKey);
 			const auto& str = std::get<UnicodeString>(value);
-			str.write(document, 1u);
+			str.write(document);
 		}
 		else
 		{
 			PSAPI_LOG_ERROR("Descriptor", "Unable to write DescriptorItem to disk, please ensure a proper parser was registered" \
 				" for it");
 		}
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered DescriptorBase::to_json(const DescriptorVariant& variant)
+	{
+		return std::visit([](const auto& value) -> json_ordered 
+			{
+			using T = std::decay_t<decltype(value)>;
+
+			// If the type is derived from DescriptorBase, call its to_json method
+			if constexpr (std::is_base_of_v<DescriptorBase, T>) 
+			{
+				return value.to_json();
+			}
+			// Special handling for integral and other built-in types
+			else if constexpr (std::is_same_v<T, int32_t>) 
+			{
+				return {
+					{"implementation", { {"_data_type", "int32_t"} }},
+					{ "value", value }
+				};
+			}
+			else if constexpr (std::is_same_v<T, int64_t>) 
+			{
+				return {
+					{"implementation", { {"_data_type", "int64_t"} }},
+					{ "value", value }
+				};
+			}
+			else if constexpr (std::is_same_v<T, double>) 
+			{
+				return {
+					{"implementation", { {"_data_type", "double"} }},
+					{ "value", value }
+				};
+			}
+			else if constexpr (std::is_same_v<T, bool>) 
+			{
+				return 
+				{
+					{"implementation", { {"_data_type", "bool"} }},
+					{ "value", value }
+				};
+			}
+			else if constexpr (std::is_same_v<T, UnicodeString>)
+			{
+				return
+				{
+					{"implementation", { {"_data_type", "UnicodeString"} }},
+					{ "value", value.getString()}
+				};
+			}
+			else 
+			{
+				PSAPI_LOG_ERROR("DescriptorBase", "No matching to_json() function or builtin found for type");
+				return {};
+			}
+			}, variant);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered DescriptorBase::get_json_repr(std::string data_type) const
+	{
+		json_ordered data{};
+
+		data["_data_type"]	= data_type;
+		data["_key"]		= m_Key;
+		data["_os_key"]		= std::string(m_OSKey.begin(), m_OSKey.end());
+
+		return data;
 	}
 
 
@@ -351,13 +433,24 @@ namespace Descriptors
 		m_DescriptorItems.push_back(std::make_pair(std::string(key), DescriptorVariant{}));
 		return m_DescriptorItems.back().second;
 	}
-
-
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	DescriptorVariant& KeyValueMixin::at(const std::string_view key)
 	{
 		for (auto& [_key, value] : m_DescriptorItems)
+		{
+			if (_key == key)
+				return value;
+		}
+		PSAPI_LOG_ERROR("Descriptor", "Unable to find child node with key '%s' in Descriptor", std::string(key).c_str());
+		return m_DescriptorItems.back().second;
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	const DescriptorVariant& KeyValueMixin::at(const std::string_view key) const
+	{
+		for (const auto& [_key, value] : m_DescriptorItems)
 		{
 			if (_key == key)
 				return value;
@@ -410,7 +503,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void KeyValueMixin::remove(int index)
+	void KeyValueMixin::remove(size_t index)
 	{
 		m_DescriptorItems.erase(m_DescriptorItems.begin() + index);
 	}
@@ -486,11 +579,26 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Property::write(File& document)
+	void Property::write(File& document) const
 	{
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 		Impl::writeLengthDenotedKey(document, m_KeyID);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Property::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Property");
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+		data["key_id"] = m_KeyID;
+
+		return data;
 	}
 
 
@@ -514,7 +622,7 @@ namespace Descriptors
 		{
 			m_UnitType = Impl::UnitFloatTypeMap.at(unitTypeKey);
 		}
-		catch (const std::out_of_range& e)
+		catch ([[maybe_unused]] const std::out_of_range& e)
 		{
 			PSAPI_LOG_ERROR("UnitFloat", "Unknown key '%s' encountered while parsing UnitFloat struct", unitTypeKey.c_str());
 		}
@@ -524,13 +632,27 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void UnitFloat::write(File& document)
+	void UnitFloat::write(File& document) const
 	{
 		auto unitTypeKey = Impl::UnitFloatTypeMap.at(m_UnitType);
 		// TODO: this could very well insert a null-termination char at the end, please investigate
 		std::vector<uint8_t> unitTypeData(unitTypeKey.begin(), unitTypeKey.end());
 		WriteBinaryArray(document, unitTypeData);
 		WriteBinaryData<double>(document, m_Value);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered UnitFloat::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("UnitFloat");
+		data["unit_type"] = Impl::UnitFloatTypeMap.at(m_UnitType);
+		data["value"] = m_Value;
+
+		return data;
 	}
 
 
@@ -554,7 +676,7 @@ namespace Descriptors
 		{
 			m_UnitType = Impl::UnitFloatTypeMap.at(unitTypeKey);
 		}
-		catch (const std::out_of_range& e)
+		catch ([[maybe_unused]] const std::out_of_range& e)
 		{
 			PSAPI_LOG_ERROR("UnitFloat", "Unknown key '%s' encountered while parsing UnitFloats struct", unitTypeKey.c_str());
 		}
@@ -565,14 +687,29 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void UnitFloats::write(File& document)
+	void UnitFloats::write(File& document) const
 	{
 		auto unitTypeKey = Impl::UnitFloatTypeMap.at(m_UnitType);
 		// TODO: this could very well insert a null-termination char at the end, please investigate
 		std::vector<uint8_t> unitTypeData(unitTypeKey.begin(), unitTypeKey.end());
 		WriteBinaryArray(document, unitTypeData);
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Values.size()));
-		WriteBinaryArray<double>(document, m_Values);
+		auto values = m_Values;
+		WriteBinaryArray<double>(document, values);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered UnitFloats::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("UnitFloats");
+		data["unit_type"] = Impl::UnitFloatTypeMap.at(m_UnitType);
+		data["values"] = m_Values;
+
+		return data;
 	}
 
 
@@ -595,12 +732,40 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void RawData::write(File& document)
+	void RawData::write(File& document) const
 	{
-		WriteBinaryData<uint32_t>(document, m_Data.size());
-		WriteBinaryArray<uint8_t>(document, m_Data);
+		if (m_Data.size() < std::numeric_limits<uint32_t>::max())
+		{
+			PSAPI_LOG_ERROR("RawDataDescriptor", "Data size would overflow numeric limit of uint32_t");
+		}
+		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Data.size()));
+		auto data = m_Data;
+		WriteBinaryArray<uint8_t>(document, data);
 	}
 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered RawData::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("RawData");
+		
+		// If the data is larger than a threshold we actually want to truncate it.
+		// We set this to an arbitrary limit of 512 for now
+		if (m_Data.size() > 512)
+		{
+			const auto first = m_Data.front();
+			const auto last = m_Data.back();
+
+			data["data"] = fmt::format("{}...{}", first, last);
+		}
+		else
+		{
+			data["data"] = m_Data;
+		}
+		return data;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -623,12 +788,25 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Class::write(File& document)
+	void Class::write(File& document) const
 	{
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Class::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Class");
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+
+		return data;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -641,7 +819,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Enumerated::write(File& document)
+	void Enumerated::write(File& document) const
 	{
 		Impl::writeLengthDenotedKey(document, m_TypeID);
 		Impl::writeLengthDenotedKey(document, m_Enum);
@@ -657,6 +835,19 @@ namespace Descriptors
 		m_Enum = enumerator;
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Enumerated::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Enumerated");
+		data["type_id"] = m_TypeID;
+		data["enum"] = m_Enum;
+
+		return data;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -689,14 +880,29 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void EnumeratedReference::write(File& document)
+	void EnumeratedReference::write(File& document) const
 	{
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 		Impl::writeLengthDenotedKey(document, m_TypeID);
 		Impl::writeLengthDenotedKey(document, m_Enum);
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered EnumeratedReference::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("EnumeratedReference");
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+		data["type_id"] = m_TypeID;
+		data["enum"] = m_Enum;
+
+		return data;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -721,13 +927,28 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Offset::write(File& document)
+	void Offset::write(File& document) const
 	{
-		m_Name.read(document, 1u);
-		m_ClassID = Impl::readLengthDenotedKey(document);
-		m_Offset = ReadBinaryData<uint32_t>(document);
+		m_Name.write(document);
+		Impl::writeLengthDenotedKey(document, m_ClassID);
+		WriteBinaryData<uint32_t>(document, m_Offset);
 	}
-	
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Offset::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Offset");
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+		data["offset"] = m_Offset;
+
+		return data;
+	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -738,7 +959,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Identifier::write(File& document)
+	void Identifier::write(File& document) const
 	{
 		WriteBinaryData<int32_t>(document, m_Identifier);
 	}
@@ -750,6 +971,19 @@ namespace Descriptors
 		: DescriptorBase(key, osKey)
 	{
 		m_Identifier = identifier;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Identifier::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Identifier");
+		data["identifier"] = m_Identifier;
+
+		return data;
 	}
 
 
@@ -772,11 +1006,23 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Index::write(File& document)
+	void Index::write(File& document) const
 	{
 		WriteBinaryData<int32_t>(document, m_Identifier);
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Index::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Index");
+		data["identifier"] = m_Identifier;
+
+		return data;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -801,11 +1047,26 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Name::write(File& document)
+	void Name::write(File& document) const
 	{
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
-		m_Value.write(document, 1u);
+		m_Value.write(document);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Name::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Name");
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+		data["value"] = m_Value.getString();
+
+		return data;
 	}
 
 
@@ -823,7 +1084,7 @@ namespace Descriptors
 	void List::read(File& document)
 	{
 		uint32_t count = ReadBinaryData<uint32_t>(document);
-		for (int i = 0; i < count; ++i)
+		for (uint32_t i = 0; i < count; ++i)
 		{
 			// Since key will just be "" we can safely ignore it
 			auto [_, value] = Impl::ReadDescriptorVariant(document, false);
@@ -834,13 +1095,32 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void List::write(File& document)
+	void List::write(File& document) const
 	{
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Items.size()));
 		for (auto& item : m_Items)
 		{
 			Impl::WriteDescriptorVariant(document, "", item, false);
 		}
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered List::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("List");
+
+		auto values = json_ordered::array();
+		for (const auto& item : m_Items)
+		{
+			values.push_back(DescriptorBase::to_json(item));
+		}
+		data["values"] = std::move(values);
+
+		return data;
 	}
 
 
@@ -862,10 +1142,10 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void ObjectArray::write(File& document)
+	void ObjectArray::write(File& document) const
 	{
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_ItemsCount));
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_ClassID);
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_DescriptorItems.size()));
 		for (auto& [key, value] : m_DescriptorItems)
@@ -892,6 +1172,28 @@ namespace Descriptors
 		m_DescriptorItems = items;
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered ObjectArray::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("ObjectArray");
+		data["items_count"] = m_ItemsCount;
+		data["name"] = m_Name.getString();
+		data["class_id"] = m_ClassID;
+
+		auto values = json_ordered::basic_json();
+		for (const auto& [key, item] : m_DescriptorItems)
+		{
+			values[key] = (DescriptorBase::to_json(item));
+		}
+		data["values"] = std::move(values);
+
+		return data;
+	}
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void Descriptor::read(File& document)
@@ -908,9 +1210,9 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Descriptor::write(File& document)
+	void Descriptor::write(File& document) const
 	{
-		m_Name.write(document, 1u);
+		m_Name.write(document);
 		Impl::writeLengthDenotedKey(document, m_Key);
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_DescriptorItems.size()));
 		for (auto& [key, value] : m_DescriptorItems)
@@ -928,6 +1230,26 @@ namespace Descriptors
 		m_DescriptorItems = std::move(items);
 	}
 
-}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered Descriptor::to_json() const
+	{
+		json_ordered data{};
+
+		data["implementation"] = DescriptorBase::get_json_repr("Descriptor");
+		data["name"] = m_Name.getString();
+
+		auto values = json_ordered::basic_json();
+		for (const auto& [key, item] : m_DescriptorItems)
+		{
+			values[key] = (DescriptorBase::to_json(item));
+		}
+		data["values"] = std::move(values);
+
+		return data;
+	}
+
+	}
 
 PSAPI_NAMESPACE_END
