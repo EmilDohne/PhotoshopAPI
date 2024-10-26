@@ -1,8 +1,9 @@
 ﻿cmake_minimum_required (VERSION 3.20)
-project ("PhotoshopAPIBuild" VERSION 0.5.2 LANGUAGES CXX)
+set(VCPKG_LIBRARY_LINKAGE "static")
+
+project ("PhotoshopAPIBuild" VERSION 0.5.1 LANGUAGES CXX)
 
 if (MSVC)
-    # MSVC is stupid
     add_compile_definitions(NOMINMAX)
 endif()
 
@@ -10,6 +11,7 @@ endif()
 # Configurable options
 
 option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
+option(PSAPI_BUILD_OIIO "Include OpenImageIO in the builds. This is required for extracting image data from smart objects" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
@@ -32,12 +34,59 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
+# Set up our toolchain
+# --------------------------------------------------------------------------
+
+# Here we add support for OpenImageIO which is used for smart object image data extraction.
+# This isn't strictly required. OpenImageIO may be passed externally rather than through the 
+# vcpkg submodule. Users can provide an external toolchain file with DCMAKE_TOOLCHAIN_FILE
+# which will essentially disable the building of OIIO locally. If DCMAKE_TOOLCHAIN_FILE is passed
+# and PSAPI_BUILD_OIIO is true we first check whether the toolchain file defines OpenImageIO as a
+# target and otherwise build it locally.
+if (PSAPI_BUILD_OIIO)
+    find_package(OpenImageIO CONFIG QUIET)
+
+    if (TARGET OpenImageIO::OpenImageIO AND OpenImageIO_VERSION VERSION_GREATER "2.5")
+        # OpenImageIO is found and meets version requirements
+    elseif (DEFINED CMAKE_TOOLCHAIN_FILE)
+        # Toolchain file specified, attempt to find OpenImageIO within it
+        if (NOT TARGET OpenImageIO::OpenImageIO OR OpenImageIO_VERSION VERSION_LESS "2.5")
+            message(STATUS "OpenImageIO version > 2.5 not found in toolchain. Attempting to build locally...")
+        
+            # Add vcpkg submodule to build OpenImageIO if not available
+            include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
+        
+            # Try finding OpenImageIO after including vcpkg
+            find_package(OpenImageIO CONFIG REQUIRED)
+        else()
+            message(STATUS "OpenImageIO found in toolchain file.")
+            get_target_property(OIIO_LOCATION OpenImageIO::OpenImageIO IMPORTED_LOCATION)
+            if (OIIO_LOCATION)
+                message(STATUS "OpenImageIO found at ${OIIO_LOCATION}")
+            else()
+                message(WARNING "Could not retrieve OpenImageIO location.")
+            endif()
+        endif()
+    else()
+        # No toolchain file provided, default to building OpenImageIO locally via vcpkg
+        include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
+        find_package(OpenImageIO CONFIG REQUIRED)
+    endif()
+endif()
+
+
 # Add thirdparty libraries
 # --------------------------------------------------------------------------
 
 
-# Add libdeflate
-add_subdirectory (thirdparty/libdeflate)
+# Add libdeflate. This might already be built as part of 
+# OpenImageIO so we try not to redefine the target here
+if (NOT TARGET libdeflate::libdeflate_static)
+    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+    set(LIBDEFLATE_BUILD_SHARED_LIB OFF)
+    message("Libdeflate build shared: ${LIBDEFLATE_BUILD_SHARED_LIB}")
+    add_subdirectory(thirdparty/libdeflate)
+endif()
 add_library(libdeflate_include INTERFACE)
 target_include_directories(libdeflate_include SYSTEM INTERFACE thirdparty/libdeflate)
 
@@ -68,8 +117,19 @@ set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
 
-# fmt library for formatting and logging
-add_subdirectory(thirdparty/fmt)
+# fmt library for formatting and logging. This might already be built as part of 
+# OpenImageIO so we try not to redefine the target here
+if (NOT TARGET fmt::fmt)
+    add_subdirectory(thirdparty/fmt)
+else()
+    message("Detected fmt already installed, using that instead of the submodule")
+    find_package(fmt CONFIG REQUIRED)
+endif()
+add_library(fmt_include INTERFACE)
+target_include_directories(fmt_include SYSTEM INTERFACE thirdparty/fmt/include)
+
+# JSON module for parsing of Descriptors
+add_subdirectory(thirdparty/json)
 
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
@@ -95,6 +155,7 @@ if(PSAPI_BUILD_EXAMPLES)
     add_subdirectory (PhotoshopExamples/ModifyLayerStructure)
     add_subdirectory (PhotoshopExamples/ProgressCallbacks)
     add_subdirectory (PhotoshopExamples/ReplaceImageData)
+    add_subdirectory (PhotoshopExamples/Tmp)
 endif()
 if(PSAPI_BUILD_DOCS)
     if(NOT PSAPI_BUILD_PYTHON)
