@@ -11,6 +11,7 @@
 #include <vector>
 #include <set>
 
+#include "fmt/core.h"
 #include "json.hpp"
 
 PSAPI_NAMESPACE_BEGIN
@@ -288,6 +289,33 @@ namespace Descriptors
 		DescriptorVariant& at(const std::string_view key);
 		const DescriptorVariant& at(const std::string_view key) const;
 
+		/// Access one of the sub-elements as the given type, essentially calling std::get on the item
+		/// performing bounds checking and throwing if the specified key does not exist or if the template
+		/// type T does not match the actual index of the item
+		/// 
+		/// \param key The key to search for
+		/// \tparam T The type to retrieve it as
+		/// 
+		/// \returns A reference to the ItemVariant at the given key
+		template <typename T> 
+		const T& at(const std::string key) const
+		{
+			for (auto& [stored_key, value] : m_DescriptorItems) {
+				if (stored_key == key) {
+					// Try to retrieve the value as the requested type
+					try 
+					{
+						return std::get<T>(value);
+					}
+					catch (const std::bad_variant_access&) 
+					{
+						throw std::runtime_error("Type mismatch: The stored item does not match the requested type.");
+					}
+				}
+			}
+			throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
+		}
+
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
 		void insert(std::pair<std::string, DescriptorVariant> item) noexcept;
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
@@ -313,7 +341,7 @@ namespace Descriptors
 		bool empty() const noexcept;
 
 	protected:
-		/// The storage of our key-value as a set
+		/// The storage of our key-value items
 		std::vector<std::pair<std::string, DescriptorVariant>> m_DescriptorItems;
 	};
 

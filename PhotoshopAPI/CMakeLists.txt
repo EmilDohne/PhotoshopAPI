@@ -7,21 +7,19 @@ add_library(PhotoshopAPI STATIC ${MY_SOURCES})
 
 set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
-set_property(TARGET libdeflate_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 
 set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/json/single_include/nlohmann)
 
 target_include_directories(PhotoshopAPI PUBLIC include src src/Util ${JSON_INCLUDE_DIR})
 target_link_libraries(PhotoshopAPI PUBLIC 
-    Blosc2::blosc2_static 
+    Blosc2::blosc2_static
+    OpenImageIO::OpenImageIO
     blosc2_include
     mio::mio-headers 
     tcb_span 
-    libdeflate::libdeflate_static 
-    libdeflate_include 
+    $<IF:$<TARGET_EXISTS:libdeflate::libdeflate_static>,libdeflate::libdeflate_static,libdeflate::libdeflate_shared>
     simdutf
     fmt::fmt
-    fmt_include
 )
 
 if(MSVC)

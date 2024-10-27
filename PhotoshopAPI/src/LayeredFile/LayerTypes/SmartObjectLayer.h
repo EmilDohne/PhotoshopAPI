@@ -4,6 +4,7 @@
 #include "Layer.h"
 
 #include "Core/Struct/DescriptorStructure.h"
+#include "Core/Warp/SmartObjectWarp.h"
 
 #include <fstream>
 #include "fmt/core.h"
@@ -109,7 +110,8 @@ private:
 		const auto& type = descriptor.at("Type");
 		const auto& transform = descriptor.at("Trnf");
 		const auto& non_affine_transform = descriptor.at("nonAffineTransform");
-		const auto& warp = descriptor.at("warp");
+		const auto& warp = descriptor.at<Descriptors::Descriptor>("warp");
+		auto warpStruct = SmartObjectWarp::deserialize(warp);
 		const auto& size = descriptor.at("Sz  ");		// The spaces are not a mistake
 		const auto& resolution = descriptor.at("Rslt");	// In DPI
 

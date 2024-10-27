@@ -4,7 +4,8 @@
   "builtin-baseline": "cff6ed45719c0162fa7065fdac90506a0add812c",
   "dependencies": [
       "openimageio",
-      "fmt"
+      "fmt",
+      "libdeflate"
   ],
   "overrides": [
     {

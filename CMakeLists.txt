@@ -79,16 +79,8 @@ endif()
 # --------------------------------------------------------------------------
 
 
-# Add libdeflate. This might already be built as part of 
-# OpenImageIO so we try not to redefine the target here
-if (NOT TARGET libdeflate::libdeflate_static)
-    set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-    set(LIBDEFLATE_BUILD_SHARED_LIB OFF)
-    message("Libdeflate build shared: ${LIBDEFLATE_BUILD_SHARED_LIB}")
-    add_subdirectory(thirdparty/libdeflate)
-endif()
-add_library(libdeflate_include INTERFACE)
-target_include_directories(libdeflate_include SYSTEM INTERFACE thirdparty/libdeflate)
+# Add libdeflate for zip compression and decompression
+find_package(libdeflate CONFIG REQUIRED)
 
 # Add mio for memory-mapped IO files
 add_subdirectory (thirdparty/mio)
@@ -117,16 +109,8 @@ set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
 
-# fmt library for formatting and logging. This might already be built as part of 
-# OpenImageIO so we try not to redefine the target here
-if (NOT TARGET fmt::fmt)
-    add_subdirectory(thirdparty/fmt)
-else()
-    message("Detected fmt already installed, using that instead of the submodule")
-    find_package(fmt CONFIG REQUIRED)
-endif()
-add_library(fmt_include INTERFACE)
-target_include_directories(fmt_include SYSTEM INTERFACE thirdparty/fmt/include)
+# fmt library for formatting and logging.
+find_package(fmt CONFIG REQUIRED)
 
 # JSON module for parsing of Descriptors
 add_subdirectory(thirdparty/json)
