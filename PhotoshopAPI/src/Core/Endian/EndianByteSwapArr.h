@@ -43,7 +43,7 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T), got size %d and sizeof(T) = %d", data.size(), sizeof(T));
 		}
 
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		// We want to split up the vector into blocks that can easily fit into a L1 cache 
 		// that we process in parallel while the remaining data gets processed serially
 		// we assume L1 cache size to be >=64KB for most modern processors
@@ -116,7 +116,7 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 		{
 			PSAPI_LOG_ERROR("Endian", "Cannot decode binary data whose size is not divisible by sizeof(T), got size %d and sizeof(T) = %d", data.size(), sizeof(T));
 		}
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		std::vector<T> decodedData(data.size() / sizeof(T));
 		for (uint64_t i = 0; i < decodedData.size(); ++i)
 		{
@@ -145,7 +145,7 @@ inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data
 	template<typename T>
 	void endianDecodeBEArray(std::vector<T>& data)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		// We want to split up the vector into blocks that can easily fit into a L1 cache 
 		// that we process in parallel while the remaining data gets processed serially
 		// we assume L1 cache size to be >=64KB for most modern processors
@@ -200,7 +200,7 @@ inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data
 	template<typename T>
 	void endianDecodeBEArray(std::vector<T>& data)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
 		{
 			data[i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i]));
@@ -226,7 +226,7 @@ inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::vector<uint8_t>& 
 template<typename T>
 void endianDecodeBEArray(std::span<T> data)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// We want to split up the vector into blocks that can easily fit into a L1 cache 
 	// that we process in parallel while the remaining data gets processed serially
 	// we assume L1 cache size to be >=64KB for most modern processors
@@ -281,7 +281,7 @@ void endianDecodeBEArray(std::span<T> data)
 template<typename T>
 void endianDecodeBEArray(std::span<T> data)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	for (uint64_t i = 0; i < data.size(); ++i)
 	{
 		data[i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i]));
@@ -308,7 +308,7 @@ inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::span<uint8_t> dat
 	template<typename T>
 	void endianEncodeBEArray(std::span<T> data)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		// We want to split up the vector into blocks that can easily fit into a L1 cache 
 		// that we process in parallel while the remaining data gets processed serially
 		// we assume L1 cache size to be >=64KB for most modern processors
@@ -363,7 +363,7 @@ inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::span<uint8_t> dat
 	template<typename T>
 	void endianEncodeBEArray(std::span<T> data)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
 		{
 			data[i] = endianEncodeBE<T>(data[i]);

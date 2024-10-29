@@ -31,7 +31,7 @@ uint64_t ColorModeData::calculateSize(std::shared_ptr<FileHeader> header /*= nul
 // --------------------------------------------------------------------------------
 void ColorModeData::read(File& document)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(26u, 0u);
 	document.setOffset(FileSection::offset());
@@ -54,7 +54,7 @@ void ColorModeData::read(File& document)
 void ColorModeData::write(File& document, FileHeader& header)
 {
 	// This data should be empty for all but 32 bit documents or Indexed color mode sections
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	FileSection::initialize(26u, 0u);
 	
 	if (header.m_ColorMode == Enum::ColorMode::Indexed)

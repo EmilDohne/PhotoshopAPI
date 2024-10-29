@@ -17,7 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 void PhotoshopFile::read(File& document, ProgressCallback& callback)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	callback.resetCount();
 	// These three sections are trivial in terms of read performance so we simply ignore 
 	// incrementing the callback on them
@@ -33,7 +33,7 @@ void PhotoshopFile::read(File& document, ProgressCallback& callback)
 // ---------------------------------------------------------------------------------------------------------------------
 void PhotoshopFile::write(File& document, ProgressCallback& callback)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	callback.resetCount();
 	// These three sections are trivial in terms of write performance so we simply ignore 

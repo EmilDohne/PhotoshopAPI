@@ -600,7 +600,7 @@ uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullp
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecord::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(offset, 16u);
 	document.setOffset(offset);
@@ -870,7 +870,7 @@ uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t
 template <typename T>
 std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	if (lrChannelInfo.size() != 0 || lrCompression.size() != 0) [[unlikely]]
 	{
@@ -886,7 +886,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	std::vector<uint8_t> buffer;
 	libdeflate_compressor* compressor = libdeflate_alloc_compressor(ZIP_COMPRESSION_LVL);
 	{
-		PROFILE_SCOPE("Allocate compression buffer");
+		PSAPI_PROFILE_SCOPE("Allocate compression buffer");
 		size_t maxWidth = 0;
 		size_t maxHeight = 0;
 		for (const auto& channel : m_ImageData)
@@ -935,7 +935,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	}
 	std::vector<T> channelDataBuffer;
 	{
-		PROFILE_SCOPE("Allocate channel buffer");
+		PSAPI_PROFILE_SCOPE("Allocate channel buffer");
 		channelDataBuffer = std::vector<T>(maxSize);
 	}
 
@@ -989,7 +989,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 // ---------------------------------------------------------------------------------------------------------------------
 void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(offset, 0u);
 
@@ -1157,7 +1157,7 @@ uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerInfo::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
@@ -1286,7 +1286,7 @@ int LayerInfo::getLayerIndex(const std::string& layerName)
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerInfo::write(File& document, const FileHeader& header, ProgressCallback& callback)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// The writing of this section is a bit confusing as we must first compress all of our image data, then write the 
 	// section size and Layer Records with the size markers that we found. After this we finally write the compressed data to disk
 	// it is imperative that the layer order is consistent between the LayerRecords and the ChannelImageData as that is how photoshop
@@ -1425,7 +1425,7 @@ uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> head
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerAndMaskInformation::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
@@ -1466,7 +1466,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, Pro
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerAndMaskInformation::write(File& document, const FileHeader& header, ProgressCallback& callback)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// For the layer and mask information section, getting the size is a little bit awkward as we only know the size upon 
 	// writing the layer info and additional layer information sections. Therefore we will write an empty size marker,
 	// then write the contents after which we manually calculate the section size and replace the value

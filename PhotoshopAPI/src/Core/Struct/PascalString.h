@@ -328,7 +328,7 @@ inline static std::string convertCharToUTF8(EncodingType encoding, const char ch
 // ---------------------------------------------------------------------------------------------------------------------
 inline static std::string convertStrToUTF8(EncodingType encoding, const std::string str)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     std::string res = "";
     for (const auto& character : str)
     {

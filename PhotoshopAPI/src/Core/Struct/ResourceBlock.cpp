@@ -60,7 +60,7 @@ ResolutionInfoBlock::ResolutionInfoBlock(float resolution, Enum::ResolutionUnit 
 // ---------------------------------------------------------------------------------------------------------------------
 void ResolutionInfoBlock::read(File& document, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	m_UniqueId = Enum::ImageResource::ResolutionInfo;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
@@ -87,7 +87,7 @@ void ResolutionInfoBlock::read(File& document, const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 void ResolutionInfoBlock::write(File& document)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	Signature sig = Signature("8BIM");
 	WriteBinaryData<uint32_t>(document, sig.m_Value);
@@ -128,7 +128,7 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 // ---------------------------------------------------------------------------------------------------------------------
 void ICCProfileBlock::read(File& document, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name.read(document, 2u);
 	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
@@ -143,7 +143,7 @@ void ICCProfileBlock::read(File& document, const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 void ICCProfileBlock::write(File& document)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	Signature sig = Signature("8BIM");
 	WriteBinaryData<uint32_t>(document, sig.m_Value);

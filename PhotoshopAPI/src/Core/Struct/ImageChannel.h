@@ -73,7 +73,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	std::vector<T> extractData(size_t numThreads = 0) {
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		auto buffer = getData<T>(numThreads);
 		if (buffer.size() > 0)
 		{
@@ -95,7 +95,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	void extractData(std::span<T> buffer, size_t numThreads = 0) {
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		if (!m_Data)
 		{
@@ -119,7 +119,7 @@ struct ImageChannel
 	template <typename T>
 	void getData(std::span<T> buffer, size_t numThreads = 0)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		if (!m_Data)
 		{
@@ -345,7 +345,7 @@ private:
 	template <typename T> 
 	void initializeBlosc2Schunk(const std::span<const T> imageData, const int32_t width, const int32_t height)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;

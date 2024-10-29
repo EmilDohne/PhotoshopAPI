@@ -33,11 +33,11 @@
 
 // TODO make it so you can disable this via cmake
 #if PSAPI_PROFILING
-#define PROFILE_SCOPE(name) NAMESPACE_PSAPI::InstrumentationTimer timer##__LINE__(name)
-#define PROFILE_FUNCTION() NAMESPACE_PSAPI::InstrumentationTimer timerFunc("__FUNCTION__")
+#define PSAPI_PROFILE_SCOPE(name) NAMESPACE_PSAPI::InstrumentationTimer timer##__LINE__(name)
+#define PSAPI_PROFILE_FUNCTION() NAMESPACE_PSAPI::InstrumentationTimer timerFunc("__FUNCTION__")
 #else
-#define PROFILE_SCOPE(name)
-#define PROFILE_FUNCTION()
+#define PSAPI_PROFILE_SCOPE(name)
+#define PSAPI_PROFILE_FUNCTION()
 #endif
 
 

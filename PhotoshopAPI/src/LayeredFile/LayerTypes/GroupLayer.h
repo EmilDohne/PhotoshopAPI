@@ -45,7 +45,7 @@ struct GroupLayer : public Layer<T>
 	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
 	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		Layer<T>::m_ColorMode = parameters.colorMode;
 		Layer<T>::m_LayerName = parameters.layerName;
 		Layer<T>::m_BlendMode = parameters.blendMode;

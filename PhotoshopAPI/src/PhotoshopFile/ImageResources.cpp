@@ -48,7 +48,7 @@ ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& res
 // --------------------------------------------------------------------------------
 void ImageResources::read(File& document, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
 	FileSection::size(RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u);

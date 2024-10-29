@@ -199,7 +199,7 @@ public:
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
 	data_type getImageData(bool doCopy = true, const ExecutionPolicy policy = std::execution::par)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
 
 		if (Layer<T>::m_LayerMask.has_value())
@@ -308,7 +308,7 @@ public:
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
 	void setChannel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		if (!channelValidForColorMode(channelID, Layer<T>::m_ColorMode))
 		{
 			PSAPI_LOG_ERROR("ImageLayer", "Unable to construct channel '%s' as it is not valid for the '%s' colormode. Skipping creation of this channel",
@@ -562,7 +562,7 @@ private:
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
 	void construct(data_type&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		Layer<T>::m_ColorMode = parameters.colorMode;
 		Layer<T>::m_LayerName = parameters.layerName;
 		if (parameters.blendMode == Enum::BlendMode::Passthrough)

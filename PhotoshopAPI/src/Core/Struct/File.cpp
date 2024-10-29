@@ -9,7 +9,7 @@ PSAPI_NAMESPACE_BEGIN
 // --------------------------------------------------------------------------------
 void File::read(std::span<uint8_t> buffer)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
 		return;
@@ -30,7 +30,7 @@ void File::read(std::span<uint8_t> buffer)
 // --------------------------------------------------------------------------------
 void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
 		return;
@@ -120,7 +120,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", size, offset, m_Size);
 	}
 	{
-		PROFILE_SCOPE("File::setOffsetAndRead FileIO");
+		PSAPI_PROFILE_SCOPE("File::setOffsetAndRead FileIO");
 		m_Document.read(buffer, size);
 	}
 	m_Offset += size;

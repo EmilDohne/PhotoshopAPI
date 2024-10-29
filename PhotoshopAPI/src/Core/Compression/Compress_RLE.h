@@ -298,7 +298,7 @@ namespace RLE_Impl
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_t> buffer, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(uncompressedData);
 
     // Generate spans for uncompressed as well as compressed data such that each thread
@@ -386,7 +386,7 @@ std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -442,7 +442,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -482,7 +482,7 @@ std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, c
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;

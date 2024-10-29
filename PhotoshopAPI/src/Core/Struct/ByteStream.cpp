@@ -32,7 +32,7 @@ void ByteStream::setOffset(const uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 void ByteStream::read(std::span<uint8_t> buffer)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
 		return;
@@ -57,7 +57,7 @@ void ByteStream::read(std::span<uint8_t> buffer)
 // ---------------------------------------------------------------------------------------------------------------------
 void ByteStream::read(std::span<uint8_t> buffer, uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
 		return;
@@ -85,7 +85,7 @@ void ByteStream::read(std::span<uint8_t> buffer, uint64_t offset)
 // ---------------------------------------------------------------------------------------------------------------------
 std::span<uint8_t> ByteStream::read(uint64_t size)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (m_Offset + size > m_Size)
 	{
 		PSAPI_LOG_ERROR("ByteStream", "Trying to read too much data, maximum is %" PRIu64 " but got %" PRIu64 " instead", m_Size, m_Offset + size);
@@ -99,7 +99,7 @@ std::span<uint8_t> ByteStream::read(uint64_t size)
 // ---------------------------------------------------------------------------------------------------------------------
 std::span<uint8_t> ByteStream::read(uint64_t offset, uint64_t size)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	if (offset > m_Size)
 	{
 		PSAPI_LOG_ERROR("ByteStream", "Trying to access illegal offset, maximum is %" PRIu64 " but got %" PRIu64 " instead", m_Size, offset);
@@ -116,9 +116,9 @@ std::span<uint8_t> ByteStream::read(uint64_t offset, uint64_t size)
 // ---------------------------------------------------------------------------------------------------------------------
 ByteStream::ByteStream(File& document, const uint64_t offset, const uint64_t size)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	{
-		PROFILE_SCOPE("Vector malloc");
+		PSAPI_PROFILE_SCOPE("Vector malloc");
 		m_Buffer = std::vector<uint8_t>(size);
 	}
 	m_Size = size;

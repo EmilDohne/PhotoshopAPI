@@ -91,7 +91,7 @@ namespace RLE_Impl
     template<typename T>
     std::vector<uint8_t> DecompressPackBitsAVX2(std::span<const uint8_t> compressedData, const uint32_t width, const uint32_t height)
     {
-        PROFILE_FUNCTION();
+        PSAPI_PROFILE_FUNCTION();
         std::vector<uint8_t> decompressedData(sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 
         uint64_t i = 0;

@@ -643,7 +643,7 @@ struct LayeredFile
 	/// \return A shared pointer to the found layer or nullptr.
 	std::shared_ptr<Layer<T>> findLayer(std::string path) const
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		std::vector<std::string> segments = splitString(path, '/');
 		for (const auto& layer : m_Layers)
 		{
@@ -688,7 +688,7 @@ struct LayeredFile
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
 	void moveLayer(std::shared_ptr<Layer<T>> layer, std::shared_ptr<Layer<T>> parentLayer = nullptr)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		// We must first check that we are not trying to move a layer higher in the hierarchy to lower in the hierarchy 
 		// as that would be undefined behaviour. E.g. if we want to move /Group/ to /Group/NestedGroup that wouldnt work
 		// since the down stream nodes are dependant on the upstream nodes
@@ -733,7 +733,7 @@ struct LayeredFile
 	/// \param parentLayer The new parent layer (if not provided, moves to the root).
 	void moveLayer(const std::string layer, const std::string parentLayer = "")
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		if (parentLayer == "")
 		{
 			auto layerPtr = findLayer(layer);
@@ -766,7 +766,7 @@ struct LayeredFile
 	/// \param layer The layer to be removed.
 	void removeLayer(std::shared_ptr<Layer<T>> layer)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		int index = 0;
 		for (auto& sceneLayer : m_Layers)
 		{
@@ -793,7 +793,7 @@ struct LayeredFile
 	/// \param layer The layer to be removed.
 	void removeLayer(const std::string layer)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		auto layerPtr = findLayer(layer);
 		if (!layerPtr) [[unlikely]]
 		{
@@ -912,7 +912,7 @@ struct LayeredFile
 	/// \return True if the layer exists, false otherwise.
 	bool isLayerInDocument(const std::shared_ptr<Layer<T>> layer) const
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		for (const auto& documentLayer : m_Layers)
 		{
 			if (documentLayer == layer)
@@ -1099,7 +1099,7 @@ std::shared_ptr<LayerType<T>> findLayerAs(const std::string path, const LayeredF
 template <typename T>
 std::unique_ptr<PhotoshopFile> LayeredToPhotoshopFile(LayeredFile<T>&& layeredFile)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	FileHeader header = generateHeader<T>(layeredFile);
 	ColorModeData colorModeData = generateColorModeData<T>(layeredFile);
 	ImageResources imageResources = generateImageResources<T>(layeredFile);

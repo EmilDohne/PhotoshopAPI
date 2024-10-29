@@ -16,7 +16,7 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 void FileHeader::read(File& document)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(0, 26u);
 
@@ -109,7 +109,7 @@ void FileHeader::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 void FileHeader::write(File& document)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	FileSection::initialize(0, 26u);
 

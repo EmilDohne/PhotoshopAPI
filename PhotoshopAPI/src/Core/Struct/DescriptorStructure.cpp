@@ -51,7 +51,7 @@ namespace Descriptors
 	// ---------------------------------------------------------------------------------------------------------------------
 	void Impl::writeLengthDenotedKey(File& document, const std::string& key)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		std::vector<char> vec(key.begin(), key.end());
 		// While the Photoshop File Format reference says that 4-byte keys have their length field implicitly set to 0
 		// this is sadly not true and instead theres a large list of "known" keys which will have their length field set 
