@@ -3,14 +3,27 @@
   "version-string": "v0.5.1",
   "builtin-baseline": "cff6ed45719c0162fa7065fdac90506a0add812c",
   "dependencies": [
-      "openimageio",
-      "fmt",
-      "libdeflate"
+    {
+      "name": "openimageio",
+      "features": [
+        "freetype"
+      ]
+    },
+    "fmt",
+    "libdeflate"
   ],
   "overrides": [
     {
       "name": "openimageio",
       "version": "2.5.16.0"
+    },
+    {
+      "name": "fmt",
+      "version": "11.0.2#1"
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.22#0"
     }
   ]
 }
