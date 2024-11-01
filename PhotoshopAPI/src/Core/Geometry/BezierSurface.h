@@ -23,7 +23,7 @@ namespace Geometry
         /// 1 2 3 4 5
         /// 6 7 8 9 10 ...
         BezierSurface(const std::vector<Point2D<double>>& controlPoints, size_t gridWidth, size_t gridHeight)
-            : m_ControlPoints(controlPoints), m_GridWidth(gridWidth), m_GridHeight(gridHeight) 
+            :m_GridWidth(gridWidth), m_GridHeight(gridHeight) 
         {
             if (controlPoints.size() != gridWidth * gridHeight) 
             {
@@ -33,35 +33,81 @@ namespace Geometry
             {
                 PSAPI_LOG_ERROR("BezierSurface", "Unable to create bezier surface as it is not at least cubic. Expected at the very least 4x4 divisions");
             }
+
+            // Ensure grid dimensions allow for cubic patches
+            if (gridWidth > 4)
+            {
+                if ((gridWidth - 4) % 3 != 0)
+                {
+                    PSAPI_LOG_ERROR("BezierSurface", "Grid dimensions must allow for cubic 4x4 patches.");
+                }
+                m_NumPatchesX = 1 + (gridWidth - 4) / 3;
+
+            }
+            if (gridHeight > 4)
+            {
+                if ((gridHeight - 4) % 3 != 0)
+                {
+                    PSAPI_LOG_ERROR("BezierSurface", "Grid dimensions must allow for cubic 4x4 patches.");
+                }
+                m_NumPatchesY = 1 + (gridHeight - 4) / 3;
+            }
+
+            // Initialize patches
+            m_Patches.reserve(m_NumPatchesX * m_NumPatchesY);
+
+            for (size_t py = 0; py < m_NumPatchesY; ++py) 
+            {
+                for (size_t px = 0; px < m_NumPatchesX; ++px) 
+                {
+                    std::array<Point2D<double>, 16> patch;
+
+                    // Fill the 4x4 patch in scanline order with overlap
+                    for (size_t y = 0; y < 4; ++y) 
+                    {
+                        for (size_t x = 0; x < 4; ++x) 
+                        {
+                            size_t controlPointIndex = (py * 3 + y) * gridWidth + (px * 3 + x);
+                            patch[y * 4 + x] = controlPoints[controlPointIndex];
+                        }
+                    }
+                    m_Patches.push_back(patch);
+                }
+            }
         }
 
         // Evaluate any patch at (u, v) based on subdivisions across x and y
         Point2D<double> evaluate(double u, double v) const
         {
-            // Scale u and v to locate the correct patch
-            double u_scaled = u * (m_GridWidth - 3);
-            double v_scaled = v * (m_GridHeight - 3);
+            PSAPI_PROFILE_FUNCTION();
+            double patch_size_u = 1.0 / m_NumPatchesX;
+            double patch_size_v = 1.0 / m_NumPatchesY;
 
-            // Get integer patch indices and local u, v for the patch
-            size_t patchX = static_cast<size_t>(u_scaled);
-            size_t patchY = static_cast<size_t>(v_scaled);
+            // The std::min here is to ensure we don't try to access an out of bounds patch
+            // if u or v is exactly 1
+            size_t patch_index_x = std::min(static_cast<size_t>(std::floor(u / patch_size_u)), m_NumPatchesX - 1 );
+            size_t patch_index_y = std::min(static_cast<size_t>(std::floor(v / patch_size_v)), m_NumPatchesY - 1 );
 
-            // Ensure we don't go out of bounds
-            patchX = std::min(patchX, m_GridWidth - 4);
-            patchY = std::min(patchX, m_GridHeight - 4);
+            // Calculate base UV of the patch
+            double patch_base_u = patch_index_x * patch_size_u;
+            double patch_base_v = patch_index_y * patch_size_v;
 
-            double localU = u_scaled - patchX;
-            double localV = v_scaled - patchY;
+            // Calculate local UV within the patch
+            double local_u = (u - patch_base_u) / patch_size_u;
+            double local_v = (v - patch_base_v) / patch_size_v;
+
+            local_u = std::clamp(local_u, static_cast<double>(0.0f), static_cast<double>(1.0f));
+            local_v = std::clamp(local_v, static_cast<double>(0.0f), static_cast<double>(1.0f));
 
             // Retrieve control points for this patch and evaluate
-            std::array<Point2D<double>, 16> patch = get_patch_ctrl_points(patchX, patchY);
-            return evaluate_bezier_patch(patch, localU, localV);
+            auto patch = get_patch_ctrl_points(patch_index_x, patch_index_y);
+            return evaluate_bezier_patch(patch, local_u, local_v);
         }
 
         // Convert the bezier patch into a mesh by repeatedly calling evaluate for x and y intervals across the surface
         // This function will create a quadrilateral mesh which can be more easily queried for UV coordinates
         // at a given point than the bezier surface itself lending itself to e.g. mesh warps.
-        Mesh<double> mesh(size_t divisions_x, size_t divisions_y) const
+        Mesh<double> mesh(size_t divisions_x, size_t divisions_y, std::array<Geometry::Point2D<double>, 4> non_affine_transform) const
         {
             PSAPI_PROFILE_FUNCTION();
 
@@ -76,13 +122,14 @@ namespace Geometry
                     points.emplace_back(evaluate(u, v));
                 }
             }
-            return Mesh<double>(points, divisions_x, divisions_y);
+            return Mesh<double>(points, non_affine_transform, divisions_x, divisions_y);
         }
 
-        /// Get the control points associated with the Bezier surface, these are sorted in scanline order
-        std::vector<Point2D<double>> control_points() const noexcept
+        /// Get the patches associated with the Bezier surface, these are sorted in scanline order
+        /// and represent 4x4 cubic bezier patches
+        std::vector<std::array<Point2D<double>, 16>> patches() const noexcept
         {
-            return m_ControlPoints;
+            return m_Patches;
         }
 
         /// Get the number of divisions across the x plane
@@ -98,37 +145,18 @@ namespace Geometry
         }
 
     private:
-        std::vector<Point2D<double>> m_ControlPoints;
+        std::vector<std::array<Point2D<double>, 16>> m_Patches;
         size_t m_GridWidth = 0;
         size_t m_GridHeight = 0;
 
-        // Cache for memoization of get_patch_ctrl_points so we dont have to 
-        // create the patch for what is likely to be a lot of repeated calls
-        mutable std::unordered_map<Point2D<size_t>, std::array<Point2D<double>, 16>> m_Cache;
+        size_t m_NumPatchesX = 1;
+        size_t m_NumPatchesY = 1;
 
         // Retrieve the 4x4 grid of control points for a patch defined by patchX, patchY
         // where patchX is the x position in the grid and patchY is the y position in the grid
         std::array<Point2D<double>, 16> get_patch_ctrl_points(size_t patchX, size_t patchY) const
         {
-            auto cacheKey = Point2D<size_t>(patchX, patchY);
-            auto it = m_Cache.find(cacheKey);
-            if (it != m_Cache.end()) 
-            {
-                return it->second; // Return cached result
-            }
-
-            std::array<Point2D<double>, 16> patch;
-            for (size_t i = 0; i < 4; ++i)
-            {
-                for (size_t j = 0; j < 4; ++j)
-                {
-                    size_t index = (patchY + i) * m_GridWidth + (patchX + j);
-                    patch[i * 4 + j] = m_ControlPoints[index];
-                }
-            }
-
-            m_Cache[cacheKey] = patch; // Store in cache
-            return patch;
+            return m_Patches[patchY * m_NumPatchesX + patchX];
         }
 
         /// Evaluate the cubic bezier patch at the given u and v coordinate returning the position in world space
