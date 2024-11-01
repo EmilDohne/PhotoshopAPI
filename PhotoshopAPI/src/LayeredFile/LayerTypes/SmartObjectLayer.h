@@ -4,7 +4,7 @@
 #include "Layer.h"
 
 #include "Core/Struct/DescriptorStructure.h"
-#include "Core/Warp/SmartObjectWarp.h"
+#include "Core/SmartObject::Warp/SmartObjectSmartObject::Warp.h"
 #include "Core/Render/Render.h"
 
 #include <fstream>
@@ -16,16 +16,31 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+// Forward declare LayeredFile here
+template <typename T>
+struct LayeredFile;
+
 
 /// This struct holds no data, we just use it to identify its type.
 /// We could hold references here 
 template <typename T>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
-	SmartObjectWarp m_Warp;
-
 	SmartObjectLayer() = default;
 
+	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath)
+	{
+
+	}
+
+	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp)
+	{
+
+	}
+
+
+	/// Generate a SmartObjectLayer from a Photoshop File object. This is for internal uses and not intended to be used by users directly. Please use the other
+	/// constructors
 	SmartObjectLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo) 
 		: _ImageDataLayerType<T>(layerRecord, channelImageData, header)
 	{
@@ -42,8 +57,19 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		}
 	}
 
+	/// Retrieve the warp object that is stored on this layer. 
+	SmartObject::Warp& warp() noexcept { return m_SmartObjectWarp; }
+	const SmartObject::Warp& warp() const noexcept{ return m_SmartObjectWarp; }
 
 private:
+
+	SmartObject::Warp m_SmartObjectWarp;
+	std::string m_Hash;
+	std::string m_Filename;
+	
+
+	/// Member data that is used only for roundtripping. We initialize these to sensible defaults on write.
+	/// Some of these may get promoted to proper members once we add functionality for modifying these
 
 	void decode(const AdditionalLayerInfo& local, const AdditionalLayerInfo& global, const std::string& name)
 	{
@@ -100,18 +126,18 @@ private:
 		// The warp struct is present on all descriptors, if it is however a warp with a non-standard
 		// number of subdivisions (i.e. not 4x4) the warp struct will be empty and instead we will be dealing with a quilt warp
 		const auto& warp = descriptor.at<Descriptors::Descriptor>("warp");
-		SmartObjectWarp warpStruct;
-		if (descriptor.contains("quiltWarp"))
+		SmartObject::Warp warpStruct;
+		if (descriptor.contains("quiltSmartObject::Warp"))
 		{
-			warpStruct = SmartObjectWarp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObjectWarp::quilt_warp{});
+			warpStruct = SmartObject::Warp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltSmartObject::Warp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
 			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
 		}
 		else
 		{
-			warpStruct = SmartObjectWarp::deserialize(warp, transform, non_affine_transform, SmartObjectWarp::normal_warp{});
+			warpStruct = SmartObject::Warp::deserialize(warp, transform, non_affine_transform, SmartObject::Warp::normal_warp{});
 			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
 		}
-		m_Warp = warpStruct;
+		m_SmartObjectWarp = warpStruct;
 		const auto& size = descriptor.at("Sz  ");		// The spaces are not a mistake
 		const auto& resolution = descriptor.at("Rslt");	// In DPI
 
@@ -124,7 +150,7 @@ private:
 		PSAPI_LOG_ERROR("SmartObject", "Parsing of the PlacedLayerTaggedBlock is currently unimplemented, this is likely due to trying to open an older file.");
 	}
 
-	void renderMesh(const SmartObjectWarp& warp, std::string filename)
+	void renderMesh(const SmartObject::Warp& warp, std::string filename)
 	{
 		auto height = warp.m_Bounds[2] - warp.m_Bounds[0];
 		auto width = warp.m_Bounds[3] - warp.m_Bounds[1];
@@ -137,7 +163,7 @@ private:
 			
 			/*Render::render_mesh<T>(
 				buffer,
-				Geometry::Mesh<double>(warp.m_WarpPoints, warp.u_dimensions(), warp.v_dimensions()),
+				Geometry::Mesh<double>(warp.m_SmartObject::WarpPoints, warp.u_dimensions(), warp.v_dimensions()),
 				255,
 				"C:/Windows/Fonts/arial.ttf",
 				true);*/
@@ -212,10 +238,6 @@ private:
 
 	}
 
-	std::string m_UUID;
-	std::string m_Filename;
-
-	std::vector<uint8_t> m_RawBytes;
 };
 
 

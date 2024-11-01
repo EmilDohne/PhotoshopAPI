@@ -12,8 +12,12 @@ int main()
 {
 	using namespace NAMESPACE_PSAPI;
 
+	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
+
 	//LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/smartobject_unlinked.psd");
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warptest.psd");
+	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warptest3.psd");
 
 	std::cout << 1 << std::endl;
+
+	Instrumentor::Get().EndSession();
 }
