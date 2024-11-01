@@ -481,6 +481,7 @@ namespace Descriptors
 		UnitFloat(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		UnitFloat(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, double value);
 
+		bool operator==(const UnitFloat other);
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -498,6 +499,7 @@ namespace Descriptors
 		UnitFloats(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		UnitFloats(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, std::vector<double> values);
 
+		bool operator==(const UnitFloats& other);
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -519,6 +521,26 @@ namespace Descriptors
 
 		void read(File& document) override;
 		void write(File& document) const override;
+
+		/// Get the List items as a certain type, requires that all list items are the exact same
+		template <typename T>
+		std::vector<T> as() const
+		{
+			std::vector<T> out;
+			out.reserve(m_Items.size());
+			for (const auto& item : m_Items)
+			{
+				if (std::holds_alternative<T>(item))
+				{
+					out.push_back(std::get<T>(item));
+				}
+				else
+				{
+					throw std::runtime_error("Unable to access item as type T as it is not of that type");
+				}
+			}
+			return out;
+		}
 
 		json_ordered to_json() const override;
 

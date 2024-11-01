@@ -14,17 +14,19 @@ target_include_directories(PhotoshopAPI PUBLIC include src src/Util ${JSON_INCLU
 target_link_libraries(PhotoshopAPI PUBLIC 
     Blosc2::blosc2_static
     OpenImageIO::OpenImageIO
+    Eigen3::Eigen
     blosc2_include
     mio::mio-headers 
     tcb_span 
     $<IF:$<TARGET_EXISTS:libdeflate::libdeflate_static>,libdeflate::libdeflate_static,libdeflate::libdeflate_shared>
     simdutf
     fmt::fmt
+    stduuid
 )
 
 if(MSVC)
 	target_compile_options(PhotoshopAPI PRIVATE /MP /DNOMINMAX)
-	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2 /Zc:__cplusplus /utf-8)
+	target_compile_options(PhotoshopAPI PUBLIC /arch:AVX2 /Zc:__cplusplus /utf-8 /bigobj)
     # Bump up warning levels and enable the following extra exceptions:
     # w44062 is for if a switch misses some enum members.
     # w44464 is for #include containing .. in the path

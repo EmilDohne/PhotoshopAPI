@@ -14,37 +14,20 @@
 #include <OpenImageIO/imageio.h>
 
 
-
 PSAPI_NAMESPACE_BEGIN
 
-
-namespace SmartObject
-{
-	struct Transform
-	{
-
-	};
-
-	struct Warp
-	{
-
-	};
-}
 
 /// This struct holds no data, we just use it to identify its type.
 /// We could hold references here 
 template <typename T>
-struct SmartObjectLayer : Layer<T>
+struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
-
-
 	SmartObjectWarp m_Warp;
-
 
 	SmartObjectLayer() = default;
 
 	SmartObjectLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo) 
-		: Layer<T>(layerRecord, channelImageData, header)
+		: _ImageDataLayerType<T>(layerRecord, channelImageData, header)
 	{
 		// Local and global additional layer info in this case refer to the one stored on the individual layer and the one 
 		// stored on the LayerAndMaskInfo section respectively
@@ -57,50 +40,6 @@ struct SmartObjectLayer : Layer<T>
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Internal Error: Expected smart object layer to contain an AdditionalLayerInfo section");
 		}
-
-
-		//if (m_Warp.m_WarpPoints.size() > 0)
-		//{
-		//	for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
-		//	{
-		//		auto height = m_Warp.m_Bounds[2] - m_Warp.m_Bounds[0];
-		//		auto width = m_Warp.m_Bounds[3] - m_Warp.m_Bounds[1];
-
-		//		auto& channelInfo = layerRecord.m_ChannelInformation[i];
-
-		//		// We already extract masks ahead of time and skip them here to avoid raising warnings
-		//		if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
-
-		//		auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
-		//		// Pointers might have already been released previously
-		//		if (!channelPtr) continue;
-
-		//		auto pixels = channelPtr->extractData<T>();
-		//		auto buffer = Render::ImageBuffer<T, true>(pixels, channelPtr->getWidth(), channelPtr->getHeight());
-
-		//		std::vector<T> out_pixels(height * width, 0);
-		//		auto out_buffer = Render::ImageBuffer<T>(out_pixels, width , height);
-
-		//		m_Warp.apply_warp<T>(out_buffer, buffer, 100);
-
-
-		//		auto filename = fmt::format("C:/Users/emild/Desktop/linkedlayers/warp_{}_{}.jpg", Layer<T>::m_LayerName, i);
-		//		std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename);
-		//		if (!out)
-		//			return;  // error
-		//		OIIO::ImageSpec spec(width, height, 1, OIIO::TypeDesc::UINT8);
-		//		out->open(filename, spec);
-		//		out->write_image(OIIO::TypeDesc::UINT8, out_pixels.data());
-		//		out->close();
-		//	}
-		//	PSAPI_LOG_ERROR("A", "A");
-		//}
-	}
-
-
-	std::vector<T> getImageData()
-	{
-		return {};
 	}
 
 
@@ -133,9 +72,14 @@ private:
 		}
 	}
 
+	/// Decode the smart object from the PlacedLayerData Tagged Block, this contains information such as 
 	void decodePlacedLayerData(const std::shared_ptr<PlacedLayerDataTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
 	{
 		const auto& descriptor = local->m_Descriptor;
+
+		std::ofstream file(fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/placed_layer_descriptor_{}.json", name));
+		file << descriptor.to_json().dump(4);
+		file.flush();
 
 		const auto& identifier = descriptor.at("Idnt");	// The identifier that maps back to the LinkedLayer
 
@@ -150,8 +94,8 @@ private:
 		const auto& _anti_alias = descriptor.at("Annt");
 
 		const auto& type = descriptor.at("Type");
-		const auto& transform = descriptor.at("Trnf");
-		const auto& non_affine_transform = descriptor.at("nonAffineTransform");
+		const auto& transform = descriptor.at<Descriptors::List>("Trnf");
+		const auto& non_affine_transform = descriptor.at<Descriptors::List>("nonAffineTransform");
 
 		// The warp struct is present on all descriptors, if it is however a warp with a non-standard
 		// number of subdivisions (i.e. not 4x4) the warp struct will be empty and instead we will be dealing with a quilt warp
@@ -159,12 +103,13 @@ private:
 		SmartObjectWarp warpStruct;
 		if (descriptor.contains("quiltWarp"))
 		{
-			warpStruct = SmartObjectWarp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), SmartObjectWarp::WarpType::quilt);
+			warpStruct = SmartObjectWarp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObjectWarp::quilt_warp{});
+			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
 		}
 		else
 		{
-			warpStruct = SmartObjectWarp::deserialize(warp, SmartObjectWarp::WarpType::normal);
-			//renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
+			warpStruct = SmartObjectWarp::deserialize(warp, transform, non_affine_transform, SmartObjectWarp::normal_warp{});
+			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
 		}
 		m_Warp = warpStruct;
 		const auto& size = descriptor.at("Sz  ");		// The spaces are not a mistake
@@ -174,22 +119,30 @@ private:
 		const auto& _comp_info = descriptor.at("compInfo");
 	}
 
-
 	void decodePlacedLayer(const std::shared_ptr<PlacedLayerTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
 	{
-
+		PSAPI_LOG_ERROR("SmartObject", "Parsing of the PlacedLayerTaggedBlock is currently unimplemented, this is likely due to trying to open an older file.");
 	}
 
 	void renderMesh(const SmartObjectWarp& warp, std::string filename)
 	{
 		auto height = warp.m_Bounds[2] - warp.m_Bounds[0];
 		auto width = warp.m_Bounds[3] - warp.m_Bounds[1];
+
+		auto surface = warp.surface();
+		auto subdivided_mesh = surface.mesh(100, 100, warp.non_affine_mesh());
 		{
 			std::vector<T> pixels(height * width, 0);
 			auto buffer = Render::ImageBuffer<T>(pixels, width, height);
-			auto surface = warp.surface();
-			auto subdivided_mesh = surface.mesh(100, 100);
-			Render::render_mesh<T>(buffer, subdivided_mesh);
+			
+			/*Render::render_mesh<T>(
+				buffer,
+				Geometry::Mesh<double>(warp.m_WarpPoints, warp.u_dimensions(), warp.v_dimensions()),
+				255,
+				"C:/Windows/Fonts/arial.ttf",
+				true);*/
+			//Render::render_bezier_surface<T>(buffer, surface, 255, 100, 100);
+			Render::render_mesh<T>(buffer, subdivided_mesh, 255);
 
 			std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename);
 			if (!out)
@@ -206,14 +159,18 @@ private:
 
 			// Gradient buffer for left to right (U coordinate)
 			std::vector<T> u_coordinate_buffer(height * width);
-			for (size_t y = 0; y < height; ++y) {
-				for (size_t x = 0; x < width; ++x) {
-					// Linear interpolation for gradient
-					u_coordinate_buffer[y * width + x] = static_cast<T>((255 * x) / (width - 1));
+			size_t cellSize = 200;
+			for (size_t y = 0; y < height; ++y)
+			{
+				for (size_t x = 0; x < width; ++x)
+				{
+					// Determine the checkerboard color
+					bool isBlack = (x / cellSize + y / cellSize) % 2 == 0;
+					u_coordinate_buffer[y * width + x] = static_cast<T>(isBlack ? 255 : 0);
 				}
 			}
 			const auto u_buffer = Render::ImageBuffer<T, true>(u_coordinate_buffer, width, height);
-			warp.apply<T>(buffer, u_buffer, 100);
+			warp.apply<T>(buffer, u_buffer, subdivided_mesh);
 
 			{
 				std::string filename_u = "C:/Users/emild/Desktop/linkedlayers/warp/warp_grid_u.jpg";
@@ -240,7 +197,7 @@ private:
 			}
 
 			const auto v_buffer = Render::ImageBuffer<T, true>(v_coordinate_buffer, width, height);
-			warp.apply<T>(buffer, v_buffer, 100);
+			warp.apply<T>(buffer, v_buffer, subdivided_mesh);
 			{
 				std::string filename_v = "C:/Users/emild/Desktop/linkedlayers/warp/warp_grid_v.jpg";
 				std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename_v);
@@ -252,8 +209,6 @@ private:
 				out->close();
 			}
 		}
-		PSAPI_LOG_ERROR("A", "A");
-		std::cout << 1 << std::endl;
 
 	}
 

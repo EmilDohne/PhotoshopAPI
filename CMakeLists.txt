@@ -1,6 +1,5 @@
 ﻿cmake_minimum_required (VERSION 3.20)
 set(VCPKG_LIBRARY_LINKAGE "static")
-
 project ("PhotoshopAPIBuild" VERSION 0.5.1 LANGUAGES CXX)
 
 if (MSVC)
@@ -82,6 +81,9 @@ endif()
 # Add libdeflate for zip compression and decompression
 find_package(libdeflate CONFIG REQUIRED)
 
+find_package(Eigen3 CONFIG REQUIRED)
+
+
 # Add mio for memory-mapped IO files
 add_subdirectory (thirdparty/mio)
 
@@ -98,7 +100,6 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 add_library(blosc2_include INTERFACE)
 target_include_directories(blosc2_include SYSTEM INTERFACE thirdparty/c-blosc2/include)
 
-
 # Add doctest
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE thirdparty/doctest/doctest)
@@ -111,6 +112,9 @@ add_subdirectory (thirdparty/simdutf)
 
 # fmt library for formatting and logging.
 find_package(fmt CONFIG REQUIRED)
+
+# UUID for storing e.g. uuids of smart objects
+find_package(stduuid CONFIG REQUIRED)
 
 # JSON module for parsing of Descriptors
 add_subdirectory(thirdparty/json)

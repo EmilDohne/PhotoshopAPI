@@ -10,7 +10,9 @@
       ]
     },
     "fmt",
-    "libdeflate"
+    "libdeflate",
+    "stduuid",
+    "eigen3"
   ],
   "overrides": [
     {
@@ -24,6 +26,14 @@
     {
       "name": "libdeflate",
       "version": "1.22#0"
+    },
+    {
+      "name": "stduuid",
+      "version": "1.2.3#0"
+    },
+    {
+      "name": "eigen3",
+      "version": "3.4.0#4"
     }
   ]
 }

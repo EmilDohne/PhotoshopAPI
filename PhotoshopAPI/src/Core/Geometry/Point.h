@@ -6,6 +6,7 @@
 #include <array>
 #include <memory>
 #include <cmath>
+#include <cassert>
 #include <algorithm>
 
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
@@ -33,15 +34,44 @@ namespace Geometry
         Point2D(T x_val, T y_val) : x(x_val), y(y_val) {}
 
         // Equality operators
-        bool operator==(const Point2D<T>& other) const { return this->x == other.x && this->y == other.y; }
-        bool operator==(const T other) const { return this->x == other && this->y == other; }
-        bool operator!=(const Point2D<T>& other) const { return !(*this == other); }
+        bool operator==(Point2D<T> other) const { return this->x == other.x && this->y == other.y; }
+        bool operator==(T other) const { return this->x == other && this->y == other; }
+        bool operator!=(Point2D<T> other) const { return !(*this == other); }
+
+        static bool equal(Point2D<T> pt1, Point2D<T> pt2, double epsilon = 1e-6)
+        {
+            if constexpr (!std::is_floating_point_v<T>)
+            {
+                PSAPI_LOG_ERROR("Point2D", "equal() function not required for non-floating type points, consider using operator==");
+            }
+            bool x_equal = std::fabs(pt1.x - pt2.x) < epsilon;
+            bool y_equal = std::fabs(pt1.y - pt2.y) < epsilon;
+            return x_equal && y_equal;
+        }
 
         // Arithmetic operators
-        Point2D<T> operator+(const Point2D<T>& other) const { return { this->x + other.x, this->y + other.y }; }
-        Point2D<T> operator-(const Point2D<T>& other) const { return { this->x - other.x, this->y - other.y }; }
+        Point2D<T> operator+(Point2D<T> other) const { return { this->x + other.x, this->y + other.y }; }
+
+        Point2D<T> operator-(Point2D<T> other) const { return { this->x - other.x, this->y - other.y }; }
+        Point2D<T> operator-(double other) const { return { this->x - other, this->y - other }; }
+        Point2D<T> operator-() const { return { -this->x, -this->y }; }
+
         Point2D<T> operator*(double factor) const { return { this->x * factor, this->y * factor }; }
-        Point2D<T> operator/(double value) const { return Point2D<T>(this->x / value, this->y / value); }
+        Point2D<T> operator*(Point2D<T> other) const { return { this->x * other.x, this->y * other.y }; }
+
+        Point2D<T>& operator*=(Point2D<T> other) { this->x *= other.x; this->y *= other.y; return *this; }
+
+        Point2D<T> operator/(double value) const 
+        { 
+            assert(value != static_cast<double>(0.0f));
+            return Point2D<T>(this->x / value, this->y / value); 
+        }
+        Point2D<T> operator/(Point2D<T> other) const 
+        { 
+            assert(other.x != static_cast<double>(0.0f));
+            assert(other.y != static_cast<double>(0.0f));
+            return Point2D<T>{this->x / other.x, this->y / other.y};
+        }
 
         /// Static lerp function interpolating between a and b at position t where position t is between 0 and 1
         static Point2D lerp(const Point2D<T> a, const Point2D<T> b, double t)

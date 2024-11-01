@@ -17,6 +17,8 @@
 #include "LayerTypes/SmartObjectLayer.h"
 #include "LayerTypes/TextLayer.h"
 
+#include "LinkedData/LinkedLayerData.h"
+
 #include "LayeredFile/Util/GenerateHeader.h"
 #include "LayeredFile/Util/GenerateColorModeData.h"
 #include "LayeredFile/Util/GenerateImageResources.h"
@@ -539,6 +541,11 @@ struct LayeredFile
 
 	/// The height of the file in pixels. Can be up to 30,000 for PSD and up to 300,000 for PSB
 	uint64_t m_Height = 1u;
+
+	/// Linked layers are external files associated with the layered file. In the context of 
+	/// e.g. SmartObjects these will hold the raw file bytes so that multiple smart objects
+	/// can access the same layers without data duplication
+	LinkedLayers<T> m_LinkedLayers;
 
 	LayeredFile() = default;
 

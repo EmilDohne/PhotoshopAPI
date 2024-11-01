@@ -18,59 +18,85 @@ Descriptors::Descriptor SmartObjectWarp::serialize() const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-SmartObjectWarp SmartObjectWarp::deserialize(const Descriptors::Descriptor& warpDescriptor, SmartObjectWarp::WarpType type)
-{
-	if (type == WarpType::normal)
-	{
-		return SmartObjectWarp::deserializeNormal(warpDescriptor);
-	}
-	else
-	{
-		return SmartObjectWarp::deserializeQuilt(warpDescriptor);
-	}
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-Geometry::Mesh<double> SmartObjectWarp::mesh() const
-{
-	auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
-	Geometry::Mesh<double> mesh(pointVec, m_uDims, m_vDims);
-	return mesh;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-Geometry::BezierSurface SmartObjectWarp::surface() const
-{
-	auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
-	Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims);
-	return surface;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-SmartObjectWarp SmartObjectWarp::deserializeQuilt(const Descriptors::Descriptor& warpDescriptor)
+SmartObjectWarp SmartObjectWarp::deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp)
 {
 	SmartObjectWarp warp;
+	warp.warp_type(WarpType::normal);
 	try
 	{
 		// Retrieve bounds descriptor (nested Descriptor)
-		const auto& boundsDescriptor = warpDescriptor.at<Descriptors::Descriptor>("bounds");
+		const auto& boundsDescriptor = warp_descriptor.at<Descriptors::Descriptor>("bounds");
+		warp.m_Bounds[0] = boundsDescriptor.at<double>("Top ");
+		warp.m_Bounds[1] = boundsDescriptor.at<double>("Left");
+		warp.m_Bounds[2] = boundsDescriptor.at<double>("Btom");
+		warp.m_Bounds[3] = boundsDescriptor.at<double>("Rght");
+
+		// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
+		const auto& customEnvelopeWarp = warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
+		const auto& meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
+
+		// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
+		const auto& hrznValues = meshPoints.at<Descriptors::UnitFloats>("Hrzn").m_Values;
+		const auto& vrtcValues = meshPoints.at<Descriptors::UnitFloats>("Vrtc").m_Values;
+
+		if (hrznValues.size() != vrtcValues.size())
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp",
+				"Expected horizontal and vertical points to have the same size, instead got {%zu, %zu}",
+				hrznValues.size(), vrtcValues.size());
+		}
+		if (hrznValues.size() != 16)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp",
+				"Expected horizontal and vertical points to have 16 elements, instead got %zu",
+				hrznValues.size());
+		}
+
+		warp.m_WarpPoints.reserve(hrznValues.size());
+		for (size_t i = 0; i < hrznValues.size(); ++i)
+		{
+			warp.m_WarpPoints.push_back(Geometry::Point2D<double>(hrznValues[i], vrtcValues[i]));
+		}
+	}
+	catch (const std::runtime_error& e)
+	{
+		PSAPI_LOG_ERROR("SmartObjectWarp", "Internal Error: Invalid descriptor type encountered. Full exception: %s", e.what());
+	}
+	catch (const std::out_of_range& e)
+	{
+		PSAPI_LOG_ERROR("SmartObjectWarp", "Internal Error: Invalid descriptor key encountered. Full exception: %s", e.what());
+	}
+
+	// Deserialize the common descriptor keys between quilt and normal warp
+	SmartObjectWarp::deserializeCommon(warp, warp_descriptor);
+	warp.non_affine_mesh(SmartObjectWarp::generate_non_affine_mesh(transform, non_affine_transform));
+
+	return warp;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+SmartObjectWarp SmartObjectWarp::deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp)
+{
+	SmartObjectWarp warp;
+	warp.warp_type(WarpType::quilt);
+
+	try
+	{
+		// Retrieve bounds descriptor (nested Descriptor)
+		const auto& boundsDescriptor = quilt_warp_descriptor.at<Descriptors::Descriptor>("bounds");
 		const auto& top = boundsDescriptor.at<double>("Top ");
 		const auto& left = boundsDescriptor.at<double>("Left");
 		const auto& bottom = boundsDescriptor.at<double>("Btom");
 		const auto& right = boundsDescriptor.at<double>("Rght");
 
 		// Retrieve deformNumRows and deformNumCols (int32_t)
-		const auto& deformNumRows = warpDescriptor.at<int32_t>("deformNumRows");
-		const auto& deformNumCols = warpDescriptor.at<int32_t>("deformNumCols");
+		const auto& deformNumRows = quilt_warp_descriptor.at<int32_t>("deformNumRows");
+		const auto& deformNumCols = quilt_warp_descriptor.at<int32_t>("deformNumCols");
 
 		// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-		const auto& customEnvelopeWarp = warpDescriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
+		const auto& customEnvelopeWarp = quilt_warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
 		const auto& meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
 
 		// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
@@ -110,7 +136,8 @@ SmartObjectWarp SmartObjectWarp::deserializeQuilt(const Descriptors::Descriptor&
 		PSAPI_LOG_ERROR("SmartObjectWarp", "Internal Error: Invalid descriptor key encountered. Full exception: %s", e.what());
 	}
 
-	SmartObjectWarp::deserializeCommon(warp, warpDescriptor);
+	SmartObjectWarp::deserializeCommon(warp, quilt_warp_descriptor);
+	warp.non_affine_mesh(SmartObjectWarp::generate_non_affine_mesh(transform, non_affine_transform));
 
 	return warp;
 }
@@ -118,58 +145,62 @@ SmartObjectWarp SmartObjectWarp::deserializeQuilt(const Descriptors::Descriptor&
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-SmartObjectWarp SmartObjectWarp::deserializeNormal(const Descriptors::Descriptor& warpDescriptor)
+std::array<Geometry::Point2D<double>, 4> SmartObjectWarp::generate_non_affine_mesh(const Descriptors::List& transform, const Descriptors::List& non_affine_transform)
 {
-	SmartObjectWarp obj;
-	try
+	std::vector<double> transformItems = transform.as<double>();
+	std::vector<double> nonAffineTransformItems = non_affine_transform.as<double>();
+	if (transformItems.size() != nonAffineTransformItems.size())
 	{
-		// Retrieve bounds descriptor (nested Descriptor)
-		const auto& boundsDescriptor = warpDescriptor.at<Descriptors::Descriptor>("bounds");
-		obj.m_Bounds[0] = boundsDescriptor.at<double>("Top ");
-		obj.m_Bounds[1] = boundsDescriptor.at<double>("Left");
-		obj.m_Bounds[2] = boundsDescriptor.at<double>("Btom");
-		obj.m_Bounds[3] = boundsDescriptor.at<double>("Rght");
-
-		// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-		const auto& customEnvelopeWarp = warpDescriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
-		const auto& meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
-
-		// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
-		const auto& hrznValues = meshPoints.at<Descriptors::UnitFloats>("Hrzn").m_Values;
-		const auto& vrtcValues = meshPoints.at<Descriptors::UnitFloats>("Vrtc").m_Values;
-
-		if (hrznValues.size() != vrtcValues.size())
-		{
-			PSAPI_LOG_ERROR("SmartObjectWarp",
-				"Expected horizontal and vertical points to have the same size, instead got {%zu, %zu}",
-				hrznValues.size(), vrtcValues.size());
-		}
-		if (hrznValues.size() != 16)
-		{
-			PSAPI_LOG_ERROR("SmartObjectWarp",
-				"Expected horizontal and vertical points to have 16 elements, instead got %zu",
-				hrznValues.size());
-		}
-
-		obj.m_WarpPoints.reserve(hrznValues.size());
-		for (size_t i = 0; i < hrznValues.size(); ++i)
-		{
-			obj.m_WarpPoints.push_back(Geometry::Point2D<double>(hrznValues[i], vrtcValues[i]));
-		}
+		PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid transform and non-affine transform encountered, expected both to be of exactly the same size");
 	}
-	catch (const std::runtime_error& e)
+	if (transformItems.size() != 8)
 	{
-		PSAPI_LOG_ERROR("SmartObjectWarp", "Internal Error: Invalid descriptor type encountered. Full exception: %s", e.what());
-	}
-	catch (const std::out_of_range& e)
-	{
-		PSAPI_LOG_ERROR("SmartObjectWarp", "Internal Error: Invalid descriptor key encountered. Full exception: %s", e.what());
+		PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid transform and non-affine transform encountered, expected both to be of size 8, instead got %zu", transformItems.size());
 	}
 
-	// Deserialize the common descriptor keys between quilt and normal warp
-	SmartObjectWarp::deserializeCommon(obj, warpDescriptor);
+	// Convert to mesh so we can easily apply our transformation
+	Geometry::Mesh<double> nonAffineTransformMesh;
+	{
+		std::vector<Geometry::Point2D<double>> transformPoints;
+		std::vector<Geometry::Point2D<double>> nonAffineTransformPoints;
+		for (size_t i = 0; i < 8; i += 2)
+		{
+			transformPoints.push_back(Geometry::Point2D<double>(transformItems[i], transformItems[i + 1]));
+			nonAffineTransformPoints.push_back(Geometry::Point2D<double>(nonAffineTransformItems[i], nonAffineTransformItems[i + 1]));
+		}
+		Geometry::Mesh<double> transformMesh = Geometry::Mesh<double>(transformPoints, 2, 2);
+		nonAffineTransformMesh = Geometry::Mesh<double>(nonAffineTransformPoints, 2, 2);
 
-	return obj;
+		// Move the non affine transform mesh to the center after which we scale it by 
+		// 1 / size to make sure our non affine mesh is in the scale of 0-1
+		nonAffineTransformMesh.move(-transformMesh.bbox().minimum);
+		auto size = Geometry::Point2D<double>{ 1.0f, 1.0f } / transformMesh.bbox().size();
+		nonAffineTransformMesh.scale(size, { 0.0f, 0.0f });
+	}
+	// Convert back to array, note that we swap the point order here as Photoshop stores these in the order 
+	// top-left, top-right, bottom-right, bottom-left
+	auto points = nonAffineTransformMesh.points();
+	return { points[0], points[1], points[3], points[2] };
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+Geometry::Mesh<double> SmartObjectWarp::mesh() const
+{
+	auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
+	Geometry::Mesh<double> mesh(pointVec, m_NonAffineTransform, m_uDims, m_vDims);
+	return mesh;
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+Geometry::BezierSurface SmartObjectWarp::surface() const
+{
+	auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
+	Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims);
+	return surface;
 }
 
 
@@ -282,6 +313,27 @@ void SmartObjectWarp::quilt_slices_x(std::vector<double> slices)
 void SmartObjectWarp::quilt_slices_y(std::vector<double> slices)
 {
 	m_QuiltSlicesY = slices;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void SmartObjectWarp::warp_type(WarpType type)
+{
+	m_WarpType = type;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+void SmartObjectWarp::non_affine_mesh(std::array<Geometry::Point2D<double>, 4> non_affine_transform_mesh)
+{
+	m_NonAffineTransform = non_affine_transform_mesh;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::array<Geometry::Point2D<double>, 4> SmartObjectWarp::non_affine_mesh() const
+{
+	return m_NonAffineTransform;
 }
 
 PSAPI_NAMESPACE_END

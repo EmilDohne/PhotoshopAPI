@@ -88,7 +88,7 @@ namespace Render
         /// Only available if the image buffer was constructed as non-const
         OIIO::ImageBuf to_oiio()
         {
-            if constexpr (!is_const)
+            if constexpr (is_const)
             {
                 PSAPI_LOG_ERROR("ImageBuffer", "Unable to construct OpenImageIO imagebuffer from const image buffer");
             }
@@ -138,8 +138,8 @@ namespace Render
             else
             {
                 // Get integer positions around the point
-                size_t x0 = static_cast<size_t>(std::floor(point.x));
-                size_t y0 = static_cast<size_t>(std::floor(point.y));
+                size_t x0 = static_cast<size_t>(std::fmax(std::floor(point.x), 0.0f));
+                size_t y0 = static_cast<size_t>(std::fmax(std::floor(point.y), 0.0f));
                 size_t x1 = std::min(x0 + 1, width - 1);
                 size_t y1 = std::min(y0 + 1, height - 1);
 

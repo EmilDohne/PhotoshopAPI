@@ -31,6 +31,15 @@ namespace Geometry
             return !(other.maximum.x < minimum.x || other.minimum.x > maximum.x ||
                 other.maximum.y < minimum.y || other.minimum.y > maximum.y);
         }
+
+        /// Return the size of the bbox
+        Point2D<T> size() const
+        {
+            return {
+                maximum.x - minimum.x,
+                maximum.y - minimum.y
+            };
+        }
     };
 
 }
