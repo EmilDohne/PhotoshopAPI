@@ -4,6 +4,7 @@
 #include "Macros.h"
 
 #include "Core/Render/Render.h"
+#include "Core/Render/ImageBuffer.h"
 #include "Core/Struct/ImageChannel.h"
 
 #include "Util/StringUtil.h"
@@ -132,8 +133,6 @@ struct LinkedLayerData
 			else if (interpolation == Render::Interpolation::bicubic)
 			{
 				
-
-				out_oiiobuffer = OIIO::ImageBufAlgo::resize(oiiobuffer, "bicubic", 0, roi);
 			}
 		}
 	}

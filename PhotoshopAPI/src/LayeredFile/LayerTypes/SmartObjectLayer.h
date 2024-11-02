@@ -4,7 +4,7 @@
 #include "Layer.h"
 
 #include "Core/Struct/DescriptorStructure.h"
-#include "Core/SmartObject::Warp/SmartObjectSmartObject::Warp.h"
+#include "Core/Warp/SmartObjectWarp.h"
 #include "Core/Render/Render.h"
 
 #include <fstream>
@@ -56,7 +56,6 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		data_type new_image_data;
 		for (const auto& [key, value] : image_data)
 		{
-			
 			new_image_data[key] 
 		}
 
