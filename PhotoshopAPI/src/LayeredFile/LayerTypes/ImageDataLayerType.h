@@ -36,7 +36,8 @@ namespace
 
 
 /// An extension of Layer<T> intended for any layers that need a generic interface for image data.
-/// These layers are e.g. SmartObjectLayer or ImageLayer
+/// These layers are e.g. SmartObjectLayer or ImageLayer. This struct is not meant to be directly 
+/// constructed but rather through those layer types
 template <typename T>
 struct _ImageDataLayerType : public Layer<T>
 {

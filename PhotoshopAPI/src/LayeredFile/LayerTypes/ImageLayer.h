@@ -87,7 +87,7 @@ struct ImageLayer : public _ImageDataLayerType<T>
 			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colorMode);
 			remapped[info] = std::move(value);
 		}
-		_ImageDataLayerType<T>construct(std::move(remapped), parameters, policy);
+		_ImageDataLayerType<T>::construct(std::move(remapped), parameters, policy);
 	}
 
 	/// Initialize our imageLayer by first parsing the base Layer instance and then moving

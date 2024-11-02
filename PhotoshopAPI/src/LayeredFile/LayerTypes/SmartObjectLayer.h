@@ -30,7 +30,37 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 
 	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath)
 	{
+		PSAPI_PROFILE_FUNCTION();
+		const auto& linkedlayer = file.m_LinkedLayers.insert(filepath);
+		const auto& image_data = linkedlayer.getImageData();
 
+		Layer<T>::m_ColorMode = parameters.colorMode;
+		Layer<T>::m_LayerName = parameters.layerName;
+		if (parameters.blendMode == Enum::BlendMode::Passthrough)
+		{
+			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
+			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
+		}
+		else
+		{
+			Layer<T>::m_BlendMode = parameters.blendMode;
+		}
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.isVisible;
+		Layer<T>::m_IsLocked = parameters.isLocked;
+		Layer<T>::m_CenterX = parameters.posX;
+		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+
+		data_type new_image_data;
+		for (const auto& [key, value] : image_data)
+		{
+			
+			new_image_data[key] 
+		}
+
+		Layer<T>::parseLayerMask(parameters);
 	}
 
 	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp)

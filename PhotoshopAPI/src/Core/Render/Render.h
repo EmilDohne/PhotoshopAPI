@@ -33,6 +33,14 @@ PSAPI_NAMESPACE_BEGIN
 
 namespace Render
 {
+
+	enum class Interpolation
+	{
+		nearest_neighbour,
+		bilinear,
+		bicubic,
+	};
+
     /// Get a OpenImageIO TypeDesc based on the given template parameter returning OIIO::TypeDesc::Unknown
     /// if the image coordinate is not part of the valid template specializations for photoshop buffers
     template <typename T>
@@ -246,6 +254,48 @@ namespace Render
             // Call the main bilinear UV sample function
             return sample_bilinear_uv(uv);
         }
+
+
+        std::vector<T> rescale_bicubic(size_t width, size_t height, T min, T max)
+        {
+
+            auto get_pixel = [&](size_t x, size_t y)
+                {
+                    x = std::clamp(x, 0, width - 1);
+                    y = std::clamp(y, 0, height - 1);
+                    auto idx = y * width + x;
+                    return this->buffer[idx];
+                }
+
+
+            std::vector<T> out(width * height);
+
+            std::vector<size_t>vertical_iter(height);
+            std::iota(vertical_iter.begin(), vertical_iter.end(), 0);
+
+            std::for_each(vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
+                {
+                    float v = static_cast<float>(y) / height;
+
+                    for (size_t x = 0; x < width; ++x)
+                    {
+                    }
+                })
+        }
+
+    private:
+
+		float cubic_hermite(float A, float B, float C, float D, float t)
+		{
+            // Expanded forms of the hermite cubic polynomial,
+            // adapted from 
+			float a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
+			float b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
+			float c = -A / 2.0f + C / 2.0f;
+			float d = B;
+
+			return a * t * t * t + b * t * t + c * t + d;
+		}
 
     };
 

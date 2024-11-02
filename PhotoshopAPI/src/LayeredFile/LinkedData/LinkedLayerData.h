@@ -14,6 +14,7 @@
 #include <string>
 
 #include <OpenImageIO/imageio.h>
+#include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/filesystem.h>
 
 
@@ -80,6 +81,69 @@ struct LinkedLayerData
 		return m_ImageData;
 	}
 
+
+	data_type getImageData() const 
+	{
+		PSAPI_PROFILE_FUNCTION();
+		data_type out;
+
+		auto threads = std::thread::hardware_concurrency() / m_ImageData.size();
+		threads = std::max(threads, 1);
+
+		std::mutex mutex;
+
+		std::for_each(std::execution::par_unseq, m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
+			{
+				const auto& key = pair.first;
+				const auto& channel = pair.second;
+				std::vector<T> data = channel->getData(threads);
+				{
+					std::lock_guard<std::mutex> lock(mutex);
+					out[key] = std::move(data);
+				}
+			});
+
+		return out;
+	}
+
+	/// Return the image data rescaled to the given dimensions
+	data_type getImageData(size_t width, size_t height, Render::Interpolation interpolation = Render::Interpolation::Bicubic)
+	{
+		data_type data = getImageData();
+		data_type resample_data;
+
+		for (auto& [key, channel] : m_ImageData)
+		{
+			Render::ImageBuffer<T> buffer(channel, m_Width, m_Height);
+
+			auto oiiobuffer		= buffer.to_oiio();
+			OIIO::ImageBuf out_oiiobuffer;
+			OIIO::ROI roi(0, width, 0, height, 0, 1, 0, 1);
+
+			// Interpolate the output channel
+			if (interpolation == Render::Interpolation::nearest_neighbour)
+			{
+				out_oiiobuffer = OIIO::ImageBufAlgo::resample(oiiobuffer, false, roi);
+			}
+			else if (interpolation == Render::Interpolation::bilinear)
+			{
+				out_oiiobuffer = OIIO::ImageBufAlgo::resample(oiiobuffer, true, roi)
+			}
+			else if (interpolation == Render::Interpolation::bicubic)
+			{
+				
+
+				out_oiiobuffer = OIIO::ImageBufAlgo::resize(oiiobuffer, "bicubic", 0, roi);
+			}
+		}
+	}
+
+	/// Get the width and height of the image data stored on the linked layer.
+	std::array<size_t, 2> size() { return { m_Width, m_Height }; }
+
+	size_t width() { return m_Width; }
+	size_t height() { return m_Height; }
+
 	/// Get the full path to the file stored on the LinkedLayerData.
 	std::filesystem::path path() const { return m_FilePath; }
 
@@ -96,6 +160,9 @@ private:
 
 	/// Raw file data
 	std::vector<uint8_t> m_RawData;
+
+	size_t m_Width = 1;
+	size_t m_Height = 1;
 
 	/// The whole filepath, this doesnt get stored on the photoshop file but 
 	/// we use it for better identification
@@ -116,8 +183,12 @@ private:
 				OIIO::geterror().c_str());
 		}
 		const OIIO::ImageSpec& spec = input->spec();
+		m_Width = spec.width();
+		m_Height = spec.height();
+
 		const auto& channelnames = spec.channelnames;
 		int alpha_channel = spec.alpha_channel;
+
 		// Get the image data as OIIO type from our T template param
 		constexpr auto type_desc = Render::get_type_desc<T>();
 
