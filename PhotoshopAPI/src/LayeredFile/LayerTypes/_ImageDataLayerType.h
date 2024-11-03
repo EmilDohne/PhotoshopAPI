@@ -38,7 +38,10 @@ namespace
 /// An extension of Layer<T> intended for any layers that need a generic interface for image data.
 /// These layers are e.g. SmartObjectLayer or ImageLayer. This struct is not meant to be directly 
 /// constructed but rather through those layer types
-template <typename T>
+template <typename T, typename = std::enable_if_t<
+	std::is_same_v<T, uint8_t> ||
+	std::is_same_v<T, uint16_t> ||
+	std::is_same_v<T, float32_t>>>
 struct _ImageDataLayerType : public Layer<T>
 {
 	/// Alias for our storage data type

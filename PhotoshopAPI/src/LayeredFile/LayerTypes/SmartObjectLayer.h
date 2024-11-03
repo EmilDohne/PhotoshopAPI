@@ -24,7 +24,10 @@ struct LayeredFile;
 
 /// This struct holds no data, we just use it to identify its type.
 /// We could hold references here 
-template <typename T>
+template <typename T, typename = std::enable_if_t<
+	std::is_same_v<T, uint8_t> ||
+	std::is_same_v<T, uint16_t> ||
+	std::is_same_v<T, float32_t>>>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
 	SmartObjectLayer() = default;

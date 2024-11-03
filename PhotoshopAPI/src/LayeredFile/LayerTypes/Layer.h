@@ -28,7 +28,10 @@ struct LayerMask
 };
 
 /// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.) which includes the minimum to parse a generic layer type
-template <typename T>
+template <typename T, typename = std::enable_if_t<
+	std::is_same_v<T, uint8_t> ||
+	std::is_same_v<T, uint16_t> ||
+	std::is_same_v<T, float32_t>>>
 struct Layer
 {
 	/// Template type accessor which can be used using decltype(layer::value_type)

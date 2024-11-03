@@ -30,7 +30,10 @@ struct LayeredFile;
 /// 
 /// \tparam T The data type for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
-template <typename T>
+template <typename T, typename = std::enable_if_t<
+	std::is_same_v<T, uint8_t> ||
+	std::is_same_v<T, uint16_t> ||
+	std::is_same_v<T, float32_t>>>
 struct GroupLayer : public Layer<T>
 {
 	/// \defgroup layer The groups' child layers
