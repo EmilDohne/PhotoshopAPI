@@ -179,6 +179,20 @@ struct LayeredFile
 	Enum::BitDepth bitdepth() const noexcept { return m_BitDepth; }
 	/// @} 
 
+	/// \defgroup linked_layer 
+	/// 
+	/// Primarily for internal user or advanced users. Users should usually not have to 
+	/// touch this as it's handled for them by SmartObjects themselves
+	/// 
+	/// LinkedLayers describe a global state of linked files. Their purpose is to store
+	/// the raw image data of smart objects such that any layer can have different resolution
+	/// than the smart object and for deduplication.
+	/// 
+	/// @{
+	LinkedLayers<T>& linked_layers() noexcept { return m_LinkedLayers; }
+	const LinkedLayers<T>& linked_layers() const noexcept { return m_LinkedLayers; }
+	/// @} 
+
 
 	LayeredFile() = default;
 

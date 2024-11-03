@@ -71,7 +71,6 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 
 	}
 
-
 	/// Generate a SmartObjectLayer from a Photoshop File object. This is for internal uses and not intended to be used by users directly. Please use the other
 	/// constructors
 	SmartObjectLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo) 
