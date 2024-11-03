@@ -17,7 +17,7 @@ FileHeader generateHeader(LayeredFile<T>& layeredFile)
 	// Since we decide the version on write we just pass psd in here
 	FileHeader header(
 		Enum::Version::Psd,
-		layeredFile.getNumChannels(),
+		layeredFile.num_channels(),
 		layeredFile.m_Width,
 		layeredFile.m_Height,
 		layeredFile.m_BitDepth,

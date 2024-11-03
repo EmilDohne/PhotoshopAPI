@@ -19,7 +19,7 @@ TEST_CASE("Test Simple Extents")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -53,7 +53,7 @@ TEST_CASE("Test Layer Smaller than document")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -86,7 +86,7 @@ TEST_CASE("Test Layer not centered")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -119,7 +119,7 @@ TEST_CASE("Test Layer out of bounds")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -152,7 +152,7 @@ TEST_CASE("Test Layer out of bounds one axis")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -185,7 +185,7 @@ TEST_CASE("Test Layer uneven size")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -219,7 +219,7 @@ TEST_CASE("Test Document uneven size")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -252,7 +252,7 @@ TEST_CASE("Test Large size extents uneven")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);
@@ -285,7 +285,7 @@ TEST_CASE("Test Large size full")
 	SUBCASE("Roundtripping Extents")
 	{
 		ChannelCoordinates coords = generateChannelCoordinates(extents, header);
-		ChannelExtents generatedExtents = generateChannelExtents(coords, header);
+		ChannelExtents generatedExtents = generate_extents(coords, header);
 
 		CHECK(generatedExtents.top == extents.top);
 		CHECK(generatedExtents.left == extents.left);

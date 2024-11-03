@@ -12,17 +12,18 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// This struct holds no data, we just use it to identify its type
-// We dont actually even store these and only use them when going from
-// flat -> nested
+/// This struct holds no data, this is just how photoshop
+/// stores the end of a group as it doesn't really have a concept of nesting otherwise.
+/// These are only created on write and not actually stored in the layer hierarchy of the
+/// file as we use nested layers to denote hierarchies.
 template <typename T>
 struct SectionDividerLayer : Layer<T>
 {
 protected:
 	// Generates an additional LrSectionDivider Tagged Block 
-	std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks() override
+	std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
 	{
-		auto blockVec = Layer<T>::generateTaggedBlocks();
+		auto blockVec = Layer<T>::generate_tagged_blocks();
 		LrSectionTaggedBlock sectionBlock{ Enum::SectionDivider::BoundingSection, std::nullopt };
 		blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
 
@@ -33,9 +34,9 @@ public:
 
 	SectionDividerLayer() = default;
 
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, [[maybe_unused]] const FileHeader& header) override
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, [[maybe_unused]] const FileHeader& header) override
 	{
-		auto blockVec = this->generateTaggedBlocks();
+		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
 		if (blockVec.size() > 0)
 		{
@@ -50,7 +51,7 @@ public:
 
 		// Applications such as krita expect empty channels to be in-place for the given colormode
 		// to actually parse the file. 
-		Layer<T>::generateEmptyChannels(channelInfoVec, channelDataVec, colorMode);
+		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, colorMode);
 
 		LayerRecord lrRecord(
 			PascalString("", 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 
@@ -65,7 +66,7 @@ public:
 			0u,		// Clipping
 			LayerRecords::BitFlags{},
 			std::nullopt,
-			Layer<T>::generateBlendingRanges(),	// Generate some defaults
+			Layer<T>::generate_blending_ranges(),	// Generate some defaults
 			std::move(taggedBlocks)
 		);
 

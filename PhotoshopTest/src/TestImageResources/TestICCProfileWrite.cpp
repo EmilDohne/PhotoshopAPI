@@ -39,7 +39,7 @@ TEST_CASE("Write AdobeRGB1998")
 			std::move(channelMap),
 			layerParams
 		);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		File::FileParams params = File::FileParams();
 		params.doRead = false;
@@ -59,7 +59,7 @@ TEST_CASE("Write AdobeRGB1998")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.getData();
+		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };
@@ -121,7 +121,7 @@ TEST_CASE("Write AppleRGB")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.getData();
+		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };
@@ -183,7 +183,7 @@ TEST_CASE("Write CIERGB")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.getData();
+		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };

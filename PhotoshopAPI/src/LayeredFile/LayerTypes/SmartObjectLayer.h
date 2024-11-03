@@ -2,6 +2,7 @@
 
 #include "Macros.h"
 #include "Layer.h"
+#include "_ImageDataLayerType.h"
 
 #include "Core/Struct/DescriptorStructure.h"
 #include "Core/Warp/SmartObjectWarp.h"
@@ -59,7 +60,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			new_image_data[key] 
 		}
 
-		Layer<T>::parseLayerMask(parameters);
+		Layer<T>::parse_mask(parameters);
 	}
 
 	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp)

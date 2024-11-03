@@ -51,7 +51,7 @@ int main()
 	if (maskImageLayerPtr->m_LayerMask.has_value())
 	{
 		// This value is always uint8_t even for 16- and 32- bit files!
-		uint8_t defaultColor = maskImageLayerPtr->m_LayerMask.value().defaultColor;
+		uint8_t defaultColor = maskImageLayerPtr->m_LayerMask.value().default_color;
 	}
 	// This would tell us that we have an empty white layer mask with no pixel values.
 	// One can however write out explicit zeroes for mask channels or set a default color

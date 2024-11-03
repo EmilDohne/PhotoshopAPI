@@ -17,8 +17,8 @@ TEST_CASE("Read 300 DPI")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 	// Get the DPI Profile we read from the PSD
-	float readDPI = layeredFile.m_DotsPerInch;
-	CHECK(readDPI == 300.0f);
+	float read_dpi = layeredFile.m_DotsPerInch;
+	CHECK(read_dpi == 300.0f);
 }
 
 
@@ -32,8 +32,8 @@ TEST_CASE("Read 300.5 DPI")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 	// Get the DPI Profile we read from the PSD
-	float readDPI = layeredFile.m_DotsPerInch;
-	CHECK(readDPI == 300.5f);
+	float read_dpi = layeredFile.m_DotsPerInch;
+	CHECK(read_dpi == 300.5f);
 }
 
 

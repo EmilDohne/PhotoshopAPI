@@ -19,9 +19,9 @@ ImageResources generateImageResources(LayeredFile<T>& layeredFile)
 	std::vector<std::unique_ptr<ResourceBlock>> blockVec;
 
 	// Only store the ICC Profile if we actually have data stored on it
-	if (layeredFile.m_ICCProfile.getDataSize() > 0)
+	if (layeredFile.m_ICCProfile.data_size() > 0)
 	{
-		auto iccBlock = ICCProfileBlock(std::move(layeredFile.m_ICCProfile.getData()));
+		auto iccBlock = ICCProfileBlock(std::move(layeredFile.m_ICCProfile.data()));
 		blockVec.push_back(std::make_unique<ICCProfileBlock>(iccBlock));
 	}
 

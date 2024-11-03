@@ -209,9 +209,9 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc", [](const Class& self)
 		{
-			auto data = self.m_ICCProfile.getData();
+			auto data = self.m_ICCProfile.data();
 			uint8_t* ptr = data.data();
-			std::vector<size_t> shape = { self.m_ICCProfile.getDataSize() };
+			std::vector<size_t> shape = { self.m_ICCProfile.data_size() };
 			return py::array_t<uint8_t>(shape, ptr);
 		}, [](Class& self, const std::filesystem::path& path)
 		{

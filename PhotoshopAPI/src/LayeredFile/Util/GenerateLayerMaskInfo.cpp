@@ -80,7 +80,7 @@ template <typename T>
 LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
 {
 	// We must first for each layer generate a layer records as well as channelImageData using the reversed flat layers
-	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.generateFlatLayers(std::nullopt, LayerOrder::reverse);
+	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.flat_layers(std::nullopt, LayerOrder::reverse);
 
 
 	std::vector<LayerRecord> layerRecords;

@@ -28,7 +28,7 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -61,7 +61,7 @@ TEST_CASE("Construct ImageLayer with mask as part of image data")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -93,7 +93,7 @@ TEST_CASE("Construct ImageLayer with explicit mask")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerMask = std::vector<type>(size),
+		.mask = std::vector<type>(size),
 		.layerName = "Layer",
 		.width = width,
 		.height = height,
@@ -131,7 +131,7 @@ TEST_CASE("Construct ImageLayer with both mask as part of imagedata and through 
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerMask = std::vector<type>(size),
+		.mask = std::vector<type>(size),
 		.layerName = "Layer",
 		.width = width,
 		.height = height,
@@ -170,7 +170,7 @@ TEST_CASE("Construct ImageLayer with invalid channels"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -207,7 +207,7 @@ TEST_CASE("Construct ImageLayer with too little channels"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -241,7 +241,7 @@ TEST_CASE("Set layer channel with Enum::ChannelID")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -278,7 +278,7 @@ TEST_CASE("Set layer channel with int16_t")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -314,7 +314,7 @@ TEST_CASE("Set layer channel mask channel with int16_t")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -356,7 +356,7 @@ TEST_CASE("Set layer invalid channel"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -397,7 +397,7 @@ TEST_CASE("Set layer invalid size channel"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -435,7 +435,7 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -481,7 +481,7 @@ TEST_CASE("Set layer data with int16_t")
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -531,7 +531,7 @@ TEST_CASE("Set layer invalid channel"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
@@ -580,7 +580,7 @@ TEST_CASE("Set layer invalid size channel"
 	};
 	auto params = typename Layer<type>::Params
 	{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};

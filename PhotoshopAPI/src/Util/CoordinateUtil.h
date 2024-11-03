@@ -65,7 +65,7 @@ inline ChannelCoordinates generateChannelCoordinates(const ChannelExtents extent
 /// Generate Channel Coordinates as we use them in the LayeredFile from Channel Extents as present in Photoshop documents
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-inline ChannelExtents generateChannelExtents(const ChannelCoordinates coordinates, const FileHeader& header)
+inline ChannelExtents generate_extents(const ChannelCoordinates coordinates, const FileHeader& header)
 {
 	ChannelExtents extents = {};
 

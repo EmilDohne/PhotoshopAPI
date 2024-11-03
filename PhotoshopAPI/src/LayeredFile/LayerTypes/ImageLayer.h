@@ -3,9 +3,11 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Layer.h"
-#include "ImageDataLayerType.h"
+#include "_ImageDataLayerType.h"
+
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
+
 
 #include <vector>
 #include <unordered_map>
@@ -114,11 +116,12 @@ struct ImageLayer : public _ImageDataLayerType<T>
 		}
 	}
 
-	/// Change the compression codec of all the image channels
-	void setCompression(const Enum::Compression compCode) override
+	/// Change the compression codec of all the image channels. This applies
+	/// on-write
+	void set_compression(const Enum::Compression compCode) override
 	{
 		// Change the mask channels' compression codec
-		Layer<T>::setCompression(compCode);
+		Layer<T>::set_compression(compCode);
 		// Change the image channel compression codecs
 		for (const auto& [key, val] : _ImageDataLayerType<T>::m_ImageData)
 		{
@@ -126,20 +129,27 @@ struct ImageLayer : public _ImageDataLayerType<T>
 		}
 	}
 
-	/// Generate a photoshop layerRecord and imageData based on the current layer. Mostly for internal use
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
+	/// \brief Converts the image layer to Photoshop layerRecords and imageData.
+	/// 
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	/// 
+	/// \param colorMode The color mode for the conversion.
+	/// \param header The file header for the conversion.
+	/// \return A tuple containing layerRecords and imageData.
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
 	{
-		PascalString lrName = Layer<T>::generatePascalString();
-		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
+		PascalString lrName = Layer<T>::generate_name();
+		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 		uint16_t channelCount = _ImageDataLayerType<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
 
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
-		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
-		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
+		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
+		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
 
 		// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
-		auto blockVec = this->generateTaggedBlocks();
+		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
 		if (blockVec.size() > 0)
 		{
@@ -150,7 +160,7 @@ struct ImageLayer : public _ImageDataLayerType<T>
 		// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 		// the compression mode chosen on export and must therefore be updated later. This step is done last as generateChannelImageData() invalidates
 		// all image data which we might need for operations above
-		auto channelData = this->generateChannelImageData();
+		auto channelData = this->generate_channel_image_data();
 		auto& channelInfoVec = std::get<0>(channelData);
 		ChannelImageData channelImgData = std::move(std::get<1>(channelData));
 
@@ -178,14 +188,14 @@ private:
 
 	// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 
 	// itself. This also takes care of generating our layer mask channel if it is present. Invalidates any data held by the ImageLayer
-	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generateChannelImageData()
+	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{
 		std::vector<LayerRecords::ChannelInformation> channelInfoVec;
 		std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same
-		auto maskData = Layer<T>::extractLayerMask();
+		auto maskData = Layer<T>::extract_mask();
 		if (maskData.has_value())
 		{
 			channelInfoVec.push_back(std::get<0>(maskData.value()));

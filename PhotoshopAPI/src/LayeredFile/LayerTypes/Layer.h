@@ -17,12 +17,12 @@ PSAPI_NAMESPACE_BEGIN
 /// Structure describing a layer mask (pixel based) 
 struct LayerMask
 {
-	std::unique_ptr<ImageChannel> maskData;
-	bool isMaskRelativeToLayer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
-	bool isDisabled = false;
-	uint8_t defaultColor = 255u;
-	std::optional<uint8_t> maskDensity;
-	std::optional<float64_t> maskFeather;
+	std::unique_ptr<ImageChannel> data;
+	bool relative_to_layer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
+	bool disabled = false;
+	uint8_t default_color = 255u;
+	std::optional<uint8_t> density;
+	std::optional<float64_t> feather;
 
 	LayerMask() = default;
 };
@@ -40,15 +40,15 @@ struct Layer
 	{
 		/// Optional Layer Mask parameter, if none is specified there is no mask. This image data must have the same size as 
 		/// the layer itself
-		std::optional<std::vector<T>> layerMask = std::nullopt;
+		std::optional<std::vector<T>> mask = std::nullopt;
 		/// The Layer Name to give to the layer, has a maximum length of 255
-		std::string layerName = "";
+		std::string name = "";
 		/// The Layers Blend Mode, all available blend modes are valid except for 'Passthrough' on non-group layers
-		Enum::BlendMode blendMode = Enum::BlendMode::Normal;
+		Enum::BlendMode blendmode = Enum::BlendMode::Normal;
 		/// The X Center coordinate, 0 indicates that the image is centered around the document, a negative value moves the layer to the left
-		int32_t posX = 0;
+		int32_t center_x = 0;
 		/// The Y Center coordinate, 0 indicates that the image is centered around the document, a negative value moves the layer to the top
-		int32_t posY = 0;
+		int32_t center_y = 0;
 		/// The width of the layer, this value must be passed explicitly as we do not deduce this from the Image Data itself
 		uint32_t width = 0u;
 		/// The height of the layer, this value must be passed explicitly as we do not deduce this from the Image Data itself
@@ -59,12 +59,163 @@ struct Layer
 		// The compression codec of the layer, it is perfectly valid for each layer to be compressed differently
 		Enum::Compression compression = Enum::Compression::ZipPrediction; 
 		// The Layers color mode, currently only RGB is supported
-		Enum::ColorMode colorMode = Enum::ColorMode::RGB;
+		Enum::ColorMode colormode = Enum::ColorMode::RGB;
 		// Whether the layer is visible
-		bool isVisible = true;
+		bool visible = true;
 		// Whether the layer is locked
-		bool isLocked = false;
+		bool locked = false;
 	};
+
+
+	/// \defgroup name The Layers' name
+	/// @{
+	const std::string& name() const noexcept { return m_LayerName; }
+	std::string& name() noexcept { return m_LayerName; }
+	void name(const std::string& layer_name) noexcept { m_LayerName = layer_name; };
+	/// @} 
+
+	/// \defgroup mask An optional mask component.
+	/// At this time only raster (pixel) masks are supported with support for vector masks following.
+	/// @{
+
+	std::optional<LayerMask>& mask() { return m_LayerMask; }
+	const std::optional<LayerMask>& mask() const { return m_LayerMask; }
+
+	/// Extract the mask data as a vector
+	///
+	/// If `copy` is set to true we copy out the data while if it set to false
+	/// we extract and invalidate the mask essentially removing the mask from the layer.
+	/// If no mask is present we raise a warning and return an empty vector
+	/// 
+	/// \param copy Whether to copy the data, defaults to `true`
+	/// 
+	/// \returns The mask data or an empty vector
+	std::vector<T> mask_data(bool copy = true)
+	{
+		if (m_LayerMask.has_value())
+		{
+			if (copy)
+			{
+				return m_LayerMask.value().data->getData<T>();
+			}
+			else
+			{
+				auto data = m_LayerMask.value().data->extractData<T>();
+				m_LayerMask = std::nullopt;
+				return std::move(data);
+			}
+		}
+		PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
+		return std::vector<T>();
+	}
+
+	/// Set the layers' mask
+	///
+	/// \param data The data to set the mask channel to, must have the dimensions 
+	///				width * height. If that isn't the case you must first call 
+	///				`layer->width()` and `layer->height()` to update this.
+	void mask_data(std::span<const T> data)
+	{
+		LayerMask newMask{};
+		if (data.size() != static_cast<size_t>(m_Width) * m_Height)
+		{
+			PSAPI_LOG_ERROR("Layer", "Unable to set mask channel as new masks' size is not the same as the layers' width and height");
+		}
+		auto idinfo = Enum::toChannelIDInfo(Enum::ChannelID::UserSuppliedLayerMask, m_ColorMode);
+		newMask.data = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, idinfo, m_Width, m_Height, m_CenterX, m_CenterY);
+		m_LayerMask.emplace(std::move(newMask));
+	}
+
+	/// Check whether a mask channel exists on the layer instance
+	bool has_mask() { return m_LayerMask.has_value(); };
+	/// @} 
+
+	/// \defgroup blendmode The layers' blendmode.
+	/// @{
+	Enum::BlendMode& blendmode() noexcept { return m_BlendMode; }
+	Enum::BlendMode blendmode() const noexcept { return m_BlendMode; }
+	void blendmode(Enum::BlendMode blend_mode) noexcept { return m_BlendMode = blend_mode; }
+	/// @} 
+
+	/// \defgroup locked Whether the layers' pixels are locked
+	/// @{
+	bool& locked() noexcept { return m_IsLocked; }
+	bool locked() const noexcept { return m_IsLocked; }
+	void locked(bool is_locked) noexcept { m_IsLocked = is_locked; }
+	/// @} 
+
+	/// \defgroup visible Whether the layer is visible
+	/// @{
+	bool& visible() noexcept { return m_IsVisible; }
+	bool visible() const noexcept { return m_IsVisible; }
+	void visible(bool is_visible) noexcept { m_IsVisible = is_visible; }
+	/// @} 
+
+	/// \defgroup opacity The layers' opacity. 
+	/// 
+	/// In photoshop this is stored as a `uint8_t` from 0-255 but access and write is 
+	/// in terms of a float for better consistency.
+	/// 
+	/// @{
+	float opacity() const noexcept { return static_cast<float>(m_Opacity) / 255; }
+	void opacity(float value) noexcept { m_Opacity = static_cast<uint8_t>(value * 255.0f); }
+	/// @} 
+
+	/// \defgroup width The layers' width from 0 - 300,000
+	/// @{
+	uint32_t& width() noexcept { return m_Width; }
+	uint32_t width() const noexcept { return m_Width; }
+	void width(uint32_t layer_width) 
+	{  
+		if (layer_width > static_cast<uint32_t>(300000))
+		{
+			PSAPI_LOG_ERROR("Layer", "Unable to set width to %u as the maximum layer size in photoshop is 300,000 for PSB", layer_width);
+		}
+		m_Width = layer_width;
+	}
+	/// @} 
+
+	/// \defgroup height The layers' height from 0 - 300,000
+	/// @{
+	uint32_t& height() noexcept { return m_Height; }
+	uint32_t height() const noexcept { return m_Height; }
+	void height(uint32_t layer_height)
+	{
+		if (layer_height > static_cast<uint32_t>(300000))
+		{
+			PSAPI_LOG_ERROR("Layer", "Unable to set height to %u as the maximum layer size in photoshop is 300,000 for PSB", layer_height);
+		}
+		m_Height = layer_height;
+	}
+	/// @} 
+	
+	/// \defgroup position The layers' position coordinates
+	/// 
+	/// These are represented as the layer's center.
+	/// I.e. if the layer has the bounds { 200, 200 } - { 1000, 1000 } The center
+	/// would be at { 600, 600 }
+	/// 
+	/// @{
+	float& center_x()  noexcept { return m_CenterX; }
+	float center_x() const noexcept { return m_CenterX; }
+	void center_x(float x_coord) noexcept { m_CenterX = x_coord; }
+
+	float& center_y()  noexcept { return m_CenterY; }
+	float center_y() const noexcept { return m_CenterY; }
+	void center_y(float y_coord) noexcept { m_CenterY = y_coord; }
+
+	/// Convenience function for accessing the top left x coordinate of a layer
+	float top_left_x() const noexcept { return m_CenterX - static_cast<float>(m_Width) / 2; }
+
+	/// Convenience function for accessing the top left y coordinate of a layer
+	float top_left_y() const noexcept { return m_CenterY - static_cast<float>(m_Height) / 2; }
+	/// @} 
+
+	/// The color mode with which the file was created, only stored to
+	/// allow better detection during channel access for e.g. image layers
+	Enum::ColorMode color_mode() const noexcept { return m_ColorMode; }
+
+protected:
 
 	std::string m_LayerName;
 
@@ -90,25 +241,24 @@ struct Layer
 
 	float m_CenterY{};
 
-protected:
 
 	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
-	void parseLayerMask(Params& parameters)
+	void parse_mask(Params& parameters)
 	{
-		if (parameters.layerMask)
+		if (parameters.mask)
 		{
 			LayerMask mask{};
 			Enum::ChannelIDInfo info{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
-			mask.maskData = std::make_unique<ImageChannel>(
+			mask.data = std::make_unique<ImageChannel>(
 				parameters.compression,
-				parameters.layerMask.value(),
+				parameters.mask.value(),
 				info,
 				parameters.width,
 				parameters.height,
-				static_cast<float>(parameters.posX),
-				static_cast<float>(parameters.posY)
+				static_cast<float>(parameters.center_x),
+				static_cast<float>(parameters.center_y)
 			);
 			Layer<T>::m_LayerMask = std::move(mask);
 		}
@@ -117,7 +267,7 @@ protected:
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
 	///
 	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
-	std::optional<LayerRecords::LayerMaskData> generateMaskData(const FileHeader& header)
+	std::optional<LayerRecords::LayerMaskData> generate_mask(const FileHeader& header)
 	{
 		auto lrMaskData = LayerRecords::LayerMaskData();
 
@@ -131,11 +281,11 @@ protected:
 		{
 			LayerRecords::LayerMask lrMask = LayerRecords::LayerMask{};
 
-			float centerX = m_LayerMask.value().maskData->getCenterX();
-			float centerY = m_LayerMask.value().maskData->getCenterY();
-			int32_t width = m_LayerMask.value().maskData->getWidth();
-			int32_t height = m_LayerMask.value().maskData->getHeight();
-			ChannelExtents extents = generateChannelExtents(ChannelCoordinates(width, height, centerX, centerY), header);
+			float centerX = m_LayerMask.value().data->getCenterX();
+			float centerY = m_LayerMask.value().data->getCenterY();
+			int32_t width = m_LayerMask.value().data->getWidth();
+			int32_t height = m_LayerMask.value().data->getHeight();
+			ChannelExtents extents = generate_extents(ChannelCoordinates(width, height, centerX, centerY), header);
 			lrMaskData.addSize(16u);
 
 			// Default color
@@ -145,19 +295,19 @@ protected:
 			lrMaskData.addSize(1u);
 			// This is the size for the mask parameters
 			lrMaskData.addSize(1u);
-			bool hasMaskDensity = m_LayerMask.value().maskDensity.has_value();
+			bool hasMaskDensity = m_LayerMask.value().density.has_value();
 			uint8_t maskDensity = 0u;
 			if (hasMaskDensity)
 			{
-				maskDensity = m_LayerMask.value().maskDensity.value();
+				maskDensity = m_LayerMask.value().density.value();
 				lrMaskData.addSize(1u);
 			}
 
-			bool hasMaskFeather = m_LayerMask.value().maskFeather.has_value();
+			bool hasMaskFeather = m_LayerMask.value().feather.has_value();
 			float64_t maskFeather = 0.0f;
 			if (hasMaskFeather)
 			{
-				maskFeather = m_LayerMask.value().maskFeather.value();
+				maskFeather = m_LayerMask.value().feather.value();
 				lrMaskData.addSize(8u);
 
 			}
@@ -166,9 +316,9 @@ protected:
 			lrMask.m_Left = extents.left;
 			lrMask.m_Bottom = extents.bottom;
 			lrMask.m_Right = extents.right;
-			lrMask.m_DefaultColor = m_LayerMask.value().defaultColor;
-			lrMask.m_Disabled = m_LayerMask.value().isDisabled;
-			lrMask.m_PositionRelativeToLayer = m_LayerMask.value().isMaskRelativeToLayer;
+			lrMask.m_DefaultColor = m_LayerMask.value().default_color;
+			lrMask.m_Disabled = m_LayerMask.value().disabled;
+			lrMask.m_PositionRelativeToLayer = m_LayerMask.value().relative_to_layer;
 			lrMask.m_HasMaskParams = hasMaskDensity || hasMaskFeather;
 			lrMask.m_HasUserMaskDensity = hasMaskDensity;
 			lrMask.m_HasUserMaskFeather = hasMaskFeather;
@@ -197,13 +347,13 @@ protected:
 	/// \brief Generate the layer name as a Pascal string.
 	///
 	/// \return A PascalString representing the layer name.
-	PascalString generatePascalString()
+	PascalString generate_name()
 	{
 		return PascalString(m_LayerName, 4u);
 	}
 
 	/// \brief Generate the tagged blocks necessary for writing the layer
-	virtual std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks()
+	virtual std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks()
 	{
 		std::vector<std::shared_ptr<TaggedBlock>> blockVec;
 		// Generate our reference point tagged block
@@ -228,7 +378,7 @@ protected:
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).
 	///
 	/// \return A LayerBlendingRanges object representing the layer blending ranges.
-	LayerRecords::LayerBlendingRanges generateBlendingRanges()
+	LayerRecords::LayerBlendingRanges generate_blending_ranges()
 	{
 		LayerRecords::LayerBlendingRanges blendingRanges{};
 		return blendingRanges;
@@ -237,13 +387,13 @@ protected:
 	/// \brief Extract the layer mask into a tuple of channel information and image data
 	///
 	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to BaseImageChannel.
-	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>>> extractLayerMask()
+	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>>> extract_mask()
 	{
 		if (!m_LayerMask.has_value())
 		{
 			return std::nullopt;
 		}
-		auto maskImgChannel = std::move(m_LayerMask.value().maskData);
+		auto maskImgChannel = std::move(m_LayerMask.value().data);
 		Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
 		LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel->m_OrigByteSize };
 		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>> data = std::make_tuple(channelInfo, std::move(maskImgChannel));
@@ -258,7 +408,7 @@ protected:
 	/// \param channelInfoVec The channel infos to append to, will only add channels if the default keys dont already exist
 	/// \param channelDataVec The channel data to append to, will only add channels if the default keys dont already exist
 	/// \param colormode	  The colormode associated with the layer, dictates how many layers are actually written out
-	void generateEmptyChannels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<ImageChannel>>& channelDataVec, const Enum::ColorMode& colormode)
+	void generate_empty_channels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<ImageChannel>>& channelDataVec, const Enum::ColorMode& colormode)
 	{
 		auto processChannel = [&](Enum::ChannelIDInfo channelid, int16_t i)
 			{
@@ -311,6 +461,9 @@ public:
 
 	/// \brief Initialize a Layer instance from the internal Photoshop File Format structures.
 	///
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	/// 
 	/// This constructor is responsible for creating a Layer object based on the information
 	/// stored in the provided Photoshop File Format structures. It extracts relevant data
 	/// from the LayerRecord, ChannelImageData, and FileHeader to set up the Layer.
@@ -322,7 +475,7 @@ public:
 	{
 		m_ColorMode = header.m_ColorMode;
 		m_LayerName = layerRecord.m_LayerName.getString();
-		// To parse the blend mode we must actually check for the presence of the sectionDivider blendMode as this overrides the layerRecord
+		// To parse the blend mode we must actually check for the presence of the sectionDivider blendmode as this overrides the layerRecord
 		// blendmode if it is present
 		if (!layerRecord.m_AdditionalLayerInfo.has_value())
 		{
@@ -380,7 +533,7 @@ public:
 				auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
 				if (channelPtr)
 				{
-					lrMask.maskData = std::move(channelPtr);
+					lrMask.data = std::move(channelPtr);
 				}
 				else
 				{
@@ -396,11 +549,11 @@ public:
 				if (!maskParams.m_LayerMask.has_value()) continue;
 				auto& layerMaskParams = maskParams.m_LayerMask.value();
 
-				lrMask.isDisabled = layerMaskParams.m_Disabled;
-				lrMask.isMaskRelativeToLayer = layerMaskParams.m_PositionRelativeToLayer;
-				lrMask.defaultColor = layerMaskParams.m_DefaultColor;
-				lrMask.maskDensity = layerMaskParams.m_UserMaskDensity;
-				lrMask.maskFeather = layerMaskParams.m_UserMaskFeather;
+				lrMask.disabled = layerMaskParams.m_Disabled;
+				lrMask.relative_to_layer = layerMaskParams.m_PositionRelativeToLayer;
+				lrMask.default_color = layerMaskParams.m_DefaultColor;
+				lrMask.density = layerMaskParams.m_UserMaskDensity;
+				lrMask.feather = layerMaskParams.m_UserMaskFeather;
 
 
 				// Forward the masks height as the layers width and height
@@ -443,8 +596,11 @@ public:
 		}
 	}
 
-	/// \brief Function for creating a PhotoshopFile from the layer.
+	/// \brief Function for creating a PhotoshopFile compatible types from the layer.
 	///
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	/// 
 	/// In the future, the intention is to make this a pure virtual function. However, due to
 	/// the presence of multiple miscellaneous layers not yet implemented for the initial release,
 	/// this function is provided. It generates a tuple containing LayerRecord and ChannelImageData
@@ -453,14 +609,14 @@ public:
 	/// \param colorMode The desired ColorMode for the PhotoshopFile.
 	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
-	virtual std::tuple<LayerRecord, ChannelImageData> toPhotoshop([[maybe_unused]] const Enum::ColorMode colorMode, const FileHeader& header)
+	virtual std::tuple<LayerRecord, ChannelImageData> to_photoshop([[maybe_unused]] const Enum::ColorMode colorMode, const FileHeader& header)
 	{
 		std::vector<LayerRecords::ChannelInformation> channelInfo{};	// Just have this be empty
 		ChannelImageData channelData{};
 
-		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(m_Width, m_Height, m_CenterX, m_CenterY), header);
+		ChannelExtents extents = generate_extents(ChannelCoordinates(m_Width, m_Height, m_CenterX, m_CenterY), header);
 
-		auto blockVec = this->generateTaggedBlocks();
+		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
 		if (blockVec.size() > 0)
 		{
@@ -481,61 +637,20 @@ public:
 			0u,		// Clipping
 			LayerRecords::BitFlags(m_IsLocked, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
-			Layer<T>::generateBlendingRanges(),	// Generate some defaults
+			Layer<T>::generate_blending_ranges(),	// Generate some defaults
 			std::move(taggedBlocks)		// Additional layer information
 		);
 
 		return std::make_tuple(std::move(lrRecord), std::move(channelData));
 	}
-	
-	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable
-	std::vector<T> getMask(const bool doCopy = true)
-	{
-		if (m_LayerMask.has_value())
-		{
-			if (doCopy)
-				return m_LayerMask.value().maskData->getData<T>();
-			else
-				return m_LayerMask.value().maskData->extractData<T>();
-		}
-		PSAPI_LOG_WARNING("Layer", "Layer doesnt have a mask channel, returning an empty vector<T>");
-		return std::vector<T>();
-	}
 
-	/// Extract the mask data as a vector, if doCopy is false the image data is freed and no longer usable.
-	/// This method is depracated, please use getMask() instead
-	[[deprecated("Replaced by getMask() for better consistency")]]
-	std::vector<T> getMaskData(const bool doCopy = true)
-	{
-		return getMask(doCopy);
-	}
-
-
-	/// Check whether a mask channel exists on the Layer
-	bool hasMask() { return m_LayerMask.has_value(); };
-
-	/// Set the layers' mask 
-	void setMask(std::span<const T> data)
-	{
-		LayerMask newMask{};
-		if (data.size() != static_cast<size_t>(m_Width) * m_Height)
-		{
-			PSAPI_LOG_ERROR("Layer", "Unable to set mask channel as new masks' size is not the same as the layers' width and height");
-		}
-		auto idinfo = Enum::toChannelIDInfo(Enum::ChannelID::UserSuppliedLayerMask, m_ColorMode);
-		newMask.maskData = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, idinfo, m_Width, m_Height, m_CenterX, m_CenterY);
-		m_LayerMask.emplace(std::move(newMask));
-	}
-
-	/// Get the colormode associated with the layer
-	Enum::ColorMode getColorMode() { return m_ColorMode; };
 
 	/// Changes the compression mode of all channels in this layer to the given compression mode
-	virtual void setCompression(const Enum::Compression compCode)
+	virtual void set_compression(const Enum::Compression compCode)
 	{
 		if (m_LayerMask)
 		{
-			m_LayerMask.value().maskData->m_Compression = compCode;
+			m_LayerMask.value().data->m_Compression = compCode;
 		}
 	}
 

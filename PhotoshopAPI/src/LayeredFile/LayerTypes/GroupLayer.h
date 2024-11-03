@@ -33,12 +33,19 @@ struct LayeredFile;
 template <typename T>
 struct GroupLayer : public Layer<T>
 {
-	/// Child layers contained within the group. Note that Layer<T> is polymorphic.
-	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
+	/// \defgroup layer The groups' child layers
+	/// @{
+	std::vector<std::shared_ptr<Layer<T>>>& layers() noexcept { return m_Layers; }
+	const std::vector<std::shared_ptr<Layer<T>>>& layers() const noexcept { return m_Layers; }
+	void layers(std::vector<std::shared_ptr<Layer<T>>> layer_vec) noexcept { m_Layers = std::move(layer_vec); }
+	/// @}
 
-	/// Specifies whether or not the layer is collapsed or open
-	bool m_isCollapsed = false;		
-
+	/// \defgroup collapse Whether the group is collapsed
+	/// @{
+	bool& collapsed() noexcept { return m_isCollapsed; }
+	bool collapsed() const noexcept { return m_isCollapsed; }
+	void collapsed(bool is_collapsed) noexcept { m_isCollapsed = is_collapsed; }
+	/// @} 
 
 	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
 	/// \param layerParameters The parameters for the group layer.
@@ -59,7 +66,7 @@ struct GroupLayer : public Layer<T>
 
 		m_isCollapsed = isCollapsed;
 
-		Layer<T>::parseLayerMask(parameters);
+		Layer<T>::parse_mask(parameters);
 
 		// If the mask was passed but not a width and height we throw an error 
 		if (Layer<T>::m_LayerMask && Layer<T>::m_Width == 0 && Layer<T>::m_Height == 0)
@@ -76,13 +83,12 @@ struct GroupLayer : public Layer<T>
 		}
 	}
 
-
 	/// \brief Adds a layer to the group, checking for duplicates in the process.
 	/// \param layeredFile The layered file containing the group.
 	/// \param layer The layer to be added.
-	void addLayer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
+	void add_layer(const LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer)
 	{
-		if (layeredFile.isLayerInDocument(layer))
+		if (layeredFile.is_layer_in_file(layer))
 		{
 			PSAPI_LOG_WARNING("GroupLayer", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
 			return;
@@ -92,7 +98,7 @@ struct GroupLayer : public Layer<T>
 
 	/// \brief Removes a layer at the given index from the group.
 	/// \param index The index of the layer to be removed.
-	void removeLayer(const int index)
+	void remove_layer(const int index)
 	{
 		if (index >= m_Layers.size())
 		{
@@ -104,7 +110,7 @@ struct GroupLayer : public Layer<T>
 
 	/// \brief Removes the specified layer from the group.
 	/// \param layer The layer to be removed.
-	void removeLayer(std::shared_ptr<Layer<T>>& layer)
+	void remove_layer(std::shared_ptr<Layer<T>>& layer)
 	{
 		int index = 0;
 		for (auto& sceneLayer : m_Layers)
@@ -121,7 +127,7 @@ struct GroupLayer : public Layer<T>
 
 	/// \brief Removes the specified layer from the group.
 	/// \param layerName The name of the layer to be removed
-	void removeLayer(const std::string layerName)
+	void remove_layer(const std::string layerName)
 	{
 		int index = 0;
 		for (auto& sceneLayer : m_Layers)
@@ -137,17 +143,21 @@ struct GroupLayer : public Layer<T>
 	}
 
 	/// \brief Converts the group layer to Photoshop layerRecords and imageData.
+	/// 
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	/// 
 	/// \param colorMode The color mode for the conversion.
 	/// \param header The file header for the conversion.
 	/// \return A tuple containing layerRecords and imageData.
-	std::tuple<LayerRecord, ChannelImageData> toPhotoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
 	{
-		PascalString lrName = Layer<T>::generatePascalString();
-		ChannelExtents extents = generateChannelExtents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
+		PascalString lrName = Layer<T>::generate_name();
+		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
-		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generateMaskData(header);
-		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generateBlendingRanges();
+		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
+		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
 
 
 		// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
@@ -157,14 +167,14 @@ struct GroupLayer : public Layer<T>
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same
-		auto maskData = Layer<T>::extractLayerMask();
+		auto maskData = Layer<T>::extract_mask();
 		if (maskData.has_value())
 		{
 			channelInfoVec.push_back(std::get<0>(maskData.value()));
 			channelDataVec.push_back(std::move(std::get<1>(maskData.value())));
 		}
 
-		auto blockVec = this->generateTaggedBlocks();
+		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
 		if (blockVec.size() > 0)
 		{
@@ -174,7 +184,7 @@ struct GroupLayer : public Layer<T>
 
 		// Applications such as krita expect empty channels to be in-place for the given colormode
 		// to actually parse the file. 
-		Layer<T>::generateEmptyChannels(channelInfoVec, channelDataVec, colorMode);
+		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, colorMode);
 
 		if (Layer<T>::m_BlendMode != Enum::BlendMode::Passthrough)
 		{
@@ -220,6 +230,10 @@ struct GroupLayer : public Layer<T>
 	}
 
 	/// \brief Constructs a GroupLayer using layerRecord, channelImageData, and file header.
+	/// 
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	/// 
 	/// \param layerRecord The layer record for the group layer.
 	/// \param channelImageData The channel image data for the group layer.
 	/// \param header The file header for the group layer.
@@ -243,10 +257,17 @@ struct GroupLayer : public Layer<T>
 
 
 protected:
+
+	/// Child layers contained within the group. Note that Layer<T> is polymorphic.
+	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
+
+	/// Specifies whether or not the layer is collapsed or open
+	bool m_isCollapsed = false;
+
 	/// \brief Generate the tagged blocks necessary for writing the layer
-	std::vector<std::shared_ptr<TaggedBlock>> generateTaggedBlocks() override
+	std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
 	{
-		auto blockVec = Layer<T>::generateTaggedBlocks();
+		auto blockVec = Layer<T>::generate_tagged_blocks();
 		LrSectionTaggedBlock sectionBlock;
 		if (m_isCollapsed)
 		{

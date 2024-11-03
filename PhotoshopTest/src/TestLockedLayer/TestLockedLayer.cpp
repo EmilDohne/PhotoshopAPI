@@ -33,10 +33,10 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 			};
 			auto params = typename Layer<type>::Params
 			{
-				.layerName = "Layer",
+				.name = "Layer",
 				.width = width,
 				.height = height,
-				.isLocked = true,
+				.locked = true,
 			};
 			auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 			file.addLayer(layer);
@@ -44,8 +44,8 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 		{
 			auto params = typename Layer<type>::Params
 			{
-				.layerName = "Group",
-				.isLocked = true
+				.name = "Group",
+				.locked = true
 			};
 			auto layer = std::make_shared<GroupLayer<type>>(params);
 			file.addLayer(layer);
