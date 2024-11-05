@@ -40,26 +40,17 @@ namespace SmartObject
 			quilt,	// Quilt warps are for arbitrary warp resolutions
 		};
 
-
-		/// The warp points, this is a coordinate grid of u*v points going in scanline order from the top left 
-		/// to the bottom right, here an example for a 4x4 grid
-		/// 1  2  3  4
-		/// 5  6  7  8
-		/// 9  10 11 12
-		/// 13 14 15 16
-		/// 
-		/// The points themselves don't describe coordinates on the canvas but instead on the resolution
-		/// of the smart object. So if the canvas is 1000x500 pixels but the smart object's original resolution
-		/// is 4000x2000 the points are the offsets from that. The warp points are represented as either a 
-		/// singular cubic bezier patch in the context of a 
-		std::vector<Geometry::Point2D<double>> m_WarpPoints;
-
-		/// The bounds of the geometry. Defined as Top, Left, Bottom, Right.
-		/// going with the above example this would be {0, 0, 2000, 4000}
-		std::array<double, 4> m_Bounds = { 0, 0, 0, 0 };
-
 		Warp() = default;
-		Warp(std::vector<Geometry::Point2D<double>> warp, size_t uDims, size_t vDims, std::array<double, 4> bounds)
+
+		/// Initialize the warp struct from a set of geometric points describing a bezier surface 
+		/// one or more quadratic bezier patches. These points are in scanline order (i.e. going first along the horizontal
+		/// axis, then across the vertical axis). 
+		/// Being a set of quadratic bezier patches the dimensions across the u and v (x and y) must be `4` or `n * 4 - 1`
+		/// where `n` is the number of subdivisions and is greater than one. In simple terms this means a valid number of 
+		/// points per axis is 4, 7, 10, 13 etc.
+		/// 
+		/// 
+		Warp(std::vector<Geometry::Point2D<double>> warp, size_t uDims, size_t vDims)
 			: m_Bounds(bounds), m_WarpPoints(warp), m_uDims(uDims), m_vDims(vDims)
 		{
 			if (warp.size() != uDims * vDims)
@@ -77,6 +68,9 @@ namespace SmartObject
 				m_WarpType = WarpType::quilt;
 			}
 		}
+
+		/// Check if the warp struct is valid, for now returns whether the warp points hold any data
+		bool valid() { return m_WarpPoints.size() > 0; }
 
 		/// Generate a Mesh from our warp structure, this is primarily used for directly
 		/// visualizing the points. 
@@ -167,7 +161,6 @@ namespace SmartObject
 		}
 
 
-
 		/// Create a "warp" descriptor from this class ready to be stored on a PlacedLayer or PlacedLayerData tagged block
 		Descriptors::Descriptor serialize() const;
 
@@ -197,6 +190,24 @@ namespace SmartObject
 		void warp_type(WarpType type);
 
 	private:
+
+		/// The warp points, this is a coordinate grid of u*v points going in scanline order from the top left 
+		/// to the bottom right, here an example for a 4x4 grid
+		/// 1  2  3  4
+		/// 5  6  7  8
+		/// 9  10 11 12
+		/// 13 14 15 16
+		/// 
+		/// The points themselves don't describe coordinates on the canvas but instead on the resolution
+		/// of the smart object. So if the canvas is 1000x500 pixels but the smart object's original resolution
+		/// is 4000x2000 the points are the offsets from that. The warp points are represented as either a 
+		/// singular cubic bezier patch in the context of a 
+		std::vector<Geometry::Point2D<double>> m_WarpPoints;
+
+		/// The bounds of the geometry. Defined as Top, Left, Bottom, Right.
+		/// going with the above example this would be {0, 0, 2000, 4000}
+		std::array<double, 4> m_Bounds = { 0, 0, 0, 0 };
+
 		/// Store the non affine transform as a geometric mesh. This transform
 		/// is stored in a way that if it was a no op it would be made up of 
 		/// 4 points that just describe a square. Therefore all transforms are 

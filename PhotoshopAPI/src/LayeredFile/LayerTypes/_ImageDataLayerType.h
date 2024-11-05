@@ -63,18 +63,18 @@ struct _ImageDataLayerType : public Layer<T>
 	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///
 	/// \param channelID the channel ID to extract
-	/// \param doCopy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> channel(const Enum::ChannelID channelID, bool doCopy = true)
+	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
+	std::vector<T> channel(const Enum::ChannelID channelID, bool copy = true)
 	{
 		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
 		{
-			return this->getMask(doCopy);
+			return this->getMask(copy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
 			if (key.id == channelID)
 			{
-				if (doCopy)
+				if (copy)
 					return value->template getData<T>();
 				else
 					return value->template extractData<T>();
@@ -87,18 +87,18 @@ struct _ImageDataLayerType : public Layer<T>
 	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///
 	/// \param channelIndex the channel index to extract
-	/// \param doCopy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> channel(const int16_t channelIndex, bool doCopy = true)
+	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
+	std::vector<T> channel(const int16_t channelIndex, bool copy = true)
 	{
 		if (channelIndex == -2)
 		{
-			return this->getMask(doCopy);
+			return this->getMask(copy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
 			if (key.index == channelIndex)
 			{
-				if (doCopy)
+				if (copy)
 					return value->template getData<T>();
 				else
 					return value->template extractData<T>();
@@ -112,10 +112,10 @@ struct _ImageDataLayerType : public Layer<T>
 	/// 
 	/// \tparam ExecutionPolicy the execution policy to get the image data with
 	/// 
-	/// \param doCopy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
+	/// \param copy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
 	/// \param policy The execution policy for the image data decompression
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type image_data(bool doCopy = true, const ExecutionPolicy policy = std::execution::par)
+	data_type image_data(bool copy = true, const ExecutionPolicy policy = std::execution::par)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
@@ -125,7 +125,7 @@ struct _ImageDataLayerType : public Layer<T>
 			Enum::ChannelIDInfo maskInfo;
 			maskInfo.id = Enum::ChannelID::UserSuppliedLayerMask;
 			maskInfo.index = -2;
-			imgData[maskInfo] = Layer<T>::getMask(doCopy);
+			imgData[maskInfo] = Layer<T>::getMask(copy);
 		}
 
 		// Preallocate the data in parallel for some slight speedups
@@ -155,7 +155,7 @@ struct _ImageDataLayerType : public Layer<T>
 		std::mutex exceptionMutex;
 		std::vector<std::string> exceptionMessages;
 
-		if (doCopy)
+		if (copy)
 		{
 			std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
 				[&](auto& pair)

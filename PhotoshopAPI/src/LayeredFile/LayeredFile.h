@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
-#include "StringUtil.h"
+#include "Util/Enum.h"
+#include "Util/StringUtil.h"
 #include "Core/Struct/TaggedBlock.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"

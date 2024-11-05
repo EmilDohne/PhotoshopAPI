@@ -26,7 +26,7 @@ int main()
 	std::vector<bpp8_t> channel_b = imageLayerPtr->getChannel(Enum::ChannelID::Blue);
 
 	// or extract all the channels as one unordered_map:
-	auto channels = imageLayerPtr->getImageData();
+	auto channels = imageLayerPtr->image_data();
 
 	// over which we could loop like this:
 	for (auto& [key, value] : channels)

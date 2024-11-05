@@ -4,9 +4,14 @@
 #include "Layer.h"
 #include "_ImageDataLayerType.h"
 
+#include "PhotoshopFile/LayerAndMaskInformation.h"
+#include "PhotoshopFile/AdditionalLayerInfo.h"
+
 #include "Core/Struct/DescriptorStructure.h"
+#include "Core/Struct/TaggedBlock.h"
 #include "Core/Warp/SmartObjectWarp.h"
 #include "Core/Render/Render.h"
+#include "Util/Enum.h"
 
 #include <fstream>
 #include <string>
@@ -30,45 +35,26 @@ template <typename T, typename = std::enable_if_t<
 	std::is_same_v<T, float32_t>>>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
-	SmartObjectLayer() = default;
+	using _ImageDataLayerType<T>::data_type;
+	using _ImageDataLayerType<T>::storage_type;
 
+	SmartObjectLayer() = default;
+	
+	/// Initialize a SmartObject layer from a filepath.
+	///
+	/// This will internally load the given file (assuming it exists) into memory, decoding the full resolution
+	/// image data as well as generating a resampled image data based on the resolution provided in the layers'
+	/// parameters. Requires the `LayeredFile` to be passed so we can keep track of this global state of 
+	/// linked layer data.
 	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath)
 	{
-		PSAPI_PROFILE_FUNCTION();
-		const auto& linkedlayer = file.m_LinkedLayers.insert(filepath);
-		const auto& image_data = linkedlayer.getImageData();
-
-		Layer<T>::m_ColorMode = parameters.colorMode;
-		Layer<T>::m_LayerName = parameters.layerName;
-		if (parameters.blendMode == Enum::BlendMode::Passthrough)
-		{
-			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
-			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
-		}
-		else
-		{
-			Layer<T>::m_BlendMode = parameters.blendMode;
-		}
-		Layer<T>::m_Opacity = parameters.opacity;
-		Layer<T>::m_IsVisible = parameters.isVisible;
-		Layer<T>::m_IsLocked = parameters.isLocked;
-		Layer<T>::m_CenterX = parameters.posX;
-		Layer<T>::m_CenterY = parameters.posY;
-		Layer<T>::m_Width = parameters.width;
-		Layer<T>::m_Height = parameters.height;
-
-		data_type new_image_data;
-		for (const auto& [key, value] : image_data)
-		{
-			new_image_data[key] 
-		}
-
-		Layer<T>::parse_mask(parameters);
+		auto warp = SmartObject::Warp{};
+		this->construct(file, parameters, filepath, warp);
 	}
 
 	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp)
 	{
-
+		this->construct(file, parameters, filepath, warp);
 	}
 
 	/// Generate a SmartObjectLayer from a Photoshop File object. This is for internal uses and not intended to be used by users directly. Please use the other
@@ -93,12 +79,126 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	SmartObject::Warp& warp() noexcept { return m_SmartObjectWarp; }
 	const SmartObject::Warp& warp() const noexcept{ return m_SmartObjectWarp; }
 
+	/// Retrieve the hashed value associated with the layer, this is what is used to identify the
+	/// linked layer associated with this smart object (where the original image data is stored)
+	const std::string& hash() const noexcept { return m_Hash; }
+
+	/// Retrieve the filename associated with this smart object. Note that it is a filename,
+	/// not a filepath as Photoshop doesn't store it that way. If the layer is linked externally
+	/// it is usually a good idea to have the file relative to the output psd/psb file as otherwise
+	/// photoshop won't be able to link it.
+	const std::string& filename() const noexcept { return m_Filename; }
+
+	/// \defgroup original_data The image data the smart object links to
+	/// 
+	/// Photoshop stores both a resampled image data with any warps etc. applied to them 
+	/// 
+	/// @{
+
+	/// Extract all the channels of the original image data.
+	/// 
+	/// Unlike the accessors `image_data()` and `channel()` this function gets the full resolution
+	/// image data that is stored on the smart object, i.e. the original image data. This may be smaller
+	/// or larger than the layers `width` or `height`. To get the actual resolution you can query: `original_width()` and `original_height()`
+	/// 
+	/// \tparam ExecutionPolicy the execution policy to get the image data with
+	/// 
+	/// \param document The document associated with this layer, this is required to query the original image data
+	/// \param policy The execution policy for the image data decompression, defaults to parallel
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
+	data_type original_image_data(const LayeredFile<T>& document, const ExecutionPolicy policy = std::execution::par)
+	{
+		const auto& linkedlayers = document.linked_layers();
+		const auto& layer = linkedlayers.at(m_Hash);
+
+		return layer.image_data();
+	}
+
+
+	/// Retrieve the original image datas' width.
+	///
+	/// This does not have the same limitation as Photoshop layers of being limited
+	/// to 30,000 or 300,000 pixels depending on the file type
+	/// 
+	/// \throws std::runtime_error if the hash defined by `hash()` is not valid for the document
+	/// 
+	/// \returns The width of the original image data
+	size_t original_width(const LayeredFile<T>& document) const
+	{
+		const auto& linkedlayers = document.linked_layers();
+		const auto& layer = linkedlayers.at(m_Hash);
+		return layer.width();
+	}
+
+	/// Retrieve the original image datas' height.
+	///
+	/// This does not have the same limitation as Photoshop layers of being limited
+	/// to 30,000 or 300,000 pixels depending on the file type
+	/// 
+	/// \param document The document where the LinkedLayer is stored
+	/// 
+	/// \throws std::runtime_error if the hash defined by `hash()` is not valid for the document
+	/// 
+	/// \return The height of the original image data
+	size_t original_height(const LayeredFile<T>& document) const
+	{
+		const auto& linkedlayers = document.linked_layers();
+		const auto& layer = linkedlayers.at(m_Hash);
+		return layer.width();
+	}
+
+	/// @}
+
+
 private:
 
 	SmartObject::Warp m_SmartObjectWarp;
 	std::string m_Hash;
 	std::string m_Filename;
 	
+
+	void construct(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp)
+	{
+		PSAPI_PROFILE_FUNCTION();
+
+		// Insert (or find) the linked layer and create a rescaled version of the image data.
+		const auto& linkedlayer = file.linked_layers().insert(filepath);
+		const auto& image_data = linkedlayer.image_data(parameters.width, parameters.height);
+		std::for_each(std::execution::par, image_data.begin(), image_data.end(), [&](const auto& pair)
+			{
+				const auto& key = pair.first;
+				const auto& channel = pair.second;
+				m_ImageData[key] = std::make_unique<ImageChannel<T>>(
+					parameters.compression,
+					channel,
+					key,
+					parameters.width,
+					parameters.height,
+					parameters.center_x,
+					parameters.center_y);
+			});
+
+
+		Layer<T>::m_ColorMode = parameters.colormode;
+		Layer<T>::m_LayerName = parameters.name;
+		if (parameters.blendmode == Enum::BlendMode::Passthrough)
+		{
+			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
+			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
+		}
+		else
+		{
+			Layer<T>::m_BlendMode = parameters.blendMode;
+		}
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.visible;
+		Layer<T>::m_IsLocked = parameters.locked;
+		Layer<T>::m_CenterX = parameters.center_x;
+		Layer<T>::m_CenterY = parameters.center_y;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+		Layer<T>::parse_mask(parameters);
+	}
 
 	/// Member data that is used only for roundtripping. We initialize these to sensible defaults on write.
 	/// Some of these may get promoted to proper members once we add functionality for modifying these

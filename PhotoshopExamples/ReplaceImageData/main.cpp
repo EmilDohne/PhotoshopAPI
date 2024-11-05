@@ -36,7 +36,7 @@ int main()
 	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Blue_Lagoon/Blue_Lagoon.exr", layeredFile);
 
 	// Now we can grab all channels (we could also use just grab a single channel)
-	auto channels = imageLayerPtr->getImageData();
+	auto channels = imageLayerPtr->image_data();
 
 	// Now we do our modifications. In this example we apply a sRGB -> linear operation
 	for (auto& [_, value] : channels)

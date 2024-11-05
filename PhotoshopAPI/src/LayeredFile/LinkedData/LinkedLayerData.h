@@ -24,8 +24,8 @@ PSAPI_NAMESPACE_BEGIN
 
 enum class LinkedLayerType
 {
-	Data,
-	External
+	data,
+	external
 };
 
 
@@ -41,6 +41,10 @@ struct LinkedLayerData
 
 	LinkedLayerData(std::filesystem::path filepath, std::string hash)
 	{
+		if (!std::filesystem::exists(filepath))
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unable to construct linked layer with invalid path, got path '%s'", filepath.string().c_str());
+		}
 		if (!filepath.has_filename())
 		{
 			PSAPI_LOG_ERROR("LinkedLayer", "Unable to construct linked layer without filename in path, got path '%s'", filepath.string().c_str());
@@ -59,41 +63,45 @@ struct LinkedLayerData
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
 			auto oiio_in = OIIO::ImageInput::open(filepath.string(), nullptr, &memreader);
-			parseOpenImageIoInput(std::move(oiio_in));
+			parse_oiio_input(std::move(oiio_in));
 		}
 		else
 		{
 			PSAPI_LOG_DEBUG("LinkedLayer", "Unable to construct file '%s' from memory as OpenImageIO doesn't support it. Falling back to reading the file again",
 				filepath.string().c_str());
 			auto oiio_in = OIIO::ImageInput::open(filepath);
-			parseOpenImageIoInput(std::move(oiio_in));
+			parse_oiio_input(std::move(oiio_in));
 		}
 	}
 
 	/// Get a view over the raw file data associated with this linked layer 
-	const std::span<const uint8_t> getRawData() const
+	const std::span<const uint8_t> raw_data() const
 	{
 		return std::span<const uint8_t>(m_RawData.begin(), m_RawData.end());
 	}
 
 	/// Get a const view over the image data.
-	const storage_type& getImageData() const
+	const storage_type& image_data() const
 	{
 		return m_ImageData;
 	}
 
 
-	data_type getImageData() const 
+	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
+	data_type image_data(const ExecutionPolicy policy = std::execution::par) const
 	{
 		PSAPI_PROFILE_FUNCTION();
 		data_type out;
 
 		auto threads = std::thread::hardware_concurrency() / m_ImageData.size();
 		threads = std::max(threads, 1);
-
+		if (policy == std::execution::seq)
+		{
+			threads = 1;
+		}
 		std::mutex mutex;
 
-		std::for_each(std::execution::par_unseq, m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
+		std::for_each(policy, m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;
@@ -107,50 +115,67 @@ struct LinkedLayerData
 		return out;
 	}
 
-	/// Return the image data rescaled to the given dimensions
-	data_type getImageData(size_t width, size_t height, Render::Interpolation interpolation = Render::Interpolation::Bicubic)
+	/// Return the image data held by this struct as a rescaled version of itself
+	///
+	/// This interpolates the data to the given `width` and `height` where those do not necessarily
+	/// need to match the aspect ratio of the original image (but will be stretched if they do not match).
+	/// We provide several interpolation methods but not all that photoshop recognizes.
+	/// 
+	/// \param width The horizontal resolution to resample to
+	/// \param height The vertical resolution to resample to
+	/// \param interpolation The interpolation algorithm to use. This may be `nearest_neighbour`, 
+	///						 `bilinear` or `bicubic` (default). Each of these has their advantages and disadvantages.
+	///						 `nearest_neighbour` for example is the fastest but will create blocky results while `bicubic`
+	///						 will create the best result but may be slowest.
+	/// 
+	/// \returns The resampled image data
+	data_type image_data(size_t width, size_t height, Render::Interpolation interpolation = Render::Interpolation::bicubic)
 	{
-		data_type data = getImageData();
-		data_type resample_data;
+		data_type data = this->image_data();
+		data_type resampled_data;
 
-		for (auto& [key, channel] : m_ImageData)
+		for (auto& [key, channel] : data)
 		{
 			Render::ImageBuffer<T> buffer(channel, m_Width, m_Height);
-
-			auto oiiobuffer		= buffer.to_oiio();
-			OIIO::ImageBuf out_oiiobuffer;
-			OIIO::ROI roi(0, width, 0, height, 0, 1, 0, 1);
-
 			// Interpolate the output channel
 			if (interpolation == Render::Interpolation::nearest_neighbour)
 			{
-				out_oiiobuffer = OIIO::ImageBufAlgo::resample(oiiobuffer, false, roi);
+				resampled_data[key] = buffer.rescale_nearest_neighbour(width, height);
 			}
 			else if (interpolation == Render::Interpolation::bilinear)
 			{
-				out_oiiobuffer = OIIO::ImageBufAlgo::resample(oiiobuffer, true, roi)
+				resampled_data[key] = buffer.rescale_bilinear(width, height);
 			}
 			else if (interpolation == Render::Interpolation::bicubic)
 			{
-				
+				constexpr T min = std::numeric_limits<T>::lowest();
+				constexpr T max = std::numeric_limits<T>::max();
+				resampled_data[key] = buffer.rescale_bicubic(width, height, min, max);
 			}
 		}
+
+		return resampled_data
 	}
 
 	/// Get the width and height of the image data stored on the linked layer.
 	std::array<size_t, 2> size() { return { m_Width, m_Height }; }
 
+	/// Return the width of the image data held by this struct
 	size_t width() { return m_Width; }
+
+	/// Return the height of the image data held by this struct
 	size_t height() { return m_Height; }
 
 	/// Get the full path to the file stored on the LinkedLayerData.
 	std::filesystem::path path() const { return m_FilePath; }
 
-	/// Get the hash associated with this layer
+	/// Get the hash associated with the LinkedLayerData
 	std::string hash() const { return m_Hash; }
 
+	/// Get the filename associated with the LinkedLayerData
 	std::string filename() const { return m_Filename; }
 
+	/// Get the type of linkage this file has in the context of the LinkedLayerData
 	LinkedLayerType type() const { return m_Type; }
 
 private:
@@ -173,7 +198,7 @@ private:
 
 	/// Parse the imageinput from the given filepath into our m_ImageData populating it
 	/// \param input The imageinput to read from, either 
-	void parseOpenImageIoInput(std::unique_ptr<OIIO::ImageInput> input, std::string filepath)
+	void parse_oiio_input(std::unique_ptr<OIIO::ImageInput> input, std::string filepath)
 	{
 		if (!input)
 		{

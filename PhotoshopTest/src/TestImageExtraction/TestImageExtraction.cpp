@@ -40,7 +40,7 @@ TEST_CASE("Retrieve all channels")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
 	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
 
-	auto channels = imageLayerPtr->getImageData();
+	auto channels = imageLayerPtr->image_data();
 
 	std::vector<bpp8_t> expected_r(layeredFile.m_Width * layeredFile.m_Height, 255u);
 	std::vector<bpp8_t> expected_g(layeredFile.m_Width * layeredFile.m_Height, 128u);
@@ -78,7 +78,7 @@ TEST_CASE("Double extract data")
 
 	// First extraction, doCopy is defaulted to true so we should be able to extract again after
 	{
-		auto channels = imageLayerPtr->getImageData();
+		auto channels = imageLayerPtr->image_data();
 		for (auto& [key, value] : channels)
 		{
 			if (key.id == Enum::ChannelID::Red)
@@ -98,7 +98,7 @@ TEST_CASE("Double extract data")
 
 	// Second extraction, doCopy is defaulted to true so we should be able to extract
 	{
-		auto channels = imageLayerPtr->getImageData();
+		auto channels = imageLayerPtr->image_data();
 		for (auto& [key, value] : channels)
 		{
 			if (key.id == Enum::ChannelID::Red)
@@ -164,8 +164,8 @@ TEST_CASE("Double extract channel")
 		auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
 
 		// This is expected to fail
-		auto channels = imageLayerPtr->getImageData(false);
-		auto channels2 = imageLayerPtr->getImageData(false);
+		auto channels = imageLayerPtr->image_data(false);
+		auto channels2 = imageLayerPtr->image_data(false);
 	}
 #endif
 
