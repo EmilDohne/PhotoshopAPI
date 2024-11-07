@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/PascalString.h"
 #include "Core/Struct/Section.h"
 #include "Core/Struct/File.h"

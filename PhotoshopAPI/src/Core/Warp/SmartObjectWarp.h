@@ -5,6 +5,7 @@
 #include "Core/Struct/DescriptorStructure.h"
 
 #include "Core/Render/Render.h"
+#include "Core/Render/ImageBuffer.h"
 #include "Core/Geometry/Point.h"
 #include "Core/Geometry/Mesh.h"
 #include "Core/Geometry/BezierSurface.h"
@@ -45,28 +46,53 @@ namespace SmartObject
 		/// Initialize the warp struct from a set of geometric points describing a bezier surface 
 		/// one or more quadratic bezier patches. These points are in scanline order (i.e. going first along the horizontal
 		/// axis, then across the vertical axis). 
-		/// Being a set of quadratic bezier patches the dimensions across the u and v (x and y) must be `4` or `n * 4 - 1`
+		/// Being a set of quadratic bezier patches the dimensions across the u and v (x and y) must be `4` or `4 + n * 3`
 		/// where `n` is the number of subdivisions and is greater than one. In simple terms this means a valid number of 
 		/// points per axis is 4, 7, 10, 13 etc.
 		/// 
-		/// 
-		Warp(std::vector<Geometry::Point2D<double>> warp, size_t uDims, size_t vDims)
-			: m_Bounds(bounds), m_WarpPoints(warp), m_uDims(uDims), m_vDims(vDims)
+		/// \param warp The warp points in scanline order.
+		/// \param u_dims The dimensions across the u (x)
+		/// \param v_dims The dimensions across the v (y)
+		Warp(std::vector<Geometry::Point2D<double>> warp, size_t u_dims, size_t v_dims)
 		{
-			if (warp.size() != uDims * vDims)
+			if (warp.size() != u_dims * v_dims)
 			{
 				PSAPI_LOG_ERROR("SmartObjectWarp", "Number of u * v dimensions must match size of the warp structure, expected %zu but got {%zu, %zu}",
-					warp.size(), uDims, vDims);
+					warp.size(), u_dims, v_dims);
+			}
+			if (u_dims < 4 || v_dims < 4)
+			{
+				PSAPI_LOG_ERROR("SmartObjectWarp", "Unable to create smart object warp as its bezier surface is not at least cubic. Expected at the very least 4x4 divisions");
 			}
 
-			if (uDims == 4 && vDims == 4)
+			if (u_dims == 4 && v_dims == 4)
 			{
 				m_WarpType = WarpType::normal;
 			}
 			else
 			{
+				if ((static_cast<int>(u_dims) - 4) % 3 != 0)
+				{
+					PSAPI_LOG_ERROR("SmartObjectWarp",
+						"Number of u dimensions would not lead to a quadratic bezier patch, received %zu dimensions but expected 4 + n * 3 dimensions (4, 7, 10, 13...)", u_dims);
+				}
+				if ((static_cast<int>(v_dims) - 4) % 3 != 0)
+				{
+					PSAPI_LOG_ERROR("SmartObjectWarp",
+						"Number of v dimensions would not lead to a quadratic bezier patch, received %zu dimensions but expected 4 + n * 3 dimensions (4, 7, 10, 13...)", v_dims);
+				}
 				m_WarpType = WarpType::quilt;
 			}
+
+			m_WarpPoints = warp;
+			m_uDims = u_dims;
+			m_vDims = v_dims;
+
+			auto bbox = Geometry::BoundingBox<double>::compute(m_WarpPoints);
+			m_Bounds[0] = bbox.minimum.y;
+			m_Bounds[1] = bbox.minimum.x;
+			m_Bounds[2] = bbox.maximum.y;
+			m_Bounds[3] = bbox.maximum.x;
 		}
 
 		/// Check if the warp struct is valid, for now returns whether the warp points hold any data
@@ -160,7 +186,6 @@ namespace SmartObject
 			apply(buffer, image, warp_mesh, resolution);
 		}
 
-
 		/// Create a "warp" descriptor from this class ready to be stored on a PlacedLayer or PlacedLayerData tagged block
 		Descriptors::Descriptor serialize() const;
 
@@ -169,9 +194,11 @@ namespace SmartObject
 		static Warp deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp);
 		static Warp deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp);
 
-
 		inline size_t u_dimensions() const noexcept { return m_uDims; };
 		inline size_t v_dimensions() const noexcept { return m_vDims; };
+
+		// Get the bounds of the smart object warp, defined as {top, left, bottom, right}
+		inline std::array<double, 4> bounds() const { return m_Bounds; }
 
 		static std::array<Geometry::Point2D<double>, 4> generate_non_affine_mesh(const Descriptors::List& transform, const Descriptors::List& non_affine_transform);
 
@@ -254,7 +281,8 @@ namespace SmartObject
 	};
 
 
-	struct PuppetWarp
+	/// Smart filter perspective warp
+	struct PerspectiveWarp
 	{
 		// Not yet supported
 	};

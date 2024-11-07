@@ -39,7 +39,7 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 				.locked = true,
 			};
 			auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
-			file.addLayer(layer);
+			file.add_layer(layer);
 		}
 		{
 			auto params = typename Layer<type>::Params
@@ -48,15 +48,15 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 				.locked = true
 			};
 			auto layer = std::make_shared<GroupLayer<type>>(params);
-			file.addLayer(layer);
+			file.add_layer(layer);
 		}
 		LayeredFile<type>::write(std::move(file), "LockedLayerFile.psb");
 	}
 	{
 		auto file = LayeredFile<type>::read("LockedLayerFile.psb");
-		for (const auto& layer : file.flatLayers())
+		for (const auto& layer : file.flat_layers())
 		{
-			CHECK(layer->m_IsLocked);
+			CHECK(layer->locked());
 		}
 	}
 }

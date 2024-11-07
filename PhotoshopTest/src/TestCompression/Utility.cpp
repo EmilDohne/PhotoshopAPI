@@ -5,7 +5,7 @@
 #include "Core/FileIO/Write.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "Core/Struct/TaggedBlock.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 
 #include <vector>
 #include <tuple>

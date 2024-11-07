@@ -62,12 +62,12 @@ void readFileExtractData(const int repeats, const std::filesystem::path& readPat
 			// Extract all the flat layers and get the image data out of any image layers. While in this case it would be trivial to parallelize this to use up
 			// all threads we want to simulate an environment where this extraction doesnt happen in one go
 			Profiler extractProfiler{ outStats, "extract" + benchName };
-			for (const auto& layer : layeredFile.generateFlatLayers(std::nullopt, LayerOrder::forward))
+			for (const auto& layer : layeredFile.flat_layers(std::nullopt, LayerOrder::forward))
 			{
 				if (auto imageLayer = dynamic_pointer_cast<ImageLayer<T>>(layer))
 				{
 					extractProfiler.startTimePoint();
-					auto data = imageLayer->image_data();
+					auto data = imageLayer->get_image_data();
 					extractProfiler.endTimePoint();
 				}
 			}
@@ -98,7 +98,7 @@ void readWriteFileChangeCompression(const int repeats, const std::filesystem::pa
 		}
 		{
 			Profiler writeProfiler{ outStats , "write" + benchName };
-			layeredFile.setCompression(Enum::Compression::Zip);
+			layeredFile.set_compression(Enum::Compression::Zip);
 			LayeredFile<T>::write(std::move(layeredFile), writePath);
 		}
 	}

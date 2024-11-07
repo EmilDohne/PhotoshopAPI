@@ -18,15 +18,15 @@ int main()
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("ImageData.psb");
 
 	// We could also use findLayer() on the LayeredFile but this way we directly get the appropriate type
-	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("RedLayer", layeredFile);
+	auto imageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("RedLayer", layeredFile);
 
 	// We can now either extract just the channels we want:
-	std::vector<bpp8_t> channel_r = imageLayerPtr->getChannel(Enum::ChannelID::Red);
-	std::vector<bpp8_t> channel_g = imageLayerPtr->getChannel(Enum::ChannelID::Green);
-	std::vector<bpp8_t> channel_b = imageLayerPtr->getChannel(Enum::ChannelID::Blue);
+	std::vector<bpp8_t> channel_r = imageLayerPtr->get_channel(Enum::ChannelID::Red);
+	std::vector<bpp8_t> channel_g = imageLayerPtr->get_channel(Enum::ChannelID::Green);
+	std::vector<bpp8_t> channel_b = imageLayerPtr->get_channel(Enum::ChannelID::Blue);
 
 	// or extract all the channels as one unordered_map:
-	auto channels = imageLayerPtr->image_data();
+	auto channels = imageLayerPtr->get_image_data();
 
 	// over which we could loop like this:
 	for (auto& [key, value] : channels)
@@ -40,18 +40,18 @@ int main()
 	}
 
 	// If we want to extract e.g. the layer mask:
-	auto maskImageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Group/EmptyLayerWithMask", layeredFile);
+	auto maskImageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("Group/EmptyLayerWithMask", layeredFile);
 
 	// If this doesnt have a mask channel we will simply get an empty channel. In this case though, even though
 	// we have a mask it will be empty as well as Photoshop fills in the gaps in the layer with the defaultColor
 	// parameter.
-	std::vector<bpp8_t> channel_mask = maskImageLayerPtr->getMaskData();
+	std::vector<bpp8_t> channel_mask = maskImageLayerPtr->get_mask_data();
 
 	// To extract this default color we can do this:
-	if (maskImageLayerPtr->m_LayerMask.has_value())
+	if (maskImageLayerPtr->mask())
 	{
 		// This value is always uint8_t even for 16- and 32- bit files!
-		uint8_t defaultColor = maskImageLayerPtr->m_LayerMask.value().default_color;
+		uint8_t defaultColor = maskImageLayerPtr->mask().value().default_color;
 	}
 	// This would tell us that we have an empty white layer mask with no pixel values.
 	// One can however write out explicit zeroes for mask channels or set a default color

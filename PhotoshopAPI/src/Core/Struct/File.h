@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 
 #include <filesystem>
 #include <fstream>

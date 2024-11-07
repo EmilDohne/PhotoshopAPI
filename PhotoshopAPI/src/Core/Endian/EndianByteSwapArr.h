@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 #include "EndianByteSwap.h"
 // Disable AVX2 at compile time for a scalar variant
 #ifdef __AVX2__

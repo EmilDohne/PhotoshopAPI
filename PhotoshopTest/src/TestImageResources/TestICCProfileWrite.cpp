@@ -23,7 +23,7 @@ TEST_CASE("Write AdobeRGB1998")
 		const uint32_t width = 64u;
 		const uint32_t height = 64u;
 		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
-		document.m_ICCProfile = { icc_path };
+		document.icc_profile(ICCProfile(icc_path));
 
 		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
 		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 36u);
@@ -31,7 +31,7 @@ TEST_CASE("Write AdobeRGB1998")
 		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 36u);
 
 		ImageLayer<bpp8_t>::Params layerParams = {};
-		layerParams.layerName = "Layer";
+		layerParams.name = "Layer";
 		layerParams.width = width;
 		layerParams.height = height;
 
@@ -45,7 +45,7 @@ TEST_CASE("Write AdobeRGB1998")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -59,7 +59,7 @@ TEST_CASE("Write AdobeRGB1998")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };
@@ -85,7 +85,7 @@ TEST_CASE("Write AppleRGB")
 		const uint32_t width = 64u;
 		const uint32_t height = 64u;
 		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
-		document.m_ICCProfile = { icc_path };
+		document.icc_profile(ICCProfile(icc_path));
 
 		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
 		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 36u);
@@ -93,7 +93,7 @@ TEST_CASE("Write AppleRGB")
 		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 36u);
 
 		ImageLayer<bpp8_t>::Params layerParams = {};
-		layerParams.layerName = "Layer";
+		layerParams.name = "Layer";
 		layerParams.width = width;
 		layerParams.height = height;
 
@@ -101,13 +101,13 @@ TEST_CASE("Write AppleRGB")
 			std::move(channelMap),
 			layerParams
 		);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		File::FileParams params = File::FileParams();
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -121,7 +121,7 @@ TEST_CASE("Write AppleRGB")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };
@@ -147,7 +147,7 @@ TEST_CASE("Write CIERGB")
 		const uint32_t width = 64u;
 		const uint32_t height = 64u;
 		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
-		document.m_ICCProfile = { icc_path };
+		document.icc_profile(ICCProfile(icc_path));
 
 		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
 		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 36u);
@@ -155,7 +155,7 @@ TEST_CASE("Write CIERGB")
 		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 36u);
 
 		ImageLayer<bpp8_t>::Params layerParams = {};
-		layerParams.layerName = "Layer";
+		layerParams.name = "Layer";
 		layerParams.width = width;
 		layerParams.height = height;
 
@@ -163,13 +163,13 @@ TEST_CASE("Write CIERGB")
 			std::move(channelMap),
 			layerParams
 		);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		File::FileParams params = File::FileParams();
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -183,7 +183,7 @@ TEST_CASE("Write CIERGB")
 		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
 
 		// Get the ICC Profile we read from the PSB
-		std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 		// Get the ICC profile directly from disk
 		File iccFile = { icc_path };

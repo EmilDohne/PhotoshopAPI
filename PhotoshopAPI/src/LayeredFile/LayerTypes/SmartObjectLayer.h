@@ -29,10 +29,7 @@ struct LayeredFile;
 
 /// This struct holds no data, we just use it to identify its type.
 /// We could hold references here 
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
 	using _ImageDataLayerType<T>::data_type;
@@ -105,8 +102,8 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// 
 	/// \param document The document associated with this layer, this is required to query the original image data
 	/// \param policy The execution policy for the image data decompression, defaults to parallel
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type original_image_data(const LayeredFile<T>& document, const ExecutionPolicy policy = std::execution::par)
+	template <typename ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
+	_ImageDataLayerType<T>::data_type original_image_data(const LayeredFile<T>& document, const ExecutionPolicy policy = std::execution::par)
 	{
 		const auto& linkedlayers = document.linked_layers();
 		const auto& layer = linkedlayers.at(m_Hash);
@@ -168,7 +165,7 @@ private:
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;
-				m_ImageData[key] = std::make_unique<ImageChannel<T>>(
+				_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel<T>>(
 					parameters.compression,
 					channel,
 					key,
@@ -188,7 +185,7 @@ private:
 		}
 		else
 		{
-			Layer<T>::m_BlendMode = parameters.blendMode;
+			Layer<T>::m_BlendMode = parameters.blendmode;
 		}
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.visible;
@@ -284,8 +281,9 @@ private:
 
 	void renderMesh(const SmartObject::Warp& warp, std::string filename)
 	{
-		auto height = warp.m_Bounds[2] - warp.m_Bounds[0];
-		auto width = warp.m_Bounds[3] - warp.m_Bounds[1];
+		auto bounds = warp.bounds();
+		auto height = bounds[2] - bounds[0];
+		auto width = bounds[3] - bounds[1];
 
 		auto surface = warp.surface();
 		auto subdivided_mesh = surface.mesh(100, 100, warp.non_affine_mesh());

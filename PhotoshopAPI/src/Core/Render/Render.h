@@ -14,6 +14,8 @@ Support for this is still experimental and primarily for debug purposes
 #include <cmath>
 #include <algorithm>
 
+#include "ImageBuffer.h"
+
 #include "Core/Geometry/Point.h"
 #include "Core/Geometry/Mesh.h"
 #include "Core/Geometry/BezierSurface.h"

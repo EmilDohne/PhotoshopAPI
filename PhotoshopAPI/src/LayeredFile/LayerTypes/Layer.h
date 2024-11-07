@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"
@@ -28,10 +28,7 @@ struct LayerMask
 };
 
 /// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.) which includes the minimum to parse a generic layer type
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct Layer
 {
 	/// Template type accessor which can be used using decltype(layer::value_type)
@@ -93,7 +90,7 @@ struct Layer
 	/// \param copy Whether to copy the data, defaults to `true`
 	/// 
 	/// \returns The mask data or an empty vector
-	std::vector<T> mask_data(bool copy = true)
+	std::vector<T> get_mask_data(bool copy = true)
 	{
 		if (m_LayerMask.has_value())
 		{
@@ -117,7 +114,7 @@ struct Layer
 	/// \param data The data to set the mask channel to, must have the dimensions 
 	///				width * height. If that isn't the case you must first call 
 	///				`layer->width()` and `layer->height()` to update this.
-	void mask_data(std::span<const T> data)
+	void set_mask_data(std::span<const T> data)
 	{
 		LayerMask newMask{};
 		if (data.size() != static_cast<size_t>(m_Width) * m_Height)
@@ -396,7 +393,7 @@ protected:
 		{
 			return std::nullopt;
 		}
-		auto maskImgChannel = std::move(m_LayerMask.value().data);
+		std::unique_ptr<ImageChannel> maskImgChannel = std::move(m_LayerMask.value().data);
 		Enum::ChannelIDInfo maskIdInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
 		LayerRecords::ChannelInformation channelInfo{ maskIdInfo, maskImgChannel->m_OrigByteSize };
 		std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>> data = std::make_tuple(channelInfo, std::move(maskImgChannel));

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Layer.h"
 #include "_ImageDataLayerType.h"
 
@@ -30,10 +30,7 @@ PSAPI_NAMESPACE_BEGIN
 
 
 // A pixel based image layer, the image data is stored on the ImageDataLayerType
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct ImageLayer : public _ImageDataLayerType<T>
 {
 	using _ImageDataLayerType<T>::data_type;
@@ -51,17 +48,17 @@ struct ImageLayer : public _ImageDataLayerType<T>
 	{
 		// Change the data from being Enum::ChannelID mapped to instead being mapped to a ChannelIDInfo so we can forward it
 		// to the other constructor
-		data_type remapped;
+		typename _ImageDataLayerType<T>::data_type remapped{};
 		for (auto& [key, value] : data)
 		{
 			// Check in a strict manner whether the channel is even valid for the colormode
-			if (!Enum::channelValidForColorMode(key, parameters.colorMode))
+			if (!Enum::channelValidForColorMode(key, parameters.colormode))
 			{
 				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel '%s' as it is not valid for the '%s' colormode. Skipping creation of this channel",
-					Enum::channelIDToString(key).c_str(), Enum::colorModeToString(parameters.colorMode).c_str());
+					Enum::channelIDToString(key).c_str(), Enum::colorModeToString(parameters.colormode).c_str());
 				continue;
 			}
-			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colorMode);
+			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
 			remapped[info] = std::move(value);
 		}
 		_ImageDataLayerType<T>::construct(std::move(remapped), parameters, policy);
@@ -79,17 +76,17 @@ struct ImageLayer : public _ImageDataLayerType<T>
 	{
 		// Change the data from being int16_t mapped to instead being mapped to a ChannelIDInfo so we can forward it
 		// to construct
-		data_type remapped;
+		typename _ImageDataLayerType<T>::data_type remapped{};
 		for (auto& [key, value] : data)
 		{
 			// Check in a strict manner whether the channel is even valid for the colormode
-			if (!Enum::channelValidForColorMode(key, parameters.colorMode))
+			if (!Enum::channelValidForColorMode(key, parameters.colormode))
 			{
 				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel with index %d as it is not valid for the '%s' colormode. Skipping creation of this channel",
-					key, Enum::colorModeToString(parameters.colorMode).c_str());
+					key, Enum::colorModeToString(parameters.colormode).c_str());
 				continue;
 			}
-			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colorMode);
+			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
 			remapped[info] = std::move(value);
 		}
 		_ImageDataLayerType<T>::construct(std::move(remapped), parameters, policy);
@@ -206,10 +203,10 @@ private:
 		}
 
 		// Extract all the channels next and push them into our data representation
-		for (auto& [id, channel] : _ImageDataLayerType<T>::m_ImageData)
+		for (auto& [id, get_channel] : _ImageDataLayerType<T>::m_ImageData)
 		{
-			channelInfoVec.push_back(LayerRecords::ChannelInformation{ id, channel->m_OrigByteSize });
-			channelDataVec.push_back(std::move(channel));
+			channelInfoVec.push_back(LayerRecords::ChannelInformation{ id, get_channel->m_OrigByteSize });
+			channelDataVec.push_back(std::move(get_channel));
 		}
 
 		// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor

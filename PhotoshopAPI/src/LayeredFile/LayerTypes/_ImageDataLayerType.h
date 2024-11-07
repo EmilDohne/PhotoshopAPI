@@ -38,10 +38,7 @@ namespace
 /// An extension of Layer<T> intended for any layers that need a generic interface for image data.
 /// These layers are e.g. SmartObjectLayer or ImageLayer. This struct is not meant to be directly 
 /// constructed but rather through those layer types
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct _ImageDataLayerType : public Layer<T>
 {
 	/// Alias for our storage data type
@@ -60,15 +57,27 @@ struct _ImageDataLayerType : public Layer<T>
 	/// 
 	/// @{
 
+	/// Get the total number of channels held by this image layer. This includes mask channels
+	size_t num_channels()
+	{
+		size_t channelnum = 0;
+		if (Layer<T>::m_LayerMask)
+		{
+			++channelnum;
+		}
+		channelnum += m_ImageData.size();
+		return channelnum;
+	}
+
 	/// Extract a specified channel from the layer given its channel ID. This also works for masks
 	///
 	/// \param channelID the channel ID to extract
 	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> channel(const Enum::ChannelID channelID, bool copy = true)
+	std::vector<T> get_channel(const Enum::ChannelID channelID, bool copy = true)
 	{
 		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
 		{
-			return this->getMask(copy);
+			return this->get_mask_data(copy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
@@ -88,11 +97,11 @@ struct _ImageDataLayerType : public Layer<T>
 	///
 	/// \param channelIndex the channel index to extract
 	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> channel(const int16_t channelIndex, bool copy = true)
+	std::vector<T> get_channel(const int16_t channelIndex, bool copy = true)
 	{
 		if (channelIndex == -2)
 		{
-			return this->getMask(copy);
+			return this->get_mask_data(copy);
 		}
 		for (auto& [key, value] : m_ImageData)
 		{
@@ -115,17 +124,17 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param copy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
 	/// \param policy The execution policy for the image data decompression
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type image_data(bool copy = true, const ExecutionPolicy policy = std::execution::par)
+	data_type get_image_data(bool copy = true, const ExecutionPolicy policy = std::execution::par)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
 
 		if (Layer<T>::m_LayerMask.has_value())
 		{
-			Enum::ChannelIDInfo maskInfo;
+			Enum::ChannelIDInfo maskInfo{};
 			maskInfo.id = Enum::ChannelID::UserSuppliedLayerMask;
 			maskInfo.index = -2;
-			imgData[maskInfo] = Layer<T>::getMask(copy);
+			imgData[maskInfo] = Layer<T>::get_mask_data(copy);
 		}
 
 		// Preallocate the data in parallel for some slight speedups
@@ -217,6 +226,12 @@ struct _ImageDataLayerType : public Layer<T>
 		return imgData;
 	}
 
+
+	const storage_type& image_data() const
+	{
+		return m_ImageData;
+	}
+
 	/// @}
 
 	/// \defgroup setter 
@@ -232,7 +247,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param channelID	The channel to insert or replace, must be valid for the given colormode. I.e. cannot be Enum::ChannelID::Cyan for an RGB layer/file
 	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
-	void channel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	void set_channel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		if (!channelValidForColorMode(channelID, Layer<T>::m_ColorMode))
@@ -252,7 +267,7 @@ struct _ImageDataLayerType : public Layer<T>
 		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
 		{
 			LayerMask mask{};
-			mask.maskData = std::make_unique<ImageChannel>(compression, data, idinfo, Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY);
+			mask.data = std::make_unique<ImageChannel>(compression, data, idinfo, Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY);
 			Layer<T>::m_LayerMask = std::move(mask);
 		}
 		else
@@ -268,10 +283,10 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param index		The index to insert or replace, must be valid for the given colormode. I.e. cannot be 4 for an RGB layer/file
 	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
-	void channel(const int16_t index, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	void set_channel(const int16_t index, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		auto idinfo = Enum::toChannelIDInfo(index, Layer<T>::m_ColorMode);
-		this->channel(idinfo.id, data, compression);
+		this->set_channel(idinfo.id, data, compression);
 	}
 
 	/// Set the image data for the whole layer without rebuilding the layer. This function is useful if e.g. you modified the data
@@ -283,7 +298,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
 	/// \param policy		The execution policy for the channel creation
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void image_data(std::unordered_map<int16_t, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	void set_image_data(std::unordered_map<int16_t, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -297,7 +312,7 @@ struct _ImageDataLayerType : public Layer<T>
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
 				try
 				{
-					this->channel(key, dataSpan, compression);
+					this->set_channel(key, dataSpan, compression);
 				}
 				catch (std::runtime_error& e)
 				{
@@ -331,7 +346,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
 	/// \param policy		The execution policy for the channel creation
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void image_data(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	void set_image_data(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -345,7 +360,7 @@ struct _ImageDataLayerType : public Layer<T>
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
 				try
 				{
-					this->channel(key, dataSpan, compression);
+					this->set_channel(key, dataSpan, compression);
 				}
 				catch (std::runtime_error& e)
 				{
@@ -379,7 +394,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
 	/// \param policy		The execution policy for the channel creation
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void image_data(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	void set_image_data(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -393,7 +408,7 @@ struct _ImageDataLayerType : public Layer<T>
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
 				try
 				{
-					this->channel(key.id, dataSpan, compression);
+					this->set_channel(key.id, dataSpan, compression);
 				}
 				catch (std::runtime_error& e)
 				{
@@ -430,22 +445,22 @@ protected:
 	void construct(data_type&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy)
 	{
 		PSAPI_PROFILE_FUNCTION();
-		Layer<T>::m_ColorMode = parameters.colorMode;
-		Layer<T>::m_LayerName = parameters.layerName;
-		if (parameters.blendMode == Enum::BlendMode::Passthrough)
+		Layer<T>::m_ColorMode = parameters.colormode;
+		Layer<T>::m_LayerName = parameters.name;
+		if (parameters.blendmode == Enum::BlendMode::Passthrough)
 		{
 			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
 			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
 		}
 		else
 		{
-			Layer<T>::m_BlendMode = parameters.blendMode;
+			Layer<T>::m_BlendMode = parameters.blendmode;
 		}
 		Layer<T>::m_Opacity = parameters.opacity;
-		Layer<T>::m_IsVisible = parameters.isVisible;
-		Layer<T>::m_IsLocked = parameters.isLocked;
-		Layer<T>::m_CenterX = parameters.posX;
-		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_IsVisible = parameters.visible;
+		Layer<T>::m_IsLocked = parameters.locked;
+		Layer<T>::m_CenterX = parameters.center_x;
+		Layer<T>::m_CenterY = parameters.center_y;
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 
@@ -454,14 +469,14 @@ protected:
 		const auto maskID = Enum::ChannelIDInfo{ .id = Enum::ChannelID::UserSuppliedLayerMask, .index = -2 };
 		if (data.contains(maskID))
 		{
-			if (parameters.layerMask)
+			if (parameters.mask)
 			{
 				PSAPI_LOG_ERROR("ImageLayer",
 					"Got mask from both the ImageData as index -2 and as part of the layer parameter, please only pass it as one of these");
 			}
 
 			PSAPI_LOG_DEBUG("ImageLayer", "Forwarding mask channel passed as part of image data to m_LayerMask");
-			parameters.layerMask = std::move(data[maskID]);
+			parameters.mask = std::move(data[maskID]);
 			data.erase(maskID);
 		}
 
@@ -482,13 +497,13 @@ protected:
 							info,
 							parameters.width,
 							parameters.height,
-							static_cast<float>(parameters.posX),
-							static_cast<float>(parameters.posY)
+							static_cast<float>(parameters.center_x),
+							static_cast<float>(parameters.center_y)
 						);
 			});
 
 		// Check that the required keys are actually present. e.g. for an RGB colorMode the channels R, G and B must be present
-		if (parameters.colorMode == Enum::ColorMode::RGB)
+		if (parameters.colormode == Enum::ColorMode::RGB)
 		{
 			Enum::ChannelIDInfo channelR = { .id = Enum::ChannelID::Red, .index = 0 };
 			Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Green, .index = 1 };
@@ -500,7 +515,7 @@ protected:
 				PSAPI_LOG_ERROR("ImageLayer", "For RGB ColorMode R, G and B channels need to be specified");
 			}
 		}
-		else if (parameters.colorMode == Enum::ColorMode::CMYK)
+		else if (parameters.colormode == Enum::ColorMode::CMYK)
 		{
 			Enum::ChannelIDInfo channelC = { .id = Enum::ChannelID::Cyan, .index = 0 };
 			Enum::ChannelIDInfo channelM = { .id = Enum::ChannelID::Magenta, .index = 1 };
@@ -513,7 +528,7 @@ protected:
 				PSAPI_LOG_ERROR("ImageLayer", "For CMYK ColorMode C, M, Y and K channels need to be specified");
 			}
 		}
-		else if (parameters.colorMode == Enum::ColorMode::Grayscale)
+		else if (parameters.colormode == Enum::ColorMode::Grayscale)
 		{
 			Enum::ChannelIDInfo channelG = { .id = Enum::ChannelID::Gray, .index = 0 };
 			std::vector<Enum::ChannelIDInfo> channelVec = { channelG };
@@ -528,7 +543,7 @@ protected:
 			PSAPI_LOG_ERROR("ImageLayer", "The PhotoshopAPI currently only supports RGB, CMYK and Greyscale colour modes");
 		}
 
-		Layer<T>::parseLayerMask(parameters);
+		Layer<T>::parse_mask(parameters);
 	}
 };
 

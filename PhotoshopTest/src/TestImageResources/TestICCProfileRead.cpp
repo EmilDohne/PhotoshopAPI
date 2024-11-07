@@ -25,7 +25,7 @@ TEST_CASE("Read AdobeRGB1998")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 	// Get the ICC Profile we read from the PSB
-	std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+	std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 	// Get the ICC profile directly from disk
 	File iccFile = { icc_path };
@@ -48,7 +48,7 @@ TEST_CASE("Read AppleRGB")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 	// Get the ICC Profile we read from the PSB
-	std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+	std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 	// Get the ICC profile directly from disk
 	File iccFile = { icc_path };
@@ -71,7 +71,7 @@ TEST_CASE("Read CIERGB")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read(psb_path);
 
 	// Get the ICC Profile we read from the PSB
-	std::vector<uint8_t> readICCProfile = layeredFile.m_ICCProfile.data();
+	std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
 
 	// Get the ICC profile directly from disk
 	File iccFile = { icc_path };

@@ -2,7 +2,7 @@
 
 #include "FileHeader.h"
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 

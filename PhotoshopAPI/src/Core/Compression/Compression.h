@@ -8,9 +8,9 @@
 
 #include "Macros.h"
 #include "Core/FileIO/Read.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/ByteStream.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 
 #include <type_traits>

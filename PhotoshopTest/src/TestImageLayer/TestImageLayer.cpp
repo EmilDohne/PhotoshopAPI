@@ -35,10 +35,10 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_ImageData.size() == data.size());
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->num_channels() == data.size());
 }
 
 
@@ -68,10 +68,10 @@ TEST_CASE("Construct ImageLayer with mask as part of image data")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 }
 
 
@@ -94,17 +94,17 @@ TEST_CASE("Construct ImageLayer with explicit mask")
 	auto params = typename Layer<type>::Params
 	{
 		.mask = std::vector<type>(size),
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 }
 
 
@@ -132,17 +132,17 @@ TEST_CASE("Construct ImageLayer with both mask as part of imagedata and through 
 	auto params = typename Layer<type>::Params
 	{
 		.mask = std::vector<type>(size),
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
 	};
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 }
 #endif
 
@@ -177,10 +177,10 @@ TEST_CASE("Construct ImageLayer with invalid channels"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 }
 #endif
 
@@ -214,10 +214,10 @@ TEST_CASE("Construct ImageLayer with too little channels"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 }
 #endif
 
@@ -248,14 +248,14 @@ TEST_CASE("Set layer channel with Enum::ChannelID")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
-	layer->setChannel(Enum::ChannelID::Red, channel);
-	CHECK(layer->getChannel(Enum::ChannelID::Red, false) == channel);
+	layer->set_channel(Enum::ChannelID::Red, channel);
+	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
 }
 
 
@@ -285,14 +285,14 @@ TEST_CASE("Set layer channel with int16_t")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
-	layer->setChannel(2, channel);
-	CHECK(layer->getChannel(2, false) == channel);
+	layer->set_channel(2, channel);
+	CHECK(layer->get_channel(2, false) == channel);
 }
 
 
@@ -321,15 +321,15 @@ TEST_CASE("Set layer channel mask channel with int16_t")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
 
 	std::vector<type> channel(size, 65535u);
-	layer->setChannel(-2, channel);
-	CHECK(layer->getChannel(-2, true) == channel);
-	CHECK(layer->hasMask());
-	CHECK(layer->getMask(true) == channel);
+	layer->set_channel(-2, channel);
+	CHECK(layer->get_channel(-2, true) == channel);
+	CHECK(layer->has_mask());
+	CHECK(layer->get_mask_data(true) == channel);
 }
 
 
@@ -363,13 +363,13 @@ TEST_CASE("Set layer invalid channel"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
-	layer->setChannel(Enum::ChannelID::Cyan, channel);
+	layer->set_channel(Enum::ChannelID::Cyan, channel);
 }
 #endif
 
@@ -404,13 +404,13 @@ TEST_CASE("Set layer invalid size channel"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size - 5u, 65535u);
-	layer->setChannel(Enum::ChannelID::Red, channel);
+	layer->set_channel(Enum::ChannelID::Red, channel);
 }
 #endif
 
@@ -442,10 +442,10 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 
 	std::vector<type> channel(size, 65535u);
@@ -456,9 +456,9 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 		{Enum::ChannelID::Green, std::vector<type>(size)},
 		{Enum::ChannelID::Blue, std::vector<type>(size)},
 	};
-	layer->setImageData(std::move(data_new));
-	CHECK(layer->hasMask());
-	CHECK(layer->getChannel(Enum::ChannelID::Red, false) == channel);
+	layer->set_image_data(std::move(data_new));
+	CHECK(layer->has_mask());
+	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
 }
 
 
@@ -488,10 +488,10 @@ TEST_CASE("Set layer data with int16_t")
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
 	std::unordered_map<int16_t, std::vector<type>> data_new =
@@ -501,9 +501,9 @@ TEST_CASE("Set layer data with int16_t")
 		{1, std::vector<type>(size)},
 		{2, std::vector<type>(size)},
 	};
-	layer->setImageData(std::move(data_new));
-	CHECK(layer->hasMask());
-	CHECK(layer->getChannel(Enum::ChannelID::Red, false) == channel);
+	layer->set_image_data(std::move(data_new));
+	CHECK(layer->has_mask());
+	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
 }
 
 
@@ -538,10 +538,10 @@ TEST_CASE("Set layer invalid channel"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
 	std::unordered_map<int16_t, std::vector<type>> data_new =
@@ -552,7 +552,7 @@ TEST_CASE("Set layer invalid channel"
 		{2, std::vector<type>(size)},
 		{3, std::vector<type>(size)},
 	};
-	layer->setImageData(std::move(data_new));
+	layer->set_image_data(std::move(data_new));
 }
 #endif
 
@@ -587,10 +587,10 @@ TEST_CASE("Set layer invalid size channel"
 
 	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
 
-	CHECK(layer->m_Width == width);
-	CHECK(layer->m_Height == height);
-	CHECK(layer->m_LayerName == "Layer");
-	CHECK(layer->m_LayerMask);
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->mask());
 
 	std::vector<type> channel(size, 65535u);
 	std::unordered_map<int16_t, std::vector<type>> data_new =
@@ -600,6 +600,6 @@ TEST_CASE("Set layer invalid size channel"
 		{1, std::vector<type>(size + 5)},
 		{2, std::vector<type>(size)},
 	};
-	layer->setImageData(std::move(data_new));
+	layer->set_image_data(std::move(data_new));
 }
 #endif

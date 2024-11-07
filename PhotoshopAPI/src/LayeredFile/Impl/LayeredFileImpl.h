@@ -1,16 +1,28 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
-#include "StringUtil.h"
+#include "Util/Enum.h"
+#include "Util/StringUtil.h"
 #include "Core/Struct/TaggedBlock.h"
+#include "Core/Struct/ICCProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
+#include "LayeredFile/LayerTypes/Layer.h"
+#include "LayeredFile/LayerTypes/ImageLayer.h"
+#include "LayeredFile/LayerTypes/GroupLayer.h"
+#include "LayeredFile/LayerTypes/AdjustmentLayer.h"
+#include "LayeredFile/LayerTypes/ArtboardLayer.h"
+#include "LayeredFile/LayerTypes/SectionDividerLayer.h"
+#include "LayeredFile/LayerTypes/ShapeLayer.h"
+#include "LayeredFile/LayerTypes/SmartObjectLayer.h"
+#include "LayeredFile/LayerTypes/TextLayer.h"
+
 PSAPI_NAMESPACE_BEGIN
 
-namespace LayeredFileImpl
+namespace _Impl
 {
+
 	/// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
 	/// initialized with the given layer record and corresponding channel image data.
 	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
@@ -142,7 +154,6 @@ namespace LayeredFileImpl
 	}
 
 
-
 	/// Recursively build a layer hierarchy using the LayerRecords, ChannelImageData and their respective reverse iterators
 	/// See comments in build_layer_hierarchy on why we iterate in reverse
 	template <typename T>
@@ -163,12 +174,12 @@ namespace LayeredFileImpl
 			auto& layerRecord = *layerRecordsIterator;
 			auto& channelImage = *channelImageDataIterator;
 
-			std::shared_ptr<Layer<T>> layer = identifyLayerType<T>(layerRecord, channelImage, header, globalAdditionalLayerInfo);
+			std::shared_ptr<Layer<T>> layer = identify_layer_type<T>(layerRecord, channelImage, header, globalAdditionalLayerInfo);
 
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
 				// Recurse a level down
-				groupLayerPtr->m_Layers = buildLayerHierarchyRecurse<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header, globalAdditionalLayerInfo);
+				groupLayerPtr->layers() = build_layer_hierarchy_recursive<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header, globalAdditionalLayerInfo);
 				root.push_back(groupLayerPtr);
 			}
 			else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -249,7 +260,7 @@ namespace LayeredFileImpl
 
 		if (file->m_LayerMaskInfo.m_AdditionalLayerInfo)
 		{
-			std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(
+			std::vector<std::shared_ptr<Layer<T>>> root = build_layer_hierarchy_recursive<T>(
 				*layerRecords,
 				*channelImageData,
 				layerRecordsIterator,
@@ -262,7 +273,7 @@ namespace LayeredFileImpl
 		else
 		{
 			AdditionalLayerInfo tmp{};
-			std::vector<std::shared_ptr<Layer<T>>> root = buildLayerHierarchyRecurse<T>(
+			std::vector<std::shared_ptr<Layer<T>>> root = build_layer_hierarchy_recursive<T>(
 				*layerRecords,
 				*channelImageData,
 				layerRecordsIterator,
@@ -275,6 +286,7 @@ namespace LayeredFileImpl
 
 	}
 
+
 	/// Recursively build a flat layer hierarchy
 	template <typename T>
 	void generate_flattened_layers_recursive(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, std::vector<std::shared_ptr<Layer<T>>>& flatLayers, bool insertSectionDivider)
@@ -285,7 +297,7 @@ namespace LayeredFileImpl
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
 				flatLayers.push_back(layer);
-				LayeredFileImpl::generate_flattened_layers_recursive(groupLayerPtr->m_Layers, flatLayers, insertSectionDivider);
+				_Impl::generate_flattened_layers_recursive(groupLayerPtr->layers(), flatLayers, insertSectionDivider);
 				// If the layer is a group we actually want to insert a section divider at the end of it. This makes reconstructing the layer
 				// hierarchy much easier later on. We dont actually need to give this a name 
 				if (insertSectionDivider)
@@ -307,7 +319,7 @@ namespace LayeredFileImpl
 	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers(const std::vector<std::shared_ptr<Layer<T>>>& nestedLayers, bool insertSectionDivider)
 	{
 		std::vector<std::shared_ptr<Layer<T>>> flatLayers;
-		LayeredFileImpl::generate_flattened_layers_recursive(nestedLayers, flatLayers, insertSectionDivider);
+		_Impl::generate_flattened_layers_recursive(nestedLayers, flatLayers, insertSectionDivider);
 
 		return flatLayers;
 	}
@@ -320,17 +332,17 @@ namespace LayeredFileImpl
 		// We must first check that the parent layer passed in is actually a group layer
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
 		{
-			for (const auto layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->layers())
 			{
 				// Get the layer name and recursively check the path
-				if (layerPtr->m_LayerName == path[index])
+				if (layerPtr->name() == path[index])
 				{
 					if (index == path.size() - 1)
 					{
 						// This is the last element and we return the item and propagate it up
 						return layerPtr;
 					}
-					return LayeredFileImpl::find_layer_recursive(layerPtr, path, index + 1);
+					return _Impl::find_layer_recursive(layerPtr, path, index + 1);
 				}
 			}
 			PSAPI_LOG_WARNING("LayeredFile", "Failed to find layer '%s' based on the path", path[index].c_str());
@@ -347,9 +359,9 @@ namespace LayeredFileImpl
 		// Check if we can recurse down another level into a group of layers
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
 		{
-			for (const auto& layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->layers())
 			{
-				if (LayeredFileImpl::has_alpha_recursive(layerPtr))
+				if (_Impl::has_alpha_recursive(layerPtr))
 				{
 					return true;
 				}
@@ -357,13 +369,14 @@ namespace LayeredFileImpl
 		}
 		if (auto imageLayerPtr = std::dynamic_pointer_cast<ImageLayer<T>>(parentLayer))
 		{
-			if (imageLayerPtr->m_ImageData.contains(Enum::ChannelIDInfo{ .id = Enum::ChannelID::Alpha, .index = -1 }))
+			if (imageLayerPtr->image_data().contains(Enum::ChannelIDInfo{.id = Enum::ChannelID::Alpha, .index = -1}))
 			{
 				return true;
 			}
 		}
 		return false;
 	}
+
 
 	template <typename T>
 	void set_compression_recursive(std::shared_ptr<Layer<T>> parentLayer, const Enum::Compression compCode)
@@ -372,13 +385,14 @@ namespace LayeredFileImpl
 		// group here yet as we do that further down
 		if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
 		{
-			for (const auto& layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->layers())
 			{
-				layerPtr->setCompression(compCode);
-				setCompressionRecurse(layerPtr, compCode);
+				layerPtr->set_compression(compCode);
+				set_compression_recursive(layerPtr, compCode);
 			}
 		}
 	}
+
 
 	template <typename T>
 	bool layer_in_document_recursive(const std::shared_ptr<Layer<T>> parentLayer, const std::shared_ptr<Layer<T>> layer)
@@ -386,7 +400,7 @@ namespace LayeredFileImpl
 		// We must first check that the parent layer passed in is actually a group layer
 		if (const auto groupLayerPtr = std::dynamic_pointer_cast<const GroupLayer<T>>(parentLayer))
 		{
-			for (const auto& layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->layers())
 			{
 				if (layerPtr == layer)
 				{
@@ -401,6 +415,7 @@ namespace LayeredFileImpl
 		return false;
 	}
 
+
 	/// Remove a layer from the hierarchy recursively, if a match is found we short circuit and return early
 	template <typename T>
 	bool remove_layer_recursive(std::shared_ptr<Layer<T>> parentLayer, std::shared_ptr<Layer<T>> layer)
@@ -409,7 +424,7 @@ namespace LayeredFileImpl
 		if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(parentLayer))
 		{
 			int index = 0;
-			for (const auto& layerPtr : groupLayerPtr->m_Layers)
+			for (const auto& layerPtr : groupLayerPtr->layers())
 			{
 				if (layerPtr == layer)
 				{
@@ -430,12 +445,30 @@ namespace LayeredFileImpl
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 
+	/// Read the document DPI, default to 72 if we cannot read it.
+	inline float read_dpi(const PhotoshopFile* file)
+	{
+		const auto blockPtr = file->m_ImageResources.getResourceBlockView<ResolutionInfoBlock>(Enum::ImageResource::ResolutionInfo);
+		if (blockPtr)
+		{
+			// We dont actually have to do any back and forth conversions here since the value is always stored as DPI and never as 
+			// DPCM
+			return blockPtr->m_HorizontalRes.getFloat();
+		}
+		return 72.0f;
+	}
+
 	/// Read the ICC profile from the PhotoshopFile, if it doesnt exist we simply initialize an
 	/// empty ICC profile
-	ICCProfile read_icc_profile(const PhotoshopFile* file);
-
-	/// Read the document DPI, default to 72 if we cannot read it.
-	float read_dpi(const PhotoshopFile* file);
+	inline ICCProfile read_icc_profile(const PhotoshopFile* file)
+	{
+		const auto blockPtr = file->m_ImageResources.getResourceBlockView<ICCProfileBlock>(Enum::ImageResource::ICCProfile);
+		if (blockPtr)
+		{
+			return ICCProfile{ blockPtr->m_RawICCProfile };
+		}
+		return ICCProfile{};
+	}
 }
 
 PSAPI_NAMESPACE_END

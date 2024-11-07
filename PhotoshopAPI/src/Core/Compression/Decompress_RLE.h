@@ -1,15 +1,15 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "Core/FileIO/Util.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "Profiling/Perf/Instrumentor.h"
-#include "FileUtil.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
+#include "Util/FileUtil.h"
 
 #include <vector>
 #include <limits>

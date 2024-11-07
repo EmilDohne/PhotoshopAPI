@@ -154,7 +154,7 @@ struct LinkedLayerData
 			}
 		}
 
-		return resampled_data
+		return resampled_data;
 	}
 
 	/// Get the width and height of the image data stored on the linked layer.

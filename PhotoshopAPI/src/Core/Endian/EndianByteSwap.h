@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Logger.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 #include <algorithm>

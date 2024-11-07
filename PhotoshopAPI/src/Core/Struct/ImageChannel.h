@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
-#include "Profiling/Perf/Instrumentor.h"
-#include "Profiling/Memory/CompressionTracker.h"
+#include "Util/Enum.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "CoordinateUtil.h"
+#include "Util/CoordinateUtil.h"
 #include "ThreadPool.h"
 
 #include "blosc2.h"

@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <cmath>
+#include <cstdint>
 #include <algorithm>
 
 
@@ -15,9 +16,13 @@
 #include <span>
 #endif
 
+#include "Core/Geometry/Point.h"
+
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
+#include <OpenImageIO/half.h>
 
+PSAPI_NAMESPACE_BEGIN
 
 namespace Render
 {
@@ -117,7 +122,7 @@ namespace Render
         /// \param height The new height of the image
         /// 
         /// \returns The rescaled image in the same bitdepth as the buffer
-        template <typename _Precision = float> typename std::enable_if<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, half>, std::vector<T>>::type
+        template <typename _Precision = float, typename = std::enable_if_t<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>>>
         std::vector<T> rescale_nearest_neighbour(size_t width, size_t height)
         {
             std::vector<T> out(width * height);
@@ -132,12 +137,12 @@ namespace Render
                     // coordinate space of the original buffer rather than in our rescaled
                     // buffer
                     _Precision v = static_cast<_Precision>(y) / height;
-                    size_t orig_y = static_cast<size_t>(std::round((v * this->height) - .5));
+                    size_t orig_y = static_cast<size_t>(std::round(v * this->height));
 
                     for (size_t x = 0; x < width; ++x)
                     {
                         _Precision u = static_cast<_Precision>(x) / width;
-                        size_t orig_x = static_cast<size_t>(std::round((u * this->width) - .5));
+                        size_t orig_x = static_cast<size_t>(std::round(u * this->width));
 
                         // Interpolate along y-axis and return result
                         out[y * width + x] = this->buffer[orig_y * this->width + orig_x];
@@ -160,7 +165,7 @@ namespace Render
         /// \param height The new height of the image
         /// 
         /// \returns The rescaled image in the same bitdepth as the buffer
-        template <typename _Precision = float> typename std::enable_if<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, half>, std::vector<T>>::type
+        template <typename _Precision = float, typename = std::enable_if_t<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>>>
         std::vector<T> rescale_bilinear(size_t width, size_t height)
         {
             std::vector<T> out(width * height);
@@ -216,7 +221,7 @@ namespace Render
         /// \param max The max value to clamp the result to
         /// 
         /// \returns The rescaled image in the same bitdepth as the buffer
-        template <typename _Precision = float> typename std::enable_if<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, half>, std::vector<T>>::type
+        template <typename _Precision = float, typename = std::enable_if_t<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>>>
         std::vector<T> rescale_bicubic(size_t width, size_t height, T min, T max) const
         {
             // Generate output vector and vertical iterator for for_each
@@ -508,8 +513,7 @@ namespace Render
         /// \param C The middle-right control point, defines the rightmost bound of the value that is possible
         /// \param D The rightmost control point, the slope from B to D is equivalent to the derivative of C
         /// \param t the interpolation value between B and C, from 0-1.
-        template <typename T = float>
-        typename std::enable_if<std::is_floating_point_v<T> || std::is_same_v<T, half>, T>::type
+        template <typename T = float, typename = std::enable_if_t<std::is_floating_point_v<T> || std::is_same_v<T, Imath::half>>>
         constexpr T cubic_hermite(T A, T B, T C, T D, T t)
         {
             // Expanded forms of the hermite cubic polynomial,
@@ -536,3 +540,5 @@ namespace Render
     };
 
 }
+
+PSAPI_NAMESPACE_END

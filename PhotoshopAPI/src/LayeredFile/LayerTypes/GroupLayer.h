@@ -21,6 +21,7 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+
 // Forward declare LayeredFile here
 template <typename T>
 struct LayeredFile;
@@ -30,10 +31,7 @@ struct LayeredFile;
 /// 
 /// \tparam T The data type for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct GroupLayer : public Layer<T>
 {
 	/// \defgroup layer The groups' child layers
@@ -56,14 +54,14 @@ struct GroupLayer : public Layer<T>
 	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
 	{
 		PSAPI_PROFILE_FUNCTION();
-		Layer<T>::m_ColorMode = parameters.colorMode;
-		Layer<T>::m_LayerName = parameters.layerName;
-		Layer<T>::m_BlendMode = parameters.blendMode;
+		Layer<T>::m_ColorMode = parameters.colormode;
+		Layer<T>::m_LayerName = parameters.name;
+		Layer<T>::m_BlendMode = parameters.blendmode;
 		Layer<T>::m_Opacity = parameters.opacity;
-		Layer<T>::m_IsVisible = parameters.isVisible;
-		Layer<T>::m_IsLocked = parameters.isLocked;
-		Layer<T>::m_CenterX = parameters.posX;
-		Layer<T>::m_CenterY = parameters.posY;
+		Layer<T>::m_IsVisible = parameters.visible;
+		Layer<T>::m_IsLocked = parameters.locked;
+		Layer<T>::m_CenterX = parameters.center_x;
+		Layer<T>::m_CenterY = parameters.center_y;
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 
@@ -93,7 +91,7 @@ struct GroupLayer : public Layer<T>
 	{
 		if (layeredFile.is_layer_in_file(layer))
 		{
-			PSAPI_LOG_WARNING("GroupLayer", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+			PSAPI_LOG_WARNING("GroupLayer", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->name().c_str());
 			return;
 		}
 		m_Layers.push_back(layer);

@@ -37,13 +37,13 @@ TEST_CASE("Create Grayscale File 8-bit psd")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
 		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "Grayscale.psd");
 }
 
@@ -73,13 +73,13 @@ TEST_CASE("Create Grayscale File 8-bit psb")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
 		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "Grayscale.psb");
 }
 
@@ -112,7 +112,7 @@ TEST_CASE("Create Grayscale File 16-bit psd")
 	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
 	file.add_layer(grp_layer);
@@ -138,20 +138,20 @@ TEST_CASE("Create Grayscale File 16-bit psb")
 		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	std::unordered_map<int16_t, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "Grayscale.psd");
 }
 
@@ -174,20 +174,20 @@ TEST_CASE("Create Grayscale File 32-bit psd")
 		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	std::unordered_map<int16_t, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "Grayscale.psd");
 }
 
@@ -210,19 +210,19 @@ TEST_CASE("Create Grayscale File 32-bit psb")
 		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	std::unordered_map<int16_t, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
 		.name = "Group",
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "Grayscale.psd");
 }

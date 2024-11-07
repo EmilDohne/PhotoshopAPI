@@ -40,6 +40,23 @@ namespace Geometry
                 maximum.y - minimum.y
             };
         }
+
+        /// Compute the bounding box over the provided points
+        static BoundingBox compute(const std::vector<Point2D<T>>& points)
+        {
+            BoundingBox bbox;
+            bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
+            bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
+
+            for (auto point : points)
+            {
+                bbox.minimum.x = std::min(bbox.minimum.x, point.x);
+                bbox.minimum.y = std::min(bbox.minimum.y, point.y);
+                bbox.maximum.x = std::max(bbox.maximum.x, point.x);
+                bbox.maximum.y = std::max(bbox.maximum.y, point.y);
+            }
+            return bbox;
+        }
     };
 
 }

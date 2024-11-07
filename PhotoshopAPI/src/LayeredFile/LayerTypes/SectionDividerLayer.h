@@ -2,8 +2,8 @@
 
 #include "Macros.h"
 #include "Layer.h"
-#include "Enum.h"
-#include "Logger.h"
+#include "Util/Enum.h"
+#include "Util/Logger.h"
 #include "Core/Struct/TaggedBlock.h"
 
 #include <vector>
@@ -16,10 +16,7 @@ PSAPI_NAMESPACE_BEGIN
 /// stores the end of a group as it doesn't really have a concept of nesting otherwise.
 /// These are only created on write and not actually stored in the layer hierarchy of the
 /// file as we use nested layers to denote hierarchies.
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct SectionDividerLayer : Layer<T>
 {
 protected:

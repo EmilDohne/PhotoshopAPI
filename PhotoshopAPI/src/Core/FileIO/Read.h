@@ -16,11 +16,11 @@ ReadBinaryArray<T>						// Read a large amount of binary data into a std::vector
 
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
-#include "Enum.h"
-#include "Logger.h"
+#include "Util/Enum.h"
+#include "Util/Logger.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
-#include "FileUtil.h"
+#include "Util/FileUtil.h"
 
 #include <fstream>
 #include <variant>

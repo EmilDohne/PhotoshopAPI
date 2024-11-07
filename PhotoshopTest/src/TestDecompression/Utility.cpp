@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "Core/Struct/TaggedBlock.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "../TestMacros.h"
 
 #include <vector>

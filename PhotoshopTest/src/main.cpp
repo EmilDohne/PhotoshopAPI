@@ -4,12 +4,12 @@
 
 #include "Macros.h"
 #include "DetectArmMac.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
 
-#include "Profiling/Perf/Instrumentor.h"
-#include "Profiling/Memory/CompressionTracker.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Memory/CompressionTracker.h"
 
 #include <filesystem>
 #include <vector>

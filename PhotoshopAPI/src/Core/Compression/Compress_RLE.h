@@ -3,13 +3,13 @@
 #include "Macros.h"
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Util.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 #include <limits>

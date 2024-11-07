@@ -3,7 +3,7 @@
 #include "FileHeader.h"
 #include "AdditionalLayerInfo.h"
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Util/ProgressCallback.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"

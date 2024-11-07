@@ -7,8 +7,7 @@
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
-
-#include "Impl/LayeredFileImpl.h"
+#include "LayeredFile/Impl/LayeredFileImpl.h"
 #include "LayerTypes/Layer.h"
 #include "LayerTypes/ImageLayer.h"
 #include "LayerTypes/GroupLayer.h"
@@ -60,30 +59,6 @@ enum class LayerOrder
 
 
 
-/// Helper Structure for loading an ICC profile from memory of disk. Photoshop will then store
-/// the raw bytes of the ICC profile in their ICCProfile ResourceBlock (ID 1039)
-struct ICCProfile
-{
-	/// Initialize an empty ICCProfile
-	ICCProfile() : m_Data({}) {};
-	/// Initialize the ICCProfile by passing in a raw byte array of an ICC profile
-	ICCProfile(std::vector<uint8_t> data) : m_Data(data) {};
-	/// Initialize the ICCProfile by loading the path contents from disk
-	ICCProfile(const std::filesystem::path& pathToICCFile);
-
-	/// Return a copy of the ICC profile data
-	std::vector<uint8_t> data() const noexcept { return m_Data; };
-
-	/// Return the absolute size of the data
-	uint32_t data_size() const noexcept { return static_cast<uint32_t>(m_Data.size()); };
-
-private:
-	std::vector<uint8_t> m_Data;
-};
-
-
-
-
 /// \brief Represents a layered file structure.
 /// 
 /// This struct defines a layered file structure, where each file contains a hierarchy
@@ -91,10 +66,7 @@ private:
 /// 
 /// \tparam T The data type used for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
-template <typename T, typename = std::enable_if_t<
-	std::is_same_v<T, uint8_t> ||
-	std::is_same_v<T, uint16_t> ||
-	std::is_same_v<T, float32_t>>>
+template <typename T>
 struct LayeredFile
 {
 
@@ -126,15 +98,15 @@ struct LayeredFile
 
 	/// \defgroup width The files' width from 1 - 300,000
 	/// @{
-	uint32_t& width() noexcept { return m_Width; }
-	uint32_t width() const noexcept { return m_Width; }
-	void width(uint32_t file_width)
+	uint64_t& width() noexcept { return m_Width; }
+	uint64_t width() const noexcept { return m_Width; }
+	void width(uint64_t file_width)
 	{
-		if (file_width < static_cast<uint32_t>(1))
+		if (file_width < static_cast<uint64_t>(1))
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Unable to set height to %u as the minimum document size in photoshop is 1 for PSB", file_width);
 		}
-		if (file_width > static_cast<uint32_t>(300000))
+		if (file_width > static_cast<uint64_t>(300000))
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Unable to set width to %u as the maximum document size in photoshop is 300,000 for PSB", file_width);
 		}
@@ -144,15 +116,15 @@ struct LayeredFile
 
 	/// \defgroup height The files' height from 1 - 300,000
 	/// @{
-	uint32_t& height() noexcept { return m_Height; }
-	uint32_t height() const noexcept { return m_Height; }
-	void height(uint32_t file_height)
+	uint64_t& height() noexcept { return m_Height; }
+	uint64_t height() const noexcept { return m_Height; }
+	void height(uint64_t file_height)
 	{
-		if (file_height < static_cast<uint32_t>(1))
+		if (file_height < static_cast<uint64_t>(1))
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Unable to set height to %u as the minimum document size in photoshop is 1 for PSB", file_height);
 		}
-		if (file_height > static_cast<uint32_t>(300000))
+		if (file_height > static_cast<uint64_t>(300000))
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Unable to set height to %u as the maximum document size in photoshop is 300,000 for PSB", file_height);
 		}
@@ -214,11 +186,11 @@ struct LayeredFile
 		m_Height = document->m_Header.m_Height;
 
 		// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
-		m_ICCProfile = LayeredFileImpl::read_icc_profile(document.get());
+		m_ICCProfile = _Impl::read_icc_profile(document.get());
 		// Extract the DPI from the document, default to 72
-		m_DotsPerInch = LayeredFileImpl::read_dpi(document.get());
+		m_DotsPerInch = _Impl::read_dpi(document.get());
 
-		m_Layers = LayeredFileImpl::build_layer_hierarchy<T>(std::move(document));
+		m_Layers = _Impl::template build_layer_hierarchy<T>(std::move(document));
 		if (m_Layers.size() == 0)
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Read an invalid PhotoshopFile as it does not contain any layers. Is the only layer in the scene locked? This is not supported by the PhotoshopAPI");
@@ -300,7 +272,7 @@ struct LayeredFile
 		for (const auto& layer : m_Layers)
 		{
 			// Get the layer name and recursively check the path
-			if (layer->m_LayerName == segments[0])
+			if (layer->name() == segments[0])
 			{
 				// This is a simple path with no nested layers
 				if (segments.size() == 1)
@@ -308,7 +280,7 @@ struct LayeredFile
 					return layer;
 				}
 				// Pass an index of one as we already found the first layer
-				return LayeredFileImpl::find_layer_recursive(layer, segments, 1);
+				return _Impl::find_layer_recursive(layer, segments, 1);
 			}
 		}
 		PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
@@ -324,7 +296,7 @@ struct LayeredFile
 	{
 		if (is_layer_in_file(layer))
 		{
-			PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->m_LayerName.c_str());
+			PSAPI_LOG_WARNING("LayeredFile", "Cannot insert a layer into the document twice, please use a unique layer. Skipping layer '%s'", layer->name().c_str());
 			return;
 		}
 		m_Layers.push_back(layer);
@@ -347,7 +319,7 @@ struct LayeredFile
 		if (parentLayer && is_moving_to_invalid_hierarchy(layer, parentLayer))
 		{
 			PSAPI_LOG_WARNING("LayeredFile", "Cannot move layer '%s' under '%s' as that would represent an illegal move operation",
-				layer->m_LayerName.c_str(), parentLayer->m_LayerName.c_str());
+				layer->name().c_str(), parentLayer->name().c_str());
 			return;
 		}
 
@@ -365,7 +337,7 @@ struct LayeredFile
 			else
 			{
 				PSAPI_LOG_WARNING("LayeredFile", "Parent layer '%s' provided is not a group layer, can only move layers under groups", 
-					parentLayer->m_LayerName.c_str());
+					parentLayer->name().c_str());
 				return;
 			}
 		}
@@ -430,7 +402,7 @@ struct LayeredFile
 			}
 
 			// Recurse down and short circuit if we find a match
-			if (LayeredFileImpl::remove_layer_recursive(sceneLayer, layer))
+			if (_Impl::remove_layer_recursive(sceneLayer, layer))
 			{
 				return;
 			}
@@ -465,8 +437,8 @@ struct LayeredFile
 	{
 		for (const auto& documentLayer : m_Layers)
 		{
-			documentLayer->setCompression(compCode);
-			LayeredFileImpl::set_compression_recursive(documentLayer, compCode);
+			documentLayer->set_compression(compCode);
+			_Impl::set_compression_recursive(documentLayer, compCode);
 		}
 	}
 
@@ -484,9 +456,9 @@ struct LayeredFile
 			{
 				std::vector<std::shared_ptr<Layer<T>>> layerVec;
 				layerVec.push_back(layer.value());
-				return LayeredFileImpl::generate_flattened_layers(layerVec, true);
+				return _Impl::generate_flattened_layers(layerVec, true);
 			}
-			return LayeredFileImpl::generate_flattened_layers(m_Layers, true);
+			return _Impl::generate_flattened_layers(m_Layers, true);
 		}
 		else if (order == LayerOrder::reverse)
 		{
@@ -494,11 +466,11 @@ struct LayeredFile
 			{
 				std::vector<std::shared_ptr<Layer<T>>> layerVec;
 				layerVec.push_back(layer.value());
-				std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generate_flattened_layers(layerVec, true);
+				std::vector<std::shared_ptr<Layer<T>>> flatLayers = _Impl::generate_flattened_layers(layerVec, true);
 				std::reverse(flatLayers.begin(), flatLayers.end());
 				return flatLayers;
 			}
-			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generate_flattened_layers(m_Layers, true);
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = _Impl::generate_flattened_layers(m_Layers, true);
 			std::reverse(flatLayers.begin(), flatLayers.end());
 			return flatLayers;
 		}
@@ -532,7 +504,7 @@ struct LayeredFile
 		bool hasAlpha = false;
 		for (auto& layer : m_Layers)
 		{
-			hasAlpha &= LayeredFileImpl::has_alpha_recursive(layer);
+			hasAlpha &= _Impl::has_alpha_recursive(layer);
 		}
 
 		uint16_t numChannels = hasAlpha ? 1u : 0u;
@@ -571,7 +543,7 @@ struct LayeredFile
 			{
 				return true;
 			}
-			if (LayeredFileImpl::layer_in_document_recursive(documentLayer, layer))
+			if (_Impl::layer_in_document_recursive(documentLayer, layer))
 			{
 				return true;
 			}
@@ -657,7 +629,7 @@ struct LayeredFile
 		}
 
 		auto outputFile = File(filePath, params);
-		auto psdOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
+		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
 		psdOutDocumentPtr->write(outputFile, callback);
 	}
 
@@ -710,11 +682,11 @@ private:
 	{
 		if (order == LayerOrder::forward)
 		{
-			return LayeredFileImpl::generate_flattened_layers(m_Layers, false);
+			return _Impl::generate_flattened_layers(m_Layers, false);
 		}
 		else if (order == LayerOrder::reverse)
 		{
-			std::vector<std::shared_ptr<Layer<T>>> flatLayers = LayeredFileImpl::generate_flattened_layers(m_Layers, false);
+			std::vector<std::shared_ptr<Layer<T>>> flatLayers = _Impl::generate_flattened_layers(m_Layers, false);
 			std::reverse(flatLayers.begin(), flatLayers.end());
 			return flatLayers;
 		}
@@ -732,7 +704,7 @@ private:
 	bool is_moving_to_invalid_hierarchy(const std::shared_ptr<Layer<T>> layer, const std::shared_ptr<Layer<T>> parentLayer)
 	{
 		// Check if the layer would be moving to one of its descendants which is illegal. Therefore the argument order is reversed
-		bool isDescendantOf = LayeredFileImpl::layer_in_document_recursive(parentLayer, layer);
+		bool isDescendantOf = _Impl::layer_in_document_recursive(parentLayer, layer);
 		// We additionally check if the layer is the same as the parent layer as that would also not be allowed
 		return isDescendantOf || layer == parentLayer;
 	}

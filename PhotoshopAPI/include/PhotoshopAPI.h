@@ -11,4 +11,4 @@ in the PhotoshopAPI repository.
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "LayeredFile/LayerTypes/GroupLayer.h"
-#include "Enum.h"
+#include "Util/Enum.h"

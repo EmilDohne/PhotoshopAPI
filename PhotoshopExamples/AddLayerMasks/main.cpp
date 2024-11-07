@@ -31,17 +31,17 @@ int main()
 	auto maskchannel = std::vector<bpp8_t>(width * height, 128u);
 
 	ImageLayer<bpp8_t>::Params layerParams = {};
-	layerParams.layerName = "Layer Red";
+	layerParams.name = "Layer Red";
 	layerParams.width = width;
 	layerParams.height = height;
-	layerParams.layerMask = maskchannel;
+	layerParams.mask = maskchannel;
 
 	auto layer = std::make_shared<ImageLayer<bpp8_t>>(
 		std::move(channelMap),
 		layerParams
 	);
 
-	document.addLayer(layer);
+	document.add_layer(layer);
 
 	// Convert to PhotoshopDocument and write to disk. Note that from this point onwards 
 	// our LayeredFile instance is no longer usable
