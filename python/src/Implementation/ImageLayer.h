@@ -63,7 +63,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
 		{
 			throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
 		}
-		params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+		params.mask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
 	}
 	if (width < 0)
 	{
@@ -82,17 +82,17 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
 	// channel mappings 
 	auto img_data_cpp = from_py_array(tag::id_mapping{}, image_data, image_data.shape(0), width, height, color_mode);
 
-	params.layerName = layer_name;
-	params.blendMode = blend_mode;
-	params.posX = pos_x;
-	params.posY = pos_y;
+	params.name = layer_name;
+	params.blendmode = blend_mode;
+	params.center_x = pos_x;
+	params.center_y = pos_y;
 	params.width = width;
 	params.height = height;
 	params.opacity = opacity;
 	params.compression = compression;
-	params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
+	params.colormode = color_mode;
+	params.visible = is_visible;
+	params.locked = is_locked;
 	return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -129,7 +129,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
 		{
 			throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
 		}
-		params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+		params.mask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
 	}
 	if (width < 0)
 	{
@@ -151,17 +151,17 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
 		img_data_cpp[key] = from_py_array(tag::vector{}, value, width, height);
 	}
 
-	params.layerName = layer_name;
-	params.blendMode = blend_mode;
-	params.posX = pos_x;
-	params.posY = pos_y;
+	params.name = layer_name;
+	params.blendmode = blend_mode;
+	params.center_x = pos_x;
+	params.center_y = pos_y;
 	params.width = width;
 	params.height = height;
 	params.opacity = opacity;
 	params.compression = compression;
-	params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
+	params.colormode = color_mode;
+	params.visible = is_visible;
+	params.locked = is_locked;
 	return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -198,7 +198,7 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 		{
 			throw py::value_error("layer_mask parameter must have the same size as the layer itself (width * height)");
 		}
-		params.layerMask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
+		params.mask = std::vector<T>(layer_mask.value().data(), layer_mask.value().data() + layer_mask.value().size());
 	}
 	if (width < 0)
 	{
@@ -219,17 +219,17 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 		img_data_cpp[static_cast<int16_t>(key)] = from_py_array(tag::vector{}, value, width, height);
 	}
 
-	params.layerName = layer_name;
-	params.blendMode = blend_mode;
-	params.posX = pos_x;
-	params.posY = pos_y;
+	params.name = layer_name;
+	params.blendmode = blend_mode;
+	params.center_x = pos_x;
+	params.center_y = pos_y;
 	params.width = width;
 	params.height = height;
 	params.opacity = opacity;
 	params.compression = compression;
-	params.colorMode = color_mode;
-	params.isVisible = is_visible;
-	params.isLocked = is_locked;
+	params.colormode = color_mode;
+	params.visible = is_visible;
+	params.locked = is_locked;
 	return std::make_shared<ImageLayer<T>>(std::move(img_data_cpp), params);
 }
 
@@ -246,9 +246,9 @@ void setImageDataFromIntMapping(
 	// Convert our image data to c++ vector data, the constructor checks for the right amount of channels
 	for (auto& [key, value] : image_data)
 	{
-		img_data_cpp[static_cast<int16_t>(key)] = from_py_array(tag::vector{}, value, layer.m_Width, layer.m_Height);
+		img_data_cpp[static_cast<int16_t>(key)] = from_py_array(tag::vector{}, value, layer.width(), layer.height());
 	}
-	layer.setImageData(std::move(img_data_cpp), compression);
+	layer.set_image_data(std::move(img_data_cpp), compression);
 }
 
 
@@ -263,9 +263,9 @@ void setImageDataFromIDMapping(
 	// Convert our image data to c++ vector data, the constructor checks for the right amount of channels
 	for (auto& [key, value] : image_data)
 	{
-		img_data_cpp[key] = from_py_array(tag::vector{}, value, layer.m_Width, layer.m_Height);
+		img_data_cpp[key] = from_py_array(tag::vector{}, value, layer.width(), layer.height());
 	}
-	layer.setImageData(std::move(img_data_cpp), compression);
+	layer.set_image_data(std::move(img_data_cpp), compression);
 }
 
 
@@ -276,6 +276,6 @@ void setImageDataFromNpArray(
 	const Enum::Compression compression
 )
 {
-	auto img_data_cpp = from_py_array(tag::id_mapping{}, image_data, image_data.shape(0), layer.m_Width, layer.m_Height, layer.getColorMode());
-	layer.setImageData(std::move(img_data_cpp), compression);
+	auto img_data_cpp = from_py_array(tag::id_mapping{}, image_data, image_data.shape(0), layer.width(), layer.height(), layer.color_mode());
+	layer.set_image_data(std::move(img_data_cpp), compression);
 }

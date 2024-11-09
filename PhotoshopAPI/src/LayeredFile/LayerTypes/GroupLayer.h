@@ -123,7 +123,7 @@ struct GroupLayer : public Layer<T>
 			}
 			++index;
 		}
-		PSAPI_LOG_WARNING("GroupLayer", "Cannot remove layer %s from the group as it doesnt appear to be a child of the group", layer->m_LayerName.c_str());
+		PSAPI_LOG_WARNING("GroupLayer", "Cannot remove layer %s from the group as it doesnt appear to be a child of the group", layer->name().c_str());
 	}
 
 	/// \brief Removes the specified layer from the group.
@@ -133,7 +133,7 @@ struct GroupLayer : public Layer<T>
 		int index = 0;
 		for (auto& sceneLayer : m_Layers)
 		{
-			if (layerName == sceneLayer->m_LayerName)
+			if (layerName == sceneLayer->name())
 			{
 				m_Layers.erase(m_Layers.begin() + index);
 				return;

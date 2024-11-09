@@ -108,7 +108,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		const auto& linkedlayers = document.linked_layers();
 		const auto& layer = linkedlayers.at(m_Hash);
 
-		return layer.image_data();
+		return layer.get_image_data();
 	}
 
 
@@ -160,7 +160,7 @@ private:
 
 		// Insert (or find) the linked layer and create a rescaled version of the image data.
 		const auto& linkedlayer = file.linked_layers().insert(filepath);
-		const auto& image_data = linkedlayer.image_data(parameters.width, parameters.height);
+		const auto& image_data = linkedlayer.get_image_data(parameters.width, parameters.height);
 		std::for_each(std::execution::par, image_data.begin(), image_data.end(), [&](const auto& pair)
 			{
 				const auto& key = pair.first;

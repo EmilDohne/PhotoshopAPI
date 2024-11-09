@@ -31,11 +31,11 @@ class Layer_8bit:
         ...
 
     @property
-    def opacity(self: Layer_8bit) -> int:
+    def opacity(self: Layer_8bit) -> float:
         ...
 
     @opacity.setter
-    def opacity(self: Layer_8bit, value: int) -> None:
+    def opacity(self: Layer_8bit, value: float) -> None:
         ...
 
     @property
@@ -120,11 +120,11 @@ class Layer_16bit:
         ...
 
     @property
-    def opacity(self: Layer_16bit) -> int:
+    def opacity(self: Layer_16bit) -> float:
         ...
 
     @opacity.setter
-    def opacity(self: Layer_16bit, value: int) -> None:
+    def opacity(self: Layer_16bit, value: float) -> None:
         ...
 
     @property
@@ -210,11 +210,11 @@ class Layer_32bit:
         ...
 
     @property
-    def opacity(self: Layer_32bit) -> int:
+    def opacity(self: Layer_32bit) -> float:
         ...
 
     @opacity.setter
-    def opacity(self: Layer_32bit, value: int) -> None:
+    def opacity(self: Layer_32bit, value: float) -> None:
         ...
 
     @property

@@ -70,31 +70,37 @@ void declareLayer(py::module& m, const std::string& extension) {
 
 	)pbdoc";
 
-    layer.def_readwrite("name", &Class::m_LayerName);
+    layer.def_property("name", &Class::name, &Class::name);
     layer.def_property("mask", [](Class& self)
         {
-            std::vector<T> data = self.getMask();
+            std::vector<T> data = self.get_mask_data();
             if (data.empty())
             {
                 return py::array_t<T>();
             }
-			return to_py_array(std::move(data), self.m_Width, self.m_Height);
+			return to_py_array(std::move(data), self.width(), self.height());
         }, [](Class& self, py::array_t<T> data)
         {
-            auto view = from_py_array(tag::view{}, data, self.m_Width, self.m_Height);
-			self.setMask(view);
+            auto view = from_py_array(tag::view{}, data, self.width(), self.height());
+			self.set_mask_data(view);
         });
 		
-    layer.def_readwrite("blend_mode", &Class::m_BlendMode);
-    layer.def_readwrite("is_visible", &Class::m_IsVisible);
-    layer.def_readwrite("opacity", &Class::m_Opacity);
-    layer.def_readwrite("width", &Class::m_Width);
-    layer.def_readwrite("height", &Class::m_Height);
-    layer.def_readwrite("center_x", &Class::m_CenterX);
-    layer.def_readwrite("center_y", &Class::m_CenterY);
-    layer.def_readwrite("is_locked", &Class::m_IsLocked);
-    layer.def_readwrite("is_visible", &Class::m_IsVisible);
-	layer.def("has_mask", &Class::hasMask, R"pbdoc(
+    layer.def_property("blend_mode", &Class::blendmode, &Class::blendmode);
+    layer.def_property("is_visible", &Class::visible, &Class::visible);
+    layer.def_property("opacity", [](Class& self)
+        {
+            return self.opacity();
+        }, [](Class& self, float opacity)
+        {
+            self.opacity(opacity);
+        });
+    layer.def_property("width", &Class::width, &Class::width);
+    layer.def_property("height", &Class::height, &Class::height);
+    layer.def_property("center_x", &Class::center_x, &Class::center_x);
+    layer.def_property("center_y", &Class::center_y, &Class::center_y);
+    layer.def_property("is_locked", &Class::locked, &Class::locked);
+    layer.def_property("is_visible", &Class::visible, &Class::visible);
+	layer.def("has_mask", &Class::has_mask, R"pbdoc(
 
         Check whether the layer has a mask channel associated with it.
 

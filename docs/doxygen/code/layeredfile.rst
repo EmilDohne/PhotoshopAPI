@@ -88,14 +88,14 @@ Below you can find a list of layers that one is able to add to the LayeredFile i
 Conversion Functions
 ---------------------
 
-.. doxygenfunction:: LayeredToPhotoshopFile
+.. doxygenfunction:: layered_to_photoshop
 
 |
 
 Find Layer as specific type
 ----------------------------
 
-.. doxygenfunction:: findLayerAs
+.. doxygenfunction:: find_layer_as
 
 |
 

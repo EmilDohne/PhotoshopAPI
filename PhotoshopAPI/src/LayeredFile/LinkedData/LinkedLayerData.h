@@ -13,6 +13,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <memory>
 
 #include <OpenImageIO/imageio.h>
 #include <OpenImageIO/imagebufalgo.h>
@@ -38,6 +39,9 @@ struct LinkedLayerData
 
 	/// initialize a linked layer from a filepath, parsing the file 
 	LinkedLayerData() = default;
+
+	// Explicitly delete copy ctor as storage_type is not copyable
+	LinkedLayerData(const LinkedLayerData<T>&) = delete;
 
 	LinkedLayerData(std::filesystem::path filepath, std::string hash)
 	{
@@ -88,7 +92,7 @@ struct LinkedLayerData
 
 
 	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type image_data(const ExecutionPolicy policy = std::execution::par) const
+	data_type get_image_data(const ExecutionPolicy policy = std::execution::par) const
 	{
 		PSAPI_PROFILE_FUNCTION();
 		data_type out;
@@ -129,10 +133,10 @@ struct LinkedLayerData
 	///						 will create the best result but may be slowest.
 	/// 
 	/// \returns The resampled image data
-	data_type image_data(size_t width, size_t height, Render::Interpolation interpolation = Render::Interpolation::bicubic)
+	data_type get_image_data(size_t width, size_t height, Render::Interpolation interpolation = Render::Interpolation::bicubic)
 	{
-		data_type data = this->image_data();
-		data_type resampled_data;
+		data_type data = get_image_data();
+		data_type resampled_data{};
 
 		for (auto& [key, channel] : data)
 		{
@@ -235,13 +239,13 @@ private:
 				int idx = spec.channelindex(name);
 				if (idx != alpha_channel && idx >= 0 && idx <= 2)
 				{
-					input->read_image(0, 0, idx, ++idx, type_desc, pixels.data());
+					input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
 					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[idx], spec.width, spec.height, 0, 0);
 					m_ImageData[channelIDs[idx]] = std::move(channel);
 				}
 				else if (idx == alpha_channel)
 				{
-					input->read_image(0, 0, idx, ++idx, type_desc, pixels.data());
+					input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
 					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[3], spec.width, spec.height, 0, 0);
 					m_ImageData[channelIDs[idx]] = std::move(channel);
 				}
@@ -264,8 +268,13 @@ template <typename T>
 struct LinkedLayers
 {
 
+
+	LinkedLayers() = default;
+	LinkedLayers(const AdditionalLayerInfo& globalLayerInfo);
+
+
 	/// Retrieve the LinkedLayer data at the given hash. Throws an error if the hash doesnt exist
-	LinkedLayerData<T>& at(std::string hash)
+	std::shared_ptr<LinkedLayerData<T>> at(std::string hash)
 	{
 		if (m_LinkedLayerData.contains(hash))
 		{
@@ -275,7 +284,7 @@ struct LinkedLayers
 	}
 
 	/// Retrieve the LinkedLayer data at the given hash. Throws an error if the hash doesnt exist
-	const LinkedLayerData<T>& at(std::string hash) const
+	const std::shared_ptr<LinkedLayerData<T>> at(std::string hash) const
 	{
 		if (m_LinkedLayerData.contains(hash))
 		{
@@ -294,7 +303,7 @@ struct LinkedLayers
 	/// \param type		The type of LinkedLayer to create, a photoshop file may have differing values
 	/// 
 	/// \returns A reference to the LinkedLayerData we just created or an existing one
-	LinkedLayerData<T>& insert(const std::filesystem::path& filePath, const std::string& hash, LinkedLayerType type = LinkedLayerType::Data)
+	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, const std::string& hash, LinkedLayerType type = LinkedLayerType::Data)
 	{
 		if (m_LinkedLayerData.contains(hash))
 		{
@@ -303,7 +312,7 @@ struct LinkedLayers
 		}
 		else
 		{
-			m_LinkedLayerData[hash] = LinkedLayerData<T>(filePath, hash);
+			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(filePath, hash);
 			// Increment the reference count for the given hash
 			++m_ReferenceCount[hash];
 		}
@@ -320,7 +329,7 @@ struct LinkedLayers
 	/// \param type		The type of LinkedLayer to create, a photoshop file may have differing values
 	/// 
 	/// \returns A reference to the LinkedLayerData we just created or an existing one
-	LinkedLayerData<T>& insert(const std::filesystem::path& filePath, LinkedLayerType type = LinkedLayerType::Data)
+	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, LinkedLayerType type = LinkedLayerType::Data)
 	{
 		// Try and find the reference based on the filepath first, if this fails we insert a new one
 		std::string hash;
@@ -363,14 +372,13 @@ struct LinkedLayers
 		}
 	}
 
-	LinkedLayers() = default;
-	LinkedLayers(const AdditionalLayerInfo& globalLayerInfo);
+
 
 private: 
 	/// Reference count for every layer, once this reaches zero we remove
 	/// the layer from m_LinkedLayerData
 	std::unordered_map<std::string, size_t> m_ReferenceCount;
-	std::unordered_map<std::string, LinkedLayerData<T>> m_LinkedLayerData;
+	std::unordered_map<std::string, std::shared_ptr<LinkedLayerData<T>>> m_LinkedLayerData;
 
 };
 

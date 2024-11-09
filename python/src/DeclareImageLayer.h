@@ -368,8 +368,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
     // ---------------------------------------------------------------------------------------------------------------------
     imageLayer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID id, const bool do_copy = true)
         {
-            std::vector<T> data = self.getChannel(id, do_copy);
-            return to_py_array(std::move(data), self.m_Width, self.m_Height);
+            std::vector<T> data = self.get_channel(id, do_copy);
+            return to_py_array(std::move(data), self.width(), self.height());
         }, py::arg("id"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel ID.
@@ -387,8 +387,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("get_channel_by_index", [](Class& self, const int index, const bool do_copy = true)
         {
-            std::vector<T> data = self.getChannel(static_cast<int16_t>(index), do_copy);
-            return to_py_array(std::move(data), self.m_Width, self.m_Height);
+            std::vector<T> data = self.get_channel(static_cast<int16_t>(index), do_copy);
+            return to_py_array(std::move(data), self.width(), self.height());
         }, py::arg("index"), py::arg("do_copy") = true, R"pbdoc(
 
         Extract a specified channel from the layer given its channel index.
@@ -406,8 +406,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("__getitem__", [](Class& self, const Enum::ChannelID key)
         {
-            std::vector<T> data = self.getChannel(key, true);
-            return to_py_array(std::move(data), self.m_Width, self.m_Height);
+            std::vector<T> data = self.get_channel(key, true);
+            return to_py_array(std::move(data), self.width(), self.height());
         }, py::arg("key"), R"pbdoc(
 
         Extract a specified channel from the layer given its channel index.
@@ -422,8 +422,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("__getitem__", [](Class& self, const int key)
         {
-            std::vector<T> data = self.getChannel(key, true);
-            return to_py_array(std::move(data), self.m_Width, self.m_Height);
+            std::vector<T> data = self.get_channel(key, true);
+            return to_py_array(std::move(data), self.width(), self.height());
         }, py::arg("key"), R"pbdoc(
         
 	)pbdoc");
@@ -431,8 +431,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("__setitem__", [](Class& self, const int key, py::array_t<T>& value)
         {
-            auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
-			self.setChannel(static_cast<int16_t>(key), view);
+            auto view = from_py_array(tag::view{}, value, self.width(), self.height());
+			self.set_channel(static_cast<int16_t>(key), view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -447,8 +447,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("__setitem__", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
-			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
-			self.setChannel(key, view);
+			auto view = from_py_array(tag::view{}, value, self.width(), self.height());
+			self.set_channel(key, view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
 	)pbdoc");
@@ -456,8 +456,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("set_channel_by_index", [](Class& self, const int key, py::array_t<const T>& value)
         {
-			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
-			self.setChannel(static_cast<int16_t>(key), view);
+			auto view = from_py_array(tag::view{}, value, self.width(), self.height());
+			self.set_channel(static_cast<int16_t>(key), view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -471,8 +471,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
-			auto view = from_py_array(tag::view{}, value, self.m_Width, self.m_Height);
-			self.setChannel(key, view);
+			auto view = from_py_array(tag::view{}, value, self.width(), self.height());
+			self.set_channel(key, view);
         }, py::arg("key"), py::arg("value"), R"pbdoc(
 
         Set/replace the channel for a layer at the provided index. 
@@ -486,7 +486,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def("get_image_data", [](Class& self, const bool do_copy)
         {
-            auto data = self.image_data(do_copy);
+            auto data = self.get_image_data(do_copy);
             std::unordered_map<int, py::array_t<T>> outData;
 
             constexpr auto mask_id = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
@@ -509,6 +509,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
                 {
                     outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
                 }
+            }
+                outData[key.index] = to_py_array(std::move(value), self.width(), self.height());
             }
             return outData;
         }, py::arg("do_copy") = true, R"pbdoc(
@@ -622,7 +624,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
 	)pbdoc");
 
-    imageLayer.def("set_compression", &Class::setCompression, py::arg("compression"), R"pbdoc(
+    imageLayer.def("set_compression", &Class::set_compression, py::arg("compression"), R"pbdoc(
 
         Change the compression codec of all the image channels.
                 
@@ -633,7 +635,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def_property_readonly("image_data", [](Class& self)
         {
-			auto data = self.image_data(true);
+			auto data = self.get_image_data(true);
 			std::unordered_map<int, py::array_t<T>> outData;
 
 			constexpr auto mask_id = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
@@ -657,6 +659,8 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 					outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
 				}
 			}
+				outData[key.index] = to_py_array(std::move(value), self.width(), self.height());
+			}
 			return outData;
         }, R"pbdoc(
 
@@ -664,13 +668,14 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def_property_readonly("num_channels", [](Class& self)
         {
-            return self.m_ImageData.size() + self.m_LayerMask.has_value();
+            return self.num_channels();
 		});
 
     imageLayer.def_property_readonly("channels", [](Class& self)
         {
             std::vector<int16_t> indices;
-            for (const auto& [key, _] : self.m_ImageData)
+            const auto& img_data = self.image_data();
+            for (const auto& [key, _] : img_data)
             {
                 indices.push_back(key.index);
             }

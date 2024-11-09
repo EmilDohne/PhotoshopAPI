@@ -139,10 +139,22 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
                 ValueError: if opacity is not between 0-255
 		)pbdoc");
 
-    groupLayer.def_readwrite("layers", &Class::m_Layers);
-    groupLayer.def_readwrite("is_collapsed", &Class::m_isCollapsed);
+    groupLayer.def_property("layers", [](Class& self)
+        {
+            return self.layers();
+        }, [](Class& self, std::vector<std::shared_ptr<Layer<T>>>& layers)
+        {
+            self.layers(layers);
+        });
+    groupLayer.def_property("is_collapsed", [](Class& self)
+        {
+            return self.collapsed();
+        }, [](Class& self, bool collapsed)
+        {
+            self.collapsed(collapsed);
+        });
 
-    groupLayer.def("add_layer", &Class::addLayer, py::arg("layered_file"), py::arg("layer"), R"pbdoc(
+    groupLayer.def("add_layer", &Class::add_layer, py::arg("layered_file"), py::arg("layer"), R"pbdoc(
 
         Add the specified layer to the group
 
@@ -153,7 +165,7 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
         :type layer: Layer_*bit
 	)pbdoc");
 
-    groupLayer.def("remove_layer", py::overload_cast<const int>(&Class::removeLayer), py::arg("index"), R"pbdoc(
+    groupLayer.def("remove_layer", py::overload_cast<const int>(&Class::remove_layer), py::arg("index"), R"pbdoc(
 
         Remove the specified layer from the group, raises a warning if the index isnt valid
 
@@ -161,7 +173,7 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
         :type index: int
 
 	)pbdoc");
-    groupLayer.def("remove_layer", py::overload_cast<std::shared_ptr<Layer<T>>&>(&Class::removeLayer), py::arg("layer"), R"pbdoc(
+    groupLayer.def("remove_layer", py::overload_cast<std::shared_ptr<Layer<T>>&>(&Class::remove_layer), py::arg("layer"), R"pbdoc(
 
         Remove the specified layer from the group, raises a warning if the layer isnt under the group
 
@@ -169,7 +181,7 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
         :type layer: Layer_*bit
 
 	)pbdoc");
-    groupLayer.def("remove_layer", py::overload_cast<const std::string>(&Class::removeLayer), py::arg("layer_name"), R"pbdoc(
+    groupLayer.def("remove_layer", py::overload_cast<const std::string>(&Class::remove_layer), py::arg("layer_name"), R"pbdoc(
         
         Remove the specified layer from the group, raises a warning if the layer isnt under the group
 
@@ -181,10 +193,10 @@ void declareGroupLayer(py::module& m, const std::string& extension) {
     // Implement dict-like indexing for group layers with the [] syntax
     groupLayer.def("__getitem__", [](const Class& self, const std::string value)
         {
-            for (auto& layer : self.m_Layers)
+            for (auto& layer : self.layers())
             {
                 // Check if the layers are the same
-                if (layer->m_LayerName == value)
+                if (layer->name() == value)
                 {   
                     // pybind automatically downcasts this to the appropriate type so no action is needed
                     return layer;

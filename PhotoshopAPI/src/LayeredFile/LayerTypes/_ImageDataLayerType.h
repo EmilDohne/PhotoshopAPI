@@ -3,11 +3,13 @@
 #include "Macros.h"
 
 #include "LayeredFile/LayerTypes/Layer.h"
+#include "Util/Enum.h"
 
 #include "Core/Render/Render.h"
 #include "Core/Struct/ImageChannel.h"
 
 #include <vector>
+#include <memory>
 #include <unordered_map>
 
 PSAPI_NAMESPACE_BEGIN
@@ -227,6 +229,10 @@ struct _ImageDataLayerType : public Layer<T>
 	}
 
 
+	/// Get a view over the image channels stored by the layer
+	///
+	/// This method is primarily intended for near-zero cost access to e.g. the channels since `get_image_data()` will
+	/// first extract the channels.
 	const storage_type& image_data() const
 	{
 		return m_ImageData;

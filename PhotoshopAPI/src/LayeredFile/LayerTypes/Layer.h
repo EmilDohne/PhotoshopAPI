@@ -14,14 +14,35 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-/// Structure describing a layer mask (pixel based) 
+/// Structure describing a pixel based mask layer with the image data stored on the `data` member. This will usually be used in the context
+/// of a `Layer<T>` which has additional functionality for getting the image data. If however you wish to modify information such as 
+/// the feather, density or disabled state of the mask this struct is what you will have to modify.
 struct LayerMask
 {
+	/// The data stored as an ImageChannel struct. If you accessed this mask in the context of a layer you should instead use the 
+	/// Layer::get_mask_data() and Layer::set_mask_data() functions.
 	std::unique_ptr<ImageChannel> data;
-	bool relative_to_layer = false;	/// This is primarily for roundtripping and the user shouldnt have to touch this
+
+	/// For internal parsing only.
+	/// Whether the mask channels' position is relative to the layer. This only matters for how the internal coordinates are parsed
+	bool relative_to_layer = false;	
+
+	/// Whether the mask is disabled
 	bool disabled = false;
+
+	/// The masks' default color. This defines the background color if you will. Photoshop internally only stores a
+	/// tight bounding box of the mask data that is relevant (i.e. not filled with one color). If you wish to compose
+	/// the mask channel for the whole layer this value must be taken into account. The PhotoshopAPI on the other hand
+	/// will store the mask channel in its entirety as compression will take care of pretty much all of the empty space.
+	/// 
+	/// Therefore, if you read a photoshop file created by photoshop you must take this value into account. If instead
+	/// you create a Photoshop file via the API this value can be safely ignored
 	uint8_t default_color = 255u;
+
+	/// The mask's density parameter, if this is not present this is just the default of 255 (100%).
 	std::optional<uint8_t> density;
+
+	/// The mask's feather parameter, if this is not present this is just the default of no feather
 	std::optional<float64_t> feather;
 
 	LayerMask() = default;
@@ -66,19 +87,21 @@ struct Layer
 		bool locked = false;
 	};
 
-
-	/// \defgroup name The Layers' name
-	/// @{
+	/// The layers' name. Stored as a utf-8 string
 	const std::string& name() const noexcept { return m_LayerName; }
+
+	/// The layers' name. Stored as a utf-8 string
 	std::string& name() noexcept { return m_LayerName; }
-	void name(const std::string& layer_name) noexcept { m_LayerName = layer_name; };
-	/// @} 
 
-	/// \defgroup mask An optional mask component.
+	/// The layers' name. Stored as a utf-8 string
+	void name(const std::string& layer_name) noexcept { m_LayerName = layer_name; }
+
+	/// An optional mask component.
 	/// At this time only raster (pixel) masks are supported with support for vector masks following.
-	/// @{
-
 	std::optional<LayerMask>& mask() { return m_LayerMask; }
+
+	/// An optional mask component.
+	/// At this time only raster (pixel) masks are supported with support for vector masks following.
 	const std::optional<LayerMask>& mask() const { return m_LayerMask; }
 
 	/// Extract the mask data as a vector
@@ -127,44 +150,47 @@ struct Layer
 	}
 
 	/// Check whether a mask channel exists on the layer instance
-	bool has_mask() { return m_LayerMask.has_value(); };
-	/// @} 
+	bool has_mask() { return m_LayerMask.has_value(); }
 
-	/// \defgroup blendmode The layers' blendmode.
-	/// @{
+	
+	/// The blendmode of the layer, the `Passthrough` blendmode is only valid for groups
 	Enum::BlendMode& blendmode() noexcept { return m_BlendMode; }
+	/// The blendmode of the layer, the `Passthrough` blendmode is only valid for groups
 	Enum::BlendMode blendmode() const noexcept { return m_BlendMode; }
+	/// The blendmode of the layer, the `Passthrough` blendmode is only valid for groups
 	void blendmode(Enum::BlendMode blend_mode) noexcept { return m_BlendMode = blend_mode; }
-	/// @} 
 
-	/// \defgroup locked Whether the layers' pixels are locked
-	/// @{
+	
+	/// Whether the layers' pixel values are locked. This is currently an all or nothing setting
 	bool& locked() noexcept { return m_IsLocked; }
+	/// Whether the layers' pixel values are locked. This is currently an all or nothing setting
 	bool locked() const noexcept { return m_IsLocked; }
+	/// Whether the layers' pixel values are locked. This is currently an all or nothing setting
 	void locked(bool is_locked) noexcept { m_IsLocked = is_locked; }
-	/// @} 
 
-	/// \defgroup visible Whether the layer is visible
-	/// @{
+	/// Visibility toggle of the layer
 	bool& visible() noexcept { return m_IsVisible; }
+	/// Visibility toggle of the layer
 	bool visible() const noexcept { return m_IsVisible; }
+	/// Visibility toggle of the layer
 	void visible(bool is_visible) noexcept { m_IsVisible = is_visible; }
-	/// @} 
 
-	/// \defgroup opacity The layers' opacity. 
+	/// The layers' opacity. 
 	/// 
 	/// In photoshop this is stored as a `uint8_t` from 0-255 but access and write is 
 	/// in terms of a float for better consistency.
-	/// 
-	/// @{
 	float opacity() const noexcept { return static_cast<float>(m_Opacity) / 255; }
+	/// The layers' opacity. 
+	/// 
+	/// In photoshop this is stored as a `uint8_t` from 0-255 but access and write is 
+	/// in terms of a float for better consistency.
 	void opacity(float value) noexcept { m_Opacity = static_cast<uint8_t>(value * 255.0f); }
-	/// @} 
 
-	/// \defgroup width The layers' width from 0 - 300,000
-	/// @{
+	/// The layers' width from 0 - 300,000
 	uint32_t& width() noexcept { return m_Width; }
+	/// The layers' width from 0 - 300,000
 	uint32_t width() const noexcept { return m_Width; }
+	/// The layers' width from 0 - 300,000
 	void width(uint32_t layer_width) 
 	{  
 		if (layer_width > static_cast<uint32_t>(300000))
@@ -173,12 +199,12 @@ struct Layer
 		}
 		m_Width = layer_width;
 	}
-	/// @} 
 
-	/// \defgroup height The layers' height from 0 - 300,000
-	/// @{
+	/// The layers' height from 0 - 300,000
 	uint32_t& height() noexcept { return m_Height; }
+	/// The layers' height from 0 - 300,000
 	uint32_t height() const noexcept { return m_Height; }
+	/// The layers' height from 0 - 300,000
 	void height(uint32_t layer_height)
 	{
 		if (layer_height > static_cast<uint32_t>(300000))
@@ -187,19 +213,21 @@ struct Layer
 		}
 		m_Height = layer_height;
 	}
-	/// @} 
 	
-	/// \defgroup position The layers' position coordinates
+	/// The layers' x coordinate
 	/// 
 	/// These are represented as the layer's center.
 	/// I.e. if the layer has the bounds { 200, 200 } - { 1000, 1000 } The center
 	/// would be at { 600, 600 }
-	/// 
-	/// @{
 	float& center_x()  noexcept { return m_CenterX; }
 	float center_x() const noexcept { return m_CenterX; }
 	void center_x(float x_coord) noexcept { m_CenterX = x_coord; }
 
+	/// The layers' z coordinate
+	/// 
+	/// These are represented as the layer's center.
+	/// I.e. if the layer has the bounds { 200, 200 } - { 1000, 1000 } The center
+	/// would be at { 600, 600 }
 	float& center_y()  noexcept { return m_CenterY; }
 	float center_y() const noexcept { return m_CenterY; }
 	void center_y(float y_coord) noexcept { m_CenterY = y_coord; }
@@ -209,7 +237,6 @@ struct Layer
 
 	/// Convenience function for accessing the top left y coordinate of a layer
 	float top_left_y() const noexcept { return m_CenterY - static_cast<float>(m_Height) / 2; }
-	/// @} 
 
 	/// The color mode with which the file was created, only stored to
 	/// allow better detection during channel access for e.g. image layers
