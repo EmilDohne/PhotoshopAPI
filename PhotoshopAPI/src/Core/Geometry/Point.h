@@ -73,6 +73,11 @@ namespace Geometry
             return Point2D<T>{this->x / other.x, this->y / other.y};
         }
 
+		T distance(const Point2D<T> other) const 
+        {
+			return std::sqrt((x - other.x) * (x - other.x) + (y - other.y) * (y - other.y));
+		}
+
         /// Static lerp function interpolating between a and b at position t where position t is between 0 and 1
         static Point2D lerp(const Point2D<T> a, const Point2D<T> b, double t)
         {

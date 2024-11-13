@@ -14,9 +14,197 @@ namespace SmartObject
 	// ---------------------------------------------------------------------------------------------------------------------
 	Descriptors::Descriptor Warp::serialize() const
 	{
-		throw std::runtime_error("Unimplemented");
+		if (m_WarpType == WarpType::quilt)
+		{
+			return serialize(quilt_warp{});
+		}
+		return serialize(normal_warp{});
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Descriptors::Descriptor Warp::serialize(quilt_warp) const
+	{
+		// Helper lambda to reduce the signature a bit
+		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
+			{
+				return Descriptors::Impl::descriptorKeys.at(os_type);
+			};
+
+
+		Descriptors::Descriptor warp_descriptor("warp");
+		serialize_common(warp_descriptor);
+
+		warp_descriptor.insert("deformNumRows", static_cast<int32_t>(m_uDims));
+		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_vOrder));
+
+		// This is where the actual warp information gets stored.
+		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
+
+		// Store the quilt information
+		{
+			// X Slices
+			Descriptors::ObjectArray quilt_slice_x("quiltSliceX", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			quilt_slice_x.m_ItemsCount = 1;
+			quilt_slice_x.m_ClassID = "UntF";
+
+			Descriptors::UnitFloats slice_values_x(
+				"quiltSliceX", 
+				_os_key(Descriptors::Impl::OSTypes::UnitFloats), 
+				Descriptors::Impl::UnitFloatType::Pixel,
+				m_QuiltSlicesX
+				);
+
+			quilt_slice_x.insert("quiltSliceX", slice_values_x);
+
+			// Y slices
+			Descriptors::ObjectArray quilt_slice_y("quiltSliceY", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			quilt_slice_y.m_ItemsCount = 1;
+			quilt_slice_y.m_ClassID = "UntF";
+
+			Descriptors::UnitFloats slice_values_y(
+				"quiltSliceY",
+				_os_key(Descriptors::Impl::OSTypes::UnitFloats),
+				Descriptors::Impl::UnitFloatType::Pixel,
+				m_QuiltSlicesY
+			);
+
+			quilt_slice_y.insert("quiltSliceY", slice_values_y);
+
+			// Insert them into the warp, these go first before the envelope warp
+			custom_envelope_warp.insert("quiltSliceX", quilt_slice_x);
+			custom_envelope_warp.insert("quiltSliceY", quilt_slice_y);
+		}
+
+
+		// Store the mesh points
+		{
+			Descriptors::ObjectArray mesh_points("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
+			// instead stores the number of items in the sub-descriptors
+			mesh_points.m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
+			mesh_points.m_ClassID = "rationalPoint";
+
+			Descriptors::UnitFloats horizontal_values("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			Descriptors::UnitFloats vertical_values("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+
+			horizontal_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			vertical_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+
+			for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
+			{
+				horizontal_values.m_Values.push_back(warp_point.x);
+				vertical_values.m_Values.push_back(warp_point.y);
+			}
+
+			mesh_points.insert("Hrzn", horizontal_values);
+			mesh_points.insert("Vrtc", vertical_values);
+
+			custom_envelope_warp.insert("meshPoints", mesh_points);
+		}
+		warp_descriptor.insert("customEnvelopeWarp", custom_envelope_warp);
+
+		return warp_descriptor;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Descriptors::Descriptor Warp::serialize(normal_warp) const
+	{
+		// Helper lambda to reduce the signature a bit
+		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
+			{
+				return Descriptors::Impl::descriptorKeys.at(os_type);
+			};
+
+
+		Descriptors::Descriptor warp_descriptor("warp");
+		serialize_common(warp_descriptor);
+		
+		// This is where the actual warp information gets stored.
+		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
+		{
+			Descriptors::ObjectArray mesh_points("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
+			// instead stores the number of items in the sub-descriptors
+			mesh_points.m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
+			mesh_points.m_ClassID = "rationalPoint";
+
+			Descriptors::UnitFloats horizontal_values("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			Descriptors::UnitFloats vertical_values("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+
+			horizontal_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			vertical_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+
+			for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
+			{
+				horizontal_values.m_Values.push_back(warp_point.x);
+				vertical_values.m_Values.push_back(warp_point.y);
+			}
+
+			mesh_points.insert("Hrzn", horizontal_values);
+			mesh_points.insert("Vrtc", vertical_values);
+
+			custom_envelope_warp.insert("meshPoints", mesh_points);
+		}
+		warp_descriptor.insert("customEnvelopeWarp", custom_envelope_warp);
+
+		return warp_descriptor;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void Warp::serialize_common(Descriptors::Descriptor& warp_descriptor) const
+	{
+		// Helper lambda to reduce the signature a bit
+		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
+			{
+				return Descriptors::Impl::descriptorKeys.at(os_type);
+			};
+
+		auto warp_style = Descriptors::Enumerated("warpStyle", _os_key(Descriptors::Impl::OSTypes::Enumerated), "warpStyle", m_WarpStyle);
+		warp_descriptor.insert("warpStyle", warp_style);
+
+		warp_descriptor.insert("warpValue", m_WarpValue);
+		warp_descriptor.insert("warpPerspective", m_WarpPerspective);
+		warp_descriptor.insert("warpPerspectiveOther", m_WarpPerspectiveOther);
+
+		auto warp_rotation = Descriptors::Enumerated("warpRotate", _os_key(Descriptors::Impl::OSTypes::Enumerated), "Ornt", m_WarpRotate);
+		warp_descriptor.insert("warpRotate", warp_style);
+
+
+		Descriptors::Descriptor bounds("classFloatRect");
+		{
+			auto top = m_Bounds[0];
+			auto left = m_Bounds[1];
+			auto bottom = m_Bounds[2];
+			auto right = m_Bounds[3];
+
+			bounds.insert("Top ", top);
+			bounds.insert("Left", left);
+			bounds.insert("Btom", bottom);
+			bounds.insert("Rght", right);
+		}
+		warp_descriptor.insert("bounds", bounds);
+
+		warp_descriptor.insert("uOrder", m_uOrder);
+		warp_descriptor.insert("vOrder", m_vOrder);
+
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Descriptors::Descriptor Warp::serialize_default(size_t width, size_t height)
+	{
+		Warp warp;
+		warp.warp_style("warpNone");
+
+		Descriptors::Descriptor warp_descriptor("warp");
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -208,6 +396,77 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	Geometry::Point2D<double> Warp::point(size_t u_idx, size_t v_idx) const
+	{
+		if (u_idx > m_uDims - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid u index %zu provide, maximum u dimensions are %zu", u_idx, m_uDims - 1);
+		}
+		if (v_idx > m_vDims - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid v index %zu provide, maximum v dimensions are %zu", v_idx, m_vDims - 1);
+		}
+		size_t subindex = v_idx * m_uDims + u_idx;
+		if (subindex > m_WarpPoints.size() - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp",
+				"Internal Error: The calculated subindex %zu would exceed the points' maximum indexable value of %zu",
+				subindex, m_WarpPoints.size() - 1
+			);
+		}
+
+		return m_WarpPoints[subindex];
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Geometry::Point2D<double>& Warp::point(size_t u_idx, size_t v_idx)
+	{
+		if (u_idx > m_uDims - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid u index %zu provide, maximum u dimensions are %zu", u_idx, m_uDims - 1);
+		}
+		if (v_idx > m_vDims - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid v index %zu provide, maximum v dimensions are %zu", v_idx, m_vDims - 1);
+		}
+		size_t subindex = v_idx * m_uDims + u_idx;
+		if (subindex > m_WarpPoints.size() - 1)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", 
+				"Internal Error: The calculated subindex %zu would exceed the points' maximum indexable value of %zu",
+				subindex, m_WarpPoints.size() - 1
+			);
+		}
+
+		return m_WarpPoints[subindex];
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Geometry::BoundingBox<double> Warp::bounds(bool consider_bezier /*= true*/) const
+	{
+		Geometry::BoundingBox<double> bbox;
+
+		if (consider_bezier)
+		{
+			auto warp_surface = surface();
+			auto warp_mesh = warp_surface.mesh(25, 25, m_NonAffineTransform);
+			bbox = warp_mesh.bbox();
+		}
+		else
+		{
+			Geometry::Mesh<double> mesh(m_WarpPoints, m_NonAffineTransform, m_uDims, m_vDims);
+			bbox = mesh.bbox();
+		}
+
+		return bbox;
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Warp::warp_style(std::string style)
 	{
 		if (style != "warpCustom" && style != "warpNone")
@@ -331,12 +590,116 @@ namespace SmartObject
 		m_NonAffineTransform = non_affine_transform_mesh;
 	}
 
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	std::array<Geometry::Point2D<double>, 4> Warp::non_affine_mesh() const
 	{
 		return m_NonAffineTransform;
 	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	SmartObject::Warp Warp::generate_default(size_t width, size_t height)
+	{
+		return Warp::generate_default(width, height, 4, 4);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	SmartObject::Warp Warp::generate_default(size_t width, size_t height, size_t u_dimensions, size_t v_dimensions)
+	{
+		Warp::validate_u_v_dims(u_dimensions, v_dimensions);
+		size_t u_patches = 1 + (u_dimensions - 4) / 3;
+		size_t v_patches = 1 + (v_dimensions - 4) / 3;
+
+		// Generate the points for warp in the coordinate space [0 - width] and [0 - height]
+		std::vector<Geometry::Point2D<double>> points(u_dimensions * v_dimensions);
+		for (size_t v = 0; v < v_dimensions; ++v)
+		{
+			double v_coord = (static_cast<double>(1.0f) / v_dimensions) * v;
+			for (size_t u = 0; u < u_dimensions; ++u)
+			{
+				size_t idx = v * u_dimensions + u;
+				double u_coord = (static_cast<double>(1.0f) / u_dimensions) * u;
+
+				points[idx] = Geometry::Point2D<double>(u_coord, v_coord);
+			}
+		}
+
+		// "Regular" warp as far as photoshop is concerned
+		if (u_dimensions == 4 && v_dimensions == 4)
+		{
+			return Warp(std::move(points), u_dimensions, v_dimensions);
+		}
+
+		// If we have more than 1 patch in even one dimensions this is a "quilt" warp
+		// and the quilt slice positions along the x and y in our case are just evenly spaced from [0 - width]
+		// and [0 - height] with num_patches + 2 coordinates.
+		// If we have a e.g. a 2x2 patch (of cubic bezier curves) for a width of 4000 it will look like this:
+		//
+		// [-0.6, 2000.0, 4000.6]
+		// 
+		// The .6 offset is likely because in view they are interpreted as integers and adobe wanted to avoid
+		// these rounding to 0 and drawing the line double or something like that.
+		std::vector<double> quilt_x_positions(u_patches + 2);
+		std::vector<double> quilt_y_positions(v_patches + 2);
+		
+		auto generate_default_quilt = [](std::vector<double>& quilt, size_t size, size_t num_patches)
+			{
+				assert(quilt.size() >= 3);
+
+				quilt[0] = static_cast<double>(-0.6f);
+				quilt[quilt.size() - 1] = static_cast<double>(size) + .6f;
+
+				for (size_t i = 0; i < num_patches; ++i)
+				{
+					double increment = static_cast<double>(size) / (quilt.size() - 1);
+					size_t idx = i + 1;
+					quilt[idx] = increment * idx;
+				}
+			};
+
+		generate_default_quilt(quilt_x_positions, width, u_patches);
+		generate_default_quilt(quilt_y_positions, height, v_patches);
+
+		Warp warp(points, u_dimensions, v_dimensions);
+		warp.quilt_slices_x(quilt_x_positions);
+		warp.quilt_slices_y(quilt_y_positions);
+
+		return warp;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void Warp::validate_u_v_dims(size_t u_dimensions, size_t v_dimensions)
+	{
+		if (u_dimensions < 4)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Warp requires at least 4 u-dimensions, got %zu", u_dimensions);
+		}
+		if (v_dimensions < 4)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp", "Warp requires at least 4 v-dimensions, got %zu", v_dimensions);
+		}
+		if (u_dimensions - 4 % 3 != 0)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp",
+				"Warp requires 4 + n * 3 u-dimensions to generate cubic bezier patches e.g. 4, 7, 10 etc. Instead got %zu",
+				u_dimensions);
+		}
+		if (v_dimensions - 4 % 3 != 0)
+		{
+			PSAPI_LOG_ERROR("SmartObjectWarp",
+				"Warp requires 4 + n * 3 v-dimensions to generate cubic bezier patches e.g. 4, 7, 10 etc. Instead got %zu",
+				v_dimensions);
+		}
+	}
+
+	
 
 }
 

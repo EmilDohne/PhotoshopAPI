@@ -236,42 +236,42 @@ private:
 		file << descriptor.to_json().dump(4);
 		file.flush();
 
-		const auto& identifier = descriptor.at("Idnt");	// The identifier that maps back to the LinkedLayer
+		//const auto& identifier = descriptor.at("Idnt");	// The identifier that maps back to the LinkedLayer
 
-		// These we all ignore for the time being, we store them locally and just rewrite them back out later
-		const auto& _placed = descriptor.at("placed");
-		const auto& _page_num = descriptor.at("PgNm");
-		const auto& _total_pages = descriptor.at("totalPages");
-		const auto& _crop = descriptor.at("Crop");
-		const auto& _frame_step = descriptor.at("frameStep");
-		const auto& _duration = descriptor.at("duration");
-		const auto& _frame_count = descriptor.at("frameCount");
-		const auto& _anti_alias = descriptor.at("Annt");
+		//// These we all ignore for the time being, we store them locally and just rewrite them back out later
+		//const auto& _placed = descriptor.at("placed");
+		//const auto& _page_num = descriptor.at("PgNm");
+		//const auto& _total_pages = descriptor.at("totalPages");
+		//const auto& _crop = descriptor.at("Crop");
+		//const auto& _frame_step = descriptor.at("frameStep");
+		//const auto& _duration = descriptor.at("duration");
+		//const auto& _frame_count = descriptor.at("frameCount");
+		//const auto& _anti_alias = descriptor.at("Annt");
 
-		const auto& type = descriptor.at("Type");
-		const auto& transform = descriptor.at<Descriptors::List>("Trnf");
-		const auto& non_affine_transform = descriptor.at<Descriptors::List>("nonAffineTransform");
+		//const auto& type = descriptor.at("Type");
+		//const auto& transform = descriptor.at<Descriptors::List>("Trnf");
+		//const auto& non_affine_transform = descriptor.at<Descriptors::List>("nonAffineTransform");
 
-		// The warp struct is present on all descriptors, if it is however a warp with a non-standard
-		// number of subdivisions (i.e. not 4x4) the warp struct will be empty and instead we will be dealing with a quilt warp
-		const auto& warp = descriptor.at<Descriptors::Descriptor>("warp");
-		SmartObject::Warp warpStruct;
-		if (descriptor.contains("quiltSmartObject::Warp"))
-		{
-			warpStruct = SmartObject::Warp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltSmartObject::Warp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
-			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
-		}
-		else
-		{
-			warpStruct = SmartObject::Warp::deserialize(warp, transform, non_affine_transform, SmartObject::Warp::normal_warp{});
-			renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
-		}
-		m_SmartObjectWarp = warpStruct;
-		const auto& size = descriptor.at("Sz  ");		// The spaces are not a mistake
-		const auto& resolution = descriptor.at("Rslt");	// In DPI
+		//// The warp struct is present on all descriptors, if it is however a warp with a non-standard
+		//// number of subdivisions (i.e. not 4x4) the warp struct will be empty and instead we will be dealing with a quilt warp
+		//const auto& warp = descriptor.at<Descriptors::Descriptor>("warp");
+		//SmartObject::Warp warpStruct;
+		//if (descriptor.contains("quiltWarp"))
+		//{
+		//	//warpStruct = SmartObject::Warp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltSmartObject::Warp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
+		//	//renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
+		//}
+		//else
+		//{
+		//	//warpStruct = SmartObject::Warp::deserialize(warp, transform, non_affine_transform, SmartObject::Warp::normal_warp{});
+		//	//renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
+		//}
+		//m_SmartObjectWarp = warpStruct;
+		//const auto& size = descriptor.at("Sz  ");		// The spaces are not a mistake
+		//const auto& resolution = descriptor.at("Rslt");	// In DPI
 
-		const auto& _comp = descriptor.at("comp");
-		const auto& _comp_info = descriptor.at("compInfo");
+		//const auto& _comp = descriptor.at("comp");
+		//const auto& _comp_info = descriptor.at("compInfo");
 	}
 
 	void decodePlacedLayer(const std::shared_ptr<PlacedLayerTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
@@ -282,8 +282,8 @@ private:
 	void renderMesh(const SmartObject::Warp& warp, std::string filename)
 	{
 		auto bounds = warp.bounds();
-		auto height = bounds[2] - bounds[0];
-		auto width = bounds[3] - bounds[1];
+		auto height = bounds.size().y;
+		auto width = bounds.size().x;
 
 		auto surface = warp.surface();
 		auto subdivided_mesh = surface.mesh(100, 100, warp.non_affine_mesh());

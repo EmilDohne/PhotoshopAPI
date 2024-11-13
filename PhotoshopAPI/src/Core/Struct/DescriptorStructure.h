@@ -127,7 +127,7 @@ namespace Descriptors
 			{ OSTypes::Reference,			{ 'o', 'b', 'j', ' ' }},	// Reference (same as List)
 			{ OSTypes::Double,				{ 'd', 'o', 'u', 'b' }},	// Double
 			{ OSTypes::UnitFloat,			{ 'U', 'n', 't', 'F' }},	// Unit Float
-			{ OSTypes::UnitFloats,			{ 'U', 'n', 'F', 'l' }},	// Unit Float
+			{ OSTypes::UnitFloats,			{ 'U', 'n', 'F', 'l' }},	// Unit Floats
 			{ OSTypes::String,				{ 'T', 'E', 'X', 'T' }},	// String
 			{ OSTypes::Enumerated,			{ 'e', 'n', 'u', 'm' }},	// Enumerated
 			{ OSTypes::Integer,				{ 'l', 'o', 'n', 'g' }},	// Integer (int32_t)
@@ -596,7 +596,10 @@ namespace Descriptors
 	/// The object array struct is very similar to the descriptor struct
 	struct ObjectArray : public DescriptorBase, public KeyValueMixin
 	{
-		uint32_t m_ItemsCount{};
+		/// The number of items in the descriptor types this object holds.
+		/// Not the amount of descriptors we hold, I am assuming these are always
+		/// the same size
+		uint32_t m_ItemsCount{};	
 		UnicodeString m_Name{};
 		std::string m_ClassID{};
 
