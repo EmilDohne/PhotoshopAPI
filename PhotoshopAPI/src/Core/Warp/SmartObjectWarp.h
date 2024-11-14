@@ -61,6 +61,10 @@ namespace SmartObject
 			{
 				m_WarpType = WarpType::normal;
 			}
+			else
+			{
+				m_WarpType = WarpType::quilt;
+			}
 
 			m_WarpPoints = warp;
 			m_uDims = u_dims;
@@ -271,6 +275,15 @@ namespace SmartObject
 		/// Create a "warp"/"quiltWarp" descriptor from this class ready to be stored on a PlacedLayer or PlacedLayerData tagged block
 		Descriptors::Descriptor serialize() const;
 
+
+		/// For internal API use:
+		/// Create the transform and non-affine transform descriptors
+		std::tuple<Descriptors::List, Descriptors::List> generate_transform_descriptors(std::array<Geometry::Point2D<double>, 4> transform_) const;
+
+		/// For internal API use:
+		/// Serialize the common parts between both quilt and normal warps
+		void serialize_common(Descriptors::Descriptor& warp_descriptor) const;
+
 		/// For internal API use:
 		/// 
 		/// Create an empty "warp" descriptor from this class. This is to be used if the actual warp type
@@ -309,6 +322,10 @@ namespace SmartObject
 		void warp_style(std::string style);
 
 		/// For internal API use:
+		/// Set the bounds using the bounding box
+		void warp_bounds(Geometry::BoundingBox<double> bounds);
+
+		/// For internal API use:
 		/// Set the warp value, unsure where and how this is used, usually 0.0f
 		void warp_value(double value);
 
@@ -340,6 +357,7 @@ namespace SmartObject
 		/// Set the type of warp. The two valid options are 'quilt' and 'normal' where normal is a 4x4 grid
 		/// and quilt is anything beyond that (resolutions under 4x4 are not supported).
 		void warp_type(WarpType type);
+		WarpType warp_type() const;
 
 	private:
 
@@ -405,8 +423,7 @@ namespace SmartObject
 		Descriptors::Descriptor serialize(quilt_warp) const;
 		Descriptors::Descriptor serialize(normal_warp) const;
 
-		// Serialize the common parts between both quilt and normal warps
-		void serialize_common(Descriptors::Descriptor& warp_descriptor) const;
+		
 	};
 
 

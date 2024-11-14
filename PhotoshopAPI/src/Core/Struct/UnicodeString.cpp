@@ -24,9 +24,13 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	// would cause us to mistakenly assume its a broken input string
 	if (str.size() == 0)
 	{
+		std::vector<char> padded_empty(padding / 2, static_cast<char>(0));
+		std::vector<char16_t> padded_empty_16(padding / 2, static_cast<char16_t>(0));
+
 		FileSection::size(RoundUpToMultiple<uint32_t>(0 + sizeof(uint32_t), padding));
-		m_String = {};
-		m_UTF16String = {};
+
+		m_String = std::string(padded_empty.begin(), padded_empty.end());
+		m_UTF16String = std::u16string(padded_empty_16.begin(), padded_empty_16.end());
 		return;
 	}
 	// Calculate the required UTF16-LE size and perform the conversion, storing

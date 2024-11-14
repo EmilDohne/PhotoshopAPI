@@ -33,11 +33,11 @@ namespace SmartObject
 			};
 
 
-		Descriptors::Descriptor warp_descriptor("warp");
+		Descriptors::Descriptor warp_descriptor("quiltWarp");
 		serialize_common(warp_descriptor);
 
 		warp_descriptor.insert("deformNumRows", static_cast<int32_t>(m_uDims));
-		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_vOrder));
+		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_vDims));
 
 		// This is where the actual warp information gets stored.
 		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
@@ -46,7 +46,7 @@ namespace SmartObject
 		{
 			// X Slices
 			Descriptors::ObjectArray quilt_slice_x("quiltSliceX", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
-			quilt_slice_x.m_ItemsCount = 1;
+			quilt_slice_x.m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesX.size());
 			quilt_slice_x.m_ClassID = "UntF";
 
 			Descriptors::UnitFloats slice_values_x(
@@ -60,7 +60,7 @@ namespace SmartObject
 
 			// Y slices
 			Descriptors::ObjectArray quilt_slice_y("quiltSliceY", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
-			quilt_slice_y.m_ItemsCount = 1;
+			quilt_slice_y.m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesY.size());
 			quilt_slice_y.m_ClassID = "UntF";
 
 			Descriptors::UnitFloats slice_values_y(
@@ -157,6 +157,85 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	std::tuple<Descriptors::List, Descriptors::List> Warp::generate_transform_descriptors(std::array<Geometry::Point2D<double>, 4> transform_) const
+	{
+		std::tuple<Descriptors::List, Descriptors::List> out;
+
+		// The transform is just the regular bbox as 4 corners in clockwise order starting
+		// at the top-left
+		Geometry::Point2D<double> top_left = transform_[0];
+		Geometry::Point2D<double> top_rght = transform_[1];
+		Geometry::Point2D<double> bot_rght = transform_[2];
+		Geometry::Point2D<double> bot_left = transform_[3];
+
+		Geometry::Point2D<double> center = (top_left + bot_rght) / 2;
+
+		{
+			Descriptors::List transform("Trnf", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
+
+			transform.m_Items.push_back(top_left.x);
+			transform.m_Items.push_back(top_left.y);
+
+			transform.m_Items.push_back(top_rght.x);
+			transform.m_Items.push_back(top_rght.y);
+
+			transform.m_Items.push_back(bot_rght.x);
+			transform.m_Items.push_back(bot_rght.y);
+
+			transform.m_Items.push_back(bot_left.x);
+			transform.m_Items.push_back(bot_left.y);
+
+			std::get<0>(out) = transform;
+		}
+		// Here we can use the property that we scaled our non affine transform to be in the range [0 - 1] (with offsets)
+		// to offset both to 0, 0 and then scale one by the other, after which we rescale
+		auto top_left_center = top_left - center;
+		auto top_rght_center = top_rght - center;
+		auto bot_rght_center = bot_rght - center;
+		auto bot_left_center = bot_left - center;
+
+		// Go from [0 - 1] -> [-1 - 1]
+		auto non_aff_top_left_center = (m_NonAffineTransform[0] - Geometry::Point2D<double>(0.5f, 0.5f)) * 2;
+		auto non_aff_top_rght_center = (m_NonAffineTransform[1] - Geometry::Point2D<double>(0.5f, 0.5f)) * 2;
+		auto non_aff_bot_rght_center = (m_NonAffineTransform[3] - Geometry::Point2D<double>(0.5f, 0.5f)) * 2;
+		auto non_aff_bot_left_center = (m_NonAffineTransform[2] - Geometry::Point2D<double>(0.5f, 0.5f)) * 2;
+
+		// Scale the centered coordinates
+		auto extents = Geometry::Point2D<double>{ std::abs(top_left_center.x), std::abs(top_left_center.y) };
+		auto non_aff_top_left = non_aff_top_left_center * extents;
+		auto non_aff_top_rght = non_aff_top_rght_center * extents;
+		auto non_aff_bot_rght = non_aff_bot_rght_center * extents;
+		auto non_aff_bot_left = non_aff_bot_left_center * extents;
+
+		// Transform them back into the center
+		non_aff_top_left = non_aff_top_left + center;
+		non_aff_top_rght = non_aff_top_rght + center;
+		non_aff_bot_rght = non_aff_bot_rght + center;
+		non_aff_bot_left = non_aff_bot_left + center;
+
+		{
+			Descriptors::List non_affine_transform("nonAffineTransform", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
+			
+			non_affine_transform.m_Items.push_back(non_aff_top_left.x);
+			non_affine_transform.m_Items.push_back(non_aff_top_left.y);
+
+			non_affine_transform.m_Items.push_back(non_aff_top_rght.x);
+			non_affine_transform.m_Items.push_back(non_aff_top_rght.y);
+
+			non_affine_transform.m_Items.push_back(non_aff_bot_rght.x);
+			non_affine_transform.m_Items.push_back(non_aff_bot_rght.y);
+
+			non_affine_transform.m_Items.push_back(non_aff_bot_left.x);
+			non_affine_transform.m_Items.push_back(non_aff_bot_left.y);
+
+			std::get<1>(out) = non_affine_transform;
+		}
+		return out;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Warp::serialize_common(Descriptors::Descriptor& warp_descriptor) const
 	{
 		// Helper lambda to reduce the signature a bit
@@ -173,8 +252,7 @@ namespace SmartObject
 		warp_descriptor.insert("warpPerspectiveOther", m_WarpPerspectiveOther);
 
 		auto warp_rotation = Descriptors::Enumerated("warpRotate", _os_key(Descriptors::Impl::OSTypes::Enumerated), "Ornt", m_WarpRotate);
-		warp_descriptor.insert("warpRotate", warp_style);
-
+		warp_descriptor.insert("warpRotate", warp_rotation);
 
 		Descriptors::Descriptor bounds("classFloatRect");
 		{
@@ -200,10 +278,20 @@ namespace SmartObject
 	// ---------------------------------------------------------------------------------------------------------------------
 	Descriptors::Descriptor Warp::serialize_default(size_t width, size_t height)
 	{
+		// Set up the base warp object which has all the info we need
 		Warp warp;
 		warp.warp_style("warpNone");
+		Geometry::BoundingBox<double> bbox;
+		bbox.minimum = { 0.0f, 0.0f };
+		bbox.maximum = { static_cast<double>(width), static_cast<double>(height)};
+		warp.warp_bounds(bbox);
 
 		Descriptors::Descriptor warp_descriptor("warp");
+		warp.serialize_common(warp_descriptor);
+
+		// The "customEnvelopeWarp" descriptor doesn't get set by photoshop
+
+		return warp_descriptor;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -315,7 +403,7 @@ namespace SmartObject
 			const auto& quiltSlicesY = customEnvelopeWarp.at<Descriptors::ObjectArray>("quiltSliceY").at<Descriptors::UnitFloats>("quiltSliceY");
 
 			warp.quilt_slices_x(quiltSlicesX.m_Values);
-			warp.quilt_slices_x(quiltSlicesY.m_Values);
+			warp.quilt_slices_y(quiltSlicesY.m_Values);
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -533,6 +621,16 @@ namespace SmartObject
 			warpStruct.warp_perspective(warpPerspective);
 			warpStruct.warp_perspective_other(warpPerspectiveOther);
 
+			const auto& warpBounds = warpDescriptor.at<Descriptors::Descriptor>("bounds");
+			const auto top = warpBounds.at<double>("Top ");
+			const auto left = warpBounds.at<double>("Left");
+			const auto bottom = warpBounds.at<double>("Btom");
+			const auto right = warpBounds.at<double>("Rght");
+			Geometry::BoundingBox<double> bbox;
+			bbox.minimum = { left, top };
+			bbox.maximum = { right, bottom };
+			warpStruct.warp_bounds(bbox);
+
 			// 4. Retrieve warpRotate (Enumerated)
 			const auto& warpRotate = warpDescriptor.at<Descriptors::Enumerated>("warpRotate");
 			warpStruct.warp_rotate(warpRotate.m_Enum);
@@ -582,6 +680,15 @@ namespace SmartObject
 	{
 		m_WarpType = type;
 	}
+
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	SmartObject::Warp::WarpType Warp::warp_type() const
+	{
+		return m_WarpType;
+	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -685,13 +792,13 @@ namespace SmartObject
 		{
 			PSAPI_LOG_ERROR("SmartObjectWarp", "Warp requires at least 4 v-dimensions, got %zu", v_dimensions);
 		}
-		if (u_dimensions - 4 % 3 != 0)
+		if ((u_dimensions - 4) % 3 != 0)
 		{
 			PSAPI_LOG_ERROR("SmartObjectWarp",
 				"Warp requires 4 + n * 3 u-dimensions to generate cubic bezier patches e.g. 4, 7, 10 etc. Instead got %zu",
 				u_dimensions);
 		}
-		if (v_dimensions - 4 % 3 != 0)
+		if ((v_dimensions - 4) % 3 != 0)
 		{
 			PSAPI_LOG_ERROR("SmartObjectWarp",
 				"Warp requires 4 + n * 3 v-dimensions to generate cubic bezier patches e.g. 4, 7, 10 etc. Instead got %zu",
@@ -699,6 +806,16 @@ namespace SmartObject
 		}
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void Warp::warp_bounds(Geometry::BoundingBox<double> bounds)
+	{
+		m_Bounds[0] = bounds.minimum.y;
+		m_Bounds[1] = bounds.minimum.x;
+		m_Bounds[2] = bounds.maximum.y;
+		m_Bounds[3] = bounds.maximum.x;
+	}
 	
 
 }

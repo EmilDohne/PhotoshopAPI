@@ -15,9 +15,7 @@ int main()
 	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
 
 	//LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/smartobject_unlinked.psd");
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warptest3.psd");
-
-	std::cout << 1 << std::endl;
+	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warptest_single.psd");
 
 	Instrumentor::Get().EndSession();
 }

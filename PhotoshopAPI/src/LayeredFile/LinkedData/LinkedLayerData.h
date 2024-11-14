@@ -162,25 +162,30 @@ struct LinkedLayerData
 	}
 
 	/// Get the width and height of the image data stored on the linked layer.
-	std::array<size_t, 2> size() { return { m_Width, m_Height }; }
+	std::array<size_t, 2> size() const noexcept { return { m_Width, m_Height }; }
 
 	/// Return the width of the image data held by this struct
-	size_t width() { return m_Width; }
+	size_t width() const noexcept { return m_Width; }
 
 	/// Return the height of the image data held by this struct
-	size_t height() { return m_Height; }
+	size_t height() const noexcept { return m_Height; }
 
 	/// Get the full path to the file stored on the LinkedLayerData.
-	std::filesystem::path path() const { return m_FilePath; }
+	std::filesystem::path path() const noexcept { return m_FilePath; }
 
 	/// Get the hash associated with the LinkedLayerData
-	std::string hash() const { return m_Hash; }
+	std::string hash() const noexcept { return m_Hash; }
 
 	/// Get the filename associated with the LinkedLayerData
-	std::string filename() const { return m_Filename; }
+	std::string filename() const noexcept { return m_Filename; }
 
-	/// Get the type of linkage this file has in the context of the LinkedLayerData
-	LinkedLayerType type() const { return m_Type; }
+	/// Get the type of linkage this file has, whether that may be data (on the file itself) or external
+	LinkedLayerType type() const noexcept { return m_Type; }
+
+	/// Set the type of linkage this file has, whether that may be data (on the file itself) or external.
+	///
+	/// As we only apply this on write this can be changed as many times as wanted.
+	void type(LinkedLayerType type_) noexcept{ m_Type = type_; }
 
 private:
 	/// Store the image data as a per-channel map to be used later using a custom hash function
@@ -291,6 +296,11 @@ struct LinkedLayers
 			return m_LinkedLayerData.at(hash);
 		}
 		PSAPI_LOG_ERROR("LinkedLayers", "Unknown linked layer hash '%s' encountered", hash.c_str());
+	}
+
+	bool contains(std::string hash)
+	{
+		return m_LinkedLayerData.contains(hash);
 	}
 
 	/// Insert a linked layer from the given filepath returning a reference to it. This will read the file and either store or
