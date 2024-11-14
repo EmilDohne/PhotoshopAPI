@@ -604,6 +604,34 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	bool Property::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Property>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Property other_ = std::get<Property>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		if (m_KeyID != other_.m_KeyID)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	UnitFloat::UnitFloat(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, double value)
 		: DescriptorBase(key, osKey)
 	{
@@ -664,6 +692,21 @@ namespace Descriptors
 		double epsilon = 1e-9;
 		bool value_equal = std::fabs(m_Value - other.m_Value) <= (epsilon * std::max(std::fabs(m_Value), std::fabs(other.m_Value)));
 		return unit_type_equal && value_equal;
+	}
+
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool UnitFloat::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<UnitFloat>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		UnitFloat other_ = std::get<UnitFloat>(other);
+		return *this == other_;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -731,6 +774,21 @@ namespace Descriptors
 		return type_equal && values_equal;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool UnitFloats::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<UnitFloats>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		UnitFloats other_ = std::get<UnitFloats>(other);
+		return *this == other_;
+	}
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	RawData::RawData(std::string key, std::vector<char> osKey, std::vector<uint8_t> data)
@@ -785,6 +843,22 @@ namespace Descriptors
 		return data;
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool RawData::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<RawData>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		RawData other_ = std::get<RawData>(other);
+		return m_Data == other_.m_Data;
+	}
+
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	Class::Class(std::string key, std::vector<char> osKey, std::string name, std::string classID)
@@ -828,6 +902,29 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	bool Class::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Class>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Class other_ = std::get<Class>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		return true;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void Enumerated::read(File& document)
 	{
 		m_TypeID = Impl::readLengthDenotedKey(document);
@@ -866,6 +963,30 @@ namespace Descriptors
 
 		return data;
 	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool Enumerated::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Enumerated>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Enumerated other_ = std::get<Enumerated>(other);
+		if (m_Enum != other_.m_Enum)
+		{
+			return false;
+		}
+		if (m_TypeID != other_.m_TypeID)
+		{
+			return false;
+		};
+		return true;
+	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -922,6 +1043,38 @@ namespace Descriptors
 		return data;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool EnumeratedReference::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<EnumeratedReference>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		EnumeratedReference other_ = std::get<EnumeratedReference>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		if (m_TypeID != other_.m_TypeID)
+		{
+			return false;
+		}
+		if (m_Enum != other_.m_Enum)
+		{
+			return false;
+		}
+		return true;
+	}
+
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	Offset::Offset(std::string key, std::vector<char> osKey, std::string name, std::string classID, uint32_t offset)
@@ -967,6 +1120,32 @@ namespace Descriptors
 		return data;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool Offset::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Offset>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Offset other_ = std::get<Offset>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		if (m_Offset != other_.m_Offset)
+		{
+			return false;
+		}
+		return true;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1007,6 +1186,25 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
+	bool Identifier::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Identifier>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Identifier other_ = std::get<Identifier>(other);
+		if (m_Identifier != other_.m_Identifier)
+		{
+			return false;
+		}
+		return true;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	Index::Index(std::string key, std::vector<char> osKey, int32_t identifier)
 		: DescriptorBase(key, osKey)
 	{
@@ -1041,6 +1239,26 @@ namespace Descriptors
 
 		return data;
 	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool Index::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Index>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Index other_ = std::get<Index>(other);
+		if (m_Identifier != other_.m_Identifier)
+		{
+			return false;
+		}
+		return true;
+	}
+
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1085,6 +1303,33 @@ namespace Descriptors
 		data["value"] = m_Value.getString();
 
 		return data;
+	}
+
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool Name::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Name>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Name other_ = std::get<Name>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		if (m_Value != other_.m_Value)
+		{
+			return false;
+		}
+		return true;
 	}
 
 
@@ -1141,6 +1386,34 @@ namespace Descriptors
 		return data;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool List::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<List>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		List other_ = std::get<List>(other);
+		
+		if (m_Items.size() != other_.m_Items.size())
+		{
+			return false;
+		}
+
+		for (size_t i = 0; i < m_Items.size(); ++i)
+		{
+			bool result = m_Items[i] == other_.m_Items[i];
+			if (!result)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1212,6 +1485,45 @@ namespace Descriptors
 		return data;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool ObjectArray::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<ObjectArray>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		ObjectArray other_ = std::get<ObjectArray>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+		if (m_ClassID != other_.m_ClassID)
+		{
+			return false;
+		};
+		if (m_ItemsCount != other_.m_ItemsCount)
+		{
+			return false;
+		}
+		
+
+		if (m_DescriptorItems.size() != other_.m_DescriptorItems.size())
+		{
+			return false;
+		}
+		if (m_DescriptorItems != other_.m_DescriptorItems)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void Descriptor::read(File& document)
@@ -1268,6 +1580,34 @@ namespace Descriptors
 		return data;
 	}
 
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool Descriptor::operator==(const DescriptorVariant& other) const
+	{
+		if (!DescriptorBase::base_equals<Descriptor>(other, false))
+		{
+			return false;
+		}
+
+		// Since base_equals already checks for type equality we can safely call std::get<> here
+		Descriptor other_ = std::get<Descriptor>(other);
+		if (m_Name != other_.m_Name)
+		{
+			return false;
+		}
+
+
+		if (m_DescriptorItems.size() != other_.m_DescriptorItems.size())
+		{
+			return false;
+		}
+		if (m_DescriptorItems != other_.m_DescriptorItems)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 PSAPI_NAMESPACE_END

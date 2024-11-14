@@ -66,6 +66,7 @@ namespace Descriptors
 		Name,
 		ObjectArray>;
 
+
 	namespace Impl
 	{
 		/// Read a 4-byte key and return it
@@ -246,16 +247,148 @@ namespace Descriptors
 		/// DescriptorBase as well as standard types such as double, bool etc.
 		static json_ordered to_json(const DescriptorVariant& variant);
 
+		/// Wonky runtime reflection for all the types held by `DescriptorVariant`,
+		/// should only be used for debugging functions or something like that,
+		/// please do not use this for anything critical
+		/// 
+		/// \tparam T The type to get as string, must be one of the types held by `DescriptorVariant`
+		template <typename T>
+		static const std::string_view to_string()
+		{
+			static_assert(false);
+		}
+		template <>
+		static const std::string_view to_string<Descriptor>() { return "Descriptor"; }
+		template <>
+		static const std::string_view to_string<List>() { return "List"; }
+		template <>
+		static const std::string_view to_string<Reference>() { return "Reference"; }
+		template <>
+		static const std::string_view to_string<RawData>() { return "RawData"; }
+		template <>
+		static const std::string_view to_string<Path>() { return "Path"; }
+		template <>
+		static const std::string_view to_string<double>() { return "double"; }
+		template <>
+		static const std::string_view to_string<UnitFloat>() { return "UnitFloat"; }
+		template <>
+		static const std::string_view to_string<UnitFloats>() { return "UnitFloats"; }
+		template <>
+		static const std::string_view to_string<Enumerated>() { return "Enumerated"; }
+		template <>
+		static const std::string_view to_string<int32_t>() { return "int32_t"; }
+		template <>
+		static const std::string_view to_string<int64_t>() { return "int64_t"; }
+		template <>
+		static const std::string_view to_string<bool>() { return "bool"; }
+		template <>
+		static const std::string_view to_string<UnicodeString>() { return "UnicodeString"; }
+		template <>
+		static const std::string_view to_string<Class>() { return "Class"; }
+		template <>
+		static const std::string_view to_string<Property>() { return "Property"; }
+		template <>
+		static const std::string_view to_string<EnumeratedReference>() { return "EnumeratedReference"; }
+		template <>
+		static const std::string_view to_string<Offset>() { return "Offset"; }
+		template <>
+		static const std::string_view to_string<Identifier>() { return "Identifier"; }
+		template <>
+		static const std::string_view to_string<Index>() { return "Index"; }
+		template <>
+		static const std::string_view to_string<Name>() { return "Name"; }
+		template <>
+		static const std::string_view to_string<ObjectArray>() { return "ObjectArray"; }
+
+		/// Check the two descriptors for equality
+		virtual bool operator==(const DescriptorVariant& other) const = 0;
+
 		/// Retrieve the key associated with the given descriptor item. This may be empty in the case of a list.
 		/// In most cases retrieving this should not be necessary
-		std::string Key() const noexcept { return m_Key; }
+		std::string key() const noexcept { return m_Key; }
 		/// Retrieve the OSKey (type) of the descriptor item, since our OSType mapping is lossy this holds
 		/// the original key and is intended to be used for identifying the OSType associated with the item
-		std::vector<char> OSKey() const noexcept { return m_OSKey; }
+		std::vector<char> os_key() const noexcept { return m_OSKey; }
 
 	protected:
 		std::string m_Key{};
 		std::vector<char> m_OSKey{};
+
+		/// Compare the base (os_key and key) of two descriptors. This will also check
+		/// that the type of other matches the type of template parameter T
+		/// 
+		/// \tparam T The template type of the class inheriting from DescriptorBase calling into this, so if e.g.
+		///			  this function is called from a `Property` the template type has to be `Property`
+		/// 
+		/// \param other The DescriptorVariant to compare to, if this is a type not inherited from DescriptorBase
+		///				 the comparison will always fail.
+		/// \param warn_on_inequality Whether to emit a warning message whenever a value mismatches, for debugging.
+		template <typename T>
+		bool base_equals(const DescriptorVariant& other, bool warn_on_inequality) const
+		{
+			if constexpr (!std::is_base_of_v<DescriptorBase, T>)
+			{
+				PSAPI_LOG_ERROR("Descriptor", "Unable to compare bases as template type T is not inherited from DescriptorBase");
+			}
+
+			// First check for equality of the base types, this will also catch e.g.
+			// if the other variant is not the same as the current variant
+			auto check_types = std::visit([warn_on_inequality](const auto& item) -> bool
+				{
+					using U = std::decay_t<decltype(item)>;
+					if constexpr (!std::is_same_v<T, U>)
+					{
+						if (warn_on_inequality)
+						{
+							PSAPI_LOG_WARNING(
+								"Descriptor",
+								"Equality check failed as base types are not the same, cannot compare '%s' and '%s",
+								DescriptorBase::to_string<T>(), DescriptorBase::to_string<U>()
+							);
+						}
+						return false;
+					}
+					return true;
+
+				}, other);
+			
+			auto type_equality = check_types(other);
+			if (!type_equality)
+			{
+				return false;
+			}
+
+			// Check that the OS Key (the data type in photoshop notation) and the actual storage key
+			// are the same.
+			const auto& other_ = std::get<T>(other);
+			if (this->os_key() != other_.os_key())
+			{
+				if (warn_on_inequality)
+				{
+					PSAPI_LOG_WARNING(
+						"Descriptor",
+						"OSKey (type) mismatch, expected '%s' but instead got '%s'",
+						std::string(this->os_key()).c_str(), 
+						std::string(other_.os_key()).c_str()
+					);
+				}
+				return false;
+			}
+			if (this->key() != other_.key())
+			{
+				if (warn_on_inequality)
+				{
+					PSAPI_LOG_WARNING(
+						"Descriptor",
+						"Key mismatch, expected '%s' but instead got '%s'",
+						this->key().c_str(),
+						other_.key().c_str()
+					);
+				}
+				return false;
+			}
+			return true;
+		}
 
 		/// Get a json representation of the implementation, this includes things like 
 		/// Class name, m_Key, m_OSKey
@@ -359,6 +492,8 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 	};
 
@@ -374,6 +509,8 @@ namespace Descriptors
 
 		void read(File& document) override;
 		void write(File& document) const override;
+
+		bool operator==(const DescriptorVariant& other) const override;
 
 		json_ordered to_json() const override;
 	};
@@ -391,6 +528,8 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 
 	};
@@ -406,6 +545,8 @@ namespace Descriptors
 
 		void read(File& document) override;
 		void write(File& document) const override;
+
+		bool operator==(const DescriptorVariant& other) const override;
 
 		json_ordered to_json() const override;
 	};
@@ -432,6 +573,8 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 
 	};
@@ -450,6 +593,8 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 	};
 
@@ -464,6 +609,8 @@ namespace Descriptors
 
 		void read(File& document) override;
 		void write(File& document) const override;
+
+		bool operator==(const DescriptorVariant& other) const override;
 
 		json_ordered to_json() const override;
 	};
@@ -482,6 +629,7 @@ namespace Descriptors
 		UnitFloat(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, double value);
 
 		bool operator==(const UnitFloat other);
+		bool operator==(const DescriptorVariant& other) const override;
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -500,6 +648,7 @@ namespace Descriptors
 		UnitFloats(std::string key, std::vector<char> osKey, Impl::UnitFloatType type, std::vector<double> values);
 
 		bool operator==(const UnitFloats& other);
+		bool operator==(const DescriptorVariant& other) const override;
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -542,6 +691,8 @@ namespace Descriptors
 			return out;
 		}
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 
 	};
@@ -564,8 +715,9 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
-		json_ordered to_json() const override;
+		bool operator==(const DescriptorVariant& other) const override;
 
+		json_ordered to_json() const override;
 	};
 
 
@@ -588,8 +740,9 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
-		json_ordered to_json() const override;
+		bool operator==(const DescriptorVariant& other) const override;
 
+		json_ordered to_json() const override;
 	};
 
 
@@ -615,6 +768,8 @@ namespace Descriptors
 
 		void read(File& document) override;
 		void write(File& document) const override;
+
+		bool operator==(const DescriptorVariant& other) const override;
 
 		json_ordered to_json() const override;
 	};
@@ -651,13 +806,15 @@ namespace Descriptors
 		void read(File& document) override;
 		void write(File& document) const override;
 
+		bool operator==(const DescriptorVariant& other) const override;
+
 		json_ordered to_json() const override;
 	};
 
 
 	struct GlobalObject : public Descriptor
 	{
-
+		using Descriptor::Descriptor;
 	};
 
 }

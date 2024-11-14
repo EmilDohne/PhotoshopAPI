@@ -31,6 +31,8 @@ struct UnicodeString : public FileSection
 	/// This method returns the absolute size of the UnicodeString in bytes including the 4-byte size
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
+	bool operator==(const UnicodeString& other) const;
+
 	/// Retrieve the UTF8 representation of the struct
 	const std::string getString() const noexcept;
 	const std::string_view getStringView() const noexcept;

@@ -207,4 +207,11 @@ void UnicodeString::write(File& document) const
 }
 
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+bool UnicodeString::operator==(const UnicodeString& other) const
+{
+	return m_UTF16String == other.getUTF16String() && m_String == other.getString();
+}
+
 PSAPI_NAMESPACE_END
