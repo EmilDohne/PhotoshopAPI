@@ -104,10 +104,15 @@ namespace Geometry
             return evaluate_bezier_patch(patch, local_u, local_v);
         }
 
-        // Convert the bezier patch into a mesh by repeatedly calling evaluate for x and y intervals across the surface
-        // This function will create a quadrilateral mesh which can be more easily queried for UV coordinates
-        // at a given point than the bezier surface itself lending itself to e.g. mesh warps.
-        Mesh<double> mesh(size_t divisions_x, size_t divisions_y, std::array<Geometry::Point2D<double>, 4> non_affine_transform) const
+        /// Convert the bezier patch into a mesh by repeatedly calling evaluate for x and y intervals across the surface
+        /// This function will create a quadrilateral mesh which can be more easily queried for UV coordinates
+        /// at a given point than the bezier surface itself lending itself to e.g. mesh warps.
+        ///
+        /// \param divisions_x          The resolution across the x division
+        /// \param divisions_y          The resolution across the y division
+        /// \param affine_transform     The affine transformation to apply to the mesh, this represents the actual resolution
+        /// \param non_affine_transform The non-affine transformation to apply to the mesh, in the range of 0-1 for a no-op, may go outside of that
+        Mesh<double> mesh(size_t divisions_x, size_t divisions_y, std::array<Geometry::Point2D<double>, 4> affine_transform, std::array<Geometry::Point2D<double>, 4> non_affine_transform) const
         {
             PSAPI_PROFILE_FUNCTION();
 
@@ -122,7 +127,7 @@ namespace Geometry
                     points.emplace_back(evaluate(u, v));
                 }
             }
-            return Mesh<double>(points, non_affine_transform, divisions_x, divisions_y);
+            return Mesh<double>(points, affine_transform, non_affine_transform, divisions_x, divisions_y);
         }
 
         /// Get the patches associated with the Bezier surface, these are sorted in scanline order

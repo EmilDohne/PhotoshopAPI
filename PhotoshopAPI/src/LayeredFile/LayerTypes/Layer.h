@@ -187,11 +187,9 @@ struct Layer
 	void opacity(float value) noexcept { m_Opacity = static_cast<uint8_t>(value * 255.0f); }
 
 	/// The layers' width from 0 - 300,000
-	uint32_t& width() noexcept { return m_Width; }
+	virtual uint32_t width() const noexcept { return m_Width; }
 	/// The layers' width from 0 - 300,000
-	uint32_t width() const noexcept { return m_Width; }
-	/// The layers' width from 0 - 300,000
-	void width(uint32_t layer_width) 
+	virtual void width(uint32_t layer_width)
 	{  
 		if (layer_width > static_cast<uint32_t>(300000))
 		{
@@ -201,11 +199,9 @@ struct Layer
 	}
 
 	/// The layers' height from 0 - 300,000
-	uint32_t& height() noexcept { return m_Height; }
+	virtual uint32_t height() const noexcept { return m_Height; }
 	/// The layers' height from 0 - 300,000
-	uint32_t height() const noexcept { return m_Height; }
-	/// The layers' height from 0 - 300,000
-	void height(uint32_t layer_height)
+	virtual void height(uint32_t layer_height)
 	{
 		if (layer_height > static_cast<uint32_t>(300000))
 		{
@@ -219,18 +215,16 @@ struct Layer
 	/// These are represented as the layer's center.
 	/// I.e. if the layer has the bounds { 200, 200 } - { 1000, 1000 } The center
 	/// would be at { 600, 600 }
-	float& center_x()  noexcept { return m_CenterX; }
-	float center_x() const noexcept { return m_CenterX; }
-	void center_x(float x_coord) noexcept { m_CenterX = x_coord; }
+	virtual float center_x() const noexcept { return m_CenterX; }
+	virtual void center_x(float x_coord) noexcept { m_CenterX = x_coord; }
 
-	/// The layers' z coordinate
+	/// The layers' y coordinate
 	/// 
 	/// These are represented as the layer's center.
 	/// I.e. if the layer has the bounds { 200, 200 } - { 1000, 1000 } The center
 	/// would be at { 600, 600 }
-	float& center_y()  noexcept { return m_CenterY; }
-	float center_y() const noexcept { return m_CenterY; }
-	void center_y(float y_coord) noexcept { m_CenterY = y_coord; }
+	virtual float center_y() const noexcept { return m_CenterY; }
+	virtual void center_y(float y_coord) noexcept { m_CenterY = y_coord; }
 
 	/// Convenience function for accessing the top left x coordinate of a layer
 	float top_left_x() const noexcept { return m_CenterX - static_cast<float>(m_Width) / 2; }
@@ -241,6 +235,8 @@ struct Layer
 	/// The color mode with which the file was created, only stored to
 	/// allow better detection during channel access for e.g. image layers
 	Enum::ColorMode color_mode() const noexcept { return m_ColorMode; }
+
+	virtual ~Layer() = default;
 
 protected:
 
@@ -680,8 +676,6 @@ public:
 			m_LayerMask.value().data->m_Compression = compCode;
 		}
 	}
-
-	virtual ~Layer() = default;
 
 protected:
 

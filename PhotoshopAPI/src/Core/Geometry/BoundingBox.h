@@ -41,6 +41,21 @@ namespace Geometry
             };
         }
 
+        T width() const
+        {
+            return maximum.x - minimum.x;
+        }
+
+		T height() const
+		{
+			return maximum.y - minimum.y;
+		}
+        
+        Point2D<T> center() const
+        {
+            return Point2D<T>((minimum.x + maximum.x) * .5f, (minimum.y + maximum.y) * .5f);
+        }
+
         /// Compute the bounding box over the provided points
         static BoundingBox compute(const std::vector<Point2D<T>>& points)
         {

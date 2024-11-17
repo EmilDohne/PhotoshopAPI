@@ -70,24 +70,17 @@ template <typename T>
 struct LayeredFile
 {
 
-	/// \defgroup layers The Files' child layers
-	/// @{
+	/// layers The Files' child layers
 	std::vector<std::shared_ptr<Layer<T>>>& layers() noexcept { return m_Layers; }
-	const std::vector<std::shared_ptr<Layer<T>>>& layers() const noexcept { return m_Layers; }
 	void layers(std::vector<std::shared_ptr<Layer<T>>> layer_vec) noexcept { m_Layers = std::move(layer_vec); }
-	/// @}
 
-	/// \defgroup icc The files' ICC Profile
+	/// The files' ICC Profile
 	/// 
 	/// The ICC Profile defines the view transform on the file but does not 
 	/// actually apply any color conversion. If you wish to actually convert your
 	/// colors you should instead use something like `lcms2`
-	/// 
-	/// @{
-	ICCProfile& icc_profile() noexcept { return m_ICCProfile; }
 	ICCProfile icc_profile() const noexcept { return m_ICCProfile; }
 	void icc_profile(ICCProfile profile) noexcept { m_ICCProfile = std::move(profile); }
-	/// @} 
 
 	/// \defgroup dpi The files' dots per inch (dpi) resolution
 	/// @{

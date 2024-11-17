@@ -9,8 +9,7 @@ endif()
 # --------------------------------------------------------------------------
 # Configurable options
 
-option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
-option(PSAPI_BUILD_OIIO "Include OpenImageIO in the builds. This is required for extracting image data from smart objects" ON)
+option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI, currently must be on as we dont create a dynamic library target" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
@@ -33,56 +32,42 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-# Set up our toolchain
+
+# Set up our toolchain using the local vcpkg, gets the 
 # --------------------------------------------------------------------------
 
-# Here we add support for OpenImageIO which is used for smart object image data extraction.
-# This isn't strictly required. OpenImageIO may be passed externally rather than through the 
-# vcpkg submodule. Users can provide an external toolchain file with DCMAKE_TOOLCHAIN_FILE
-# which will essentially disable the building of OIIO locally. If DCMAKE_TOOLCHAIN_FILE is passed
-# and PSAPI_BUILD_OIIO is true we first check whether the toolchain file defines OpenImageIO as a
-# target and otherwise build it locally.
-if (PSAPI_BUILD_OIIO)
-    find_package(OpenImageIO CONFIG QUIET)
-
-    if (TARGET OpenImageIO::OpenImageIO AND OpenImageIO_VERSION VERSION_GREATER "2.5")
-        # OpenImageIO is found and meets version requirements
-    elseif (DEFINED CMAKE_TOOLCHAIN_FILE)
-        # Toolchain file specified, attempt to find OpenImageIO within it
-        if (NOT TARGET OpenImageIO::OpenImageIO OR OpenImageIO_VERSION VERSION_LESS "2.5")
-            message(STATUS "OpenImageIO version > 2.5 not found in toolchain. Attempting to build locally...")
-        
-            # Add vcpkg submodule to build OpenImageIO if not available
-            include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
-        
-            # Try finding OpenImageIO after including vcpkg
-            find_package(OpenImageIO CONFIG REQUIRED)
-        else()
-            message(STATUS "OpenImageIO found in toolchain file.")
-            get_target_property(OIIO_LOCATION OpenImageIO::OpenImageIO IMPORTED_LOCATION)
-            if (OIIO_LOCATION)
-                message(STATUS "OpenImageIO found at ${OIIO_LOCATION}")
-            else()
-                message(WARNING "Could not retrieve OpenImageIO location.")
-            endif()
-        endif()
-    else()
-        # No toolchain file provided, default to building OpenImageIO locally via vcpkg
-        include("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
-        find_package(OpenImageIO CONFIG REQUIRED)
-    endif()
+# Include the local vcpkg toolchain, if specified
+if(NOT DEFINED VCPKG_ROOT)
+    message(STATUS "Using default VCPKG root path")
+else()
+    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+    message(STATUS "Using VCPKG root: ${VCPKG_ROOT}")
 endif()
 
+# Ensure the toolchain file is used if specified
+if(DEFINED CMAKE_TOOLCHAIN_FILE)
+    include("${CMAKE_TOOLCHAIN_FILE}")
+endif()
 
-# Add thirdparty libraries
-# --------------------------------------------------------------------------
-
+# Here we add support for OpenImageIO which is used for smart object image data extraction.
+find_package(OpenImageIO CONFIG REQUIRED)
 
 # Add libdeflate for zip compression and decompression
 find_package(libdeflate CONFIG REQUIRED)
 
+# Eigen is used to construct e.g. homographies for applying non-affine transforms
 find_package(Eigen3 CONFIG REQUIRED)
 
+# fmt library for formatting and logging.
+find_package(fmt CONFIG REQUIRED)
+
+# UUID for storing e.g. uuids of smart objects
+find_package(stduuid CONFIG REQUIRED)
+
+
+
+# Add thirdparty libraries
+# --------------------------------------------------------------------------
 
 # Add mio for memory-mapped IO files
 add_subdirectory (thirdparty/mio)
@@ -109,12 +94,6 @@ set (SIMDUTF_TESTS OFF)
 set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
-
-# fmt library for formatting and logging.
-find_package(fmt CONFIG REQUIRED)
-
-# UUID for storing e.g. uuids of smart objects
-find_package(stduuid CONFIG REQUIRED)
 
 # JSON module for parsing of Descriptors
 add_subdirectory(thirdparty/json)

@@ -53,55 +53,38 @@ namespace SmartObject
 		/// \param warp The warp points in scanline order.
 		/// \param u_dims The dimensions across the u (x)
 		/// \param v_dims The dimensions across the v (y)
-		Warp(std::vector<Geometry::Point2D<double>> warp, size_t u_dims, size_t v_dims)
-		{
-			Warp::validate_u_v_dims(u_dims, v_dims);
-
-			if (u_dims == 4 && v_dims == 4)
-			{
-				m_WarpType = WarpType::normal;
-			}
-			else
-			{
-				m_WarpType = WarpType::quilt;
-			}
-
-			m_WarpPoints = warp;
-			m_uDims = u_dims;
-			m_vDims = v_dims;
-
-			auto bbox = Geometry::BoundingBox<double>::compute(m_WarpPoints);
-			m_Bounds[0] = bbox.minimum.y;
-			m_Bounds[1] = bbox.minimum.x;
-			m_Bounds[2] = bbox.maximum.y;
-			m_Bounds[3] = bbox.maximum.x;
-		}
+		Warp(std::vector<Geometry::Point2D<double>> warp, size_t u_dims, size_t v_dims);
 
 		/// Check if the warp struct is valid, for now returns whether the warp points hold any data
 		bool valid() { return m_WarpPoints.size() > 0; }
 
 		/// Generate a Mesh from our warp structure, this is primarily used for directly
-		/// visualizing the points. 
+		/// visualizing the points. To get a subdivided Bezier representation use `surface().mesh()`
 		Geometry::Mesh<double> mesh() const;
 
 		/// Generate a bezier surface from this warp structure. This can be used e.g. for rendering
 		Geometry::BezierSurface surface() const;
+
+		/// Check if the warp resolves to a no-op. This means that all points for a given row/column
+		/// lie on a single line and the non-affine transform is also a no op. If this is the case applying
+		/// a warp can be skipped
+		bool no_op() const;
 
 		/// Apply the warp by warping the `image` into the `buffer` using the locally stored warp description. 
 		/// The `buffer` passed should match the general resolution of the warp points. So if e.g. the warp points 
 		/// are from { 0 - 4000, 0 - 2000 } the `buffer` parameter should cover these.
 		/// If this isn't the case the function won't fail but the image will not contain the full warped picture.
 		/// 
-		/// \param buffer The buffer to render into
-		/// \param image  The image do warp using the local warp struct
-		/// \param warp_mesh  A mesh to apply the warp with, mainly to be used as an optimization step if 
-		///					  you wish to apply the warp to multiple channels at the same time to only calculate the 
-		///				      mesh construction once. Can be gotten using `SmartObjectWarp::mesh()`
-		/// \param resolution The resolution of warp geometry. Since we first convert the BezierSurface into a Mesh 
-		///					  this parameter dictates how many pixels apart each subdivision line should be. Do note
-		///					  that increasing this massively does not necessarily give a better result. Defaults to `25`.
+		/// \param buffer		The buffer to render into
+		/// 
+		/// \param image		The image do warp using the local warp struct
+		/// 
+		/// \param warp_mesh	A mesh to apply the warp with, mainly to be used as an optimization step if 
+		///						you wish to apply the warp to multiple channels at the same time to only calculate the 
+		///						mesh construction once. Can be gotten using `SmartObjectWarp::mesh()`
+		/// 
 		template <typename T>
-		void apply(Render::ImageBuffer<T> buffer, Render::ImageBuffer<T, true> image, const Geometry::Mesh<double>& warp_mesh, size_t resolution = 50) const
+		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, const Geometry::Mesh<double>& warp_mesh) const
 		{
 			PSAPI_PROFILE_FUNCTION();
 
@@ -156,16 +139,16 @@ namespace SmartObject
 		/// are from { 0 - 4000, 0 - 2000 } the `buffer` parameter should cover these.
 		/// If this isn't the case the function won't fail but the image will not contain the full warped picture.
 		/// 
-		/// \param buffer The buffer to render into
-		/// \param image  The image do warp using the local warp struct
-		/// \param resolution The resolution of warp geometry. Since we first convert the BezierSurface into a Mesh 
-		///					  this parameter dictates how many pixels apart each subdivision line should be. Do note
-		///					  that increasing this massively does not necessarily give a better result. Defaults to `25`.
+		/// \param buffer		The buffer to render into
+		/// \param image		The image do warp using the local warp struct
+		/// \param resolution	The resolution of warp geometry. Since we first convert the BezierSurface into a Mesh 
+		///						this parameter dictates how many pixels apart each subdivision line should be. Do note
+		///						that increasing this massively does not necessarily give a better result. Defaults to `25`.
 		template <typename T>
-		void apply(Render::ImageBuffer<T> buffer, Render::ImageBuffer<T, true> image, size_t resolution = 50) const
+		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, size_t resolution = 25) const
 		{
 			auto warp_surface = surface();
-			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution, m_NonAffineTransform);
+			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution, m_Transform, m_NonAffineTransform);
 			apply(buffer, image, warp_mesh, resolution);
 		}
 
@@ -247,6 +230,9 @@ namespace SmartObject
 		/// Get a reference to the warp point at the given u and v index. Checks for out of bounds index.
 		Geometry::Point2D<double>& point(size_t u_idx, size_t v_idx);
 
+		/// Get the points this warp struct holds
+		inline std::vector<Geometry::Point2D<double>> points() const { return m_WarpPoints; }
+
 		/// Get the dimensions/subdivisions across the u (x) axis.
 		inline size_t u_dimensions() const noexcept { return m_uDims; };
 
@@ -265,6 +251,36 @@ namespace SmartObject
 		///			 `consider_bezier` is set to true.
 		Geometry::BoundingBox<double> bounds(bool consider_bezier = true) const;
 
+		/// Retrieve the affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}
+		/// These represent the corner coordinates of the quad that describes the transformation (move, rotate, scale and shear).
+		/// 
+		/// All the opposing lines of this quad are guaranteed to be parallel unlike the non-affine transform.
+		/// 
+		/// This represents the following step in the transformation pipeline:
+		/// 
+		/// Full image -> **Affine transform** -> Non-affine transform -> Warp
+		inline const std::array<Geometry::Point2D<double>, 4> affine_transform() const { return m_Transform; }
+
+		/// Set the affine transform for the SmartObjectWarp. The opposing sides of the quad formed by the four points
+		/// must be parallel. It is recommended to use the transformation functions on the SmartObjectLayer such as
+		/// `move()` `rotate()` `scale()` instead of modifying the quad directly for better and more intuitive control.
+		void affine_transform(
+			Geometry::Point2D<double> top_left,
+			Geometry::Point2D<double> top_right,
+			Geometry::Point2D<double> bot_left,
+			Geometry::Point2D<double> bot_right);
+
+		/// Retrieve the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
+		/// If no non-affine transform is present these are in a [0 - 1] unit square, pushing e.g. the top left and top right 
+		/// outwards would represent a perspective transform.
+		inline const std::array<Geometry::Point2D<double>, 4>& non_affine_transform() const { return m_NonAffineTransform; };
+
+		/// Retrieve the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
+		/// If no non-affine transform is present these are in a [0 - 1] unit square, pushing e.g. the top left and top right 
+		/// outwards would represent a perspective transform.
+		inline void non_affine_transform(std::array<Geometry::Point2D<double>, 4> transform) { m_NonAffineTransform = transform; };
+
+		bool operator==(const Warp& other);
 
 		// Internal API setters and getters operating on the low level structures. The users can use them but its highly
 		// discouraged unless they have extensive knowledge of how they work and how they are to be modified.
@@ -273,91 +289,86 @@ namespace SmartObject
 
 		/// For internal API use:
 		/// Create a "warp"/"quiltWarp" descriptor from this class ready to be stored on a PlacedLayer or PlacedLayerData tagged block
-		Descriptors::Descriptor serialize() const;
-
+		Descriptors::Descriptor _serialize() const;
 
 		/// For internal API use:
 		/// Create the transform and non-affine transform descriptors
-		std::tuple<Descriptors::List, Descriptors::List> generate_transform_descriptors(std::array<Geometry::Point2D<double>, 4> transform_) const;
+		std::tuple<Descriptors::List, Descriptors::List> _generate_transform_descriptors() const;
 
 		/// For internal API use:
 		/// Serialize the common parts between both quilt and normal warps
-		void serialize_common(Descriptors::Descriptor& warp_descriptor) const;
+		void _serialize_common(Descriptors::Descriptor& warp_descriptor) const;
 
 		/// For internal API use:
 		/// 
 		/// Create an empty "warp" descriptor from this class. This is to be used if the actual warp type
 		/// is a quilt warp. Photoshop, if the warp is a "quiltWarp" stores a default initialized (but with the given
 		/// width and height) "warp" descriptor to store after
-		static Descriptors::Descriptor serialize_default(size_t width, size_t height);
-
+		static Descriptors::Descriptor _serialize_default(size_t width, size_t height);
 
 		/// For internal API use:
 		/// Deserialize the SmartObjectWarp from a warp descriptor. In the context 
 		/// of the smart object this would be at the "warp" key.
-		static Warp deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp);
+		static Warp _deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp);
 		
 		/// For internal API use:
 		/// Deserialize the SmartObjectWarp from a warp descriptor. In the context 
 		/// of the smart object this would be at the "warp" key.
-		static Warp deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp);
+		static Warp _deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp);
+
+		/// For internal API use:
+		///
+		/// Generates an affine transform mesh from the descriptor.
+		static std::array<Geometry::Point2D<double>, 4> _generate_affine_transform(const Descriptors::List& transform);
 
 		/// For internal API use:
 		///
 		/// Generates a normalized non-affine transformation mesh described by the transform and non affine transform
 		/// descriptors. Unlike the original transform, a no-op would be stored as a quad in the 0-1 space.
 		/// These are then later applied as a homography to the geometric mesh.
-		static std::array<Geometry::Point2D<double>, 4> generate_non_affine_mesh(const Descriptors::List& transform, const Descriptors::List& non_affine_transform);
-
-		/// For internal API use:
-		/// Set the non-affine mesh of the warp.
-		void non_affine_mesh(std::array<Geometry::Point2D<double>, 4> non_affine_transform_mesh);
-
-		/// For internal API use:
-		/// Get the non-affine mesh of the warp.
-		std::array<Geometry::Point2D<double>, 4> non_affine_mesh() const;
+		static std::array<Geometry::Point2D<double>, 4> _generate_non_affine_transform(const Descriptors::List& transform, const Descriptors::List& non_affine_transform);
 
 		/// For internal API use:
 		/// Set the warp style ("warpCustom" or "warpNone")
-		void warp_style(std::string style);
+		void _warp_style(std::string style);
 
 		/// For internal API use:
 		/// Set the bounds using the bounding box
-		void warp_bounds(Geometry::BoundingBox<double> bounds);
+		void _warp_bounds(Geometry::BoundingBox<double> bounds);
 
 		/// For internal API use:
 		/// Set the warp value, unsure where and how this is used, usually 0.0f
-		void warp_value(double value);
+		void _warp_value(double value);
 
 		/// For internal API use:
 		/// Set the warp perspective value, unsure where and how this is used, usually 0.0f
-		void warp_perspective(double value);
+		void _warp_perspective(double value);
 
 		/// For internal API use:
 		/// Set the warp perspective other? value, unsure where and how this is used, usually 0.0f
-		void warp_perspective_other(double value);
+		void _warp_perspective_other(double value);
 
 		/// For internal API use:
 		/// Set the warp rotate value, either "Hrzn" or "Vrtc"
-		void warp_rotate(std::string rotate);
+		void _warp_rotate(std::string rotate);
 
 		/// For internal API use:
 		/// The positions of the quilt slices in terms of coordinates in the original image.
 		/// if a slice is needed in the middle for example for an image with a width of 5000px
 		/// the slice coordinate would be 2500 and the whole slices vect would be {0, 2500, 5000}
-		void quilt_slices_x(std::vector<double> slices);
+		void _quilt_slices_x(std::vector<double> slices);
 
 		/// For internal API use:
 		/// The positions of the quilt slices in terms of coordinates in the original image.
 		/// if a slice is needed in the middle for example for an image with a height of 5000px
 		/// the slice coordinate would be 2500 and the whole slices vect would be {0, 2500, 5000}
-		void quilt_slices_y(std::vector<double> slices);
+		void _quilt_slices_y(std::vector<double> slices);
 
 		/// For internal API use:
 		/// Set the type of warp. The two valid options are 'quilt' and 'normal' where normal is a 4x4 grid
 		/// and quilt is anything beyond that (resolutions under 4x4 are not supported).
-		void warp_type(WarpType type);
-		WarpType warp_type() const;
+		void _warp_type(WarpType type);
+		WarpType _warp_type() const;
 
 	private:
 
@@ -378,8 +389,27 @@ namespace SmartObject
 		/// going with the above example this would be {0, 0, 2000, 4000}
 		std::array<double, 4> m_Bounds = { 0, 0, 0, 0 };
 
-		/// Store the non affine transform as a geometric mesh. This transform
-		/// is stored in a way that if it was a no op it would be made up of 
+		/// Store the affine transform as a geometric mesh, this is the intermediate
+		/// step of going from the full res warp to the non-affine transformation.
+		/// Unlike the non-affine transform these are in actual real-world coordinates
+		/// such that the quad drawn by this transform represents (minus the non-affine 
+		/// transform) the actual output location.
+		/// This transform accounts for translation, scaling, rotation and skew.
+		/// 
+		/// an example of a scaled transform for 9000x4000 pixel image scaled down to 
+		/// 4500x2000 would be:
+		/// 
+		/// { 0, 0    } { 4500, 0    }
+		/// { 0, 2000 } { 4500, 2000 }
+		std::array<Geometry::Point2D<double>, 4> m_Transform;
+
+		/// Store the non affine transform as a geometric mesh. 
+		/// 
+		/// Here we simply describe the perspective warp applied to a mesh and are along the normals.
+		/// So if we have a rotated transform, a negative offset along the x would mean that the points
+		/// move out along the line drawn by connecting the horizontal points.
+		/// 
+		/// This transform is stored in a way that if it was a no op it would be made up of 
 		/// 4 points that just describe a square. Therefore all transforms are 
 		/// relative to this 1x1 square. Below you can see what a no op would look
 		/// like
@@ -414,14 +444,14 @@ namespace SmartObject
 		std::vector<double> m_QuiltSlicesY;
 
 		/// Deserialize the common components between the quilt and normal warp
-		static void deserializeCommon(Warp& warpStruct, const Descriptors::Descriptor& warpDescriptor);
+		static void _deserialize_common(Warp& warpStruct, const Descriptors::Descriptor& warpDescriptor);
 
 		/// Validate the number of u and v dimensions making sure they form cubic bezier patches.
 		static void validate_u_v_dims(size_t u_dimensions, size_t v_dimensions);
 
 		// Overloads for serializing specific types
-		Descriptors::Descriptor serialize(quilt_warp) const;
-		Descriptors::Descriptor serialize(normal_warp) const;
+		Descriptors::Descriptor _serialize(quilt_warp) const;
+		Descriptors::Descriptor _serialize(normal_warp) const;
 
 		
 	};

@@ -43,6 +43,7 @@ namespace
 template <typename T>
 struct _ImageDataLayerType : public Layer<T>
 {
+
 	/// Alias for our storage data type
 	using storage_type = std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>;
 	using data_type = std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher>;
@@ -52,12 +53,6 @@ struct _ImageDataLayerType : public Layer<T>
 	_ImageDataLayerType(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
 		: Layer<T>(layerRecord, channelImageData, header) {};
 
-
-	/// \defgroup getters 
-	/// 
-	/// Access the image data either as a whole or only specific channels
-	/// 
-	/// @{
 
 	/// Get the total number of channels held by this image layer. This includes mask channels
 	size_t num_channels()
@@ -75,7 +70,7 @@ struct _ImageDataLayerType : public Layer<T>
 	///
 	/// \param channelID the channel ID to extract
 	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> get_channel(const Enum::ChannelID channelID, bool copy = true)
+	virtual std::vector<T> get_channel(const Enum::ChannelID channelID, bool copy = true)
 	{
 		if (channelID == Enum::ChannelID::UserSuppliedLayerMask)
 		{
@@ -99,7 +94,7 @@ struct _ImageDataLayerType : public Layer<T>
 	///
 	/// \param channelIndex the channel index to extract
 	/// \param copy whether to extract the channel by copying the data. If this is false the channel will no longer hold any image data!
-	std::vector<T> get_channel(const int16_t channelIndex, bool copy = true)
+	virtual std::vector<T> get_channel(const int16_t channelIndex, bool copy = true)
 	{
 		if (channelIndex == -2)
 		{
@@ -121,12 +116,8 @@ struct _ImageDataLayerType : public Layer<T>
 
 	/// Extract all the channels of the ImageLayer into an unordered_map. Includes the mask channel
 	/// 
-	/// \tparam ExecutionPolicy the execution policy to get the image data with
-	/// 
 	/// \param copy whether to extract the image data by copying the data. If this is false the channel will no longer hold any image data!
-	/// \param policy The execution policy for the image data decompression
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type get_image_data(bool copy = true, const ExecutionPolicy policy = std::execution::par)
+	virtual data_type get_image_data(bool copy = true)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher> imgData;
@@ -141,7 +132,7 @@ struct _ImageDataLayerType : public Layer<T>
 
 		// Preallocate the data in parallel for some slight speedups
 		std::mutex imgDataMutex;
-		std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
+		std::for_each(std::execution::par_unseq, m_ImageData.begin(), m_ImageData.end(),
 			[&](auto& pair) {
 				auto& [key, value] = pair;
 				auto vec = std::vector<T>(value->m_OrigByteSize / sizeof(T));
@@ -156,65 +147,41 @@ struct _ImageDataLayerType : public Layer<T>
 		// blocks to parallelize across with all of our threads.
 		size_t numThreads = std::thread::hardware_concurrency() / m_ImageData.size();
 		numThreads = std::min(static_cast<size_t>(1), numThreads);
-		if constexpr (std::is_same_v<ExecutionPolicy, std::execution::sequenced_policy>)
-		{
-			numThreads = 1;
-		}
 
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
 		std::mutex exceptionMutex;
 		std::vector<std::string> exceptionMessages;
 
-		if (copy)
-		{
-			std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
-				[&](auto& pair)
+		std::for_each(std::execution::par_unseq, m_ImageData.begin(), m_ImageData.end(),
+			[&](auto& pair)
+			{
+				try
 				{
-					try
+					auto& [key, value] = pair;
+					// Get the data using the preallocated buffer
+					if (copy)
 					{
-						auto& [key, value] = pair;
-						// Get the data using the preallocated buffer
 						value->template getData<T>(std::span<T>(imgData[key]), numThreads);
 					}
-					catch (std::runtime_error& e)
+					else
 					{
-						exceptionOccurred = true;
-						std::lock_guard<std::mutex> lock(exceptionMutex);
-						exceptionMessages.push_back(e.what());
+						value->template extractData<T>(std::span<T>(imgData[key]), numThreads);
 					}
-					catch (...)
-					{
-						exceptionOccurred = true;
-						std::lock_guard<std::mutex> lock(exceptionMutex);
-						exceptionMessages.push_back("Unknown exception caught.");
-					}
-				});
-		}
-		else
-		{
-			std::for_each(policy, m_ImageData.begin(), m_ImageData.end(),
-				[&](auto& pair)
+				}
+				catch (std::runtime_error& e)
 				{
-					try
-					{
-						// Get the data using the preallocated buffer
-						pair.second->template extractData<T>(std::span<T>(imgData[pair.first]), numThreads);
-					}
-					catch (std::runtime_error& e)
-					{
-						exceptionOccurred = true;
-						std::lock_guard<std::mutex> lock(exceptionMutex);
-						exceptionMessages.push_back(e.what());
-					}
-					catch (...)
-					{
-						exceptionOccurred = true;
-						std::lock_guard<std::mutex> lock(exceptionMutex);
-						exceptionMessages.push_back("Unknown exception caught.");
-					}
-				});
-		}
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back(e.what());
+				}
+				catch (...)
+				{
+					exceptionOccurred = true;
+					std::lock_guard<std::mutex> lock(exceptionMutex);
+					exceptionMessages.push_back("Unknown exception caught.");
+				}
+			});
 
 
 		if (exceptionOccurred)
@@ -232,19 +199,13 @@ struct _ImageDataLayerType : public Layer<T>
 	/// Get a view over the image channels stored by the layer
 	///
 	/// This method is primarily intended for near-zero cost access to e.g. the channels since `get_image_data()` will
-	/// first extract the channels.
-	const storage_type& image_data() const
+	/// first decompress the channels. Any channels that you actually want to use will have to be extracted later down 
+	/// the line
+	virtual const storage_type& image_data() const
 	{
 		return m_ImageData;
 	}
 
-	/// @}
-
-	/// \defgroup setter 
-	/// 
-	/// Set the image data either as a whole or only specific channels
-	/// 
-	/// @{
 
 	/// Set or replace the data for a certain channel without rebuilding the whole ImageLayer. If the channel provided
 	/// exists in m_ImageData we replace it, if it doesn't we insert it. 
@@ -253,7 +214,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param channelID	The channel to insert or replace, must be valid for the given colormode. I.e. cannot be Enum::ChannelID::Cyan for an RGB layer/file
 	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
-	void set_channel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	virtual void set_channel(const Enum::ChannelID channelID, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		if (!channelValidForColorMode(channelID, Layer<T>::m_ColorMode))
@@ -289,7 +250,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// \param index		The index to insert or replace, must be valid for the given colormode. I.e. cannot be 4 for an RGB layer/file
 	/// \param data			The data to write to the channel, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as the other channels! Defaults to ZipPrediction
-	void set_channel(const int16_t index, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
+	virtual void set_channel(const int16_t index, const std::span<const T> data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		auto idinfo = Enum::toChannelIDInfo(index, Layer<T>::m_ColorMode);
 		this->set_channel(idinfo.id, data, compression);
@@ -302,9 +263,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// 
 	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
-	/// \param policy		The execution policy for the channel creation
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void set_image_data(std::unordered_map<int16_t, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	virtual void set_image_data(std::unordered_map<int16_t, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -312,7 +271,7 @@ struct _ImageDataLayerType : public Layer<T>
 		std::vector<std::string> exceptionMessages;
 
 		m_ImageData.clear();
-		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](const auto& pair)
 			{
 				auto& [key, data] = pair;
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
@@ -350,9 +309,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// 
 	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
-	/// \param policy		The execution policy for the channel creation
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void set_image_data(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	virtual void set_image_data(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -360,7 +317,7 @@ struct _ImageDataLayerType : public Layer<T>
 		std::vector<std::string> exceptionMessages;
 
 		m_ImageData.clear();
-		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](const auto& pair)
 			{
 				auto& [key, data] = pair;
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
@@ -398,9 +355,7 @@ struct _ImageDataLayerType : public Layer<T>
 	/// 
 	/// \param data			The data to write to the layer, must have the same size as m_Width * m_Height
 	/// \param compression	The compression codec to use for writing to file, this does not have to be the same as other layers! Defaults to ZipPrediction
-	/// \param policy		The execution policy for the channel creation
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void set_image_data(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction, const ExecutionPolicy policy = std::execution::par)
+	virtual void set_image_data(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction)
 	{
 		// Construct variables for correct exception stack unwinding
 		std::atomic<bool> exceptionOccurred = false;
@@ -408,7 +363,7 @@ struct _ImageDataLayerType : public Layer<T>
 		std::vector<std::string> exceptionMessages;
 
 		m_ImageData.clear();
-		std::for_each(policy, data.begin(), data.end(), [&](const auto& pair)
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](const auto& pair)
 			{
 				auto& [key, data] = pair;
 				const auto dataSpan = std::span<const T>(data.begin(), data.end());
@@ -439,16 +394,13 @@ struct _ImageDataLayerType : public Layer<T>
 		}
 	}
 
-	/// @}
-
 protected:
 
 	/// Store the image data as a per-channel map to be used later using a custom hash function
 	storage_type m_ImageData;
 
 	/// Construct the ImageLayer, to be called by the individual constructors
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	void construct(data_type&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy)
+	void construct(data_type&& data, Layer<T>::Params& parameters)
 	{
 		PSAPI_PROFILE_FUNCTION();
 		Layer<T>::m_ColorMode = parameters.colormode;
@@ -487,7 +439,7 @@ protected:
 		}
 
 		// Construct an ImageChannel instance for each of the passed channels according to the given execution policy
-		std::for_each(policy, data.begin(), data.end(), [&](auto& pair)
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](auto& pair)
 			{
 				auto& [info, value] = pair;
 				// Channel sizes must match the size of the layer

@@ -539,6 +539,9 @@ namespace Render
 
     };
 
+
+	template <typename T>
+	using ConstImageBuffer = ImageBuffer<T, true>;
 }
 
 PSAPI_NAMESPACE_END

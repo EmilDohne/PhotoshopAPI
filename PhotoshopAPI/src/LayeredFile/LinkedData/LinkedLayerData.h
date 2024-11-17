@@ -187,6 +187,7 @@ struct LinkedLayerData
 	/// As we only apply this on write this can be changed as many times as wanted.
 	void type(LinkedLayerType type_) noexcept{ m_Type = type_; }
 
+
 private:
 	/// Store the image data as a per-channel map to be used later using a custom hash function
 	storage_type m_ImageData;
@@ -298,9 +299,23 @@ struct LinkedLayers
 		PSAPI_LOG_ERROR("LinkedLayers", "Unknown linked layer hash '%s' encountered", hash.c_str());
 	}
 
+
 	bool contains(std::string hash)
 	{
 		return m_LinkedLayerData.contains(hash);
+	}
+
+
+	bool contains_path(std::filesystem::path path)
+	{
+		for (const auto& [_hash, item] : m_LinkedLayerData)
+		{
+			if (item.path() == path)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/// Insert a linked layer from the given filepath returning a reference to it. This will read the file and either store or

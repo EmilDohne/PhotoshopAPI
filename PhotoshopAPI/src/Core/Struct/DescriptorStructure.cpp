@@ -39,9 +39,13 @@ namespace Descriptors
 		auto keySize = ReadBinaryData<uint32_t>(document);
 		std::vector<char> key;
 		if (keySize)
+		{
 			key = ReadBinaryArray<char>(document, keySize);
+		}
 		else
+		{
 			key = ReadBinaryArray<char>(document, 4u);
+		}
 
 		return std::string(key.begin(), key.end());
 	}
@@ -83,7 +87,9 @@ namespace Descriptors
 		for (const auto& [type, osKey] : Impl::descriptorKeys)
 		{
 			if (key == osKey)
+			{
 				return type;
+			}
 		}
 		PSAPI_LOG_ERROR("Descriptor", "Unable to retrieve a OS type from key '%c%c%c%c'", key[0], key[1], key[2], key[3]);
 		return Impl::OSTypes::RawData;
@@ -287,6 +293,10 @@ namespace Descriptors
 		else if (std::holds_alternative<UnitFloats>(value))
 		{
 			WriteDescriptorBaseType(document, std::get<UnitFloats>(value));
+		}
+		else if (std::holds_alternative<Reference>(value))
+		{
+			WriteDescriptorBaseType(document, std::get<Reference>(value));
 		}
 		else if (std::holds_alternative<Class>(value))
 		{
@@ -787,7 +797,7 @@ namespace Descriptors
 	// ---------------------------------------------------------------------------------------------------------------------
 	void RawData::write(File& document) const
 	{
-		if (m_Data.size() < std::numeric_limits<uint32_t>::max())
+		if (m_Data.size() > std::numeric_limits<uint32_t>::max())
 		{
 			PSAPI_LOG_ERROR("RawDataDescriptor", "Data size would overflow numeric limit of uint32_t");
 		}

@@ -497,6 +497,14 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 		PSAPI_LOG_ERROR("PlacedLayer", "Unknown version or descriptor version encountered. Version: %d. Descriptor Version: %d. Expected 4 and 16 for these respectively", m_Version, descriptorVersion);
 	}
 
+	auto tmp_offset = document.getOffset();
+	std::vector<uint8_t> data = ReadBinaryArray<uint8_t>(document, std::get<uint32_t>(m_Length) - 12);
+	std::ofstream fstream(fmt::format("C:/Users/emild/Desktop/linkedlayers/TaggedBlock_{}.bin", tmp_offset), std::ofstream::binary);
+	fstream.write(reinterpret_cast<const char*>(data.data()), data.size());
+	document.setOffset(tmp_offset);
+	
+
+
 	m_Descriptor.read(document);
 	// Manually skip to the end as this section may be padded
 	document.setOffset(offset + TaggedBlock::totalSize<uint64_t>());

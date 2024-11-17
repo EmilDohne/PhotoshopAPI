@@ -66,13 +66,9 @@ struct ImageLayer : public _ImageDataLayerType<T>
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
 	/// 
-	/// \tparam ExecutionPolicy the execution policy to generate the image layer with, at most parallelizes to imageData.size()
-	/// 
 	/// \param imageData the ImageData to associate with the channel
 	/// \param layerParameters The parameters dictating layer name, width, height, mask etc.
-	/// \param policy The execution policy for the image data compression
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	ImageLayer(std::unordered_map<int16_t, std::vector<T>>&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy = std::execution::par) 
+	ImageLayer(std::unordered_map<int16_t, std::vector<T>>&& data, Layer<T>::Params& parameters) 
 	{
 		// Change the data from being int16_t mapped to instead being mapped to a ChannelIDInfo so we can forward it
 		// to construct
@@ -89,7 +85,7 @@ struct ImageLayer : public _ImageDataLayerType<T>
 			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
 			remapped[info] = std::move(value);
 		}
-		_ImageDataLayerType<T>::construct(std::move(remapped), parameters, policy);
+		_ImageDataLayerType<T>::construct(std::move(remapped), parameters);
 	}
 
 	/// Initialize our imageLayer by first parsing the base Layer instance and then moving

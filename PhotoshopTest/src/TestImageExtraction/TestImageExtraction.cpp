@@ -189,24 +189,6 @@ TEST_CASE("Extract mask channel from group")
 }
 
 
-#ifndef ARM_MAC_ARCH
-	TEST_CASE("Double extract mask channel from group without copy"
-		* doctest::no_breaks(true)
-		* doctest::no_output(true)
-		* doctest::should_fail(true))
-	{
-		using namespace NAMESPACE_PSAPI;
-
-		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
-		auto groupLayerPtr = find_layer_as<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
-
-		std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask_data(false);
-		std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->get_mask_data(false);
-	
-	}
-#endif
-
-
 TEST_CASE("Double extract mask channel from group")
 {
 	using namespace NAMESPACE_PSAPI;
@@ -216,4 +198,6 @@ TEST_CASE("Double extract mask channel from group")
 
 	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask_data();
 	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->get_mask_data();
+
+	CHECK(groupMaskChannel == groupMaskChannel2);
 }

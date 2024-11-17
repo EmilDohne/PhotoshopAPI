@@ -458,18 +458,26 @@ namespace Geometry
         /// generated mesh is quadrilateral.
         /// 
         /// The non affine transform describes rectangle with normalized positions 
-        Mesh(const std::vector<Point2D<T>>& points, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
+        Mesh(const std::vector<Point2D<T>>& points, const std::array<Point2D<T>, 4> affine_transform, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
         {
-            initialize_mesh(points, non_affine_transform, x_divisions, y_divisions);
+            initialize_mesh(points, affine_transform, non_affine_transform, x_divisions, y_divisions);
         }
 
         Mesh(const std::vector<Point2D<T>>& points, size_t x_divisions, size_t y_divisions)
         {
+			auto bbox = BoundingBox<T>::compute(points);
+
+			std::array<Point2D<T>, 4> affine_transform = {
+				Point2D<T>{bbox.minimum.x, bbox.minimum.y}, Point2D<T>{bbox.maximum.x, bbox.minimum.y},
+				Point2D<T>{bbox.minimum.x, bbox.maximum.y}, Point2D<T>{bbox.maximum.x, bbox.maximum.y}
+			};
+
             std::array<Point2D<T>, 4> non_affine_transform = {
                 Point2D<T>{static_cast<T>(0), static_cast<T>(0)}, Point2D<T>{static_cast<T>(1), static_cast<T>(0)},
                 Point2D<T>{static_cast<T>(0), static_cast<T>(1)}, Point2D<T>{static_cast<T>(1), static_cast<T>(1)}
             };
-            initialize_mesh(points, non_affine_transform, x_divisions, y_divisions);
+
+            initialize_mesh(points, affine_transform, non_affine_transform, x_divisions, y_divisions);
         }
 
         std::vector<Point2D<T>> points() const
@@ -621,8 +629,9 @@ namespace Geometry
             rebuild_octree();
         }
 
+
         /// Apply a 3x3 transformation matrix to the mesh, rebuilding the acceleration structure
-        void transform(const Eigen::Matrix<T, 3, 3>& matrix, bool recalculate_bbox = true, bool recalulate_octree = true) 
+        void transform(const Eigen::Matrix<T, 3, 3>& matrix, bool recalculate_bbox = true, bool recalculate_octree = true) 
         {
             for (auto& vertex : m_Vertices) 
             {
@@ -650,7 +659,7 @@ namespace Geometry
             if (recalculate_bbox) {
                 rebuild_bbox();
             }
-            if (recalulate_octree) {
+            if (recalculate_octree) {
                 rebuild_octree();
             }
         }
@@ -800,8 +809,54 @@ namespace Geometry
             return p0_same && p1_same && p2_same && p3_same;
         }
 
+
+        void _initialize_apply_transforms(BoundingBox<T> bbox, std::array<Point2D<T>, 4> affine_transform, std::array<Point2D<T>, 4> non_affine_transform)
+        {
+			// Apply the non affine transform in the form of a homography matrix recalculating the bounding box
+			// during the transformation
+			if (!non_affine_transform_is_noop(non_affine_transform))
+			{
+				std::array<Point2D<T>, 4> source_transform = {
+					Point2D<T>(0, 0), Point2D<T>(1, 0),
+					Point2D<T>(0, 1), Point2D<T>(1, 1)
+				};
+
+				auto bbox_size = m_BoundingBox.size();
+
+				source_transform[0] *= bbox_size;
+				source_transform[1] *= bbox_size;
+				source_transform[2] *= bbox_size;
+				source_transform[3] *= bbox_size;
+
+				non_affine_transform[0] *= bbox_size;
+				non_affine_transform[1] *= bbox_size;
+				non_affine_transform[2] *= bbox_size;
+				non_affine_transform[3] *= bbox_size;
+
+				auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, non_affine_transform);
+				transform(homography_matrix, true, false);
+			}
+
+			// Apply the affine transform, we do this after due to how we store our non-affine transform
+			{
+				std::array<Point2D<T>, 4> source_transform = {
+					Point2D<T>(bbox.minimum.x, bbox.minimum.x), Point2D<T>(bbox.maximum.x, bbox.minimum.x),
+					Point2D<T>(bbox.minimum.x, bbox.maximum.x), Point2D<T>(bbox.maximum.x, bbox.maximum.x)
+				};
+
+				auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, affine_transform);
+                transform(homography_matrix, true, false);
+			}
+        }
+
         /// Initialize the mesh for a given number of points
-        void initialize_mesh(const std::vector<Point2D<T>>& points, std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
+        void initialize_mesh(
+            const std::vector<Point2D<T>>& points, 
+            std::array<Point2D<T>, 4> affine_transform,
+            std::array<Point2D<T>, 4> non_affine_transform, 
+            size_t x_divisions, 
+            size_t y_divisions
+        )
         {
             PSAPI_PROFILE_FUNCTION();
 
@@ -831,33 +886,7 @@ namespace Geometry
             }
             m_BoundingBox = bbox;
 
-            // Apply the non affine transform in the form of a homography matrix recalculating the bounding box
-            // during the transformation
-            if (!non_affine_transform_is_noop(non_affine_transform))
-            {
-                std::array<Point2D<T>, 4> source_transform = {
-                    Point2D<T>(0, 0), Point2D<T>(1, 0),
-                    Point2D<T>(0, 1), Point2D<T>(1, 1)
-                };
-
-                auto bbox_size = m_BoundingBox.size();
-
-                source_transform[0] *= bbox_size;
-                source_transform[1] *= bbox_size;
-                source_transform[2] *= bbox_size;
-                source_transform[3] *= bbox_size;
-
-                non_affine_transform[0] *= bbox_size;
-                non_affine_transform[1] *= bbox_size;
-                non_affine_transform[2] *= bbox_size;
-                non_affine_transform[3] *= bbox_size;
-
-                auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, non_affine_transform);
-                transform(homography_matrix, true, false);
-            }
-
-            // Generate our octree for faster traversal during the sampling
-            m_Octree = Octree<T, 16>(m_BoundingBox, 16);
+            _initialize_apply_transforms(bbox, affine_transform, non_affine_transform);
 
             // Create the half-edges and faces for each mesh
             m_Edges.reserve((x_divisions - 1) * (y_divisions - 1) * 4);    // 4 half-edges per quad
@@ -902,7 +931,8 @@ namespace Geometry
             // Finally link all the half edges, this connects all the opposites
             link_half_edges();
 
-            // Insert each face into the octree
+			// Generate our octree for faster traversal during the sampling
+			m_Octree = Octree<T, 16>(m_BoundingBox, 16);
             for (size_t i = 0; i < m_Faces.size(); ++i)
             {
                 m_Octree.insert(*this, i);
