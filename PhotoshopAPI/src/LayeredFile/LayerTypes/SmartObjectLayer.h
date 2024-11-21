@@ -637,10 +637,10 @@ private:
 				m_SmartObjectWarp.affine_transform(),
 				m_SmartObjectWarp.non_affine_transform()
 			);
-			_m_CachedSmartObjectWarpMesh = warp_mesh;
+			_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
 
 			// Generate a channel buffer that can fit the fully scaled warp
-			auto bbox = warp_mesh.bbox();
+			auto bbox = _m_CachedSmartObjectWarpMesh.bbox();
 			std::vector<T> channel_warp(bbox.width() * bbox.height());
 			Render::ImageBuffer<T> channel_warp_buffer(channel_warp, bbox.width(), bbox.height());
 
@@ -653,14 +653,14 @@ private:
 					const auto& orig_channel = pair.second;
 
 					Render::ConstImageBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
-					m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, warp_mesh);
+					m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
-					_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel<T>>(
+					_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
 						Enum::Compression::ZipPrediction,
 						channel_warp,
 						key,
-						bbox.width(),
-						bbox.height(),
+						static_cast<int32_t>(bbox.width()),
+						static_cast<int32_t>(bbox.height()),
 						Layer<T>::m_CenterX,
 						Layer<T>::m_CenterY
 					);

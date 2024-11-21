@@ -37,12 +37,10 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 # --------------------------------------------------------------------------
 
 # Include the local vcpkg toolchain, if specified
-if(NOT DEFINED VCPKG_ROOT)
-    message(STATUS "Using default VCPKG root path")
-else()
-    set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-    message(STATUS "Using VCPKG root: ${VCPKG_ROOT}")
-endif()
+set(VCPKG_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/vcpkg")
+set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
+message(STATUS "Using VCPKG root: ${VCPKG_ROOT}")
+
 
 # Ensure the toolchain file is used if specified
 if(DEFINED CMAKE_TOOLCHAIN_FILE)

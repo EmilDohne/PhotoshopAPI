@@ -909,7 +909,7 @@ namespace SmartObject
 	
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	bool Warp::operator==(const Warp& other)
+	bool Warp::operator==(const Warp& other) const
 	{
 		const auto other_pts = other.points();
 		const auto other_affine = other.affine_transform();
@@ -954,32 +954,35 @@ namespace SmartObject
 	// ---------------------------------------------------------------------------------------------------------------------
 	void Warp::affine_transform(Geometry::Point2D<double> top_left, Geometry::Point2D<double> top_right, Geometry::Point2D<double> bot_left, Geometry::Point2D<double> bot_right)
 	{
-		auto slope_edge_top = (top_right.x - top_left.x) / (top_right.y - top_left.y);
-		auto slope_edge_bot = (bot_right.x - bot_left.x) / (bot_right.y - bot_left.y);
+		auto calculate_slope = [](Geometry::Point2D<double> p1, Geometry::Point2D<double> p2) -> double 
+		{
+			return (p1.y != p2.y) ? (p2.x - p1.x) / (p2.y - p1.y) : std::numeric_limits<double>::infinity();
+		};
 
-		
+		auto slope_edge_top = calculate_slope(top_left, top_right);
+		auto slope_edge_bot = calculate_slope(bot_left, bot_right);
+
 		if (std::abs(slope_edge_bot - slope_edge_top) > 1e-6)
 		{
 			PSAPI_LOG_ERROR("Warp",
-				"Invalid affine transformation encountered, the line formed by top_left->top_right does not have the same slope"\
+				"Invalid affine transformation encountered, the line formed by top_left->top_right does not have the same slope"
 				" as the line formed by bot_left->bot_right within epsilon 1e-6. These lines must be perpendicular");
 		}
 
-		auto slope_edge_left  = (bot_left.x - top_left.x) / (bot_left.y - top_left.y);
-		auto slope_edge_right = (bot_right.x - top_right.x) / (bot_right.y - top_right.y);
+		auto slope_edge_left = calculate_slope(top_left, bot_left);
+		auto slope_edge_right = calculate_slope(top_right, bot_right);
 
 		if (std::abs(slope_edge_left - slope_edge_right) > 1e-6)
 		{
 			PSAPI_LOG_ERROR("Warp",
-				"Invalid affine transformation encountered, the line formed by top_left->top_right does not have the same slope"\
-				" as the line formed by bot_left->bot_right within epsilon 1e-6. These lines must be perpendicular");
+				"Invalid affine transformation encountered, the line formed by top_left->bot_left does not have the same slope"
+				" as the line formed by top_right->bot_right within epsilon 1e-6. These lines must be perpendicular");
 		}
 
 		m_Transform[0] = top_left;
 		m_Transform[1] = top_right;
 		m_Transform[2] = bot_left;
 		m_Transform[3] = bot_right;
-
 	}
 
 }

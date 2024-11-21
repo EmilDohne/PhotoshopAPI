@@ -61,7 +61,7 @@ struct ImageLayer : public _ImageDataLayerType<T>
 			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
 			remapped[info] = std::move(value);
 		}
-		_ImageDataLayerType<T>::construct(std::move(remapped), parameters, policy);
+		_ImageDataLayerType<T>::construct(std::move(remapped), parameters);
 	}
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.

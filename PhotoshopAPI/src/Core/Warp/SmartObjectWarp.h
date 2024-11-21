@@ -280,7 +280,7 @@ namespace SmartObject
 		/// outwards would represent a perspective transform.
 		inline void non_affine_transform(std::array<Geometry::Point2D<double>, 4> transform) { m_NonAffineTransform = transform; };
 
-		bool operator==(const Warp& other);
+		bool operator==(const Warp& other) const;
 
 		// Internal API setters and getters operating on the low level structures. The users can use them but its highly
 		// discouraged unless they have extensive knowledge of how they work and how they are to be modified.

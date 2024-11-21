@@ -91,21 +91,16 @@ struct LinkedLayerData
 	}
 
 
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0 >
-	data_type get_image_data(const ExecutionPolicy policy = std::execution::par) const
+	data_type get_image_data() const
 	{
 		PSAPI_PROFILE_FUNCTION();
 		data_type out;
 
-		auto threads = std::thread::hardware_concurrency() / m_ImageData.size();
-		threads = std::max(threads, 1);
-		if (policy == std::execution::seq)
-		{
-			threads = 1;
-		}
+		size_t threads = std::thread::hardware_concurrency() / m_ImageData.size();
+		threads = std::max(threads, static_cast<size_t>(1));
 		std::mutex mutex;
 
-		std::for_each(policy, m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
+		std::for_each(std::execution::par_unseq , m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;

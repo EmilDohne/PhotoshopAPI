@@ -257,7 +257,7 @@ namespace Descriptors
 		template <typename T>
 		const std::string_view to_string()
 		{
-			static_assert(false);
+			PSAPI_LOG_ERROR("Descriptors", "Invalid to_string() overload specified.");
 		}
 		template <>
 		const std::string_view to_string<Descriptor>() { return "Descriptor"; }
