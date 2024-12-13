@@ -10,6 +10,7 @@ endif()
 # Configurable options
 
 option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI, currently must be on as we dont create a dynamic library target" ON)
+option(PSAPI_USE_VCPKG "Build the extra dependencies using vckpg instead of system installed libraries" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
@@ -32,19 +33,12 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-
 # Set up our toolchain using the local vcpkg, gets the 
 # --------------------------------------------------------------------------
 
 # Include the local vcpkg toolchain, if specified
-set(VCPKG_ROOT "${PROJECT_SOURCE_DIR}/thirdparty/vcpkg")
-set(CMAKE_TOOLCHAIN_FILE "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "Vcpkg toolchain file")
-message(STATUS "Using VCPKG root: ${VCPKG_ROOT}")
-
-
-# Ensure the toolchain file is used if specified
-if(DEFINED CMAKE_TOOLCHAIN_FILE)
-    include("${CMAKE_TOOLCHAIN_FILE}")
+if (PSAPI_USE_VCPKG)
+    include("${PROJECT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
 
 # Here we add support for OpenImageIO which is used for smart object image data extraction.

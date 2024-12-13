@@ -57,6 +57,13 @@ uint64_t UnicodeString::calculateSize(std::shared_ptr<FileHeader> header /*= nul
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+const std::string UnicodeString::string() const noexcept
+{
+	return m_String;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 const std::string UnicodeString::getString() const noexcept
 {
 	return m_String;
@@ -178,11 +185,15 @@ void UnicodeString::read(File& document, const uint8_t padding)
 
 	// Calculate the required UTF8 size and perform the conversion
 	size_t expectedUtf8Len = simdutf::utf8_length_from_utf16le(utf16Data.data(), utf16Data.size());
-	m_String.resize(expectedUtf8Len);
-	if (!simdutf::convert_utf16le_to_utf8(utf16Data.data(), utf16Data.size(), m_String.data()))
+	std::vector<char> bytes(expectedUtf8Len);
+	if (!simdutf::convert_utf16le_to_utf8(utf16Data.data(), utf16Data.size(), bytes.data()))
 	{
 		PSAPI_LOG_ERROR("UnicodeString", "Invalid UnicodeString encountered at file position %zu, unable to parse it", document.getOffset() - numBytes);
 	}
+	// Remove any null characters from the vector as the string isnt expected to hold 
+	// it explicitly
+	bytes.erase(std::remove(bytes.begin(), bytes.end(), '\0'), bytes.end());
+	m_String = std::string(bytes.begin(), bytes.end());
 
 	// Skip the padding bytes (if any)
 	document.skip(FileSection::size() - sizeof(uint32_t) - numBytes);

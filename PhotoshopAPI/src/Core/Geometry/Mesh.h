@@ -845,7 +845,7 @@ namespace Geometry
 				};
 
 				auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, affine_transform);
-                transform(homography_matrix, true, false);
+                // transform(homography_matrix, true, false);
 			}
         }
 

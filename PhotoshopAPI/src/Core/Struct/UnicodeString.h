@@ -34,6 +34,7 @@ struct UnicodeString : public FileSection
 	bool operator==(const UnicodeString& other) const;
 
 	/// Retrieve the UTF8 representation of the struct
+	const std::string string() const noexcept;
 	const std::string getString() const noexcept;
 	const std::string_view getStringView() const noexcept;
 	/// Retrieve the UTF16LE representation of the struct

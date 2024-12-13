@@ -417,6 +417,8 @@ namespace SmartObject
 		}
 
 		Warp::_deserialize_common(warp, quilt_warp_descriptor);
+		auto affine_transform = Warp::_generate_affine_transform(transform);
+		warp.affine_transform(affine_transform[0], affine_transform[1], affine_transform[2], affine_transform[3]);
 		warp.non_affine_transform(Warp::_generate_non_affine_transform(transform, non_affine_transform));
 
 		return warp;

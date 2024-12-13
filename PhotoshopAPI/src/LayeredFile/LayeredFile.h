@@ -168,7 +168,8 @@ struct LayeredFile
 	/// to a layered file using the lrSectionDivider taggedBlock to identify layer breaks.
 	///
 	/// \param file The PhotoshopFile to transfer
-	LayeredFile(std::unique_ptr<PhotoshopFile> file)
+	/// \param file_path The path to the photoshop file
+	LayeredFile(std::unique_ptr<PhotoshopFile> file, std::filesystem::path file_path)
 	{
 		// Take ownership of document
 		std::unique_ptr<PhotoshopFile> document = std::move(file);
@@ -182,8 +183,12 @@ struct LayeredFile
 		m_ICCProfile = _Impl::read_icc_profile(document.get());
 		// Extract the DPI from the document, default to 72
 		m_DotsPerInch = _Impl::read_dpi(document.get());
+		if (document->m_LayerMaskInfo.m_AdditionalLayerInfo)
+		{
+			m_LinkedLayers = LinkedLayers<T>(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
+		}
 
-		m_Layers = _Impl::template build_layer_hierarchy<T>(std::move(document));
+		m_Layers = _Impl::template build_layer_hierarchy<T>(*this, std::move(document));
 		if (m_Layers.size() == 0)
 		{
 			PSAPI_LOG_ERROR("LayeredFile", "Read an invalid PhotoshopFile as it does not contain any layers. Is the only layer in the scene locked? This is not supported by the PhotoshopAPI");
@@ -582,8 +587,7 @@ struct LayeredFile
 					Enum::bitDepthToUint(psDocumentPtr->m_Header.m_Depth));
 			}
 		}
-		LayeredFile<T> layeredFile = { std::move(psDocumentPtr) };
-		return layeredFile;
+		return LayeredFile<T>({ std::move(psDocumentPtr), filePath });
 	}
 
 	/// \brief read and create a LayeredFile from disk

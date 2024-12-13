@@ -30,6 +30,38 @@ enum class LinkedLayerType
 };
 
 
+
+namespace _Impl
+{
+	/// Wrapper which creates a temporary image file for reading the data.
+	struct TempImageFile
+	{
+
+		TempImageFile(std::filesystem::path file_path)
+		{
+			m_FilePath = file_path;
+			std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(file_path);
+			if (!out)
+				return;  // error
+
+			std::vector<uint8_t> pixels(1);
+			OIIO::ImageSpec spec(1, 1, 1, OIIO::TypeDesc::UINT8);
+			out->open(file_path, spec);
+			out->write_image(OIIO::TypeDesc::UINT8, pixels.data());
+			out->close();
+		}
+
+		~TempImageFile()
+		{
+			std::filesystem::remove(m_FilePath);
+		}
+
+	private:
+		std::filesystem::path m_FilePath;
+	};
+}
+
+
 template <typename T>
 struct LinkedLayerData
 {
@@ -67,14 +99,53 @@ struct LinkedLayerData
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
 			auto oiio_in = OIIO::ImageInput::open(filepath.string(), nullptr, &memreader);
-			parse_oiio_input(std::move(oiio_in));
+			parse_oiio_input(std::move(oiio_in), filepath.string());
 		}
 		else
 		{
 			PSAPI_LOG_DEBUG("LinkedLayer", "Unable to construct file '%s' from memory as OpenImageIO doesn't support it. Falling back to reading the file again",
 				filepath.string().c_str());
 			auto oiio_in = OIIO::ImageInput::open(filepath);
-			parse_oiio_input(std::move(oiio_in));
+			parse_oiio_input(std::move(oiio_in), filepath.string());
+		}
+	}
+
+	LinkedLayerData(LinkedLayer::Data& data_block, std::filesystem::path photoshop_file_path)
+	{
+		// Since the data_block doesn't actually store a filepath we simply use the filepath 
+		// and treat it as relative to the photoshop file.
+		m_FilePath = photoshop_file_path.parent_path() / data_block.m_FileName.string();
+		m_Filename = data_block.m_FileName.string();
+		m_Hash = data_block.m_UniqueID;
+		m_RawData = std::move(data_block.m_RawFileBytes);
+
+		if (data_block.m_Type == LinkedLayer::Data::Type::Alias)
+		{
+			PSAPI_LOG_WARNING("LinkedLayerData",
+				"Unimplemented Alias type encountered while parsing file '%s', this likely represents a link to an asset library which is not yet supported.",
+				m_Filename.c_str());
+			return;
+		}
+
+		if (data_block.m_Type == LinkedLayer::Data::Type::External)
+		{
+			m_Type = LinkedLayerType::external;
+		}
+		else if (data_block.m_Type == LinkedLayer::Data::Type::Data)
+		{
+			m_Type = LinkedLayerType::data;
+		}
+
+		// This is a bit hacky but to trick oiio into giving us the input fileproxy we must actually have the file created.
+		// The struct is scoped so we don't have to worry about deleting it
+		if (!std::filesystem::exists(m_FilePath))
+		{
+			_Impl::TempImageFile tmp_file(m_FilePath);
+			initialize_from_psd();
+		}
+		else
+		{
+			initialize_from_psd();
 		}
 	}
 
@@ -104,7 +175,7 @@ struct LinkedLayerData
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;
-				std::vector<T> data = channel->getData(threads);
+				std::vector<T> data = channel->getData<T>(threads);
 				{
 					std::lock_guard<std::mutex> lock(mutex);
 					out[key] = std::move(data);
@@ -201,6 +272,40 @@ private:
 	std::string m_Hash;
 	LinkedLayerType m_Type;
 
+
+	/// Initialize the image from a psd handling reading/parsing from memory of the image data.
+	void initialize_from_psd()
+	{
+		auto _in = OIIO::ImageInput::create(m_FilePath);
+		if (_in && static_cast<bool>(_in->supports("ioproxy")))
+		{
+			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
+			auto oiio_in = OIIO::ImageInput::open(m_FilePath.string(), nullptr, &memreader);
+			parse_oiio_input(std::move(oiio_in), m_FilePath.string());
+		}
+		else
+		{
+			// Try to source the file although this will only succeed if the file is relative to the photoshop file.
+			auto base_dir = m_FilePath.parent_path();
+			PSAPI_LOG_WARNING("LinkedLayerData",
+				"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
+				m_Filename.c_str(), base_dir.string().c_str());
+
+			auto combined_path = base_dir / m_Filename;
+			if (!std::filesystem::exists(combined_path))
+			{
+				PSAPI_LOG_WARNING("LinkedLayerData",
+					"Unable to open linked file '%s', trying to access the image data for smart object layers related to this file will fail",
+					combined_path.string().c_str());
+
+				return;
+			}
+
+			auto oiio_in = OIIO::ImageInput::open(combined_path);
+			parse_oiio_input(std::move(oiio_in), combined_path.string());
+		}
+	}
+
 	/// Parse the imageinput from the given filepath into our m_ImageData populating it
 	/// \param input The imageinput to read from, either 
 	void parse_oiio_input(std::unique_ptr<OIIO::ImageInput> input, std::string filepath)
@@ -212,8 +317,8 @@ private:
 				OIIO::geterror().c_str());
 		}
 		const OIIO::ImageSpec& spec = input->spec();
-		m_Width = spec.width();
-		m_Height = spec.height();
+		m_Width = spec.width;
+		m_Height = spec.height;
 
 		const auto& channelnames = spec.channelnames;
 		int alpha_channel = spec.alpha_channel;
@@ -226,10 +331,10 @@ private:
 
 		// TODO: add support for non-rgb image data
 		std::array<Enum::ChannelIDInfo, 4> channelIDs = {
-			Enum::toChannelIDInfo(Enum::ChannelID::Red),
-			Enum::toChannelIDInfo(Enum::ChannelID::Green),
-			Enum::toChannelIDInfo(Enum::ChannelID::Blue),
-			Enum::toChannelIDInfo(Enum::ChannelID::Alpha)
+			Enum::toChannelIDInfo(Enum::ChannelID::Red, Enum::ColorMode::RGB),
+			Enum::toChannelIDInfo(Enum::ChannelID::Green, Enum::ColorMode::RGB),
+			Enum::toChannelIDInfo(Enum::ChannelID::Blue, Enum::ColorMode::RGB),
+			Enum::toChannelIDInfo(Enum::ChannelID::Alpha, Enum::ColorMode::RGB)
 		};
 
 		/// Extract the image data and store it in our m_ImageData
@@ -268,10 +373,16 @@ private:
 template <typename T>
 struct LinkedLayers
 {
-
-
 	LinkedLayers() = default;
-	LinkedLayers(const AdditionalLayerInfo& globalLayerInfo);
+	LinkedLayers(AdditionalLayerInfo& global_layer_info, std::filesystem::path psd_file_path)
+	{
+		auto linked_layer_block = global_layer_info.getTaggedBlock<LinkedLayerTaggedBlock>();
+		for (auto& layer_data : linked_layer_block->m_LayerData)
+		{
+			auto& hash = layer_data.m_UniqueID;
+			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(layer_data, psd_file_path);
+		}
+	}
 
 
 	/// Retrieve the LinkedLayer data at the given hash. Throws an error if the hash doesnt exist
@@ -292,15 +403,17 @@ struct LinkedLayers
 			return m_LinkedLayerData.at(hash);
 		}
 		PSAPI_LOG_ERROR("LinkedLayers", "Unknown linked layer hash '%s' encountered", hash.c_str());
+		return nullptr;
 	}
 
 
+	/// Check if the linked layers contain the given hash.
 	bool contains(std::string hash)
 	{
 		return m_LinkedLayerData.contains(hash);
 	}
 
-
+	/// Check if the linked layers contain the given filepath
 	bool contains_path(std::filesystem::path path)
 	{
 		for (const auto& [_hash, item] : m_LinkedLayerData)
@@ -325,16 +438,9 @@ struct LinkedLayers
 	/// \returns A reference to the LinkedLayerData we just created or an existing one
 	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, const std::string& hash, LinkedLayerType type = LinkedLayerType::Data)
 	{
-		if (m_LinkedLayerData.contains(hash))
-		{
-			// Increment the reference count for the given hash
-			++m_ReferenceCount[hash];
-		}
-		else
+		if (!m_LinkedLayerData.contains(hash))
 		{
 			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(filePath, hash);
-			// Increment the reference count for the given hash
-			++m_ReferenceCount[hash];
 		}
 		// Return a reference to the inserted/updated linked layer data
 		return m_LinkedLayerData[hash];
@@ -373,34 +479,9 @@ struct LinkedLayers
 		return insert(filePath, hash, type);
 	}
 
-	/// Remove a reference for the given hash, to be called if a smart object layer changes their content or 
-	/// gets removed from the file entirely. If the given string hash is not valid we raise an error.
-	/// 
-	/// \param hash The hash for the layer we are trying to remove the reference for
-	void remove_reference(std::string hash)
-	{
-		if (!m_ReferenceCount.contains(hash))
-		{
-			PSAPI_LOG_ERROR("LinkedLayers", "remove_reference called with invalid hash: '%s'", hash.c_str());
-		}
-		// Decrement the ref count and erase the items if we no longer hold any references to it
-		--m_ReferenceCount[hash];
-		if (m_ReferenceCount[hash] == 0)
-		{
-			m_LinkedLayerData.erase(hash);
-			m_ReferenceCount.erase(hash);
-		}
-	}
-
-
-
 private: 
-	/// Reference count for every layer, once this reaches zero we remove
-	/// the layer from m_LinkedLayerData
-	std::unordered_map<std::string, size_t> m_ReferenceCount;
 	std::unordered_map<std::string, std::shared_ptr<LinkedLayerData<T>>> m_LinkedLayerData;
 
 };
-
 
 PSAPI_NAMESPACE_END

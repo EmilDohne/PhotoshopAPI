@@ -140,7 +140,6 @@ struct Lr16TaggedBlock : TaggedBlock
 };
 
 
-
 // 32-bit files store this tagged block at the end of the layer and mask information section which contains the 
 // layer info section
 struct Lr32TaggedBlock : TaggedBlock
@@ -340,9 +339,9 @@ namespace LinkedLayer
 	{
 		enum class Type
 		{
-			Data,
-			External,
-			Alias
+			Data,		// Stored on the file
+			External,	// Linked externally
+			Alias		// Aliased, means the data is zero but not sure how to parse exactly.
 		};
 
 		Type m_Type = Type::Data;		// How the data is (or isnt) stored in the file
@@ -357,7 +356,7 @@ namespace LinkedLayer
 
 		std::optional<Date> m_Date;
 
-		std::vector<uint8_t> m_RawFileBytes;	// May be empty, this only appears on an External LinkedLayer
+		std::vector<uint8_t> m_RawFileBytes;	// May be empty, this only appears on an External/Data LinkedLayer
 
 		// Only available in version 5, 6 and 7 of the descriptor respectively
 		std::optional<UnicodeString> m_ChildDocumentID;
