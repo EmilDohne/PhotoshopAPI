@@ -135,7 +135,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 
 	/// Generate a SmartObjectLayer from a Photoshop File object. This is for internal uses and not intended to be used by users directly. Please use the other
 	/// constructors instead.
-	SmartObjectLayer(const LayeredFile<T>& file, const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
+	SmartObjectLayer(LayeredFile<T>& file, const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
 		: _ImageDataLayerType<T>(layerRecord, channelImageData, header)
 	{
 		// Local and global additional layer info in this case refer to the one stored on the individual layer and the one 
@@ -148,9 +148,9 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			{
 				auto descriptor = generate_placed_layer_data();
 				// Temporarily write the descriptor json to file so we can easily debug it.
-				std::ofstream file(fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/placed_layer_descriptor_{}_out.json", Layer<T>::m_LayerName));
-				file << descriptor.to_json().dump(4);
-				file.flush();
+				std::ofstream file_json(fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/placed_layer_descriptor_{}_out.json", Layer<T>::m_LayerName));
+				file_json << descriptor.to_json().dump(4);
+				file_json.flush();
 			}
 		}
 		else
@@ -158,22 +158,6 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			PSAPI_LOG_ERROR("SmartObject", "Internal Error: Expected smart object layer to contain an AdditionalLayerInfo section");
 		}
 	}
-
-
-	// Remove reference to object
-	~SmartObjectLayer()
-	{
-		if (!m_FilePtr)
-		{
-			PSAPI_LOG_WARNING("SmartObject", 
-				"Unable to remove reference count from LayeredFile because SmartObject was not linked." \
-				" This may lead to higher memory usage if you are frequently swapping out layers");
-		}
-
-		auto& linked_layers = m_FilePtr->linked_layers();
-		linked_layers.remove_reference(m_Hash);
-	}
-
 
 	/// Retrieve the warp object that is stored on this layer. 
 	SmartObject::Warp& warp() noexcept { return m_SmartObjectWarp; }
@@ -263,7 +247,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		const auto& linkedlayers = m_FilePtr->linked_layers();
 		const auto& layer = linkedlayers.at(m_Hash);
 
-		return layer.get_image_data();
+		return layer->get_image_data();
 	}
 
 
@@ -345,7 +329,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		}
 		const auto& linkedlayers = m_FilePtr->linked_layers();
 		const auto& layer = linkedlayers.at(m_Hash);
-		return layer.width();
+		return layer->width();
 	}
 
 	/// Retrieve the original image datas' height.
@@ -366,7 +350,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		}
 		const auto& linkedlayers = m_FilePtr->linked_layers();
 		const auto& layer = linkedlayers.at(m_Hash);
-		return layer.width();
+		return layer->height();
 	}
 
 
@@ -523,6 +507,9 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
 	{
 		// TODO: this function needs to compute the mask and image data separately as e.g. a mask channel could 
+		LayerRecord record{};
+		ChannelImageData image_data{};
+		return std::make_tuple(std::move(record), std::move(image_data));
 	}
 
 
@@ -631,9 +618,10 @@ private:
 		{
 			// Get the warp mesh at a resolution of 25 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
 			const auto& image_data = linked_layer->get_image_data();
-			auto warp_mesh = m_SmartObjectWarp.surface().mesh(
-				linked_layer->width() / 25, 
-				linked_layer->height() / 25, 
+			auto warp_surface = m_SmartObjectWarp.surface();
+			auto warp_mesh = warp_surface.mesh(
+				linked_layer->width() / 50,
+				linked_layer->height() / 50,
 				m_SmartObjectWarp.affine_transform(),
 				m_SmartObjectWarp.non_affine_transform()
 			);
@@ -641,8 +629,8 @@ private:
 
 			// Generate a channel buffer that can fit the fully scaled warp
 			auto bbox = _m_CachedSmartObjectWarpMesh.bbox();
-			std::vector<T> channel_warp(bbox.width() * bbox.height());
-			Render::ImageBuffer<T> channel_warp_buffer(channel_warp, bbox.width(), bbox.height());
+			std::vector<T> channel_warp(width() * height());
+			Render::ImageBuffer<T> channel_warp_buffer(channel_warp, width(), height());
 
 			std::for_each(std::execution::par, image_data.begin(), image_data.end(), [&](const auto& pair)
 				{
@@ -659,8 +647,8 @@ private:
 						Enum::Compression::ZipPrediction,
 						channel_warp,
 						key,
-						static_cast<int32_t>(bbox.width()),
-						static_cast<int32_t>(bbox.height()),
+						width(),
+						height(),
 						Layer<T>::m_CenterX,
 						Layer<T>::m_CenterY
 					);
@@ -763,7 +751,7 @@ private:
 			return;
 		}
 
-		m_Hash = descriptor.at<UnicodeString>("Idnt").getString();	// The identifier that maps back to the LinkedLayer
+		m_Hash = descriptor.at<UnicodeString>("Idnt").string();	// The identifier that maps back to the LinkedLayer
 
 		// These we all ignore for the time being, we store them locally and just rewrite them back out later
 		// This isn't necessarily in order
@@ -808,13 +796,11 @@ private:
 		
 		if (descriptor.contains("quiltWarp"))
 		{
-			warpStruct = SmartObject::Warp::deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
-			//renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
+			warpStruct = SmartObject::Warp::_deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
 		}
 		else
 		{
-			warpStruct = SmartObject::Warp::deserialize(warp, transform, non_affine_transform, SmartObject::Warp::normal_warp{});
-			//renderMesh(warpStruct, fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/warp_grid{}.jpg", name));
+			warpStruct = SmartObject::Warp::_deserialize(warp, transform, non_affine_transform, SmartObject::Warp::normal_warp{});
 		}
 		m_SmartObjectWarp = warpStruct;
 		
@@ -859,17 +845,17 @@ private:
 		// Store the warp, in the case of a quilt warp this would hold 2 descriptors
 		// with the "warp" descriptor just being default initialized
 		{
-			if (m_SmartObjectWarp.warp_type() == SmartObject::Warp::WarpType::quilt)
+			if (m_SmartObjectWarp._warp_type() == SmartObject::Warp::WarpType::quilt)
 			{
-				auto quilt_descriptor = m_SmartObjectWarp.serialize();
-				auto warp_descriptor = m_SmartObjectWarp.serialize_default(m_OriginalSize[0], m_OriginalSize[1]);
+				auto quilt_descriptor = m_SmartObjectWarp._serialize();
+				auto warp_descriptor = m_SmartObjectWarp._serialize_default(m_OriginalSize[0], m_OriginalSize[1]);
 			
 				placed_layer.insert("quiltWarp", quilt_descriptor);
 				placed_layer.insert("warp", warp_descriptor);
 			}
 			else
 			{
-				auto warp_descriptor = m_SmartObjectWarp.serialize();
+				auto warp_descriptor = m_SmartObjectWarp._serialize();
 
 				placed_layer.insert("warp", warp_descriptor);
 			}
@@ -912,96 +898,6 @@ private:
 	void decode_placed_layer(const std::shared_ptr<PlacedLayerTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
 	{
 		PSAPI_LOG_ERROR("SmartObject", "Parsing of the PlacedLayerTaggedBlock is currently unimplemented, this is likely due to trying to open an older file.");
-	}
-
-
-	void renderMesh(const SmartObject::Warp& warp, std::string filename)
-	{
-		auto bounds = warp.bounds();
-		auto height = bounds.size().y;
-		auto width = bounds.size().x;
-
-		auto surface = warp.surface();
-		auto subdivided_mesh = surface.mesh(100, 100, warp.non_affine_transform());
-		{
-			std::vector<T> pixels(height * width, 0);
-			auto buffer = Render::ImageBuffer<T>(pixels, width, height);
-			
-			/*Render::render_mesh<T>(
-				buffer,
-				Geometry::Mesh<double>(warp.m_SmartObject::WarpPoints, warp.u_dimensions(), warp.v_dimensions()),
-				255,
-				"C:/Windows/Fonts/arial.ttf",
-				true);*/
-			//Render::render_bezier_surface<T>(buffer, surface, 255, 100, 100);
-			Render::render_mesh<T>(buffer, subdivided_mesh, 255);
-
-			std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename);
-			if (!out)
-				return;  // error
-			OIIO::ImageSpec spec(width, height, 1, OIIO::TypeDesc::UINT8);
-			out->open(filename, spec);
-			out->write_image(OIIO::TypeDesc::UINT8, pixels.data());
-			out->close();
-		}
-
-		{
-			std::vector<T> pixels(height * width, 0);
-			auto buffer = Render::ImageBuffer<T>(pixels, width, height);
-
-			// Gradient buffer for left to right (U coordinate)
-			std::vector<T> u_coordinate_buffer(height * width);
-			size_t cellSize = 200;
-			for (size_t y = 0; y < height; ++y)
-			{
-				for (size_t x = 0; x < width; ++x)
-				{
-					// Determine the checkerboard color
-					bool isBlack = (x / cellSize + y / cellSize) % 2 == 0;
-					u_coordinate_buffer[y * width + x] = static_cast<T>(isBlack ? 255 : 0);
-				}
-			}
-			const auto u_buffer = Render::ImageBuffer<T, true>(u_coordinate_buffer, width, height);
-			warp.apply<T>(buffer, u_buffer, subdivided_mesh);
-
-			{
-				std::string filename_u = "C:/Users/emild/Desktop/linkedlayers/warp/warp_grid_u.jpg";
-				std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename_u);
-				if (!out)
-					return;  // error
-				OIIO::ImageSpec spec(width, height, 1, OIIO::TypeDesc::UINT8);
-				out->open(filename_u, spec);
-				out->write_image(OIIO::TypeDesc::UINT8, pixels.data());
-				out->close();
-			}
-		}
-		{
-			std::vector<T> pixels(height * width, 0);
-			auto buffer = Render::ImageBuffer<T>(pixels, width, height);
-
-			// Gradient buffer for top to bottom (V coordinate)
-			std::vector<T> v_coordinate_buffer(height * width);
-			for (size_t y = 0; y < height; ++y) {
-				for (size_t x = 0; x < width; ++x) {
-					// Linear interpolation for gradient
-					v_coordinate_buffer[y * width + x] = static_cast<T>((255 * y) / (height - 1));
-				}
-			}
-
-			const auto v_buffer = Render::ImageBuffer<T, true>(v_coordinate_buffer, width, height);
-			warp.apply<T>(buffer, v_buffer, subdivided_mesh);
-			{
-				std::string filename_v = "C:/Users/emild/Desktop/linkedlayers/warp/warp_grid_v.jpg";
-				std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(filename_v);
-				if (!out)
-					return;  // error
-				OIIO::ImageSpec spec(width, height, 1, OIIO::TypeDesc::UINT8);
-				out->open(filename_v, spec);
-				out->write_image(OIIO::TypeDesc::UINT8, pixels.data());
-				out->close();
-			}
-		}
-
 	}
 
 };

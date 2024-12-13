@@ -54,6 +54,13 @@ struct AdditionalLayerInfo : public FileSection
 		}
 		return std::nullopt;
 	}
+
+	template <typename T>
+	requires std::is_base_of_v<TaggedBlock, T>
+	std::shared_ptr<T> getTaggedBlock() const
+	{
+		return this->m_TaggedBlocks.getTaggedBlockView<T>();
+	}
 };
 
 PSAPI_NAMESPACE_END

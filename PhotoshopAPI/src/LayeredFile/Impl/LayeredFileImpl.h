@@ -20,6 +20,10 @@
 
 PSAPI_NAMESPACE_BEGIN
 
+// Forward declaration
+template <typename T>
+struct LayeredFile;
+
 namespace _Impl
 {
 
@@ -27,7 +31,7 @@ namespace _Impl
 	/// initialized with the given layer record and corresponding channel image data.
 	/// This function was heavily inspired by the psd-tools library as they have the most coherent parsing of this information
 	template <typename T>
-	std::shared_ptr<Layer<T>> identify_layer_type(LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
+	std::shared_ptr<Layer<T>> identify_layer_type(LayeredFile<T>& layered_file, LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
 	{
 		// Short ciruit here as we have an image layer for sure
 		if (!layerRecord.m_AdditionalLayerInfo.has_value())
@@ -72,7 +76,7 @@ namespace _Impl
 		auto lrPlacedDataTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrPlacedData);
 		if (lrPlacedTaggedBlock.has_value() || lrPlacedDataTaggedBlock.has_value())
 		{
-			return std::make_shared<SmartObjectLayer<T>>(layerRecord, channelImageData, header, globalAdditionalLayerInfo);
+			return std::make_shared<SmartObjectLayer<T>>(layered_file, layerRecord, channelImageData, header, globalAdditionalLayerInfo);
 		}
 
 		// Check if it is one of many adjustment layers
@@ -158,6 +162,7 @@ namespace _Impl
 	/// See comments in build_layer_hierarchy on why we iterate in reverse
 	template <typename T>
 	std::vector<std::shared_ptr<Layer<T>>> build_layer_hierarchy_recursive(
+		LayeredFile<T>& layered_file,
 		std::vector<LayerRecord>& layerRecords,
 		std::vector<ChannelImageData>& channelImageData,
 		std::vector<LayerRecord>::reverse_iterator& layerRecordsIterator,
@@ -174,12 +179,12 @@ namespace _Impl
 			auto& layerRecord = *layerRecordsIterator;
 			auto& channelImage = *channelImageDataIterator;
 
-			std::shared_ptr<Layer<T>> layer = identify_layer_type<T>(layerRecord, channelImage, header, globalAdditionalLayerInfo);
+			std::shared_ptr<Layer<T>> layer = identify_layer_type<T>(layered_file, layerRecord, channelImage, header, globalAdditionalLayerInfo);
 
 			if (auto groupLayerPtr = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
 			{
 				// Recurse a level down
-				groupLayerPtr->layers() = build_layer_hierarchy_recursive<T>(layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header, globalAdditionalLayerInfo);
+				groupLayerPtr->layers() = build_layer_hierarchy_recursive<T>(layered_file, layerRecords, channelImageData, ++layerRecordsIterator, ++channelImageDataIterator, header, globalAdditionalLayerInfo);
 				root.push_back(groupLayerPtr);
 			}
 			else if (auto sectionLayerPtr = std::dynamic_pointer_cast<SectionDividerLayer<T>>(layer))
@@ -208,7 +213,7 @@ namespace _Impl
 	/// Build the layer hierarchy from a PhotoshopFile object using the Layer and Mask section with its LayerRecords and ChannelImageData subsections;
 	/// Returns a vector of nested layer variants which can go to any depth
 	template <typename T>
-	std::vector<std::shared_ptr<Layer<T>>> build_layer_hierarchy(std::unique_ptr<PhotoshopFile> file)
+	std::vector<std::shared_ptr<Layer<T>>> build_layer_hierarchy(LayeredFile<T>& layered_file, std::unique_ptr<PhotoshopFile> file)
 	{
 		auto* layerRecords = &file->m_LayerMaskInfo.m_LayerInfo.m_LayerRecords;
 		auto* channelImageData = &file->m_LayerMaskInfo.m_LayerInfo.m_ChannelImageData;
@@ -261,6 +266,7 @@ namespace _Impl
 		if (file->m_LayerMaskInfo.m_AdditionalLayerInfo)
 		{
 			std::vector<std::shared_ptr<Layer<T>>> root = build_layer_hierarchy_recursive<T>(
+				layered_file,
 				*layerRecords,
 				*channelImageData,
 				layerRecordsIterator,
@@ -274,6 +280,7 @@ namespace _Impl
 		{
 			AdditionalLayerInfo tmp{};
 			std::vector<std::shared_ptr<Layer<T>>> root = build_layer_hierarchy_recursive<T>(
+				layered_file,
 				*layerRecords,
 				*channelImageData,
 				layerRecordsIterator,
