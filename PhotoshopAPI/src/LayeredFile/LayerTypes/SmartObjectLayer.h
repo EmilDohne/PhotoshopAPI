@@ -361,7 +361,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	{
 		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
 
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 		affine_mesh.move(offset);
 
 		auto out_pts = affine_mesh.points();
@@ -377,7 +377,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	{
 		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
 
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 		affine_mesh.rotate(offset, center);
 
 		auto out_pts = affine_mesh.points();
@@ -391,7 +391,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	void rotate(double offset)
 	{
 		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 
 		rotate(offset, affine_mesh.bbox().center());
 		evaluate_transforms();
@@ -403,7 +403,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	{
 		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
 
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 		affine_mesh.scale(factor, center);
 
 		auto out_pts = affine_mesh.points();
@@ -424,7 +424,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	void scale(Geometry::Point2D<double> factor)
 	{
 		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 
 		scale(factor, affine_mesh.bbox().center());
 	}
@@ -477,7 +477,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		auto _pts_array = m_SmartObjectWarp.affine_transform();
 		auto pts = std::vector<Geometry::Point2D<double>>(_pts_array.begin(), _pts_array.end());
 
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 		affine_mesh.move(Geometry::Point2D<double>( offset, 0));
 		Layer<T>::m_CenterX += offset;
 
@@ -494,7 +494,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		auto _pts_array = m_SmartObjectWarp.affine_transform();
 		auto pts = std::vector<Geometry::Point2D<double>>(_pts_array.begin(), _pts_array.end());
 
-		Geometry::Mesh<double> affine_mesh(pts, 2, 2);
+		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
 		affine_mesh.move(Geometry::Point2D<double>(0, offset));
 		Layer<T>::m_CenterY += offset;
 
@@ -526,7 +526,7 @@ private:
 	SmartObject::Warp _m_CachedSmartObjectWarp;
 	/// We also cache the smart object mesh for easy access to the bbox for width() 
 	/// and height()
-	Geometry::Mesh<double> _m_CachedSmartObjectWarpMesh;
+	Geometry::QuadMesh<double> _m_CachedSmartObjectWarpMesh;
 
 	/// The hash of the file, this is the same as what is stored on the LinkedLayerData
 	/// and identical files are automatically de-duplicated
@@ -597,6 +597,7 @@ private:
 	/// we recompute the image data and assign the warp to m_Warp.
 	void evaluate_image_data()
 	{
+		PSAPI_PROFILE_FUNCTION();
 		if (m_SmartObjectWarp == _m_CachedSmartObjectWarp)
 		{
 			PSAPI_LOG_DEBUG("SmartObject", "No need to re-evaluate the image data as it matches the cached values");
@@ -616,15 +617,12 @@ private:
 		// Get the warp mesh at a resolution of 25 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
 		const auto& image_data = linked_layer->get_image_data();
 		auto warp_surface = m_SmartObjectWarp.surface();
+
 		auto warp_mesh = warp_surface.mesh(
 			linked_layer->width() / 25,
 			linked_layer->height() / 25,
-			m_SmartObjectWarp.affine_transform(),
-			m_SmartObjectWarp.non_affine_transform()
+			true	// move_to_zero
 		);
-
-		// Move the warp mesh to the origin. This ensures our buffer is fully and tightly filled.
-		warp_mesh.move({ -warp_mesh.bbox().minimum.x, -warp_mesh.bbox().minimum.y });
 
 		_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
 

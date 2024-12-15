@@ -5,6 +5,7 @@
 
 #include "Point.h"
 
+#include <array>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -61,6 +62,18 @@ namespace Geometry
             return Point2D<T>((minimum.x + maximum.x) * .5f, (minimum.y + maximum.y) * .5f);
         }
 
+        /// Return the bbox as a quad in the form:
+        ///
+        /// top-left, top-right
+        /// bot-left, bot-right
+        constexpr std::array<Geometry::Point2D<T>, 4> as_quad() const
+        {
+            return std::array<Geometry::Point2D<T>, 4> {
+                minimum, Geometry::Point2D<T>{maximum.x, minimum.y},
+                Geometry::Point2D<T>{minimum.x, maximum.y}, maximum
+            };
+        }
+
         /// Compute the bounding box over the provided points
         static BoundingBox compute(const std::vector<Point2D<T>>& points)
         {
@@ -75,6 +88,25 @@ namespace Geometry
                 bbox.maximum.x = std::max(bbox.maximum.x, point.x);
                 bbox.maximum.y = std::max(bbox.maximum.y, point.y);
             }
+            return bbox;
+        }
+
+
+        /// Compute the bounding box over the provided vertices
+        static BoundingBox compute(const std::vector<Vertex<T>>& vertices)
+        {
+            BoundingBox bbox;
+            bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
+            bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
+
+            for (const auto& vtx : vertices)
+            {
+                bbox.minimum.x = std::min(bbox.minimum.x, vtx.point().x);
+                bbox.minimum.y = std::min(bbox.minimum.y, vtx.point().y);
+                bbox.maximum.x = std::max(bbox.maximum.x, vtx.point().x);
+                bbox.maximum.y = std::max(bbox.maximum.y, vtx.point().y);
+            }
+
             return bbox;
         }
     };

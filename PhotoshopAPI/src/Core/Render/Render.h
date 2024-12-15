@@ -13,6 +13,7 @@ Support for this is still experimental and primarily for debug purposes
 #include <memory>
 #include <cmath>
 #include <algorithm>
+#include <tuple>
 
 #include "ImageBuffer.h"
 
@@ -310,7 +311,7 @@ namespace Render
     /// on each of the points
     ///
     /// \tparam T The type of pixel value stored in the `ImageBuffer`.
-    /// \tparam U The type of the coordinate values used in `Geometry::Mesh`.
+    /// \tparam U The type of the coordinate values used in `Geometry::QuadMesh`.
     ///
     /// \param buffer The image buffer where the mesh will be rendered.
     /// \param mesh The mesh which will be drawn, as a `Geometry::Mesh` object.
@@ -321,44 +322,61 @@ namespace Render
     ///                  If render_pt_num is false this parameter has no effect
     /// \param render_pt_num Whether to render a point number
     template <typename T, typename U>
-    void render_mesh(ImageBuffer<T>& buffer, const Geometry::Mesh<U>& mesh, T value, std::string_view font_name = "", bool render_pt_num = false)
+    void render_mesh(ImageBuffer<T>& buffer, const Geometry::QuadMesh<U>& mesh, T value, std::string_view font_name = "", bool render_pt_num = false)
     {
-        if (!render_pt_num)
-        {
-            for (const auto& line : mesh.half_edges())
-            {
-                render_line<T, U>(
-                    buffer, 
-                    line.vertex<U>(mesh).point(), 
-                    line.pointed_at<U>(mesh).point(), 
-                    value);
-            }
-        }
-        else
-        {
-            std::set<size_t> rendered_point_nums;
-            for (const auto& line : mesh.half_edges())
-            {
-                auto point1 = line.vertex<U>(mesh).point();
-                auto point1_idx = line.vertex_idx();
-                auto point2 = line.pointed_at<U>(mesh).point();
-                auto point2_idx = line.pointed_at_idx();
+        std::set<std::tuple<size_t, size_t>> rendered_edges;
+        std::set<size_t> rendered_point_nums;
 
-                if (!rendered_point_nums.contains(point1_idx))
+        for (const Geometry::Face<U, 4>& face : mesh.faces())
+        {
+            auto vertex_indices = face.vertex_indices();
+
+            auto v0_idx = vertex_indices[0];    // top-left vertex
+            auto v1_idx = vertex_indices[1];    // top-right vertex
+            auto v2_idx = vertex_indices[2];    // bot-left vertex
+            auto v3_idx = vertex_indices[3];    // bot-right vertex
+            
+            
+            std::array<std::tuple<size_t, size_t>, 4> edges{
+                std::make_tuple(v0_idx, v1_idx),
+                std::make_tuple(v0_idx, v2_idx),
+                std::make_tuple(v3_idx, v1_idx),
+                std::make_tuple(v3_idx, v2_idx)
+            };
+
+            for (const auto& edge : edges)
+            {
+                // Render the point numbers (if requested)
+                if (render_pt_num && !rendered_point_nums.contains(std::get<0>(edge)))
                 {
-                    auto str = std::to_string(point1_idx);
-                    render_text<T, U>(buffer, point1, str, font_name, value, 50);
-                    rendered_point_nums.insert(point1_idx);
+                    auto idx = std::get<0>(edge);
+                    auto point = mesh.vertex(idx).point();
+
+                    auto str = std::to_string(idx);
+                    render_text<T, U>(buffer, point, str, font_name, value, 50);
+                    rendered_point_nums.insert(idx);
+                }
+                if (render_pt_num && !rendered_point_nums.contains(std::get<1>(edge)))
+                {
+                    auto idx = std::get<1>(edge);
+                    auto point = mesh.vertex(idx).point();
+
+                    auto str = std::to_string(idx);
+                    render_text<T, U>(buffer, point, str, font_name, value, 50);
+                    rendered_point_nums.insert(idx);
                 }
 
-                if (!rendered_point_nums.contains(point2_idx))
+                // Render the edges if it is not already rendered
+                if (!rendered_edges.contains(edge))
                 {
-                    auto str = std::to_string(point2_idx);
-                    render_text<T, U>(buffer, point2, str, font_name, value, 50);
-                    rendered_point_nums.insert(point2_idx);
-                }
+                    render_line<T, U>(
+                        buffer,
+                        mesh.vertex(std::get<0>(edge)).point(),
+                        mesh.vertex(std::get<1>(edge)).point(),
+                        value);
 
-                render_line<T, U>(buffer, point1, point2, value);
+                    rendered_edges.insert(edge);
+                }
             }
         }
     }

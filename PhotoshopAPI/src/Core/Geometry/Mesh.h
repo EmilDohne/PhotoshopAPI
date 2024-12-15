@@ -7,6 +7,7 @@
 #include <cmath>
 
 #include "BoundingBox.h"
+#include "MeshOperations.h"
 
 #include <Eigen/Dense>
 
@@ -38,12 +39,78 @@ struct pair_hash
 namespace Geometry
 {
     template <typename T>
-    struct Mesh;
-    template <typename T>
-    struct Vertex;
-    template <size_t _Size>
-    struct Face;
+    struct QuadMesh;
 
+
+    template <typename T, size_t _Size>
+    struct Face
+    {
+        Point2D<T> centroid(const QuadMesh<T>& mesh) const
+        {
+            // Initialize the sum of coordinates
+            T sum_x = 0;
+            T sum_y = 0;
+            size_t count = 0;
+            // Loop through each vertex index in the mesh
+            for (const auto& idx : m_VertexIndices)
+            {
+                // Retrieve the vertex from the mesh
+                const Vertex<T>& vertex = mesh.vertex(idx);
+                // Accumulate the x and y coordinates
+                sum_x += vertex.point().x;
+                sum_y += vertex.point().y;
+                ++count; // Count the number of vertices
+            }
+
+            // Calculate the centroid coordinates
+            if (count == 0)
+            {
+                return Point2D<T>(0, 0); // Return a default value if no vertices are found
+            }
+
+            return Point2D<T>(sum_x / static_cast<T>(count), sum_y / static_cast<T>(count));
+        }
+
+        void bbox(BoundingBox<T> _bbox)
+        {
+            m_BoundingBox = _bbox;
+        }
+
+        BoundingBox<T> bbox() const
+        {
+            return m_BoundingBox;
+        }
+
+        size_t vertex_idx(size_t in_face_idx) const
+        {
+            return m_VertexIndices[in_face_idx];
+        }
+
+        size_t num_vertices() const noexcept
+        {
+            return m_VertexIndices.size();
+        }
+
+        constexpr size_t vertex_idx_checked(size_t in_face_idx) const
+        {
+            static_assert(in_face_idx > _Size - 1, "Index out of bounds");
+            return m_VertexIndices[in_face_idx];
+        }
+
+        void vertex_indices(std::array<size_t, _Size> vertex_indices)
+        {
+            m_VertexIndices = vertex_indices;
+        }
+
+        std::array<size_t, _Size> vertex_indices() const
+        {
+            return m_VertexIndices;
+        }
+
+    private:
+        std::array<size_t, _Size> m_VertexIndices{};
+        BoundingBox<T> m_BoundingBox{};
+    };
 
 
     template <typename T, size_t MaxFaces>
@@ -91,9 +158,9 @@ namespace Geometry
 
         /// Recursively add the face index into the octree splitting if we cannot add it.
         /// throws an error if max_depth was set too low to accomodate all the elements
-        void insert(const Mesh<T>& mesh, size_t face_index, size_t depth, size_t max_depth)
+        void insert(const QuadMesh<T>& mesh, size_t face_index, size_t depth, size_t max_depth)
         {
-            const auto face_bbox = mesh.face(face_index).bbox(mesh);
+            const auto face_bbox = mesh.face(face_index).bbox();
             if (!m_Bbox.in_bbox(face_bbox))
             {
                 return;
@@ -181,7 +248,7 @@ namespace Geometry
         Octree(const BoundingBox<T>& bbox, size_t max_depth = 16)
             : m_Root(std::make_unique<OctreeNode<T, MaxFaces>>(bbox)), m_MaxDepth(max_depth) {}
 
-        void insert(const Mesh<T>& mesh, size_t face_index)
+        void insert(const QuadMesh<T>& mesh, size_t face_index)
         {
             size_t depth = 0;
             m_Root->insert(mesh, face_index, depth, m_MaxDepth);
@@ -201,264 +268,18 @@ namespace Geometry
     };
 
 
-    struct HalfEdge
-    {
-        HalfEdge() = default;
-
-        /// Check if the given half edge is valid, this means all the indices are
-        /// not uninitialized
-        bool valid() const noexcept
-        {
-            return (
-                m_Vertex != std::numeric_limits<size_t>::max() &&
-                m_PointedAtIdx != std::numeric_limits<size_t>::max() &&
-                m_OppositeIdx != std::numeric_limits<size_t>::max() &&
-                m_NextIdx != std::numeric_limits<size_t>::max() &&
-                m_FaceIdx != std::numeric_limits<size_t>::max()
-            );
-        }
-
-
-        template <typename T>
-        Vertex<T>& vertex(Mesh<T>& mesh)
-        {
-            return mesh.vertex(m_Vertex);
-        }
-
-        template <typename T>
-        const Vertex<T>& vertex(const Mesh<T>& mesh) const
-        {
-            return mesh.vertex(m_Vertex);
-        }
-
-        size_t vertex_idx() const noexcept
-        {
-            return m_Vertex;
-        }
-
-        void vertex(size_t idx) noexcept
-        {
-            m_Vertex = idx;
-        }
-
-        template <typename T>
-        Vertex<T>& pointed_at(Mesh<T>& mesh)
-        {
-            return mesh.vertex(m_PointedAtIdx);
-        }
-
-        template <typename T>
-        const Vertex<T>& pointed_at(const Mesh<T>& mesh) const
-        {
-            return mesh.vertex(m_PointedAtIdx);
-        }
-
-        size_t pointed_at_idx() const noexcept
-        {
-            return m_PointedAtIdx;
-        }
-
-        void pointed_at(size_t idx) noexcept
-        {
-            m_PointedAtIdx = idx;
-        }
-
-        template <typename T>
-        HalfEdge& next(Mesh<T>& mesh)
-        {
-            return mesh.half_edge(m_NextIdx);
-        }
-
-        size_t next_idx() const noexcept
-        {
-            return m_NextIdx;
-        }
-
-        void next(size_t idx) noexcept
-        {
-            m_NextIdx = idx;
-        }
-
-        template <typename T>
-        HalfEdge& opposite(Mesh<T>& mesh)
-        {
-            return mesh.half_edge(m_OppositeIdx);
-        }
-
-        size_t opposite_idx() const noexcept
-        {
-            return m_OppositeIdx;
-        }
-
-        void opposite(size_t idx) noexcept
-        {
-            m_OppositeIdx = idx;
-        }
-
-        template <typename T>
-        Face<4>& face(Mesh<T>& mesh)
-        {
-            return mesh.face(m_FaceIdx);
-        }
-
-        size_t face_idx() const noexcept
-        {
-            return m_FaceIdx;
-        }
-
-        void face(size_t idx) noexcept
-        {
-            m_FaceIdx = idx;
-        }
-        
-    private:
-        size_t m_Vertex         = std::numeric_limits<size_t>::max();   // The vertex this half-edge starts at
-        size_t m_PointedAtIdx   = std::numeric_limits<size_t>::max();   // The vertex this half-edge points to
-        size_t m_OppositeIdx    = std::numeric_limits<size_t>::max();   // The opposite half-edge
-        size_t m_NextIdx        = std::numeric_limits<size_t>::max();   // The next half-edge in the face
-        size_t m_FaceIdx        = std::numeric_limits<size_t>::max();   // The face this half-edge belongs to
-    };
-
-
-    template <typename T>
-    struct Vertex
-    {
-        Vertex(Point2D<T> point) : m_Point(point) {}
-        Vertex(Point2D<T> point, Point2D<double> uv) : m_Point(point), m_UV(uv) {}
-
-        Point2D<T> point() const
-        {
-            return m_Point;
-        }
-        
-        Point2D<T>& point()
-        {
-            return m_Point;
-        }
-
-        Point2D<double> uv() const
-        {
-            return m_UV;
-        }
-
-    private:
-        Point2D<T> m_Point;
-        Point2D<double> m_UV = { -1.0, -1.0 };
-        size_t m_HalfEdgeIdx = std::numeric_limits<size_t>::max();
-    };
-
-
-    template <size_t _Size>
-    struct Face 
-    {
-
-        template <typename T>
-        Point2D<T> centroid(const Mesh<T>& mesh) const
-        {
-            // Initialize the sum of coordinates
-            T sum_x = 0;
-            T sum_y = 0;
-            size_t count = 0;
-            // Loop through each vertex index in the mesh
-            for (const auto& idx : m_VertexIndices)
-            {
-                // Retrieve the vertex from the mesh
-                const Vertex<T>& vertex = mesh.vertex(idx);
-                // Accumulate the x and y coordinates
-                sum_x += vertex.point().x;
-                sum_y += vertex.point().y;
-                ++count; // Count the number of vertices
-            }
-
-            // Calculate the centroid coordinates
-            if (count == 0) 
-        {
-                return Point2D<T>(0, 0); // Return a default value if no vertices are found
-        }
-
-            return Point2D<T>(sum_x / static_cast<T>(count), sum_y / static_cast<T>(count));
-        }
-
-
-        template <typename T>
-        HalfEdge& half_edge(Mesh<T>& mesh)
-        {
-            mesh.half_edge(m_HalfEdgeIdx);
-        }
-
-        void half_edge(size_t idx) noexcept
-        {
-            m_HalfEdgeIdx = idx;
-        }
-
-        template <typename T>
-        BoundingBox<T> bbox(const Mesh<T>& mesh) const
-        {
-            BoundingBox<T> bbox;
-            // Initialize the bounding box to extreme values
-            bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
-            bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
-
-            for (const auto idx: m_VertexIndices)
-            {
-                auto point = mesh.vertex(idx).point();
-                // Update min and max UV for bounding box
-                bbox.minimum.x = std::min(bbox.minimum.x, point.x);
-                bbox.minimum.y = std::min(bbox.minimum.y, point.y);
-                bbox.maximum.x = std::max(bbox.maximum.x, point.x);
-                bbox.maximum.y = std::max(bbox.maximum.y, point.y);
-            }
-            return bbox;
-        }
-
-        size_t vertex_idx(size_t in_face_idx) const
-        {
-            return m_VertexIndices[in_face_idx];
-        }
-
-        size_t num_vertices() const noexcept
-        {
-            return m_VertexIndices.size();
-        }
-
-        constexpr size_t vertex_idx_checked(size_t in_face_idx) const
-        {
-            static_assert(in_face_idx > _Size - 1, "Index out of bounds");
-            return m_VertexIndices[in_face_idx];
-        }
-
-        void vertex_indices(std::array<size_t, _Size> vertex_indices)
-        {
-            m_VertexIndices = vertex_indices;
-        }
-
-        std::array<size_t, _Size> vertex_indices()
-        {
-            return m_VertexIndices;
-        }
-
-    private:
-        std::array<size_t, _Size> m_VertexIndices{};
-        size_t m_HalfEdgeIdx = std::numeric_limits<size_t>::max();
-    };
-
-
-    /// Mesh class for 2D Geometry representation, implemented as a modified half-edge data structure with an Octree
+    /// Mesh class for 2D Geometry representation, implemented with an Octree structure
     /// accelerating lookups and traversals. This currently only supports quadrilateral meshes and is very specific
     /// to the needs of the PhotoshopAPI. It is therefore recommended to use a more generic mesh library if further
-    /// operations are wanted. This structure is created once and cannot be modified again allowing for some optimizations
-    /// 
+    /// operations are wanted.
     template <typename T>
-    struct Mesh
+    struct QuadMesh
     {
 
-        Mesh() = default;
+        QuadMesh() = default;
 
-        /// Generate a HalfEdgeMesh from a flat vector of points. These points must be in scanline order and the 
-        /// generated mesh is quadrilateral.
-        /// 
-        /// The non affine transform describes rectangle with normalized positions 
-        Mesh(const std::vector<Point2D<T>>& points, const std::array<Point2D<T>, 4> affine_transform, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
+        /// Generate a QuadMesh from a flat vector of points. These points must be in scanline order 
+        QuadMesh(const std::vector<Point2D<T>>& points, size_t x_divisions, size_t y_divisions)
         {
             std::vector<Vertex<T>> vertices;
             vertices.reserve(points.size());
@@ -475,47 +296,22 @@ namespace Geometry
                 }
             }
 
-            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
+            initialize_mesh(vertices, x_divisions, y_divisions);
         }
 
-        /// Generate a HalfEdgeMesh from a flat vector of vertices. These vertices must be in scanline order and the 
-        /// generated mesh is quadrilateral.
-        /// 
-        /// The non affine transform describes rectangle with normalized positions 
-        Mesh(const std::vector<Vertex<T>>& vertices, const std::array<Point2D<T>, 4> affine_transform, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
+        /// Generate a QuadMesh from a flat vector of vertices. These points must be in scanline order
+        QuadMesh(const std::vector<Vertex<T>>& vertices, size_t x_divisions, size_t y_divisions)
         {
-            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
+            initialize_mesh(vertices, x_divisions, y_divisions);
         }
 
-        Mesh(const std::vector<Point2D<T>>& points, size_t x_divisions, size_t y_divisions)
+        void move(Point2D<T> offset)
         {
-			auto bbox = BoundingBox<T>::compute(points);
+            Operations::move(m_Vertices, offset);
+            m_BoundingBox = BoundingBox<T>::compute(m_Vertices);
 
-			std::array<Point2D<T>, 4> affine_transform = {
-				Point2D<T>{bbox.minimum.x, bbox.minimum.y}, Point2D<T>{bbox.maximum.x, bbox.minimum.y},
-				Point2D<T>{bbox.minimum.x, bbox.maximum.y}, Point2D<T>{bbox.maximum.x, bbox.maximum.y}
-			};
-
-            std::array<Point2D<T>, 4> non_affine_transform = {
-                Point2D<T>{static_cast<T>(0), static_cast<T>(0)}, Point2D<T>{static_cast<T>(1), static_cast<T>(0)},
-                Point2D<T>{static_cast<T>(0), static_cast<T>(1)}, Point2D<T>{static_cast<T>(1), static_cast<T>(1)}
-            };
-
-            std::vector<Vertex<T>> vertices;
-            vertices.reserve(points.size());
-
-            for (size_t y = 0; y < y_divisions; ++y)
-            {
-                double v = static_cast<double>(y) / (y_divisions - 1);
-                for (size_t x = 0; x < x_divisions; ++x)
-                {
-                    double u = static_cast<double>(x) / (x_divisions - 1);
-                    size_t idx = y * x_divisions + x;
-
-                    vertices.emplace_back(points[idx], Point2D<double>(u, v));
-                }
-            }
-            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
+            rebuild_face_bboxes();
+            rebuild_octree();
         }
 
         std::vector<Point2D<T>> points() const
@@ -550,26 +346,25 @@ namespace Geometry
             return m_Vertices;
         }
 
-        const HalfEdge& half_edge(size_t index) const
+        /// Update the vertices of the mesh, the _vertices parameter must have the same amount of vertices as the mesh
+        /// as this method is only supposed to represent transformations applied to the vertices not a complete rebuild of the structure.
+        /// 
+        /// If you wish to do that please re-initialize the mesh.
+        void vertices(std::vector<Vertex<T>>& _vertices)
         {
-            if (index == std::numeric_limits<size_t>::max())
+            if (vertices.size() != m_Vertices.size())
             {
-                PSAPI_LOG_ERROR("Mesh", "Unable to retrieve half edge as its index is not valid");
-            }
-            if (index > m_Edges.size() - 1)
-            {
-                PSAPI_LOG_ERROR("Mesh", "Unable to retrieve half edge as its index is not valid, max allowed index %zu. Given index: %zu", m_Edges.size() - 1, index);
+                PSAPI_LOG_ERROR("Mesh",
+                    "Unable to replace vertices with differently sized vertex vector. This method is only intended to update existing vertices. If you wish to to rebuild the mesh re-initialize it please.");
             }
 
-            return m_Edges[index];
+            m_Vertices = vertices;
+            m_BoundingBox = BoundingBox<T>::compute(vertices);
+            rebuild_face_bboxes();
+            rebuild_octree();
         }
 
-        const std::vector<HalfEdge>& half_edges() const
-        {
-            return m_Edges;
-        }
-
-        const Face<4>& face(size_t index) const
+        const Face<T, 4>& face(size_t index) const
         {
             if (index == std::numeric_limits<size_t>::max())
             {
@@ -583,214 +378,13 @@ namespace Geometry
             return m_Faces[index];
         }
 
-        const std::vector<Face<4>>& faces() const
+        const std::vector<Face<T, 4>>& faces() const
         {
             return m_Faces;
         }
 
-
-        /// Rotate the mesh around the center point, rebuilding the acceleration structure
-        ///
-        /// \param angle The angle to rotate by in radians
-        /// \param center The center point to rotate about
-        void rotate(double angle, Point2D<T> center)
-        {
-            double cos_theta = std::cos(angle);
-            double sin_theta = std::sin(angle);
-
-            for (auto& vertex : m_Vertices)
-            {
-                T x = vertex.point().x - center.x;
-                T y = vertex.point().y - center.y;
-
-                // Apply rotation around center point
-                T rotated_x = x * cos_theta - y * sin_theta + center.x;
-                T rotated_y = x * sin_theta + y * cos_theta + center.y;
-
-                Point2D<T> rotated_point = { rotated_x, rotated_y };
-
-                vertex.point() = rotated_point;
-            }
-            rebuild_bbox();
-            rebuild_octree();
-        }
-
-        /// Scale the mesh around the center point, rebuilding the acceleration structure
-        ///
-        /// \param factor The scalar factor
-        /// \param center The center point to scale about
-        void scale(double factor, Point2D<T> center)
-        {
-            for (auto& vertex : m_Vertices)
-            {
-                T x = vertex.point().x - center.x;
-                T y = vertex.point().y - center.y;
-
-                Point2D<T> scaled_point = { x * factor + center.x, y * factor + center.y };
-                // Apply scaling relative to the center
-                vertex.point() = scaled_point;
-            }
-            rebuild_bbox();
-            rebuild_octree();
-        }
-
-        /// Scale the mesh around the center point, rebuilding the acceleration structure
-        ///
-        /// \param scalar The scalar
-        /// \param center The center point to scale about
-        void scale(Point2D<T> scalar, Point2D<T> center)
-        {
-            for (auto& vertex : m_Vertices)
-            {
-                T x = vertex.point().x - center.x;
-                T y = vertex.point().y - center.y;
-
-                Point2D<T> scaled_point = { x * scalar.x + center.x, y * scalar.y + center.y };
-                // Apply scaling relative to the center
-                vertex.point() = scaled_point;
-            }
-            rebuild_bbox();
-            rebuild_octree();
-        }
-
-        /// Move the mesh by the given offset, rebuilding the acceleration structure
-        ///
-        /// \param offset The offset to transform by
-        void move(Point2D<T> offset)
-        {
-            for (auto& vertex : m_Vertices)
-            {
-                vertex.point().x += offset.x;
-                vertex.point().y += offset.y;
-            }
-            rebuild_bbox();
-            rebuild_octree();
-        }
-
-
-        /// Apply a 3x3 transformation matrix to the mesh, rebuilding the acceleration structure
-        void transform(const Eigen::Matrix<T, 3, 3>& matrix, bool recalculate_bbox = true, bool recalculate_octree = true) 
-        {
-            for (auto& vertex : m_Vertices) 
-            {
-                Point2D<T> p = vertex.point();
-
-                // Convert to homogeneous coordinates
-                Eigen::Matrix<T, 3, 1> homogeneousPoint;
-                homogeneousPoint << p.x, p.y, T(1.0);
-
-                // Perform transformation
-                Eigen::Matrix<T, 3, 1> transformedPoint = matrix * homogeneousPoint;
-
-                T w = transformedPoint(2); // Get the homogeneous coordinate w
-
-                if (w != static_cast<T>(0.0)) 
-                {
-                    vertex.point() = Point2D<T>(transformedPoint(0) / w, transformedPoint(1) / w);
-                }
-                else 
-                {
-                    PSAPI_LOG_ERROR("Mesh", "Error: tried to divide by zero");
-                }
-            }
-
-            if (recalculate_bbox) {
-                rebuild_bbox();
-            }
-            if (recalculate_octree) {
-                rebuild_octree();
-            }
-        }
-
-        static Eigen::Matrix<T, 3, 3> create_transformation_matrix(T moveX, T moveY, T angle, T scaleX, T scaleY, Point2D<T> pivot)
-        {
-            T cosAngle = std::cos(angle);
-            T sinAngle = std::sin(angle);
-
-            // Create the transformation matrix
-            Eigen::Matrix<T, 3, 3> transformationMatrix;
-            transformationMatrix <<
-                scaleX * cosAngle, -scaleY * sinAngle, pivot.x + moveX - pivot.x * scaleX * cosAngle + pivot.y * scaleY * sinAngle,
-                scaleX* sinAngle, scaleY* cosAngle, pivot.y + moveY - pivot.x * scaleX * sinAngle - pivot.y * scaleY * cosAngle,
-                0, 0, 1;
-
-            return transformationMatrix;
-        }
-
-        static Eigen::Matrix<T, 3, 3> create_transformation_matrix(Point2D<T> translate, T angle, Point2D<T> scale, Point2D<T> pivot)
-        {
-            return create_transformation_matrix(translate.x, translate.y, angle, scale.x, scale.y, pivot);
-        }
-
-        /// Compute a homography 3x3 transformation matrix to apply to our mesh based on the given source and destination quad.
-        /// In most cases the src quad should be a unit quad 
-        /// {0, 0}, {1, 0}
-        /// {0, 1}, {1, 1}
-        /// with the dst being the target coordinate of each of the source quads 
-        static Eigen::Matrix3d create_homography_matrix(const std::array<Point2D<T>, 4>& source_points, const std::array<Point2D<T>, 4>& destination_points)
-        {
-            PSAPI_PROFILE_FUNCTION();
-            // Populate the matrix using the src and dest coordinates
-            // https://math.stackexchange.com/questions/494238/how-to-compute-homography-matrix-h-from-corresponding-points-2d-2d-planar-homog
-            Eigen::MatrixXd A(8, 9);
-
-            for (size_t i = 0; i < source_points.size(); ++i) 
-            {
-                double x = static_cast<double>(source_points[i].x);
-                double y = static_cast<double>(source_points[i].y);
-                double xw = static_cast<double>(destination_points[i].x);
-                double yw = static_cast<double>(destination_points[i].y);
-
-                A(2 * i, 0) = x;
-                A(2 * i, 1) = y;
-                A(2 * i, 2) = 1;
-                A(2 * i, 3) = 0;
-                A(2 * i, 4) = 0;
-                A(2 * i, 5) = 0;
-                A(2 * i, 6) = -xw * x;
-                A(2 * i, 7) = -xw * y;
-                A(2 * i, 8) = -xw;
-
-                A(2 * i + 1, 0) = 0;
-                A(2 * i + 1, 1) = 0;
-                A(2 * i + 1, 2) = 0;
-                A(2 * i + 1, 3) = x;
-                A(2 * i + 1, 4) = y;
-                A(2 * i + 1, 5) = 1;
-                A(2 * i + 1, 6) = -yw * x;
-                A(2 * i + 1, 7) = -yw * y;
-                A(2 * i + 1, 8) = -yw;
-            }
-
-            // Compute A^T * A
-            Eigen::MatrixXd AtA = A.transpose() * A;
-
-            // Compute the eigenvalues and eigenvectors
-            Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> solver(AtA);
-            Eigen::VectorXd eigenvalues = solver.eigenvalues();
-            Eigen::MatrixXd eigenvectors = solver.eigenvectors();
-
-            // Get the index of the smallest eigenvalue
-            int min_eig_idx = -1;
-            eigenvalues.minCoeff(&min_eig_idx);
-
-            // Extract the corresponding eigenvector
-            Eigen::VectorXd smallest_eigen_vec = eigenvectors.col(min_eig_idx);
-
-            // Reshape into 3x3 homography matrix
-            Eigen::Matrix3d homography;
-            homography << smallest_eigen_vec(0), smallest_eigen_vec(1), smallest_eigen_vec(2),
-                smallest_eigen_vec(3), smallest_eigen_vec(4), smallest_eigen_vec(5),
-                smallest_eigen_vec(6), smallest_eigen_vec(7), smallest_eigen_vec(8);
-
-            // Normalize the homography
-            homography /= homography(2, 2);
-
-            return homography;
-        }
-
         /// Look up the mesh uv coordinate at the given point returning {-1, -1} if the 
-        /// point does not lie on the mesh or if the 
+        /// point does not lie on the mesh.
         Point2D<double> uv_coordinate(Point2D<T> position) const
         {
             if (!m_BoundingBox.in_bbox(position))
@@ -802,187 +396,100 @@ namespace Geometry
             auto face_indices = m_Octree.query(position);
             for (size_t face_index : face_indices)
             {
-                Face<4> face = m_Faces[face_index];
-                // Retrieve vertex indices for the face's four corners
-                size_t v0_idx = face.vertex_idx(0);
-                size_t v1_idx = face.vertex_idx(1);
-                size_t v2_idx = face.vertex_idx(2);
-                size_t v3_idx = face.vertex_idx(3);
-
-                // Get vertex positions and their associated UVs
-                Vertex<T> v0 = m_Vertices[v0_idx];
-                Vertex<T> v1 = m_Vertices[v1_idx];
-                Vertex<T> v2 = m_Vertices[v2_idx];
-                Vertex<T> v3 = m_Vertices[v3_idx];
-
-                // Check if the position is within this face (simple point-in-quad check)
-                if (point_in_quad(position, v0.point(), v1.point(), v3.point(), v2.point()))
+                Face<T, 4> face = m_Faces[face_index];
+                
+                // Check if the position is within this face, we first check based on bbox as that is as faster operation
+                // for rejecting false positives
+                if (face.bbox().in_bbox(position))
                 {
-                    // Bilinear interpolation for UVs
-                    return bilinear_interpolation_uv(position, v0, v1, v3, v2);
+                    // Retrieve vertex indices for the face's four corners
+                    size_t v0_idx = face.vertex_idx(0);
+                    size_t v1_idx = face.vertex_idx(1);
+                    size_t v2_idx = face.vertex_idx(2);
+                    size_t v3_idx = face.vertex_idx(3);
+
+                    // Get vertex positions and their associated UVs
+                    Vertex<T> v0 = m_Vertices[v0_idx];
+                    Vertex<T> v1 = m_Vertices[v1_idx];
+                    Vertex<T> v2 = m_Vertices[v2_idx];
+                    Vertex<T> v3 = m_Vertices[v3_idx];
+
+                    // Only now check if the point lies within the actual quad itself.
+                    if (point_in_quad(position, v0.point(), v1.point(), v3.point(), v2.point()))
+                    {
+                        // Bilinear interpolation for UVs
+                        return bilinear_interpolation_uv(position, v0, v1, v3, v2);
+                    }
                 }
             }
+
             return Point2D<double>(-1.0, -1.0); // No valid UV coordinate found
         }
 
-        BoundingBox<T> bbox() const noexcept { return m_BoundingBox; }
+        BoundingBox<T> bbox() const noexcept 
+        { 
+            return m_BoundingBox; 
+        }
 
     private:
 
         std::vector<Vertex<T>>  m_Vertices;
-        std::vector<Face<4>>    m_Faces;
-        std::vector<HalfEdge>   m_Edges;
+        std::vector<Face<T, 4>> m_Faces;
         BoundingBox<T>          m_BoundingBox;
-        Octree<T, 16>           m_Octree;
+        Octree<T, 128>           m_Octree;
 
-        void _initialize_apply_transforms(std::array<Point2D<T>, 4> affine_transform, std::array<Point2D<T>, 4> non_affine_transform)
-        {
-            {
-                // Apply the non affine transform in the form of a homography 
-                std::array<Point2D<T>, 4> source_transform = {
-					Point2D<T>(0, 0), Point2D<T>(1, 0),
-					Point2D<T>(0, 1), Point2D<T>(1, 1)
-                };
-
-				auto bbox_size = m_BoundingBox.size();
-
-				source_transform[0] *= bbox_size;
-				source_transform[1] *= bbox_size;
-				source_transform[2] *= bbox_size;
-				source_transform[3] *= bbox_size;
-
-				non_affine_transform[0] *= bbox_size;
-				non_affine_transform[1] *= bbox_size;
-				non_affine_transform[2] *= bbox_size;
-				non_affine_transform[3] *= bbox_size;
-
-                auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, non_affine_transform);
-                transform(homography_matrix, true, false);
-            }
-            
-
-            // Apply the affine transform, we do this after due to how we store our non-affine transform
-            {
-                std::array<Point2D<T>, 4> source_transform = {
-                    Point2D<T>(m_BoundingBox.minimum.x, m_BoundingBox.minimum.y), Point2D<T>(m_BoundingBox.maximum.x, m_BoundingBox.minimum.y),
-                    Point2D<T>(m_BoundingBox.minimum.x, m_BoundingBox.maximum.y), Point2D<T>(m_BoundingBox.maximum.x, m_BoundingBox.maximum.y)
-                };
-
-                auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, affine_transform);
-                transform(homography_matrix, true, false);
-            }
-
-        }
-
-        /// Initialize the mesh for a given number of points
+        /// Initialize the mesh for a given number of vertices
         void initialize_mesh(
             const std::vector<Vertex<T>>& vertices,
-            std::array<Point2D<T>, 4> affine_transform,
-            std::array<Point2D<T>, 4> non_affine_transform, 
             size_t x_divisions, 
             size_t y_divisions
         )
         {
             PSAPI_PROFILE_FUNCTION();
             m_Vertices = vertices;
+            m_BoundingBox = BoundingBox<T>::compute(m_Vertices);
 
-            // Update bbox
-            {
-                BoundingBox<T> bbox;
-                // Initialize the bounding box to extreme values
-                bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
-                bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
+            m_Faces.reserve((x_divisions - 1) * (y_divisions - 1));
 
-                for (size_t y = 0; y < y_divisions; ++y)
-                {
-                    for (size_t x = 0; x < x_divisions; ++x)
-                    {
-                        size_t idx = y * x_divisions + x;
-                        // Update min and max UV for bounding box
-                        bbox.minimum.x = std::min(bbox.minimum.x, m_Vertices[idx].point().x);
-                        bbox.minimum.y = std::min(bbox.minimum.y, m_Vertices[idx].point().y);
-                        bbox.maximum.x = std::max(bbox.maximum.x, m_Vertices[idx].point().x);
-                        bbox.maximum.y = std::max(bbox.maximum.y, m_Vertices[idx].point().y);
-                    }
-                }
-                m_BoundingBox = bbox;
-            }
-
-            _initialize_apply_transforms(affine_transform, non_affine_transform);
-
-            // Create the half-edges and faces for each mesh
-            m_Edges.reserve((x_divisions - 1) * (y_divisions - 1) * 4);    // 4 half-edges per quad
-            m_Faces.reserve((x_divisions - 1) * (y_divisions - 1));        // 1 face per quad
+            // Generate the faces and populate the vertex indices.
             for (size_t y = 0; y < y_divisions - 1; ++y)
             {
                 for (size_t x = 0; x < x_divisions - 1; ++x)
                 {
-                    size_t v0 = y * x_divisions + x;    // top-left vertex
-                    size_t v1 = v0 + 1;                 // top-right vertex
-                    size_t v2 = v0 + x_divisions;       // bottom-left vertex
-                    size_t v3 = v2 + 1;                 // bottom-right vertex
-                    std::array<size_t, 4> vert_indices = { v0, v1, v3, v2 };
+                    size_t v0_idx = y * x_divisions + x;        // top-left vertex
+                    size_t v1_idx = v0_idx + 1;                 // top-right vertex
+                    size_t v2_idx = v0_idx + x_divisions;       // bottom-left vertex
+                    size_t v3_idx = v2_idx + 1;                 // bottom-right vertex
+
+                    std::vector<Vertex<T>> face_vertices = { m_Vertices[v0_idx], m_Vertices[v1_idx], m_Vertices[v2_idx], m_Vertices[v3_idx] };
 
                     auto& created_face = m_Faces.emplace_back();
-                    created_face.vertex_indices({ v0, v1, v2, v3 });
-
-                    // Create half-edges for the quad
-                    size_t hePrev = m_Edges.size(); // Keep track of the previous half-edge
-                    for (size_t i = 0; i < 4; ++i)
-                    {
-                        size_t heCurr = m_Edges.size(); // Current half-edge index
-                        m_Edges.emplace_back(); // Create a new half-edge
-
-                        m_Edges[heCurr].vertex(vert_indices[i]); // Set starting vertex
-                        m_Edges[heCurr].pointed_at(vert_indices[(i + 1) % 4]); // Pointed-at vertex, wraps around for next one
-                        m_Edges[heCurr].face(m_Faces.size()); // Set face
-
-                        if (i > 0)
-                        {
-                            m_Edges[hePrev].next(heCurr); // Link previous half-edge to current
-                        }
-                        hePrev = heCurr; // Update previous half-edge index
-                    }
-
-                    // Complete the loop by linking the last half-edge to the first
-                    m_Edges[hePrev].next(m_Edges.size() - 4); // Link last half-edge to first half-edge
-                    created_face.half_edge(m_Edges.size() - 4); // Start with the first half-edge
+                    created_face.vertex_indices({ v0_idx, v1_idx, v2_idx, v3_idx });
+                    created_face.bbox(BoundingBox<T>::compute(face_vertices));
                 }
             }
 
-            // Finally link all the half edges, this connects all the opposites
-            link_half_edges();
-
-			// Generate our octree for faster traversal during the sampling
-			m_Octree = Octree<T, 16>(m_BoundingBox, 16);
-            for (size_t i = 0; i < m_Faces.size(); ++i)
-            {
-                m_Octree.insert(*this, i);
-            }
+            rebuild_octree();
         }
 
-
-        void rebuild_bbox()
+        /// Rebuild the bboxes of all the faces. This needs to be called after a transformation!
+        void rebuild_face_bboxes()
         {
-            // Reset bounding box to extreme values
-            m_BoundingBox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
-            m_BoundingBox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
-
-            // Update the bounding box based on vertex positions
-            for (const auto& vertex : m_Vertices)
+            for (Face<T, 4>& _face : m_Faces)
             {
-                m_BoundingBox.minimum.x = std::min(m_BoundingBox.minimum.x, vertex.point().x);
-                m_BoundingBox.minimum.y = std::min(m_BoundingBox.minimum.y, vertex.point().y);
-                m_BoundingBox.maximum.x = std::max(m_BoundingBox.maximum.x, vertex.point().x);
-                m_BoundingBox.maximum.y = std::max(m_BoundingBox.maximum.y, vertex.point().y);
+                auto face_indices = _face.vertex_indices();
+                std::vector<Vertex<T>> points = { m_Vertices[face_indices[0]], m_Vertices[face_indices[1]], m_Vertices[face_indices[2]],m_Vertices[face_indices[3]] };
+
+                _face.bbox(BoundingBox<T>::compute(points));
             }
         }
 
-
+        // Rebuild the acceleration structure
         void rebuild_octree()
         {
+            PSAPI_PROFILE_FUNCTION();
             // Rebuild the octree with updated positions
-            m_Octree = Octree<T, 16>(m_BoundingBox);
+            m_Octree = Octree<T, 128>(m_BoundingBox);
             for (size_t i = 0; i < m_Faces.size(); ++i)
             {
                 m_Octree.insert(*this, i);
@@ -1057,44 +564,6 @@ namespace Geometry
             {
                 auto [u, v, w] = barycentric_coordinates(p, v0.point(), v2.point(), v3.point());
                 return (v0.uv() * u) + (v2.uv() * v) + (v3.uv() * w);
-            }
-        }
-
-
-        /// Link all the half edges to their opposites
-        void link_half_edges()
-        {
-            PSAPI_PROFILE_FUNCTION();
-
-            // Map each edge to its index by storing vertex pairs
-            std::unordered_map<std::pair<size_t, size_t>, size_t, pair_hash> edge_map;
-
-            // First pass: Populate the map with edge pairs
-            for (size_t i = 0; i < m_Edges.size(); ++i)
-            {
-                // Define each half-edge with (pointed_at_idx, vertex_idx) for easier reverse lookup
-                auto key = std::make_pair(m_Edges[i].pointed_at_idx(), m_Edges[i].vertex_idx());
-                edge_map[key] = i;
-            }
-
-            // Second pass: Link opposites
-            for (size_t i = 0; i < m_Edges.size(); ++i)
-            {
-                // Define the opposite edge key (vertex_idx, pointed_at_idx)
-                auto opposite_key = std::make_pair(m_Edges[i].vertex_idx(), m_Edges[i].pointed_at_idx());
-
-                // Find the opposite half-edge in the map
-                auto it = edge_map.find(opposite_key);
-                if (it != edge_map.end() && it->second != i)
-                {
-                    // Link opposites
-                    size_t j = it->second;
-                    m_Edges[i].opposite(j);
-                    m_Edges[j].opposite(i);
-
-                    // Remove from map to avoid double-linking
-                    edge_map.erase(it);
-                }
             }
         }
     };

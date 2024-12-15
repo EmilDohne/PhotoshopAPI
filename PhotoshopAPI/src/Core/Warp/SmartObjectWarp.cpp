@@ -1,6 +1,5 @@
 #include "SmartObjectWarp.h"
 
-
 #include <OpenImageIO/imageio.h>
 
 #include <memory>
@@ -463,38 +462,36 @@ namespace SmartObject
 			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid transform and non-affine transform encountered, expected both to be of size 8, instead got %zu", transformItems.size());
 		}
 
-		// Convert to mesh so we can easily apply our transformation
-		Geometry::Mesh<double> nonAffineTransformMesh;
+
+		std::vector<Geometry::Point2D<double>> transformPoints;
+		std::vector<Geometry::Point2D<double>> nonAffineTransformPoints;
 		{
-			std::vector<Geometry::Point2D<double>> transformPoints;
-			std::vector<Geometry::Point2D<double>> nonAffineTransformPoints;
 			for (size_t i = 0; i < 8; i += 2)
 			{
 				transformPoints.push_back(Geometry::Point2D<double>(transformItems[i], transformItems[i + 1]));
 				nonAffineTransformPoints.push_back(Geometry::Point2D<double>(nonAffineTransformItems[i], nonAffineTransformItems[i + 1]));
 			}
-			Geometry::Mesh<double> transformMesh = Geometry::Mesh<double>(transformPoints, 2, 2);
-			nonAffineTransformMesh = Geometry::Mesh<double>(nonAffineTransformPoints, 2, 2);
 
 			// Move the non affine transform mesh to the center after which we scale it by 
 			// 1 / size to make sure our non affine mesh is in the scale of 0-1
-			nonAffineTransformMesh.move(-transformMesh.bbox().minimum);
-			auto size = Geometry::Point2D<double>{ 1.0f, 1.0f } / transformMesh.bbox().size();
-			nonAffineTransformMesh.scale(size, { 0.0f, 0.0f });
+			Geometry::Operations::move(nonAffineTransformPoints, -Geometry::BoundingBox<double>::compute(transformPoints).minimum);
+			auto size = Geometry::Point2D<double>{ 1.0f, 1.0f } / Geometry::BoundingBox<double>::compute(transformPoints).size();
+
+			Geometry::Operations::scale(nonAffineTransformPoints, size, { .0f, .0f });
 		}
 		// Convert back to array, note that we swap the point order here as Photoshop stores these in the order 
 		// top-left, top-right, bottom-right, bottom-left
-		auto points = nonAffineTransformMesh.points();
-		return { points[0], points[1], points[3], points[2] };
+		return { nonAffineTransformPoints[0], nonAffineTransformPoints[1], nonAffineTransformPoints[3], nonAffineTransformPoints[2] };
 	}
 
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Geometry::Mesh<double> Warp::mesh() const
+	Geometry::QuadMesh<double> Warp::mesh() const
 	{
-		auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
-		Geometry::Mesh<double> mesh(pointVec, m_Transform, m_NonAffineTransform, m_uDims, m_vDims);
+		auto point_vec = get_transformed_source_points();
+		Geometry::QuadMesh<double> mesh(point_vec, m_uDims, m_vDims);
+
 		return mesh;
 	}
 
@@ -503,16 +500,16 @@ namespace SmartObject
 	// ---------------------------------------------------------------------------------------------------------------------
 	Geometry::BezierSurface Warp::surface() const
 	{
-		auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
+		auto point_vec = get_transformed_source_points();
 
 		// Pass the quilt slices to apply the warp biasing
 		if (m_WarpType == WarpType::quilt)
 		{
-			Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims, m_QuiltSlicesX, m_QuiltSlicesY);
+			Geometry::BezierSurface surface(point_vec, m_uDims, m_vDims, m_QuiltSlicesX, m_QuiltSlicesY);
 			return surface;
 		}
 
-		Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims);
+		Geometry::BezierSurface surface(point_vec, m_uDims, m_vDims);
 		return surface;
 	}
 
@@ -620,12 +617,12 @@ namespace SmartObject
 		if (consider_bezier)
 		{
 			auto warp_surface = surface();
-			auto warp_mesh = warp_surface.mesh(25, 25, m_Transform, m_NonAffineTransform);
+			auto warp_mesh = warp_surface.mesh(25, 25, false);
 			bbox = warp_mesh.bbox();
 		}
 		else
 		{
-			Geometry::Mesh<double> mesh(m_WarpPoints, m_Transform, m_NonAffineTransform, m_uDims, m_vDims);
+			Geometry::QuadMesh<double> mesh(get_transformed_source_points(), m_uDims, m_vDims);
 			bbox = mesh.bbox();
 		}
 
@@ -981,27 +978,69 @@ namespace SmartObject
 		auto slope_edge_top = calculate_slope(top_left, top_right);
 		auto slope_edge_bot = calculate_slope(bot_left, bot_right);
 
-		if (std::abs(slope_edge_bot - slope_edge_top) > 1e-6)
+		if (std::abs(slope_edge_bot - slope_edge_top) > 1e-3)
 		{
 			PSAPI_LOG_ERROR("Warp",
 				"Invalid affine transformation encountered, the line formed by top_left->top_right does not have the same slope"
-				" as the line formed by bot_left->bot_right within epsilon 1e-6. These lines must be perpendicular");
+				" as the line formed by bot_left->bot_right within epsilon 1e-3. These lines must be perpendicular");
 		}
 
 		auto slope_edge_left = calculate_slope(top_left, bot_left);
 		auto slope_edge_right = calculate_slope(top_right, bot_right);
 
-		if (std::abs(slope_edge_left - slope_edge_right) > 1e-6)
+		if (std::abs(slope_edge_left - slope_edge_right) > 1e-3)
 		{
 			PSAPI_LOG_ERROR("Warp",
 				"Invalid affine transformation encountered, the line formed by top_left->bot_left does not have the same slope"
-				" as the line formed by top_right->bot_right within epsilon 1e-6. These lines must be perpendicular");
+				" as the line formed by top_right->bot_right within epsilon 1e-3. These lines must be perpendicular");
 		}
 
 		m_Transform[0] = top_left;
 		m_Transform[1] = top_right;
 		m_Transform[2] = bot_left;
 		m_Transform[3] = bot_right;
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	std::vector<Geometry::Point2D<double>> Warp::get_transformed_source_points() const
+	{
+		std::vector<Geometry::Point2D<double>> points = m_WarpPoints;
+
+		// Create and apply the non affine transform homography
+		{
+			std::array<Geometry::Point2D<double>, 4> unit_quad = {
+				Geometry::Point2D<double>(0.0f, 0.0f), Geometry::Point2D<double>(1.0f, 0.0f),
+				Geometry::Point2D<double>(0.0f, 1.0f), Geometry::Point2D<double>(1.0f, 1.0f)
+			};
+			auto non_affine_transform = m_NonAffineTransform;
+
+			Geometry::Point2D<double> size = { m_Bounds[3] - m_Bounds[1], m_Bounds[2] - m_Bounds[0] };
+
+			unit_quad[0] *= size;
+			unit_quad[1] *= size;
+			unit_quad[2] *= size;
+			unit_quad[3] *= size;
+
+			non_affine_transform[0] *= size;
+			non_affine_transform[1] *= size;
+			non_affine_transform[2] *= size;
+			non_affine_transform[3] *= size;
+
+			auto homography_non_affine = Geometry::Operations::create_homography_matrix(unit_quad, non_affine_transform);
+			Geometry::Operations::transform(points, homography_non_affine);
+		}
+
+
+		// Create and apply the affine transform homography
+		{
+			auto bbox = Geometry::BoundingBox<double>::compute(points);
+			auto homography_affine = Geometry::Operations::create_homography_matrix(bbox.as_quad(), m_Transform);
+
+			Geometry::Operations::transform(points, homography_affine);
+		}
+
+		return points;
 	}
 
 }
