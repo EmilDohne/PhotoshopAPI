@@ -393,7 +393,9 @@ namespace Render
                 float u = static_cast<float>(x) / (buffer.width - 1);
 
                 // Evaluate point on the surface
-                auto point = surface.evaluate(u, v);
+                auto biased_uv = surface.bias_uv(u, v);
+                auto point = surface.evaluate(biased_uv.x, biased_uv.y);
+
                 size_t px = static_cast<size_t>(std::round(point.x));
                 size_t py = static_cast<size_t>(std::round(point.y));
 
@@ -414,7 +416,9 @@ namespace Render
                 float v = static_cast<float>(y) / (buffer.height - 1);
 
                 // Evaluate point on the surface
-                auto point = surface.evaluate(u, v);
+                auto biased_uv = surface.bias_uv(u, v);
+                auto point = surface.evaluate(biased_uv.x, biased_uv.y);
+
                 size_t px = static_cast<size_t>(std::round(point.x));
                 size_t py = static_cast<size_t>(std::round(point.y));
 

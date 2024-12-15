@@ -366,10 +366,10 @@ namespace SmartObject
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
 			const auto& boundsDescriptor = quilt_warp_descriptor.at<Descriptors::Descriptor>("bounds");
-			[[maybe_unused]] const auto& top = boundsDescriptor.at<double>("Top ");
-			[[maybe_unused]] const auto& left = boundsDescriptor.at<double>("Left");
-			[[maybe_unused]] const auto& bottom = boundsDescriptor.at<double>("Btom");
-			[[maybe_unused]] const auto& right = boundsDescriptor.at<double>("Rght");
+			const auto& top = boundsDescriptor.at<double>("Top ");
+			const auto& left = boundsDescriptor.at<double>("Left");
+			const auto& bottom = boundsDescriptor.at<double>("Btom");
+			const auto& right = boundsDescriptor.at<double>("Rght");
 
 			// Retrieve deformNumRows and deformNumCols (int32_t)
 			const auto& deformNumRows = quilt_warp_descriptor.at<int32_t>("deformNumRows");
@@ -397,7 +397,7 @@ namespace SmartObject
 				warp_points.push_back({ hrznValues[i], vrtcValues[i] });
 			}
 			warp = Warp(warp_points, deformNumCols, deformNumRows);
-
+			warp._warp_bounds(Geometry::BoundingBox<double>({ left, top }, { right, bottom }));
 
 			// Retrieve the quilt slices over x and y, these are probably the actual slice locations?
 			// They are for some reason nested two levels deep
@@ -504,6 +504,14 @@ namespace SmartObject
 	Geometry::BezierSurface Warp::surface() const
 	{
 		auto pointVec = std::vector<Geometry::Point2D<double>>(m_WarpPoints.begin(), m_WarpPoints.end());
+
+		// Pass the quilt slices to apply the warp biasing
+		if (m_WarpType == WarpType::quilt)
+		{
+			Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims, m_QuiltSlicesX, m_QuiltSlicesY);
+			return surface;
+		}
+
 		Geometry::BezierSurface surface(pointVec, m_uDims, m_vDims);
 		return surface;
 	}
@@ -879,6 +887,15 @@ namespace SmartObject
 		m_Bounds[1] = bounds.minimum.x;
 		m_Bounds[2] = bounds.maximum.y;
 		m_Bounds[3] = bounds.maximum.x;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Geometry::BoundingBox<double> Warp::_warp_bounds() const
+	{
+		Geometry::BoundingBox<double> bbox({ m_Bounds[1], m_Bounds[0] }, { m_Bounds[2], m_Bounds[3] });
+		return bbox;
 	}
 
 

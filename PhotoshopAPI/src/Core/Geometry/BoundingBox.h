@@ -19,6 +19,11 @@ namespace Geometry
         Point2D<T> minimum;
         Point2D<T> maximum;
 
+        BoundingBox() = default;
+
+        BoundingBox(Point2D<T> _minimum, Point2D<T> _maximum)
+            : minimum(_minimum), maximum(_maximum) {}
+
         bool in_bbox(Point2D<T> pt) const
         {
             return pt.x >= minimum.x && pt.x <= maximum.x &&
