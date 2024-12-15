@@ -31,7 +31,7 @@ namespace Geometry
         T y{};
 
         Point2D() = default;
-        Point2D(T x_val, T y_val) : x(x_val), y(y_val) {}
+        constexpr Point2D(T x_val, T y_val) : x(x_val), y(y_val) {}
 
         // Equality operators
         bool operator==(Point2D<T> other) const { return this->x == other.x && this->y == other.y; }
@@ -131,6 +131,35 @@ namespace Geometry
             // Use a simple hash combination method
             return std::hash<T>()(x) ^ (std::hash<T>()(y) << 1); // XOR combined with left shift for distribution
         }
+    };
+
+
+    /// Extension of a Point2D to additionally describe the UV coordinate of a given point.
+    template <typename T>
+    struct Vertex
+    {
+        Vertex() = default;
+        Vertex(Point2D<T> point) : m_Point(point) {}
+        Vertex(Point2D<T> point, Point2D<double> uv) : m_Point(point), m_UV(uv) {}
+
+        Point2D<T> point() const
+        {
+            return m_Point;
+        }
+
+        Point2D<T>& point()
+        {
+            return m_Point;
+        }
+
+        Point2D<double> uv() const
+        {
+            return m_UV;
+        }
+
+    private:
+        Point2D<T> m_Point = { 0.0f, 0.0f };
+        Point2D<double> m_UV = { -1.0, -1.0 };
     };
 }
 

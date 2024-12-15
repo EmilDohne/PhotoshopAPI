@@ -331,32 +331,58 @@ namespace Render
             }
         }
 
-        /// Bilinearly interpolate the pixel value at a given coordinate with bounds checking.
+
+        /// Bicubicly interpolate the pixel value at a given floating-point coordinate.
         /// 
-        /// This function first checks that the provided `point` coordinates are within the bounds
-        /// of the image buffer. If they are valid, it calls `sample_bilinear` to perform the
-        /// interpolation. If the coordinates are out of bounds, it returns a default pixel value
-        /// (e.g., black or transparent).
-        ///
+        /// This function samples the pixel value at the specified floating-point coordinates in the 
+        /// `ImageBuffer`. If the coordinates are integers, it directly returns the pixel value at 
+        /// that location. Otherwise, it performs bicubic interpolation using the 16 surrounding 
+        /// pixel values to compute a smoother result.
+        /// 
         /// \tparam T The type of pixel value stored in the `ImageBuffer`.
         /// \tparam U The type of the coordinate values used in `Point2D`.
         ///
         /// \param point The `Point2D` object representing the floating-point coordinates for which 
-        ///               the pixel value needs to be interpolated.
+        ///               the pixel value needs to be interpolated. If this is outside of the image buffer
+        ///               the behaviour is undefined
         /// 
-        /// \return The interpolated pixel value at the specified coordinates or a default pixel 
-        ///         value if the coordinates are out of bounds.
+        /// \return The interpolated pixel value at the specified coordinates, either as a direct 
+        ///         pixel value if the coordinates are integers or as a result of bicubic 
+        ///         interpolation if the coordinates are floating-point values.
         template <typename U>
-        T sample_bilinear_checked(const Geometry::Point2D<U> point) const
+        T sample_bicubic(const Geometry::Point2D<U> point) const
         {
-            // Check bounds
-            if (point.x < 0 || static_cast<T>(point.x) >= width || point.y < 0 || static_cast<T>(point.y) >= height)
+            // If coordinates are integers, return the pixel directly
+            if constexpr (!std::is_floating_point_v<U>)
             {
-                return T{};
+                size_t x = static_cast<size_t>(point.x);
+                size_t y = static_cast<size_t>(point.y);
+                return buffer[y * this->width + x];
             }
+            else
+            {
+                // Get integer positions around the point
+                std::int64_t x_int = static_cast<std::int64_t>(point.x);
+                std::int64_t y_int = static_cast<std::int64_t>(point.y);
 
-            // Call the main bilinear sample function
-            return sample_bilinear(point);
+                // Calculate fractional weights
+                U dx = point.x - static_cast<U>(x_int);
+                U dy = point.y - static_cast<U>(y_int);
+
+                // Get the 4x4 pixel matrix and apply the cubic hermite first across
+                // the x dimension and then across the y dimension along the combined results
+                std::array<T, 4 * 4> matrix;
+                ImageBuffer<T, is_const>::get_matrix<4, 4, is_const>(matrix, *this, x_int, y_int);
+
+                U col0  = cubic_hermite<U>(static_cast<U>(matrix[0]),  static_cast<U>(matrix[1]),  static_cast<U>(matrix[2]),  static_cast<U>(matrix[3]),  dx);
+                U col1  = cubic_hermite<U>(static_cast<U>(matrix[4]),  static_cast<U>(matrix[5]),  static_cast<U>(matrix[6]),  static_cast<U>(matrix[7]),  dx);
+                U col2  = cubic_hermite<U>(static_cast<U>(matrix[8]),  static_cast<U>(matrix[9]),  static_cast<U>(matrix[10]), static_cast<U>(matrix[11]), dx);
+                U col3  = cubic_hermite<U>(static_cast<U>(matrix[12]), static_cast<U>(matrix[13]), static_cast<U>(matrix[14]), static_cast<U>(matrix[15]), dx);
+                U value = cubic_hermite<U>(col0, col1, col2, col3, dy);
+
+                value = std::clamp<U>(value, 0, std::numeric_limits<T>::max());
+                return static_cast<T>(value);
+            }
         }
 
         /// Bilinearly interpolate the pixel value based on normalized UV coordinates (0-1).
@@ -379,43 +405,36 @@ namespace Render
                 PSAPI_LOG_ERROR("ImageBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
             }
             // Map UV coordinates to pixel coordinates
-            U x = uv.x * static_cast<U>(width - 1);
-            U y = uv.y * static_cast<U>(height - 1);
+            U x = uv.x * static_cast<U>(width) - .5;
+            U y = uv.y * static_cast<U>(height) - .5;
             return sample_bilinear(Geometry::Point2D<U>(x, y));
         }
 
-        /// Bilinearly interpolate the pixel value based on normalized UV coordinates with bounds checking.
+
+        /// Bucibicly interpolate the pixel value based on normalized UV coordinates (0-1).
         /// 
-        /// This function first checks that the provided UV coordinates are within the valid range
-        /// of (0,0) to (1,1). If they are valid, it calls `sample_bilinear_uv` to perform the
-        /// interpolation. If the UV coordinates are out of bounds, it returns a default pixel value
-        /// (e.g., black or transparent).
-        ///
+        /// This function maps the provided UV coordinates, which range from (0,0) to (1,1), 
+        /// to the corresponding pixel coordinates in the `ImageBuffer`. It then calls 
+        /// `sample_bicubic` to perform the interpolation based on the converted coordinates.
+        /// 
         /// \tparam T The type of pixel value stored in the `ImageBuffer`.
         /// \tparam U The type of the UV coordinate values used in `Point2D`.
         ///
         /// \param uv The `Point2D` object representing the normalized UV coordinates.
         /// 
-        /// \return The interpolated pixel value at the specified UV coordinates or a default pixel 
-        ///         value if the coordinates are out of bounds.
+        /// \return The interpolated pixel value at the specified UV coordinates.
         template <typename U>
-        T sample_bilinear_uv_checked(const Geometry::Point2D<U> uv) const
+        T sample_bicubic_uv(const Geometry::Point2D<U> uv) const
         {
             if constexpr (!std::is_floating_point_v<U>)
             {
                 PSAPI_LOG_ERROR("ImageBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
             }
-
-            // Check bounds for UV coordinates
-            if (uv.x < static_cast<U>(0.0f) || uv.x > static_cast<U>(1.0f) || uv.y < static_cast<U>(0.0f) || uv.y > static_cast<U>(1.0f))
-            {
-                return T{};
-            }
-
-            // Call the main bilinear UV sample function
-            return sample_bilinear_uv(uv);
+            // Map UV coordinates to pixel coordinates
+            U x = uv.x * static_cast<U>(width)  - .5;
+            U y = uv.y * static_cast<U>(height) - .5;
+            return sample_bicubic(Geometry::Point2D<U>(x, y));
         }
-
 
         /// Retrieve a m*n submatrix of a given buffer at coordinate x and y. 
         ///
@@ -475,8 +494,8 @@ namespace Render
         /// \param buffer The buffer to sample the matrix from
         /// \param x The x coordinate to sample at, gets clamped at boundaries
         /// \param y The y coordinate to sample at, gets clamped at boundaries
-        template <size_t _m, size_t _n>
-        static void get_matrix(std::array<T, _m * _n>& matrix, const ImageBuffer<T>& buffer, std::int64_t x, std::int64_t y)
+        template <size_t _m, size_t _n, bool _is_const>
+        static void get_matrix(std::array<T, _m * _n>& matrix, const ImageBuffer<T, _is_const>& buffer, std::int64_t x, std::int64_t y)
         {
             static_assert(_m >= 2, "Must access a matrix with at least 2x2 dimensions");
             static_assert(_n >= 2, "Must access a matrix with at least 2x2 dimensions");
@@ -493,7 +512,7 @@ namespace Render
                     std::int64_t y_offset = y + col - offset_y;
 
                     // Get the pixel and insert it into the matrix
-                    matrix[col * _m + row] = ImageBuffer<T>::get_pixel(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
+                    matrix[col * _m + row] = ImageBuffer<T, _is_const>::get_pixel(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
                 }
             }
         }
@@ -506,32 +525,32 @@ namespace Render
         /// https://dsp.stackexchange.com/questions/18265/bicubic-interpolation/18273#18273
         /// https://en.wikipedia.org/wiki/Hermite_polynomials
         /// 
-        /// \tparam T the precision of the function, accepts half, float and double 
+        /// \tparam _Precision the precision of the function, accepts half, float and double 
         /// 
         /// \param A The leftmost control point, the slope from A to C is equivalent to the derivative of B
         /// \param B The middle-left control point, defines the leftmost bound of the value that is possible
         /// \param C The middle-right control point, defines the rightmost bound of the value that is possible
         /// \param D The rightmost control point, the slope from B to D is equivalent to the derivative of C
         /// \param t the interpolation value between B and C, from 0-1.
-        template <typename T = float, typename = std::enable_if_t<std::is_floating_point_v<T> || std::is_same_v<T, Imath::half>>>
-        constexpr T cubic_hermite(T A, T B, T C, T D, T t)
+        template <typename _Precision = float, typename = std::enable_if_t<std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>>>
+        constexpr _Precision cubic_hermite(_Precision A, _Precision B, _Precision C, _Precision D, _Precision t) const
         {
             // Expanded forms of the hermite cubic polynomial,
             // adapted from https://blog.demofox.org/2015/08/08/cubic-hermite-interpolation/
-            T a = -A * .5f + (3.0f * B) * .5f - (3.0f * C) * .5f + D * .5f;
-            T b = A - (5.0f * B) * .5f + 2.0f * C - D * .5f;
-            T c = -A * .5f + C * .5f;
-            T d = B;
+            _Precision a = -A / 2.0f + (3.0f * B) / 2.0f - (3.0f * C) / 2.0f + D / 2.0f;
+            _Precision b = A - (5.0f * B) / 2.0f + 2.0f * C - D / 2.0f;
+            _Precision c = -A / 2.0f + C / 2.0f;
+            _Precision d = B;
 
-            return a * t * t * t + b * t * t + c * t + d;
+            return a*t*t*t + b*t*t + c*t + d;
         }
 
         /// Get a pixel at the given pixel coordinate in the source image
         /// clamping into the range 0 - (width-1) and 0 - (height-1) respectively
         static T get_pixel(const BufferType buffer, std::int64_t x, std::int64_t y, size_t width, size_t height)
         {
-            x = std::clamp(x, 0, static_cast<std::int64_t>(width) - 1);
-            y = std::clamp(y, 0, static_cast<std::int64_t>(height) - 1);
+            x = std::clamp(x, static_cast<std::int64_t>(0), static_cast<std::int64_t>(width) - 1);
+            y = std::clamp(y, static_cast<std::int64_t>(0), static_cast<std::int64_t>(height) - 1);
             auto idx = y * width + x;
             return buffer[idx];
         };

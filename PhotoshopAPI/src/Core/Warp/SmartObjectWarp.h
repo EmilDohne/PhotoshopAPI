@@ -8,6 +8,7 @@
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Geometry/Point.h"
 #include "Core/Geometry/Mesh.h"
+#include "Core/Geometry/MeshOperations.h"
 #include "Core/Geometry/BezierSurface.h"
 
 
@@ -60,7 +61,7 @@ namespace SmartObject
 
 		/// Generate a Mesh from our warp structure, this is primarily used for directly
 		/// visualizing the points. To get a subdivided Bezier representation use `surface().mesh()`
-		Geometry::Mesh<double> mesh() const;
+		Geometry::QuadMesh<double> mesh() const;
 
 		/// Generate a bezier surface from this warp structure. This can be used e.g. for rendering
 		Geometry::BezierSurface surface() const;
@@ -84,7 +85,7 @@ namespace SmartObject
 		///						mesh construction once. Can be gotten using `SmartObjectWarp::mesh()`
 		/// 
 		template <typename T>
-		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, const Geometry::Mesh<double>& warp_mesh) const
+		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, const Geometry::QuadMesh<double>& warp_mesh) const
 		{
 			PSAPI_PROFILE_FUNCTION();
 
@@ -101,9 +102,7 @@ namespace SmartObject
 
 			std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
 				{
-					PSAPI_PROFILE_SCOPE("Warp scanline");
 					constexpr double failure_condition = -1.0f;
-
 					for (size_t x = min_x; x <= max_x; ++x)
 					{
 						// The way this works is that on creation of the mesh from the bezier we actually
@@ -150,7 +149,7 @@ namespace SmartObject
 		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, size_t resolution = 25) const
 		{
 			auto warp_surface = surface();
-			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution, m_Transform, m_NonAffineTransform);
+			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution);
 			apply(buffer, image, warp_mesh, resolution);
 		}
 
@@ -450,6 +449,11 @@ namespace SmartObject
 		std::vector<double> m_QuiltSlicesX;
 		std::vector<double> m_QuiltSlicesY;
 
+	private:
+
+		/// Return the warp points with the transformations described by m_AffineTransform and m_NonAffineTransform applied to them
+		std::vector<Geometry::Point2D<double>> get_transformed_source_points() const;
+
 		/// Deserialize the common components between the quilt and normal warp
 		static void _deserialize_common(Warp& warpStruct, const Descriptors::Descriptor& warpDescriptor);
 
@@ -459,7 +463,6 @@ namespace SmartObject
 		// Overloads for serializing specific types
 		Descriptors::Descriptor _serialize(quilt_warp) const;
 		Descriptors::Descriptor _serialize(normal_warp) const;
-
 		
 	};
 

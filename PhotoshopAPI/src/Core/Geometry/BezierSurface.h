@@ -158,8 +158,6 @@ namespace Geometry
         // Evaluate any patch at (u, v) based on subdivisions across x and y
         Point2D<double> evaluate(double u, double v) const
         {
-
-            PSAPI_PROFILE_FUNCTION();
             double patch_size_u = 1.0 / m_NumPatchesX;
             double patch_size_v = 1.0 / m_NumPatchesY;
 
@@ -184,34 +182,48 @@ namespace Geometry
             return evaluate_bezier_patch(patch, local_u, local_v);
         }
 
+
         /// Convert the bezier patch into a mesh by repeatedly calling evaluate for x and y intervals across the surface
         /// This function will create a quadrilateral mesh which can be more easily queried for UV coordinates
         /// at a given point than the bezier surface itself lending itself to e.g. mesh warps.
         ///
         /// \param divisions_x          The resolution across the x division
         /// \param divisions_y          The resolution across the y division
-        /// \param affine_transform     The affine transformation to apply to the mesh, this represents the actual resolution
-        /// \param non_affine_transform The non-affine transformation to apply to the mesh, in the range of 0-1 for a no-op, may go outside of that
-        Mesh<double> mesh(size_t divisions_x, size_t divisions_y, std::array<Geometry::Point2D<double>, 4> affine_transform, std::array<Geometry::Point2D<double>, 4> non_affine_transform) const
+        /// \param move_to_zero         Whether to move the resulting mesh to have its top left coordinate be 0, 0
+        QuadMesh<double> mesh(size_t divisions_x, size_t divisions_y, bool move_to_zero) const
         {
             PSAPI_PROFILE_FUNCTION();
 
-            std::vector<Vertex<double>> vertices;
-            vertices.reserve(divisions_x * divisions_y);
-            for (size_t y = 0; y < divisions_y; ++y)
+            std::vector<Vertex<double>> vertices(divisions_x * divisions_y);
             {
-                float v = static_cast<float>(y) / (divisions_y - 1);
-                for (size_t x = 0; x < divisions_x; ++x)
-                {
-                    float u = static_cast<float>(x) / (divisions_x - 1);
+                PSAPI_PROFILE_SCOPE("EvaluateBezier");
+                std::for_each(std::execution::par_unseq, vertices.begin(), vertices.end(), [&](Vertex<double>& vertex)
+                    {
+                        // Calculate the index of the vertex in the 2D grid
+                        size_t index = &vertex - vertices.data();
+                        size_t y = index / divisions_x;
+                        size_t x = index % divisions_x;
 
-                    auto biased_uv = bias_uv(u, v);
-                    auto uv = evaluate(biased_uv.x, biased_uv.y);
+                        float v = static_cast<float>(y) / (divisions_y - 1);
+                        float u = static_cast<float>(x) / (divisions_x - 1);
 
-                    vertices.emplace_back(Vertex<double>(uv, {u, v}));
-                }
+                        // Compute UV and biased UV
+                        auto biased_uv = bias_uv(u, v);
+                        auto uv = evaluate(biased_uv.x, biased_uv.y);
+
+                        // Assign the vertex at this index
+                        vertex = Vertex<double>(uv, { u, v });
+                    });
             }
-            return Mesh<double>(vertices, affine_transform, non_affine_transform, divisions_x, divisions_y);
+
+            // move by the negative of the minimum so the vertices start at 0,0. If we do this here we don't later have to rebuild the octree of the mesh which allows us to speed
+            // things up by quite a bit.
+            if (move_to_zero)
+            {
+                Geometry::Operations::move(vertices, -Geometry::BoundingBox<double>::compute(vertices).minimum);
+            }
+
+            return QuadMesh<double>(vertices, divisions_x, divisions_y);
         }
 
         /// Get the patches associated with the Bezier surface, these are sorted in scanline order

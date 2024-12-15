@@ -189,17 +189,16 @@ int main()
 	}
 
 
-	//// Render mesh
-	//{
-	//	auto mesh = layer_ptr->warp().surface().mesh(9, 9, layer_ptr->warp().affine_transform(), layer_ptr->warp().non_affine_transform());
-	//	mesh.move({ -mesh.bbox().minimum.x, -mesh.bbox().minimum.y });
+	// Render mesh
+	{
+		auto mesh = layer_ptr->warp().surface().mesh(9, 9, true);
 
-	//	std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
-	//	Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
-	//	Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
+		std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
+		Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
+		Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
 
-	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
-	//}
+		write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
+	}
 
 	auto orig_image_data = layer_ptr->original_image_data();
 	auto image_data = layer_ptr->get_image_data();
