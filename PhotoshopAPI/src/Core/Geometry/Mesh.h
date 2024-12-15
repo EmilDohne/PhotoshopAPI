@@ -372,9 +372,9 @@ namespace Geometry
 
             // Calculate the centroid coordinates
             if (count == 0) 
-            {
+        {
                 return Point2D<T>(0, 0); // Return a default value if no vertices are found
-            }
+        }
 
             return Point2D<T>(sum_x / static_cast<T>(count), sum_y / static_cast<T>(count));
         }
@@ -460,7 +460,31 @@ namespace Geometry
         /// The non affine transform describes rectangle with normalized positions 
         Mesh(const std::vector<Point2D<T>>& points, const std::array<Point2D<T>, 4> affine_transform, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
         {
-            initialize_mesh(points, affine_transform, non_affine_transform, x_divisions, y_divisions);
+            std::vector<Vertex<T>> vertices;
+            vertices.reserve(points.size());
+
+            for (size_t y = 0; y < y_divisions; ++y)
+            {
+                double v = static_cast<double>(y) / (y_divisions - 1);
+                for (size_t x = 0; x < x_divisions; ++x)
+                {
+                    double u = static_cast<double>(x) / (x_divisions - 1);
+                    size_t idx = y * x_divisions + x;
+
+                    vertices.emplace_back(points[idx], Point2D<double>(u, v));
+                }
+            }
+
+            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
+        }
+
+        /// Generate a HalfEdgeMesh from a flat vector of vertices. These vertices must be in scanline order and the 
+        /// generated mesh is quadrilateral.
+        /// 
+        /// The non affine transform describes rectangle with normalized positions 
+        Mesh(const std::vector<Vertex<T>>& vertices, const std::array<Point2D<T>, 4> affine_transform, const std::array<Point2D<T>, 4> non_affine_transform, size_t x_divisions, size_t y_divisions)
+        {
+            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
         }
 
         Mesh(const std::vector<Point2D<T>>& points, size_t x_divisions, size_t y_divisions)
@@ -477,7 +501,21 @@ namespace Geometry
                 Point2D<T>{static_cast<T>(0), static_cast<T>(1)}, Point2D<T>{static_cast<T>(1), static_cast<T>(1)}
             };
 
-            initialize_mesh(points, affine_transform, non_affine_transform, x_divisions, y_divisions);
+            std::vector<Vertex<T>> vertices;
+            vertices.reserve(points.size());
+
+            for (size_t y = 0; y < y_divisions; ++y)
+            {
+                double v = static_cast<double>(y) / (y_divisions - 1);
+                for (size_t x = 0; x < x_divisions; ++x)
+                {
+                    double u = static_cast<double>(x) / (x_divisions - 1);
+                    size_t idx = y * x_divisions + x;
+
+                    vertices.emplace_back(points[idx], Point2D<double>(u, v));
+                }
+            }
+            initialize_mesh(vertices, affine_transform, non_affine_transform, x_divisions, y_divisions);
         }
 
         std::vector<Point2D<T>> points() const
@@ -797,29 +835,14 @@ namespace Geometry
         BoundingBox<T>          m_BoundingBox;
         Octree<T, 16>           m_Octree;
 
-
-        /// Check whether the non affine transform is a no op, i.e. if all the points are almost identical to a 
-        /// Unit quad (within the epsilon). 
-        bool non_affine_transform_is_noop(const std::array<Point2D<T>, 4> non_affine_transform, double epsilon = 1e-6) const
+        void _initialize_apply_transforms(std::array<Point2D<T>, 4> affine_transform, std::array<Point2D<T>, 4> non_affine_transform)
         {
-            bool p0_same = Point2D<T>::equal(non_affine_transform[0], Point2D<T>(0, 0), epsilon);
-            bool p1_same = Point2D<T>::equal(non_affine_transform[1], Point2D<T>(1, 0), epsilon);
-            bool p2_same = Point2D<T>::equal(non_affine_transform[2], Point2D<T>(0, 1), epsilon);
-            bool p3_same = Point2D<T>::equal(non_affine_transform[3], Point2D<T>(1, 1), epsilon);
-            return p0_same && p1_same && p2_same && p3_same;
-        }
-
-
-        void _initialize_apply_transforms(BoundingBox<T> bbox, std::array<Point2D<T>, 4> affine_transform, std::array<Point2D<T>, 4> non_affine_transform)
-        {
-			// Apply the non affine transform in the form of a homography matrix recalculating the bounding box
-			// during the transformation
-			if (!non_affine_transform_is_noop(non_affine_transform))
-			{
-				std::array<Point2D<T>, 4> source_transform = {
+            {
+                // Apply the non affine transform in the form of a homography 
+                std::array<Point2D<T>, 4> source_transform = {
 					Point2D<T>(0, 0), Point2D<T>(1, 0),
 					Point2D<T>(0, 1), Point2D<T>(1, 1)
-				};
+                };
 
 				auto bbox_size = m_BoundingBox.size();
 
@@ -833,25 +856,27 @@ namespace Geometry
 				non_affine_transform[2] *= bbox_size;
 				non_affine_transform[3] *= bbox_size;
 
-				auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, non_affine_transform);
-				transform(homography_matrix, true, false);
-			}
+                auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, non_affine_transform);
+                transform(homography_matrix, true, false);
+            }
+            
 
-			// Apply the affine transform, we do this after due to how we store our non-affine transform
-			{
-				std::array<Point2D<T>, 4> source_transform = {
-					Point2D<T>(bbox.minimum.x, bbox.minimum.x), Point2D<T>(bbox.maximum.x, bbox.minimum.x),
-					Point2D<T>(bbox.minimum.x, bbox.maximum.x), Point2D<T>(bbox.maximum.x, bbox.maximum.x)
-				};
+            // Apply the affine transform, we do this after due to how we store our non-affine transform
+            {
+                std::array<Point2D<T>, 4> source_transform = {
+                    Point2D<T>(m_BoundingBox.minimum.x, m_BoundingBox.minimum.y), Point2D<T>(m_BoundingBox.maximum.x, m_BoundingBox.minimum.y),
+                    Point2D<T>(m_BoundingBox.minimum.x, m_BoundingBox.maximum.y), Point2D<T>(m_BoundingBox.maximum.x, m_BoundingBox.maximum.y)
+                };
 
-				auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, affine_transform);
-                // transform(homography_matrix, true, false);
-			}
+                auto homography_matrix = Mesh<T>::create_homography_matrix(source_transform, affine_transform);
+                transform(homography_matrix, true, false);
+            }
+
         }
 
         /// Initialize the mesh for a given number of points
         void initialize_mesh(
-            const std::vector<Point2D<T>>& points, 
+            const std::vector<Vertex<T>>& vertices,
             std::array<Point2D<T>, 4> affine_transform,
             std::array<Point2D<T>, 4> non_affine_transform, 
             size_t x_divisions, 
@@ -859,34 +884,31 @@ namespace Geometry
         )
         {
             PSAPI_PROFILE_FUNCTION();
+            m_Vertices = vertices;
 
-            BoundingBox<T> bbox;
-            // Initialize the bounding box to extreme values
-            bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
-            bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
-
-            // Create vertices with UV coordinates, assumes the points are equally distributed
-            m_Vertices.reserve(x_divisions * y_divisions);
-            for (size_t y = 0; y < y_divisions; ++y)
+            // Update bbox
             {
-                double v = static_cast<double>(y) / (y_divisions - 1);
-                for (size_t x = 0; x < x_divisions; ++x)
+                BoundingBox<T> bbox;
+                // Initialize the bounding box to extreme values
+                bbox.minimum = Point2D<T>(std::numeric_limits<T>::max(), std::numeric_limits<T>::max());
+                bbox.maximum = Point2D<T>(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest());
+
+                for (size_t y = 0; y < y_divisions; ++y)
                 {
-                    double u = static_cast<double>(x) / (x_divisions - 1);
-                    size_t idx = y * x_divisions + x;
-
-                    m_Vertices.emplace_back(points[idx], Point2D<double>(u, v));
-
-                    // Update min and max UV for bounding box
-                    bbox.minimum.x = std::min(bbox.minimum.x, points[idx].x);
-                    bbox.minimum.y = std::min(bbox.minimum.y, points[idx].y);
-                    bbox.maximum.x = std::max(bbox.maximum.x, points[idx].x);
-                    bbox.maximum.y = std::max(bbox.maximum.y, points[idx].y);
+                    for (size_t x = 0; x < x_divisions; ++x)
+                    {
+                        size_t idx = y * x_divisions + x;
+                        // Update min and max UV for bounding box
+                        bbox.minimum.x = std::min(bbox.minimum.x, m_Vertices[idx].point().x);
+                        bbox.minimum.y = std::min(bbox.minimum.y, m_Vertices[idx].point().y);
+                        bbox.maximum.x = std::max(bbox.maximum.x, m_Vertices[idx].point().x);
+                        bbox.maximum.y = std::max(bbox.maximum.y, m_Vertices[idx].point().y);
+                    }
                 }
+                m_BoundingBox = bbox;
             }
-            m_BoundingBox = bbox;
 
-            _initialize_apply_transforms(bbox, affine_transform, non_affine_transform);
+            _initialize_apply_transforms(affine_transform, non_affine_transform);
 
             // Create the half-edges and faces for each mesh
             m_Edges.reserve((x_divisions - 1) * (y_divisions - 1) * 4);    // 4 half-edges per quad
@@ -971,7 +993,7 @@ namespace Geometry
         /// Compute whether a point is in a triangle defined by the three vertices vtx1, vtx2 and vtx3
         bool point_in_triangle(Point2D<T> point, Point2D<T> vtx1, Point2D<T> vtx2, Point2D<T> vtx3) const
         {
-            auto sign = [](const Point2D<T> p1, const Point2D<T> p2, const Point2D<T> p3) 
+            auto sign = [](Point2D<T> p1, Point2D<T> p2, Point2D<T> p3) 
             {
                 return (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
             };

@@ -511,7 +511,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		ChannelImageData image_data{};
 		return std::make_tuple(std::move(record), std::move(image_data));
 	}
-
+;
 
 private:
 	/// Pointer back to the original file object this layer was created with.
@@ -609,54 +609,46 @@ private:
 				" If you believe this to be an error you can try recreating the layer making sure to pass a valid LayeredFile object.");
 		}
 		const auto& layered_file = *m_FilePtr;
+
 		const LinkedLayers<T>& linkedlayers = layered_file.linked_layers();
 		const std::shared_ptr<LinkedLayerData<T>> linked_layer = linkedlayers.at(m_Hash);
 
-		// If we need to apply the warp we do that separately
-		bool warp_is_noop = m_SmartObjectWarp.no_op();
-		if (!warp_is_noop)
+		// Get the warp mesh at a resolution of 25 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
+		const auto& image_data = linked_layer->get_image_data();
+		auto warp_surface = m_SmartObjectWarp.surface();
+		auto warp_mesh = warp_surface.mesh(
+			linked_layer->width() / 25,
+			linked_layer->height() / 25,
+			m_SmartObjectWarp.affine_transform(),
+			m_SmartObjectWarp.non_affine_transform()
+		);
+
+		// Move the warp mesh to the origin. This ensures our buffer is fully and tightly filled.
+		warp_mesh.move({ -warp_mesh.bbox().minimum.x, -warp_mesh.bbox().minimum.y });
+
+		_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
+
+		// Generate a channel buffer that can fit the fully scaled warp
+		std::vector<T> channel_warp(width() * height());
+		Render::ImageBuffer<T> channel_warp_buffer(channel_warp, width(), height());
+
+		for (const auto& [key, orig_channel] : image_data)
 		{
-			// Get the warp mesh at a resolution of 25 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
-			const auto& image_data = linked_layer->get_image_data();
-			auto warp_surface = m_SmartObjectWarp.surface();
-			auto warp_mesh = warp_surface.mesh(
-				linked_layer->width() / 50,
-				linked_layer->height() / 50,
-				m_SmartObjectWarp.affine_transform(),
-				m_SmartObjectWarp.non_affine_transform()
+			// We can reuse the same channel_buffer due to the fact that the warp.apply() method
+			// will simply overwrite any values that lie on the warps uv space and seeing as the algorithm
+			// is deterministic this will just overwrite previous values
+			Render::ConstImageBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
+			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
+
+			_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
+				Enum::Compression::ZipPrediction,
+				channel_warp,
+				key,
+				width(),
+				height(),
+				Layer<T>::m_CenterX,
+				Layer<T>::m_CenterY
 			);
-			_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
-
-			// Generate a channel buffer that can fit the fully scaled warp
-			auto bbox = _m_CachedSmartObjectWarpMesh.bbox();
-			std::vector<T> channel_warp(width() * height());
-			Render::ImageBuffer<T> channel_warp_buffer(channel_warp, width(), height());
-
-			std::for_each(std::execution::par, image_data.begin(), image_data.end(), [&](const auto& pair)
-				{
-					// We can reuse the same channel_buffer due to the fact that the warp.apply() method
-					// will simply overwrite any values that lie on the warps uv space and seeing as the algorithm
-					// is deterministic this will just overwrite previous values
-					const auto& key = pair.first;
-					const auto& orig_channel = pair.second;
-
-					Render::ConstImageBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
-					m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
-
-					_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
-						Enum::Compression::ZipPrediction,
-						channel_warp,
-						key,
-						width(),
-						height(),
-						Layer<T>::m_CenterX,
-						Layer<T>::m_CenterY
-					);
-				});
-		}
-		else
-		{
-			throw std::runtime_error("todo");
 		}
 
 		// Store the cached values for next evaluation

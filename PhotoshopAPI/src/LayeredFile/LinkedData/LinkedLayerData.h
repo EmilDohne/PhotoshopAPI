@@ -320,7 +320,7 @@ private:
 		m_Width = spec.width;
 		m_Height = spec.height;
 
-		const auto& channelnames = spec.channelnames;
+		auto channelnames = spec.channelnames;
 		int alpha_channel = spec.alpha_channel;
 
 		// Get the image data as OIIO type from our T template param
@@ -338,29 +338,29 @@ private:
 		};
 
 		/// Extract the image data and store it in our m_ImageData
-		std::for_each(std::execution::par_unseq, channelnames.begin(), channelnames.end(), [&](std::string name)
+		for (auto name : channelnames)
+		{
+			/// Extract all indices from 0-2 as these will represent our RGB channels,
+			/// we handle alpha separately
+			int idx = spec.channelindex(name);
+			if (idx != alpha_channel && idx >= 0 && idx <= 2)
 			{
-				/// Extract all indices from 0-2 as these will represent our RGB channels,
-				/// we handle alpha separately
-				int idx = spec.channelindex(name);
-				if (idx != alpha_channel && idx >= 0 && idx <= 2)
-				{
-					input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
-					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[idx], spec.width, spec.height, 0, 0);
-					m_ImageData[channelIDs[idx]] = std::move(channel);
-				}
-				else if (idx == alpha_channel)
-				{
-					input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
-					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[3], spec.width, spec.height, 0, 0);
-					m_ImageData[channelIDs[idx]] = std::move(channel);
-				}
-				else
-				{
-					PSAPI_LOG_WARNING("LinkedLayer", "Skipping channel { %d : '%s' } in file '%s' as it is not part of our default channels we currently support.",
-						idx, name.c_str(), filepath.c_str());
-				}
-			});
+				input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
+				auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[idx], spec.width, spec.height, 0, 0);
+				m_ImageData[channelIDs[idx]] = std::move(channel);
+			}
+			else if (idx == alpha_channel)
+			{
+				input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
+				auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[3], spec.width, spec.height, 0, 0);
+				m_ImageData[channelIDs[idx]] = std::move(channel);
+			}
+			else
+			{
+				PSAPI_LOG_WARNING("LinkedLayer", "Skipping channel { %d : '%s' } in file '%s' as it is not part of our default channels we currently support.",
+					idx, name.c_str(), filepath.c_str());
+			}
+		}
 	}
 };
 

@@ -102,6 +102,8 @@ namespace SmartObject
 			std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
 				{
 					PSAPI_PROFILE_SCOPE("Warp scanline");
+					constexpr double failure_condition = -1.0f;
+
 					for (size_t x = min_x; x <= max_x; ++x)
 					{
 						// The way this works is that on creation of the mesh from the bezier we actually
@@ -123,7 +125,7 @@ namespace SmartObject
 
 						// If the uv coordinate is outside of the image we dont bother with it.
 						// We can check against the exact -1.0f here as that is what we return
-						if (uv == static_cast<double>(-1.0f))
+						if (uv == failure_condition)
 						{
 							continue;
 						}
@@ -264,11 +266,12 @@ namespace SmartObject
 		/// Set the affine transform for the SmartObjectWarp. The opposing sides of the quad formed by the four points
 		/// must be parallel. It is recommended to use the transformation functions on the SmartObjectLayer such as
 		/// `move()` `rotate()` `scale()` instead of modifying the quad directly for better and more intuitive control.
-		void affine_transform(
+		void affine_transform (
 			Geometry::Point2D<double> top_left,
 			Geometry::Point2D<double> top_right,
 			Geometry::Point2D<double> bot_left,
-			Geometry::Point2D<double> bot_right);
+			Geometry::Point2D<double> bot_right
+		);
 
 		/// Retrieve the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
 		/// If no non-affine transform is present these are in a [0 - 1] unit square, pushing e.g. the top left and top right 
@@ -335,6 +338,10 @@ namespace SmartObject
 		/// For internal API use:
 		/// Set the bounds using the bounding box
 		void _warp_bounds(Geometry::BoundingBox<double> bounds);
+
+		/// For internal API use:
+		/// Get the bounds using the bounding box
+		Geometry::BoundingBox<double> _warp_bounds() const;
 
 		/// For internal API use:
 		/// Set the warp value, unsure where and how this is used, usually 0.0f

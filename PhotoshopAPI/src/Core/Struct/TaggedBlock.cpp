@@ -827,12 +827,15 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 	// A linked Layer tagged block may contain any number of LinkedLayers, and there is no explicit
 	// number of layers we must keep reading LinkedLayers until we've reached the end of the taggedblock
 	uint64_t endOffset = document.getOffset() + toRead;
-	while (document.getOffset() < endOffset)
+	// Need to be able to read at least 8 bytes in order to read another block
+	while (document.getOffset() < (endOffset - 8))
 	{
 		LinkedLayer::Data data;
 		data.read(document);
 		m_LayerData.push_back(std::move(data));
 	}
+
+	document.setOffset(endOffset);
 }
 
 

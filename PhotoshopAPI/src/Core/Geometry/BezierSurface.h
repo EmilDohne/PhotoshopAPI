@@ -22,7 +22,13 @@ namespace Geometry
         /// Constructor that initializes control points, these must be in scanline order. So the points should go as follows:
         /// 1 2 3 4 5
         /// 6 7 8 9 10 ...
-        BezierSurface(const std::vector<Point2D<double>>& controlPoints, size_t gridWidth, size_t gridHeight)
+        BezierSurface(
+            const std::vector<Point2D<double>>& controlPoints, 
+            size_t gridWidth, 
+            size_t gridHeight, 
+            std::optional<std::vector<double>> slices_x = std::nullopt,
+            std::optional<std::vector<double>> slices_y = std::nullopt
+            )
             :m_GridWidth(gridWidth), m_GridHeight(gridHeight) 
         {
             if (controlPoints.size() != gridWidth * gridHeight) 
@@ -54,31 +60,105 @@ namespace Geometry
             }
 
             // Initialize patches
-            m_Patches.reserve(m_NumPatchesX * m_NumPatchesY);
-
-            for (size_t py = 0; py < m_NumPatchesY; ++py) 
             {
-                for (size_t px = 0; px < m_NumPatchesX; ++px) 
+                m_Patches.reserve(m_NumPatchesX * m_NumPatchesY);
+                for (size_t py = 0; py < m_NumPatchesY; ++py)
                 {
-                    std::array<Point2D<double>, 16> patch;
-
-                    // Fill the 4x4 patch in scanline order with overlap
-                    for (size_t y = 0; y < 4; ++y) 
+                    for (size_t px = 0; px < m_NumPatchesX; ++px)
                     {
-                        for (size_t x = 0; x < 4; ++x) 
+                        std::array<Point2D<double>, 16> patch;
+
+                        // Fill the 4x4 patch in scanline order with overlap
+                        for (size_t y = 0; y < 4; ++y)
                         {
-                            size_t controlPointIndex = (py * 3 + y) * gridWidth + (px * 3 + x);
-                            patch[y * 4 + x] = controlPoints[controlPointIndex];
+                            for (size_t x = 0; x < 4; ++x)
+                            {
+                                size_t controlPointIndex = (py * 3 + y) * gridWidth + (px * 3 + x);
+                                patch[y * 4 + x] = controlPoints[controlPointIndex];
+                            }
                         }
+                        m_Patches.push_back(patch);
                     }
-                    m_Patches.push_back(patch);
                 }
             }
+
+            // Initialize slices
+            if (slices_x && slices_y)
+            {
+                auto& slices_x_val = slices_x.value();
+                auto& slices_y_val = slices_y.value();
+
+                // Seeing as the slices are stored in ascending order the last item will denominate the magnitude.
+                auto magnitude_x = slices_x_val[slices_x_val.size() - 1];
+                auto magnitude_y = slices_y_val[slices_y_val.size() - 1];
+
+                for (auto& elem : slices_x_val)
+                {
+                    elem = elem / magnitude_x;
+                    elem = std::clamp<double>(elem, 0.0f, 1.0f);
+                }
+                for (auto& elem : slices_y_val)
+                {
+                    elem = elem / magnitude_y;
+                    elem = std::clamp<double>(elem, 0.0f, 1.0f);
+                }
+
+                m_SlicesX = slices_x_val;
+                m_SlicesY = slices_y_val;
+            }
+        }
+
+
+        /// Bias a UV coordinate according to the local slices. Is a no-op if the slices are not defined.
+        /// This should always be done before calling evaluate to get the real UV coordinate.
+        Point2D<double> bias_uv(double u, double v) const
+        {
+            if (m_SlicesX && m_SlicesY)
+            {
+                // Lambda to remap the given coordinate in the slices vector indexing by the value 
+                // and then interpolating between those two values
+                auto reverse_lerp_slices = [](double value, const std::vector<double>& slices)
+                    {
+                        auto upper = std::upper_bound(slices.begin(), slices.end(), value);
+                        std::size_t upper_bound = std::distance(slices.begin(), upper);
+                        std::size_t lower_bound = (upper_bound > 0) ? upper_bound - 1 : 0;
+
+                        // Limit the indices to not exceed the slices size
+                        lower_bound = std::min(slices.size() - 2, lower_bound);
+                        upper_bound = std::min(slices.size() - 1, upper_bound);
+
+                        const double& value_lower = slices[lower_bound];
+                        const double& value_upper = slices[upper_bound];
+
+                        // Avoid zero-division
+                        assert(value_lower != value_upper);
+
+                        // Calculate t for the inverse mapping
+                        double t = (value - value_lower) / (value_upper - value_lower);
+
+                        // Map back to the normalized coordinate space, subtracting by one as lower and upper bound represent actual indices
+                        double coordinate_lower = static_cast<double>(lower_bound) / (slices.size() - 1);
+                        double coordinate_upper = static_cast<double>(upper_bound) / (slices.size() - 1);
+
+                        double original_value = (1.0 - t) * coordinate_lower + t * coordinate_upper;
+                        return std::clamp<double>(original_value, 0.0, 1.0);
+                    };
+
+                const auto& slice_vector_x = m_SlicesX.value();
+                const auto& slice_vector_y = m_SlicesY.value();
+
+                Point2D<double> result = { reverse_lerp_slices(u, slice_vector_x), reverse_lerp_slices(v, slice_vector_y) };
+                return result;
+            }
+
+            // No-op, return input
+            return { u, v };
         }
 
         // Evaluate any patch at (u, v) based on subdivisions across x and y
         Point2D<double> evaluate(double u, double v) const
         {
+
             PSAPI_PROFILE_FUNCTION();
             double patch_size_u = 1.0 / m_NumPatchesX;
             double patch_size_v = 1.0 / m_NumPatchesY;
@@ -116,18 +196,22 @@ namespace Geometry
         {
             PSAPI_PROFILE_FUNCTION();
 
-            std::vector<Point2D<double>> points;
-            points.reserve(divisions_x * divisions_y);
+            std::vector<Vertex<double>> vertices;
+            vertices.reserve(divisions_x * divisions_y);
             for (size_t y = 0; y < divisions_y; ++y)
             {
                 float v = static_cast<float>(y) / (divisions_y - 1);
                 for (size_t x = 0; x < divisions_x; ++x)
                 {
                     float u = static_cast<float>(x) / (divisions_x - 1);
-                    points.emplace_back(evaluate(u, v));
+
+                    auto biased_uv = bias_uv(u, v);
+                    auto uv = evaluate(biased_uv.x, biased_uv.y);
+
+                    vertices.emplace_back(Vertex<double>(uv, {u, v}));
                 }
             }
-            return Mesh<double>(points, affine_transform, non_affine_transform, divisions_x, divisions_y);
+            return Mesh<double>(vertices, affine_transform, non_affine_transform, divisions_x, divisions_y);
         }
 
         /// Get the patches associated with the Bezier surface, these are sorted in scanline order
@@ -156,6 +240,10 @@ namespace Geometry
 
         size_t m_NumPatchesX = 1;
         size_t m_NumPatchesY = 1;
+
+        // Slice coordinates in the 0-1 range used for remapping incoming UV coordinates
+        std::optional<std::vector<double>> m_SlicesX = std::nullopt;
+        std::optional<std::vector<double>> m_SlicesY = std::nullopt;
 
         // Retrieve the 4x4 grid of control points for a patch defined by patchX, patchY
         // where patchX is the x position in the grid and patchY is the y position in the grid
