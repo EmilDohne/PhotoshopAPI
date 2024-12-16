@@ -182,11 +182,14 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 
 		LinkedLayerType type = link_externally ? LinkedLayerType::external : LinkedLayerType::data;
 
-		const LinkedLayers<T>& linked_layers = m_FilePtr->linked_layers();
+		LinkedLayers<T>& linked_layers = m_FilePtr->linked_layers();
 		auto linked_layer = linked_layers.insert(path, type);
 
-		linked_layers.remove_reference(m_Hash);
 		m_Hash = linked_layer->hash();
+		// Clear the cache before re-evaluation
+		_m_CachedSmartObjectWarp = {};
+		_m_CachedSmartObjectWarpMesh = {};
+
 		evaluate_transforms();
 	}
 
@@ -588,8 +591,8 @@ private:
 		_m_CachedSmartObjectWarpMesh = m_SmartObjectWarp.surface().mesh(
 			linked_layer->width() / 25,
 			linked_layer->height() / 25,
-			m_SmartObjectWarp.affine_transform(),
-			m_SmartObjectWarp.non_affine_transform());
+			false // move_to_zero
+		);
 	}
 
 	/// Lazily evaluates (and updates if necessary) the ImageData of the SmartObjectLayer. Checks whether

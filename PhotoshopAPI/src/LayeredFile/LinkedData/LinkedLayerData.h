@@ -87,7 +87,7 @@ struct LinkedLayerData
 		}
 
 		m_FilePath = filepath;
-		m_Filename = filepath.filename();
+		m_Filename = filepath.filename().string();
 		m_Hash = hash;
 		File data(filepath);
 		m_RawData = ReadBinaryArray<uint8_t>(data, data.getSize());
@@ -406,7 +406,6 @@ struct LinkedLayers
 		return nullptr;
 	}
 
-
 	/// Check if the linked layers contain the given hash.
 	bool contains(std::string hash)
 	{
@@ -461,9 +460,9 @@ struct LinkedLayers
 		std::string hash;
 		for (const auto& [_hash, item] : m_LinkedLayerData)
 		{
-			if (item.path() == filePath)
+			if (item->path() == filePath)
 			{
-				if (item.m_Type != type)
+				if (item->type() != type)
 				{
 					PSAPI_LOG_WARNING("LinkedLayers",
 						"Found existing LinkedLayerData for filepath '%s' but with a differing type, keeping the current type and ignoring passed argument",

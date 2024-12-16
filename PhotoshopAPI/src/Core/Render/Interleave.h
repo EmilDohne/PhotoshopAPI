@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 
 #include <vector>
 #include <algorithm>
 #include <execution>
+#include <ranges>
 
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
 // library
@@ -44,32 +45,36 @@ namespace Render
 	/// \param buffer The preallocated buffer which is intended to hold all the incoming spans. Must be exactly the size of spans `first` and `rest` combined
 	/// \param first  The first span to interleave, there must be at least one of these
 	/// \param rest	  The other spans to interleave, there may be any number of spans here. They must all be the exact size of `first.size()`
-	template <typename T, typename... Spans>
-	void interleave(std::span<T> buffer, const std::span<T> first, const Spans... rest)
+	template <typename T, typename... Spans> 
+		requires (std::same_as<Spans, std::span<const T>> && ...)
+	void interleave(std::span<T> buffer, const std::span<const T> first, const Spans... rest)
 	{
-		std::array<std::span<T>, sizeof...(rest) + 1> spans{ first, rest... };
+		PSAPI_PROFILE_FUNCTION();
+		std::array<std::span<const T>, sizeof...(rest) + 1> spans{ first, rest... };
 
-		std::size_t size = first.size();
-		if (!std::all_of(spans.begin(), spans.end(), [size](const std::span<T>& span) { return span.size() == size; }))
+		for (const auto& span : spans)
 		{
-			PSAPI_LOG_ERROR("Interleave", "All input spans must have the same size.");
-		}
-
-		if (buffer.size() != size * spans.size())
-		{
-			PSAPI_LOG_ERROR("Interleave", "Provided buffer is not large enough to hold all the elements to interleave.")
-		}
-
-		std::for_each(std::execution::par_unseq, first.begin(), first.end(), [&buffer, &spans, &first](auto& value))
-		{
-			std::size_t idx = &value - &first[0];
-			std::size_t start_idx = spans.size() * idx;
-
-			for (size_t i = 0; i < spans.size(); ++i)
+			if (span.size() != first.size())
 			{
-				buffer[start_idx + i] = spans[i][idx];
+				throw std::invalid_argument("Interleave: All input spans must have the same size.");
 			}
 		}
+
+		if (buffer.size() != first.size() * spans.size())
+		{
+			throw std::invalid_argument("Interleave: Provided buffer is not large enough to hold all the elements to interleave.");
+		}
+
+		auto indices = std::views::iota(static_cast<std::size_t>(0), first.size());
+		std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&buffer, &spans, &first](auto idx)
+			{
+				std::size_t start_idx = spans.size() * idx;
+
+				for (size_t i = 0; i < spans.size(); ++i)
+				{
+					buffer[start_idx + i] = spans[i][idx];
+				}
+			});
 	}
 
 	/// Interleave the spans into a unified buffer taking any number of input spans (could be channels).
@@ -93,10 +98,12 @@ namespace Render
 	/// 
 	/// \return A vector of the interleaved spans
 	template <typename T, typename... Spans>
-	std::vector<T> interleave_alloc(const std::span<T> first, const Spans... rest)
+		requires (std::same_as<Spans, std::span<const T>> && ...)
+	std::vector<T> interleave_alloc(const std::span<const T> first, const Spans... rest)
 	{
+		PSAPI_PROFILE_FUNCTION();
 		std::vector<T> buffer(first.size() * (sizeof...(rest) + 1));
-		interleave(buffer, first, &rest...);
+		interleave(std::span<T>(buffer), first, rest...);
 
 		return buffer;
 	}
@@ -117,16 +124,15 @@ namespace Render
 	/// 
 	/// \return A vector of the interleaved spans
 	template <typename T>
-	std::vector<T> interleave_alloc(const std::vector<std::span<T>> spans)
+	std::vector<T> interleave_alloc(const std::vector<std::span<const T>> spans)
 	{
 		if (spans.empty())
 		{
-			PSAPI_LOG_ERROR("Interleave", "No spans provided for interleaving.");
-			return;
+			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
 		}
 
 		return std::apply(
-			[](const auto&... spans) { return interleave(spans...); },
+			[](const auto&... spans) { return interleave_alloc(spans...); },
 			Impl::spans_to_tuple(spans)
 		);
 	}
@@ -148,12 +154,11 @@ namespace Render
 	/// \param buffer The preallocated buffer to interleave into. Must be exactly the size of spans[0].size * spans.size()
 	/// \param spans  The input spans to interleave. Must all be the same size
 	template <typename T>
-	void interleave(std::span<T> buffer, const std::vector<std::span<T>>& spans)
+	void interleave(std::span<T> buffer, const std::vector<std::span<const T>>& spans)
 	{
 		if (spans.empty())
 		{
-			PSAPI_LOG_ERROR("Interleave", "No spans provided for interleaving.");
-			return;
+			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
 		}
 
 		// Forward spans as variadic arguments to the existing interleave function
