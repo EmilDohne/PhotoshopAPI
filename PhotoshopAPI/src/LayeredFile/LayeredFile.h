@@ -731,7 +731,7 @@ template<typename T, template<typename X> class LayerType>
 std::shared_ptr<LayerType<T>> find_layer_as(const std::string path, const LayeredFile<T>& layeredFile)
 {
 	auto basePtr = layeredFile.find_layer(path);
-	auto downcastedPtr = std::dynamic_pointer_cast<LayerType<T>>(basePtr);
+	auto downcastedPtr =c<LayerType<T>>(basePtr);
 	if (downcastedPtr)
 	{
 		return downcastedPtr;
@@ -749,6 +749,10 @@ template <typename T>
 std::unique_ptr<PhotoshopFile> layered_to_photoshop(LayeredFile<T>&& layeredFile)
 {
 	PSAPI_PROFILE_FUNCTION();
+
+	// Remove any unused linked layers that do not have a reference to anything anymore
+	clear_unused_linked_layers<T>(layeredFile);
+
 	FileHeader header = generate_header<T>(layeredFile);
 	ColorModeData colorModeData = generate_colormodedata<T>(layeredFile);
 	ImageResources imageResources = generate_imageresources<T>(layeredFile);
