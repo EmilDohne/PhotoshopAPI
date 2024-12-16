@@ -4,6 +4,7 @@ Example of loading a PhotoshopFile and extracting the image data, this can be fr
 #include <OpenImageIO/imageio.h>
 #include "PhotoshopAPI.h"
 #include "Core/Render/Render.h"
+#include "Core/Render/Interleave.h"
 
 #include <unordered_map>
 #include <vector>
@@ -23,59 +24,6 @@ std::string channel_id_to_string(Enum::ChannelIDInfo channel_id)
 	case Enum::ChannelID::Alpha: return "A";
 	default: return "Unknown";
 	}
-}
-
-
-// Interleave a set of 3 or 4 channels into a single buffer which holds the unified result in packed image order. If there is no explicitly defined
-// alpha channel we return the max value of T for it
-template <typename T>
-std::vector<T> interleavePixelsRGBA(
-	const std::span<const T> channelR,
-	const std::span<const T> channelG,
-	const std::span<const T> channelB,
-	std::optional<const std::span<T>> channelA,
-	uint32_t width,
-	uint32_t height)
-{
-	T T_MAX = std::numeric_limits<T>::max();
-	if (std::is_same_v<T, float32_t>)
-		T_MAX = 1.0f;
-	std::vector<T> interleavedPixels(channelR.size() * 4u, T_MAX);
-	auto verticalIter = createVerticalImageIterator(height);
-
-	if (channelA.has_value())
-	{
-		auto& channelAValue = channelA.value();
-		std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(), [&](size_t y)
-			{
-				size_t rowCoord = y * width;
-				size_t rowCoordInterleaved = y * width * 4;
-				for (size_t x = 0; x < width; ++x)
-				{
-					interleavedPixels[rowCoordInterleaved + x * 4 + 0] = channelR[rowCoord + x];
-					interleavedPixels[rowCoordInterleaved + x * 4 + 1] = channelG[rowCoord + x];
-					interleavedPixels[rowCoordInterleaved + x * 4 + 2] = channelB[rowCoord + x];
-					interleavedPixels[rowCoordInterleaved + x * 4 + 3] = channelAValue[rowCoord + x];
-				}
-			});
-	}
-	else
-	{
-		std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(), [&](size_t y)
-			{
-				size_t rowCoord = y * width;
-				size_t rowCoordInterleaved = y * width * 4;
-				for (size_t x = 0; x < width; ++x)
-				{
-					interleavedPixels[rowCoordInterleaved + x * 4 + 0] = channelR[rowCoord + x];
-					interleavedPixels[rowCoordInterleaved + x * 4 + 1] = channelG[rowCoord + x];
-					interleavedPixels[rowCoordInterleaved + x * 4 + 2] = channelB[rowCoord + x];
-					// No need to set the alpha channel since we initialize to white
-				}
-			});
-	}
-
-	return interleavedPixels;
 }
 
 
@@ -146,10 +94,10 @@ void write_to_disk(const std::unordered_map<Enum::ChannelIDInfo, std::vector<uin
 	Enum::ChannelIDInfo blue = { Enum::ChannelID::Blue, 2 };
 	std::span<const uint8_t> b_span = std::span<const uint8_t>(channel_map.at(blue).begin(), channel_map.at(blue).end());
 
-	std::vector<uint8_t> interleaved = interleavePixelsRGBA<uint8_t>(r_span, g_span, b_span, std::nullopt, width, height);
+	std::vector<uint8_t> interleaved = NAMESPACE_PSAPI::Render::interleave_alloc(r_span, g_span, b_span);
 
 	// Set up the image specification
-	ImageSpec spec(width, height, 4, TypeDesc::UINT8);
+	ImageSpec spec(width, height, 3, TypeDesc::UINT8);
 	spec.channelnames = channel_names;
 
 	// Open the file with the specification
@@ -200,11 +148,23 @@ int main()
 		write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
 	}
 
-	auto orig_image_data = layer_ptr->original_image_data();
-	auto image_data = layer_ptr->get_image_data();
+	// Render image data
+	{
+		auto orig_image_data = layer_ptr->original_image_data();
+		auto image_data = layer_ptr->get_image_data();
+		write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
+		write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
+	}
 
-	write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
-	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
+	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+
+	// Render image data replaced
+	{
+		auto orig_image_data = layer_ptr->original_image_data();
+		auto image_data = layer_ptr->get_image_data();
+		write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original_replaced.png", layer_ptr->original_width(), layer_ptr->original_height());
+		write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped_replaced.png", layer_ptr->width(), layer_ptr->height());
+	}
 
 	Instrumentor::Get().EndSession(); 
 }
