@@ -384,6 +384,17 @@ struct LinkedLayers
 		}
 	}
 
+	/// Get a set of all the hashes contained on the LinkedLayers
+	std::set<std::string> hashes()
+	{
+		std::set<std::string> _hashes;
+		for (const auto& [hash, _] : m_LinkedLayerData)
+		{
+			_hashes.insert(hash);
+		}
+
+		return _hashes;
+	}
 
 	/// Retrieve the LinkedLayer data at the given hash. Throws an error if the hash doesnt exist
 	std::shared_ptr<LinkedLayerData<T>> at(std::string hash)
@@ -476,6 +487,12 @@ struct LinkedLayers
 			hash = generateUUID();
 		}
 		return insert(filePath, hash, type);
+	}
+
+	/// Remove the given hash from the LinkedLayerData.
+	void erase(const std::string& hash)
+	{
+		m_LinkedLayerData.erase(hash);
 	}
 
 private: 

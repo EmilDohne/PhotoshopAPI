@@ -167,4 +167,6 @@ int main()
 	}
 
 	Instrumentor::Get().EndSession(); 
+
+	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
 }
