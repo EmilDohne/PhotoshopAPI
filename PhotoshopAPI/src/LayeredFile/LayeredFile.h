@@ -24,6 +24,7 @@
 #include "LayeredFile/Util/GenerateColorModeData.h"
 #include "LayeredFile/Util/GenerateImageResources.h"
 #include "LayeredFile/Util/GenerateLayerMaskInfo.h"
+#include "LayeredFile/Util/ClearLinkedLayers.h"
 
 #include <variant>
 #include <vector>
@@ -731,7 +732,7 @@ template<typename T, template<typename X> class LayerType>
 std::shared_ptr<LayerType<T>> find_layer_as(const std::string path, const LayeredFile<T>& layeredFile)
 {
 	auto basePtr = layeredFile.find_layer(path);
-	auto downcastedPtr =c<LayerType<T>>(basePtr);
+	auto downcastedPtr = std::dynamic_pointer_cast<LayerType<T>>(basePtr);
 	if (downcastedPtr)
 	{
 		return downcastedPtr;

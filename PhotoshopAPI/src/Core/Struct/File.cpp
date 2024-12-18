@@ -189,5 +189,11 @@ File::File(std::filesystem::path file, const FileParams params)
 	m_FilePath = file;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+bool File::can_read(const uint64_t size) const noexcept
+{
+	return m_Offset + size <= m_Size;
+}
 
 PSAPI_NAMESPACE_END

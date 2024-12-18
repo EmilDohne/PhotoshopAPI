@@ -503,6 +503,36 @@ protected:
 
 		Layer<T>::parse_mask(parameters);
 	}
+
+
+	// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 
+	// itself. This also takes care of generating our layer mask channel if it is present. Invalidates any data held by the ImageLayer
+	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
+	{
+		std::vector<LayerRecords::ChannelInformation> channelInfoVec;
+		std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
+
+		// First extract our mask data, the order of our channels does not matter as long as the 
+		// order of channelInfo and channelData is the same
+		auto maskData = Layer<T>::extract_mask();
+		if (maskData.has_value())
+		{
+			channelInfoVec.push_back(std::get<0>(maskData.value()));
+			channelDataVec.push_back(std::move(std::get<1>(maskData.value())));
+		}
+
+		// Extract all the channels next and push them into our data representation
+		for (auto& [id, get_channel] : _ImageDataLayerType<T>::m_ImageData)
+		{
+			channelInfoVec.push_back(LayerRecords::ChannelInformation{ id, get_channel->m_OrigByteSize });
+			channelDataVec.push_back(std::move(get_channel));
+		}
+
+		// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
+		ChannelImageData channelData(std::move(channelDataVec));
+
+		return std::make_tuple(channelInfoVec, std::move(channelData));
+	}
 };
 
 PSAPI_NAMESPACE_END

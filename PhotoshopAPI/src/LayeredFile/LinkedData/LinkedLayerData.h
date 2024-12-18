@@ -110,16 +110,22 @@ struct LinkedLayerData
 		}
 	}
 
-	LinkedLayerData(LinkedLayer::Data& data_block, std::filesystem::path photoshop_file_path)
+	LinkedLayerData(LinkedLayerItem::Data& data_block, std::filesystem::path photoshop_file_path)
 	{
-		// Since the data_block doesn't actually store a filepath we simply use the filepath 
-		// and treat it as relative to the photoshop file.
-		m_FilePath = photoshop_file_path.parent_path() / data_block.m_FileName.string();
+		if (data_block.m_LinkedFileDescriptor)
+		{
+			auto& linked_file_descriptor = data_block.m_LinkedFileDescriptor.value();
+			m_FilePath = linked_file_descriptor.at<UnicodeString>("originalPath").string();
+		}
+		else
+		{
+			m_FilePath = photoshop_file_path.parent_path() / data_block.m_FileName.string();
+		}
 		m_Filename = data_block.m_FileName.string();
 		m_Hash = data_block.m_UniqueID;
 		m_RawData = std::move(data_block.m_RawFileBytes);
 
-		if (data_block.m_Type == LinkedLayer::Data::Type::Alias)
+		if (data_block.m_Type == LinkedLayerItem::Type::Alias)
 		{
 			PSAPI_LOG_WARNING("LinkedLayerData",
 				"Unimplemented Alias type encountered while parsing file '%s', this likely represents a link to an asset library which is not yet supported.",
@@ -127,11 +133,11 @@ struct LinkedLayerData
 			return;
 		}
 
-		if (data_block.m_Type == LinkedLayer::Data::Type::External)
+		if (data_block.m_Type == LinkedLayerItem::Type::External)
 		{
 			m_Type = LinkedLayerType::external;
 		}
-		else if (data_block.m_Type == LinkedLayer::Data::Type::Data)
+		else if (data_block.m_Type == LinkedLayerItem::Type::Data)
 		{
 			m_Type = LinkedLayerType::data;
 		}
@@ -254,6 +260,18 @@ struct LinkedLayerData
 	void type(LinkedLayerType type_) noexcept{ m_Type = type_; }
 
 
+	/// Generate LinkedLayer::Data from the data, this is for internal API usage.
+	LinkedLayerItem::Data to_photoshop()
+	{
+		auto type = m_Type == LinkedLayerType::data ? LinkedLayerItem::Type::Data : LinkedLayerItem::Type::External;
+		auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type);
+
+		if (!m_RawData.empty())
+		{
+			block.m_RawFileBytes = m_RawData;
+		}
+	}
+
 private:
 	/// Store the image data as a per-channel map to be used later using a custom hash function
 	storage_type m_ImageData;
@@ -277,7 +295,7 @@ private:
 	void initialize_from_psd()
 	{
 		auto _in = OIIO::ImageInput::create(m_FilePath);
-		if (_in && static_cast<bool>(_in->supports("ioproxy")))
+		if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
 			auto oiio_in = OIIO::ImageInput::open(m_FilePath.string(), nullptr, &memreader);
@@ -285,7 +303,8 @@ private:
 		}
 		else
 		{
-			// Try to source the file although this will only succeed if the file is relative to the photoshop file.
+			// Try to source the file although this will only succeed if the file is relative to the photoshop file or if this
+			// is a linked file where we have the full path.
 			auto base_dir = m_FilePath.parent_path();
 			PSAPI_LOG_WARNING("LinkedLayerData",
 				"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
@@ -376,11 +395,20 @@ struct LinkedLayers
 	LinkedLayers() = default;
 	LinkedLayers(AdditionalLayerInfo& global_layer_info, std::filesystem::path psd_file_path)
 	{
-		auto linked_layer_block = global_layer_info.getTaggedBlock<LinkedLayerTaggedBlock>();
-		for (auto& layer_data : linked_layer_block->m_LayerData)
+
+		// There is separate keys where the same data is stored but across different tagged blocks.
+		// E.g. 'data' linked layers are stored in the lnk3, lnk2 etc. tagged blocks but 'external' 
+		// linked layers are stored in the SoLE blocks and these coexist together. Therefore we must
+		// split our parsing of these depending on the type they are.
+		auto linked_layer_tagged_blocks = global_layer_info.get_tagged_blocks<LinkedLayerTaggedBlock>();
+
+		for (const auto& linked_layer_block : linked_layer_tagged_blocks)
 		{
-			auto& hash = layer_data.m_UniqueID;
-			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(layer_data, psd_file_path);
+			for (auto& layer_data : linked_layer_block->m_LayerData)
+			{
+				auto& hash = layer_data.m_UniqueID;
+				m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(layer_data, psd_file_path);
+			}
 		}
 	}
 
@@ -484,7 +512,7 @@ struct LinkedLayers
 		}
 		if (hash.empty())
 		{
-			hash = generateUUID();
+			hash = generate_uuid();
 		}
 		return insert(filePath, hash, type);
 	}
@@ -493,6 +521,30 @@ struct LinkedLayers
 	void erase(const std::string& hash)
 	{
 		m_LinkedLayerData.erase(hash);
+	}
+
+
+	/// Check whether the LinkedLayers are empty (i.e. hold no children).
+	bool empty()
+	{
+		return m_LinkedLayerData.empty();
+	}
+
+
+	std::vector<std::shared_ptr<LinkedLayerTaggedBlock>> to_photoshop() const
+	{
+		// Photoshop likes storing 'data' and 'external' linked layers separately (for no real reason?)
+		// so we just mimic that behaviour.
+		auto data_block = std::make_shared<LinkedLayerTaggedBlock>();
+		auto external_block = std::make_shared<LinkedLayerTaggedBlock>();
+
+		for (const auto& [hash, linked_layer] : m_LinkedLayerData)
+		{
+			if (linked_layer.type() == LinkedLayerType::data)
+			{
+				data_block->m_LayerData.push_back(linked_layer->to_photoshop());
+			}
+		}
 	}
 
 private: 

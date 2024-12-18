@@ -51,21 +51,14 @@ struct LayeredFile;
 /// Unlike normal layers SmartObjects have slightly different transformation rules. Due to the fact that a smart object links
 /// back to another image with a potentially different resolution we have to take this into account, additionally Photoshop
 /// stores a transformation from original -> rescaled. However, we also have warps to deal with which leads to the PhotoshopAPI
-/// exposing 3 transformation values for a SmartObjects.
+/// exposing 2 transformation values for a SmartObjects.
 /// 
 /// - `original_width()` / `original_height()`
 ///		These represent the resolution of the original file image data, irrespective of what transforms are applied to it.
 ///		If you are e.g. loading a 4000x2000 jpeg these will return 4000 and 2000 respectively. These values may not be written to
 /// 
-/// - `transform_width()` / `transform_heigth()`
-///		These represent the scaling factor applied to the smart object, i.e. if you do a transformation on the smart object 
-///		this will be those values. If you have scaled down your 4000x2000 image to 2000x1000 image this will be 2000 and 1000 respectively.
-///		Unlike original_width/original_height these may be modified to rescale the image. The underlying image data is evaluated lazily,
-///		meaning you may modify these as many times as you like but only on access or write will we apply the transformation and warp.
-/// 
 /// - `width()` / `height()`
-///		These represent the final dimensions of the SmartObject with the warp applied to it. These are read-only and describe the actual
-///		width and height of the image data you can access through e.g. `get_channel()` or `get_image_data()`.
+///		These represent the final dimensions of the SmartObject with the warp applied to it. 
 /// 
 template <typename T>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
@@ -122,6 +115,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// \param warp				The warp to apply to the image data, this may be default generated warp which can be modified later on by
 	///							retrieving it using `warp()`. After then modifying it the update warp will be lazily evaluated on write or 
 	///							access. So you may modify it as many times as you want but only retrieving it will call the evaluation.
+	///							If you wish to skip this you can pass `SmartObject::Warp::generate_default(width, height)`
 	/// 
 	/// \param link_externally	Whether to link the file externally (without saving it in the document). While this does reduce 
 	///							file size, due to linking limitations it is usually recommended to leave this at its default `false`.
@@ -145,13 +139,6 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		{
 			const auto& localAdditionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
 			decode(localAdditionalLayerInfo, globalAdditionalLayerInfo, Layer<T>::m_LayerName);
-			{
-				auto descriptor = generate_placed_layer_data();
-				// Temporarily write the descriptor json to file so we can easily debug it.
-				std::ofstream file_json(fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/placed_layer_descriptor_{}_out.json", Layer<T>::m_LayerName));
-				file_json << descriptor.to_json().dump(4);
-				file_json.flush();
-			}
 		}
 		else
 		{
@@ -313,8 +300,6 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			"Please refer to the documentation for more information. If you instead wish to replace the image" \
 			" use the replace() function");
 	}
-	
-
 
 	/// Retrieve the original image datas' width.
 	///
@@ -362,14 +347,12 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// \param the offset to move the layer by
 	void move(Geometry::Point2D<double> offset)
 	{
-		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
+		auto affine_transform = m_SmartObjectWarp.affine_transform();
+		auto pts = std::vector<Geometry::Point2D<double>>(affine_transform.begin(), affine_transform.end());
 
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-		affine_mesh.move(offset);
+		Geometry::Operations::move(pts, offset);
 
-		auto out_pts = affine_mesh.points();
-
-		m_SmartObjectWarp.affine_transform(out_pts[0], out_pts[1], out_pts[2], out_pts[3]);
+		m_SmartObjectWarp.affine_transform(pts[0], pts[1], pts[2], pts[3]);
 		evaluate_transforms();
 	}
 
@@ -378,14 +361,12 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// around the provided center point, this point does not have to lie on the pixels of the image
 	void rotate(double offset, Geometry::Point2D<double> center)
 	{
-		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
+		auto affine_transform = m_SmartObjectWarp.affine_transform();
+		auto pts = std::vector<Geometry::Point2D<double>>(affine_transform.begin(), affine_transform.end());
 
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-		affine_mesh.rotate(offset, center);
+		Geometry::Operations::rotate(pts, offset, center);
 
-		auto out_pts = affine_mesh.points();
-
-		m_SmartObjectWarp.affine_transform(out_pts[0], out_pts[1], out_pts[2], out_pts[3]);
+		m_SmartObjectWarp.affine_transform(pts[0], pts[1], pts[2], pts[3]);
 		evaluate_transforms();
 	}
 
@@ -393,25 +374,21 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// around the center of the transformation
 	void rotate(double offset)
 	{
-		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
+		auto affine_transform = m_SmartObjectWarp.affine_transform();
+		auto pts = std::vector<Geometry::Point2D<double>>(affine_transform.begin(), affine_transform.end());
 
-		rotate(offset, affine_mesh.bbox().center());
-		evaluate_transforms();
+		rotate(offset, Geometry::BoundingBox<double>::compute(pts));
 	}
 
 	/// Scale the SmartObjectLayer (including any warps) by the given factor in both the x and y
 	/// dimensions.
 	void scale(Geometry::Point2D<double> factor, Geometry::Point2D<double> center)
 	{
-		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
+		auto affine_transform = m_SmartObjectWarp.affine_transform();
+		auto pts = std::vector<Geometry::Point2D<double>>(affine_transform.begin(), affine_transform.end());
+		Geometry::Operations::scale(pts, factor, center);
 
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-		affine_mesh.scale(factor, center);
-
-		auto out_pts = affine_mesh.points();
-
-		m_SmartObjectWarp.affine_transform(out_pts[0], out_pts[1], out_pts[2], out_pts[3]);
+		m_SmartObjectWarp.affine_transform(pts[0], pts[1], pts[2], pts[3]);
 		evaluate_transforms();
 	}
 
@@ -426,10 +403,9 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// dimensions.
 	void scale(Geometry::Point2D<double> factor)
 	{
-		auto pts = std::vector<Geometry::Point2D<double>>(m_SmartObjectWarp.affine_transform());
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-
-		scale(factor, affine_mesh.bbox().center());
+		auto affine_transform = m_SmartObjectWarp.affine_transform();
+		auto pts = std::vector<Geometry::Point2D<double>>(affine_transform.begin(), affine_transform.end());
+		scale(factor, Geometry::BoundingBox<double>::compute(pts));
 	}
 
 	/// Scale the SmartObjectLayer (including any warps) by the given factor in both the x and y
@@ -443,50 +419,49 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// The layers' width from 0 - 300,000
 	uint32_t width() const noexcept override 
 	{
-		auto width = _m_CachedSmartObjectWarpMesh.bbox().width();
-		return width;
+		auto _width = _m_CachedSmartObjectWarpMesh.bbox().width();
+		return static_cast<uint32_t>(std::round(_width));
 	}
-	/// Disabled for smart objects, please use move(), scale() and rotate() to modify the transformation instead.
 	void width(uint32_t layer_width) override
 	{
-		PSAPI_LOG_ERROR("SmartObject",
-			"Setting the layers width is not possible on a smart object as its bounds are dynamically computed." \
-			"Please refer to the documentation for more information. If you instead wish to set the transformation" \
-			" use the move(), scale(), rotate() function");
-	}
+		// Explicitly dont use the width() function on the SmartObjectLayer to avoid
+		// floating to int conversion issues
+		auto current_width = _m_CachedSmartObjectWarpMesh.bbox().width();
 
+		double scalar_x = static_cast<double>(layer_width) / current_width;
+		auto center = Geometry::Point2D<double>(Layer<T>::center_x(), Layer<T>::center_y());
+
+		// This will call evaluate_transforms.
+		scale(Geometry::Point2D<double>(scalar_x, 1.0f), center);
+	}
 
 	/// The layers' height from 0 - 300,000
 	uint32_t height() const noexcept override
-	{ 
-		auto height = _m_CachedSmartObjectWarpMesh.bbox().height();
-		return height;
+	{
+		auto _height = _m_CachedSmartObjectWarpMesh.bbox().height();
+		return static_cast<uint32_t>(std::round(_height));
 	}
-	/// Disabled for smart objects, please use move(), scale() and rotate() to modify the transformation instead.
 	void height(uint32_t layer_height) override
 	{
-		PSAPI_LOG_ERROR("SmartObject",
-			"Setting the layers height is not possible on a smart object as its bounds are dynamically computed." \
-			"Please refer to the documentation for more information. If you instead wish to set the transformation" \
-			" use the move(), scale(), rotate() function");
-	}
+		// Explicitly dont use the height() function on the SmartObjectLayer to avoid
+		// floating to int conversion issues
+		auto current_height = _m_CachedSmartObjectWarpMesh.bbox().height();
 
+		double scalar_y = static_cast<double>(layer_height) / current_height;
+		auto center = Geometry::Point2D<double>(Layer<T>::center_x(), Layer<T>::center_y());
+
+		// This will call evaluate_transforms.
+		scale(Geometry::Point2D<double>(1.0f, scalar_y), center);
+	}
 	
 	/// Set the x center coordinate, in the context of a smartobject this both offsets the bounding box as well as the
 	/// transform.
 	void center_x(float x_coord) noexcept override 
 	{
 		auto offset = x_coord - Layer<T>::m_CenterX;
-		auto _pts_array = m_SmartObjectWarp.affine_transform();
-		auto pts = std::vector<Geometry::Point2D<double>>(_pts_array.begin(), _pts_array.end());
+		// this will call evaluate_transforms
+		move(Geometry::Point2D<double>(offset, 0.0f));
 
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-		affine_mesh.move(Geometry::Point2D<double>( offset, 0));
-		Layer<T>::m_CenterX += offset;
-
-		auto out_pts = affine_mesh.points();
-
-		m_SmartObjectWarp.affine_transform(out_pts[0], out_pts[1], out_pts[2], out_pts[3]);
 	}
 
 	/// Set the x center coordinate, in the context of a smartobject this both offsets the bounding box as well as the
@@ -494,27 +469,92 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	void center_y(float y_coord) noexcept override
 	{
 		auto offset = y_coord - Layer<T>::m_CenterY;
-		auto _pts_array = m_SmartObjectWarp.affine_transform();
-		auto pts = std::vector<Geometry::Point2D<double>>(_pts_array.begin(), _pts_array.end());
-
-		Geometry::QuadMesh<double> affine_mesh(pts, 2, 2);
-		affine_mesh.move(Geometry::Point2D<double>(0, offset));
-		Layer<T>::m_CenterY += offset;
-
-		auto out_pts = affine_mesh.points();
-
-		m_SmartObjectWarp.affine_transform(out_pts[0], out_pts[1], out_pts[2], out_pts[3]);
+		// this will call evaluate_transforms
+		move(Geometry::Point2D<double>(0.0f, offset));
 	}
 
 
+	// Override the to_photoshop method to specialize for smart objects.
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
 	{
-		// TODO: this function needs to compute the mask and image data separately as e.g. a mask channel could 
-		LayerRecord record{};
-		ChannelImageData image_data{};
-		return std::make_tuple(std::move(record), std::move(image_data));
+		// Evaluate transforms and image data to be sure these are up to date
+		evaluate_transforms();
+		evaluate_image_data();
+
+		PascalString lrName = Layer<T>::generate_name();
+		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
+		uint16_t channelCount = _ImageDataLayerType<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
+
+		uint8_t clipping = 0u;	// No clipping mask for now
+		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
+		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
+		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
+
+		// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
+		auto blockVec = this->generate_tagged_blocks();
+		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
+		if (blockVec.size() > 0)
+		{
+			TaggedBlockStorage blockStorage = { blockVec };
+			taggedBlocks.emplace(blockStorage);
+		}
+
+		// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
+		// the compression mode chosen on export and must therefore be updated later. This step is done last as generateChannelImageData() invalidates
+		// all image data which we might need for operations above
+		auto channelData = _ImageDataLayerType<T>::generate_channel_image_data();
+		auto& channelInfoVec = std::get<0>(channelData);
+		ChannelImageData channelImgData = std::move(std::get<1>(channelData));
+
+		LayerRecord lrRecord = LayerRecord(
+			lrName,
+			extents.top,
+			extents.left,
+			extents.bottom,
+			extents.right,
+			channelCount,
+			channelInfoVec,
+			Layer<T>::m_BlendMode,
+			Layer<T>::m_Opacity,
+			clipping,
+			bitFlags,
+			lrMaskData,
+			blendingRanges,
+			std::move(taggedBlocks)
+		);
+
+		return std::make_tuple(std::move(lrRecord), std::move(channelImgData));
 	}
-;
+
+
+protected:
+
+	virtual std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
+	{
+		auto blocks = Layer<T>::generate_tagged_blocks();
+		if (!m_FilePtr)
+		{
+			PSAPI_LOG_ERROR("SmartObject", "Unable to generate tagged blocks for the layer as it does not hold a valid reference to a LayeredFile.." \
+				" If you believe this to be an error you can try recreating the layer making sure to pass a valid LayeredFile object.");
+		}
+
+		auto& linked_layers = m_FilePtr->linked_layers();
+		auto linked_layer = linked_layers.at(m_Hash);
+
+		// Before generating the descriptor we need to update the original width and height
+		// as we don't keep track of these usually.
+		m_OriginalSize[0] = linked_layer->width();
+		m_OriginalSize[1] = linked_layer->height();
+
+		auto descriptor = generate_placed_layer_data();
+		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>();
+		block_ptr->m_Descriptor = std::move(descriptor);
+
+		blocks.push_back(block_ptr);
+
+		return blocks;
+	}
+
 
 private:
 	/// Pointer back to the original file object this layer was created with.
@@ -573,7 +613,7 @@ private:
 	/// latest warp information
 	void evaluate_transforms()
 	{
-		// TODO: Find a way to not have this recalculate if our mesh is up-to-date but the image data is stale
+		PSAPI_PROFILE_FUNCTION();
 		if (m_SmartObjectWarp == _m_CachedSmartObjectWarp)
 		{
 			PSAPI_LOG_DEBUG("SmartObject", "No need to re-evaluate the transform data as it matches the cached values");
@@ -589,10 +629,16 @@ private:
 		const auto& linked_layer = linked_layers.at(m_Hash);
 
 		_m_CachedSmartObjectWarpMesh = m_SmartObjectWarp.surface().mesh(
-			linked_layer->width() / 25,
-			linked_layer->height() / 25,
-			false // move_to_zero
+			75,		// x resolution
+			75,		// y resolution
+			false	// move_to_zero
 		);
+
+		Layer<T>::m_CenterX = _m_CachedSmartObjectWarpMesh.bbox().center().x;
+		Layer<T>::m_CenterY = _m_CachedSmartObjectWarpMesh.bbox().center().y;
+
+		Layer<T>::m_Width = static_cast<uint32_t>(_m_CachedSmartObjectWarpMesh.bbox().width());
+		Layer<T>::m_Height = static_cast<uint32_t>(_m_CachedSmartObjectWarpMesh.bbox().height());
 	}
 
 	/// Lazily evaluates (and updates if necessary) the ImageData of the SmartObjectLayer. Checks whether
@@ -652,10 +698,39 @@ private:
 			);
 		}
 
+		// If the original data held no alpha we need to account for this by warping in place the alpha and setting it
+		// so that we dont get a result on black
+		auto alpha_id = Enum::toChannelIDInfo(Enum::ChannelID::Alpha, Layer<T>::m_ColorMode);
+		if (!image_data.contains(alpha_id))
+		{
+			T value = std::numeric_limits<T>::max();
+			if constexpr (std::is_same_v<T, float32_t>)
+			{
+				value = 1.0f;
+			}
+
+			std::vector<T> channel(linked_layer->width() * linked_layer->height(), value);
+			Render::ConstImageBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
+
+			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
+
+			_ImageDataLayerType<T>::m_ImageData[alpha_id] = std::make_unique<ImageChannel>(
+				Enum::Compression::ZipPrediction,
+				channel_warp,
+				alpha_id,
+				width(),
+				height(),
+				Layer<T>::m_CenterX,
+				Layer<T>::m_CenterY
+			);
+		}
+
 		// Store the cached values for next evaluation
 		_m_CachedSmartObjectWarp = m_SmartObjectWarp;
 	}
 
+
+	/// Construct the SmartObjectLayer, initializing the structure and populating the warp (if necessary).
 	void construct(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, bool link_externally, std::optional<SmartObject::Warp> warp = std::nullopt)
 	{
 		PSAPI_PROFILE_FUNCTION();
@@ -695,29 +770,26 @@ private:
 		Layer<T>::parse_mask(parameters);
 	}
 
-	
+	/// Decode the structures passed from the PhotoshopFile object to parse the information for necessary
+	/// to identify the smart object layer.
 	void decode(const AdditionalLayerInfo& local, const AdditionalLayerInfo& global, const std::string& name)
 	{
 		// Get the LinkedLayers from the global additional layer info
-		auto g_linkedLayer = global.getTaggedBlock<LinkedLayerTaggedBlock>(Enum::TaggedBlockKey::lrLinked);
-		if (!g_linkedLayer)
-		{
-			g_linkedLayer = global.getTaggedBlock<LinkedLayerTaggedBlock>(Enum::TaggedBlockKey::lrLinked_8Byte);
-		}
-		const auto l_placedLayer = local.getTaggedBlock<PlacedLayerTaggedBlock>(Enum::TaggedBlockKey::lrPlaced);
-		const auto l_placedLayerData = local.getTaggedBlock<PlacedLayerDataTaggedBlock>(Enum::TaggedBlockKey::lrPlacedData);
+		auto g_linked_layers = global.get_tagged_blocks<LinkedLayerTaggedBlock>();
+
+		const auto l_placed_layers = local.get_tagged_blocks<PlacedLayerTaggedBlock>();
+		const auto l_placed_layers_data = local.get_tagged_blocks<PlacedLayerDataTaggedBlock>();
 
 		// Prefer decoding via placed layer data as that is more up to date
-		if (g_linkedLayer && l_placedLayerData)
+		if (!g_linked_layers.empty() && !l_placed_layers_data.empty())
 		{
-			decode_placed_layer_data(l_placedLayerData.value(), g_linkedLayer.value(), name);
+			decode_placed_layer_data(l_placed_layers_data, name);
 		}
-		// Fallback to placed layer if placed layer data wasn't present
-		else if (g_linkedLayer && l_placedLayer)
+		else if (!g_linked_layers.empty() && !l_placed_layers.empty())
 		{
 			// This currently throws a runtime_error. Perhaps we get around to adding
 			// this in the future but most files should have PlacedLayerData anyways
-			decode_placed_layer(l_placedLayer.value(), g_linkedLayer.value(), name);
+			decode_placed_layer(l_placed_layers, name);
 		}
 		else
 		{
@@ -725,18 +797,19 @@ private:
 		}
 	}
 
-
 	/// Decode the smart object from the PlacedLayerData Tagged Block, this contains information such as 
-	void decode_placed_layer_data(const std::shared_ptr<PlacedLayerDataTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
+	void decode_placed_layer_data(
+		const std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>& locals, 
+		const std::string& name)
 	{
-		const auto& descriptor = local->m_Descriptor;
+		if (locals.size() > 1)
 		{
-			// Temporarily write the descriptor json to file so we can easily debug it.
-			std::ofstream file(fmt::format("C:/Users/emild/Desktop/linkedlayers/warp/placed_layer_descriptor_{}.json", name));
-			file << descriptor.to_json().dump(4);
-			file.flush();
+			PSAPI_LOG_WARNING("SmartObject", "More than one PlacedLayerData tagged block found, this is likely an error in the file, continuing parsing with the first one found");
 		}
+		const auto& local = locals[0];
 
+
+		const auto& descriptor = local->m_Descriptor;
 		if (descriptor.contains("filterFX"))
 		{
 			PSAPI_LOG_WARNING("SmartObject", "Filter based warps are not supported at the moment (Edit->Puppet Warp and Edit->Perspective Warp)." \
@@ -800,7 +873,7 @@ private:
 	}
 
 
-	/// Generate a PlacedLayerData descriptor from the SmartObject checking whether the layers' linked data is still valid throwing otherwise.
+	/// Generate a PlacedLayerData descriptor from the SmartObject that can be passed to the tagged blocks of the layer.
 	Descriptors::Descriptor generate_placed_layer_data() const
 	{
 		Descriptors::Descriptor placed_layer("null");
@@ -874,7 +947,6 @@ private:
 		}
 
 		placed_layer.insert("comp", _m_Comp);
-
 		{
 			Descriptors::Descriptor comp_info_descriptor("null");
 
@@ -887,8 +959,10 @@ private:
 		
 	}
 
-
-	void decode_placed_layer(const std::shared_ptr<PlacedLayerTaggedBlock>& local, const std::shared_ptr<LinkedLayerTaggedBlock>& global, const std::string& name)
+	/// TBD: Unimplemented and might not ever implement depending on if we find many users who try to open up old files.
+	void decode_placed_layer(
+		const std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>& locals,
+		const std::string& name)
 	{
 		PSAPI_LOG_ERROR("SmartObject", "Parsing of the PlacedLayerTaggedBlock is currently unimplemented, this is likely due to trying to open an older file.");
 	}

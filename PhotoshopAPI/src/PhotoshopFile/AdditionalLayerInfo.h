@@ -56,10 +56,17 @@ struct AdditionalLayerInfo : public FileSection
 	}
 
 	template <typename T>
-	requires std::is_base_of_v<TaggedBlock, T>
+		requires std::is_base_of_v<TaggedBlock, T>
 	std::shared_ptr<T> getTaggedBlock() const
 	{
 		return this->m_TaggedBlocks.getTaggedBlockView<T>();
+	}
+
+	template <typename T>
+		requires std::is_base_of_v<TaggedBlock, T>
+	std::vector<std::shared_ptr<T>> get_tagged_blocks() const
+	{
+		return this->m_TaggedBlocks.get_tagged_blocks<T>();
 	}
 };
 
