@@ -488,14 +488,33 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         {
             auto data = self.getImageData(do_copy);
             std::unordered_map<int, py::array_t<T>> outData;
+
+            constexpr auto mask_id = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
             for (auto& [key, value] : data)
             {
-                outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
+                // Mask channels may have a different resolution compared to the actual layer so we must account for this while parsing.
+                if (key == mask_id)
+                {
+                    if (!self.m_LayerMask)
+                    {
+                        throw py::value_error("Internal error: Encountered mask channel but layer does not have mask");
+                    }
+                    auto& mask = self.m_LayerMask.value();
+                    auto width = mask.maskData->getWidth();
+                    auto height = mask.maskData->getHeight();
+
+                    outData[key.index] = to_py_array(std::move(value), width, height);
+                }
+                else
+                {
+                    outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
+                }
             }
             return outData;
         }, py::arg("do_copy") = true, R"pbdoc(
 
-        Extract all the channels of the ImageLayer into an unordered_map.
+        Extract all the channels of the ImageLayer into an unordered_map. The channels may have differing sizes 
+        as photoshop optimizes mask channels differently than the pixel data
                 
         :param do_copy: Defaults to true, Whether to copy the data
         :type do_copy: bool
@@ -616,9 +635,27 @@ void declareImageLayer(py::module& m, const std::string& extension) {
         {
 			auto data = self.getImageData(true);
 			std::unordered_map<int, py::array_t<T>> outData;
+
+			constexpr auto mask_id = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
 			for (auto& [key, value] : data)
 			{
-				outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
+				// Mask channels may have a different resolution compared to the actual layer so we must account for this while parsing.
+				if (key == mask_id)
+				{
+					if (!self.m_LayerMask)
+					{
+						throw py::value_error("Internal error: Encountered mask channel but layer does not have mask");
+					}
+					auto& mask = self.m_LayerMask.value();
+					auto width = mask.maskData->getWidth();
+					auto height = mask.maskData->getHeight();
+
+					outData[key.index] = to_py_array(std::move(value), width, height);
+				}
+				else
+				{
+					outData[key.index] = to_py_array(std::move(value), self.m_Width, self.m_Height);
+				}
 			}
 			return outData;
         }, R"pbdoc(
@@ -627,7 +664,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def_property_readonly("num_channels", [](Class& self)
         {
-            return self.m_ImageData.size();
+            return self.m_ImageData.size() + self.m_LayerMask.has_value();
 		});
 
     imageLayer.def_property_readonly("channels", [](Class& self)
@@ -636,6 +673,10 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             for (const auto& [key, _] : self.m_ImageData)
             {
                 indices.push_back(key.index);
+            }
+            if (self.m_LayerMask)
+            {
+                indices.push_back(-2);
             }
             return indices;
         });

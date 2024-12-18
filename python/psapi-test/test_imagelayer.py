@@ -11,6 +11,7 @@ import psapi
 
 class TestImageLayer(unittest.TestCase):
     path = os.path.join(os.path.dirname(__file__), "documents", "BaseFile.psb")
+    mask_path = os.path.join(os.path.dirname(__file__), "documents", "MismatchedMaskChannel.psb")
     bin_data_path = os.path.join(os.path.dirname(__file__), "bin_data", "monza_npy.bin")
 
     def test_get_image_data(self):
@@ -25,6 +26,24 @@ class TestImageLayer(unittest.TestCase):
         self.assertTrue(2 in image_data)
         self.assertTrue(len(layer.channels) == 4)
         self.assertTrue(layer.num_channels == 4)
+
+    def test_get_image_data_mismatched_mask(self):
+        """
+        Test that the mask channel gets read properly even if it has a different size than 
+        """
+        file = psapi.LayeredFile.read(self.mask_path)
+        layer: psapi.ImageLayer_16bit = file["MonzaSP1_DawnShot_V1_v002_ED.BaseAOV"]
+        
+        image_data = layer.image_data
+        image_data_2 = layer.get_image_data()
+
+        self.assertTrue(-2 in image_data and -2 in image_data_2)
+        self.assertTrue(-1 in image_data and -1 in image_data_2)
+        self.assertTrue(0 in image_data and 0 in image_data_2)
+        self.assertTrue(1 in image_data and 1 in image_data_2)
+        self.assertTrue(2 in image_data and 2 in image_data_2)
+        self.assertTrue(len(layer.channels) == 5)
+        self.assertTrue(layer.num_channels == 5)
 
     def test_channel_setting_roundtrip(self):
         file = psapi.LayeredFile.read(self.path)
