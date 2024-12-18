@@ -27,8 +27,13 @@ struct TaggedBlockStorage : public FileSection
 	template <typename T>
 	std::shared_ptr<T> getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
+	/// Wrapper around the other getTaggedBlockView method to be able to omit the "key" argument
 	template <typename T>
 	std::shared_ptr<T> getTaggedBlockView() const;
+
+	/// Retrieve a vector of all tagged blocks associated with the given type
+	template <typename T>
+	std::vector<std::shared_ptr<T>> get_tagged_blocks() const;
 
 
 	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;

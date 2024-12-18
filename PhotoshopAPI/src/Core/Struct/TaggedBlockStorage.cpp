@@ -54,16 +54,16 @@ std::shared_ptr<T> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBloc
 
 // Instantiate the templates for all the tagged block types. Unfortunately required to avoid circular
 // dependencies
-template std::shared_ptr<TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<Lr16TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<Lr32TaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<LrSectionTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<UnicodeLayerNameTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<ProtectedSettingTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<PlacedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<PlacedLayerDataTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
-template std::shared_ptr<LinkedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<TaggedBlock>					TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<Lr16TaggedBlock>				TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<Lr32TaggedBlock>				TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<LrSectionTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<ReferencePointTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<UnicodeLayerNameTaggedBlock>	TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<ProtectedSettingTaggedBlock>	TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
 template <typename T>
@@ -81,16 +81,47 @@ std::shared_ptr<T> TaggedBlockStorage::getTaggedBlockView() const
 
 // Instantiate the templates for all the tagged block types. Unfortunately required to avoid circular
 // dependencies
-template std::shared_ptr<TaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<Lr16TaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<Lr32TaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<LrSectionTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<ReferencePointTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<UnicodeLayerNameTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<ProtectedSettingTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<PlacedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<PlacedLayerDataTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
-template std::shared_ptr<LinkedLayerTaggedBlock> TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<TaggedBlock>					TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<Lr16TaggedBlock>				TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<Lr32TaggedBlock>				TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<LrSectionTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<ReferencePointTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<UnicodeLayerNameTaggedBlock>	TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<ProtectedSettingTaggedBlock>	TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
+
+
+template <typename T>
+std::vector<std::shared_ptr<T>> TaggedBlockStorage::get_tagged_blocks() const
+{
+	std::vector<std::shared_ptr<T>> blocks;
+	for (auto& taggedBlock : m_TaggedBlocks)
+	{
+		if (std::shared_ptr<T> downcastedPtr = std::dynamic_pointer_cast<T>(taggedBlock))
+		{
+			blocks.push_back(downcastedPtr);
+		}
+	}
+	return blocks;
+}
+
+
+// Instantiate the templates for all the tagged block types. Unfortunately required to avoid circular
+// dependencies
+template std::vector<std::shared_ptr<TaggedBlock>>					TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<Lr16TaggedBlock>>				TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<Lr32TaggedBlock>>				TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<LrSectionTaggedBlock>>			TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<ReferencePointTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<UnicodeLayerNameTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<ProtectedSettingTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<LinkedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
+
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------

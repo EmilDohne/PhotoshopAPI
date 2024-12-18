@@ -494,16 +494,8 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 	auto descriptorVersion = ReadBinaryData<uint32_t>(document);
 	if (m_Version != 4 || descriptorVersion != 16)
 	{
-		PSAPI_LOG_ERROR("PlacedLayer", "Unknown version or descriptor version encountered. Version: %d. Descriptor Version: %d. Expected 4 and 16 for these respectively", m_Version, descriptorVersion);
-	}
-
-	auto tmp_offset = document.getOffset();
-	std::vector<uint8_t> data = ReadBinaryArray<uint8_t>(document, std::get<uint32_t>(m_Length) - 12);
-	std::ofstream fstream(fmt::format("C:/Users/emild/Desktop/linkedlayers/TaggedBlock_{}.bin", tmp_offset), std::ofstream::binary);
-	fstream.write(reinterpret_cast<const char*>(data.data()), data.size());
-	document.setOffset(tmp_offset);
-	
-
+		PSAPI_LOG_ERROR("PlacedLayerData", "Unknown version or descriptor version encountered. Version: %d. Descriptor Version: %d. Expected 4 and 16 for these respectively", m_Version, descriptorVersion);
+	}	
 
 	m_Descriptor.read(document);
 	// Manually skip to the end as this section may be padded
@@ -537,7 +529,7 @@ void PlacedLayerDataTaggedBlock::write(File& document, [[maybe_unused]] const Fi
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LinkedLayer::Date::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
+uint64_t LinkedLayerItem::Date::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
 {
 	return sizeof(uint32_t) + 4 * sizeof(uint8_t) + sizeof(float64_t);
 }
@@ -545,7 +537,7 @@ uint64_t LinkedLayer::Date::calculateSize(std::shared_ptr<FileHeader> header /*=
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Date::read(File& document)
+void LinkedLayerItem::Date::read(File& document)
 {
 	this->year		= ReadBinaryData<uint32_t>(document);
 	this->month		= ReadBinaryData<uint8_t>(document);
@@ -558,7 +550,7 @@ void LinkedLayer::Date::read(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Date::write(File& document) const
+void LinkedLayerItem::Date::write(File& document) const
 {
 	WriteBinaryData<uint32_t>(document, this->year);
 	WriteBinaryData<uint8_t>(document, this->month);
@@ -571,7 +563,7 @@ void LinkedLayer::Date::write(File& document) const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayer::Date::Date()
+LinkedLayerItem::Date::Date()
 {
 	auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
@@ -590,7 +582,7 @@ LinkedLayer::Date::Date()
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Data::read(File& document)
+void LinkedLayerItem::Data::read(File& document)
 {
 	m_Size = ReadBinaryData<uint64_t>(document);
 
@@ -645,8 +637,13 @@ void LinkedLayer::Data::read(File& document)
 			date.read(document);
 			m_Date = date;
 		}
-		uint64_t externalDataFileSize = ReadBinaryData<uint64_t>(document);
-		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, externalDataFileSize);
+		// From what I can tell this data is just for internal consistency anyways.
+		document.skip(sizeof(uint64_t));
+		//uint64_t externalDataFileSize = ReadBinaryData<uint64_t>(document);
+		if (m_Version > 2)
+		{
+			m_RawFileBytes = ReadBinaryArray<uint8_t>(document, dataSize);
+		}
 	}
 	else if (m_Type == Type::Alias)
 	{
@@ -677,7 +674,7 @@ void LinkedLayer::Data::read(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Data::write(File& document)
+void LinkedLayerItem::Data::write(File& document)
 {
 	auto lenOffset = document.getOffset();
 	WriteBinaryData<uint64_t>(document, 0);
@@ -751,29 +748,29 @@ void LinkedLayer::Data::write(File& document)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayer::Data::Type LinkedLayer::Data::readType(File& document) const
+LinkedLayerItem::Type LinkedLayerItem::Data::readType(File& document) const
 {
 	auto key = Signature::read(document);
 	if (key == "liFD")
 	{
-		return LinkedLayer::Data::Type::Data;
+		return LinkedLayerItem::Type::Data;
 	}
 	if (key == "liFE")
 	{
-		return LinkedLayer::Data::Type::External;
+		return LinkedLayerItem::Type::External;
 	}
 	if (key == "liFA")
 	{
-		return LinkedLayer::Data::Type::Alias;
+		return LinkedLayerItem::Type::Alias;
 	}
 	PSAPI_LOG_ERROR("LinkedLayer", "Unable to decode Linked Layer type '%s', aborting parsing", key.string().c_str());
-	return LinkedLayer::Data::Type::Data;
+	return LinkedLayerItem::Type::Data;
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayer::Data::writeType(File& document, Type type) const
+void LinkedLayerItem::Data::writeType(File& document, Type type) const
 {
 	if (type == Type::Data)
 	{
@@ -791,6 +788,84 @@ void LinkedLayer::Data::writeType(File& document, Type type) const
 	{
 		PSAPI_LOG_ERROR("LinkedLayer", "Unknown LinkedLayer type encountered while writing to file, aborting write.");
 	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepath, Type type, std::vector<uint8_t> bytes)
+{
+	m_Type = type;
+	m_RawFileBytes = std::move(bytes);
+	m_UniqueID = unique_id;
+	m_FileName = UnicodeString(filepath.filename().string(), 2u);
+	m_FileType = generate_file_type(filepath);
+
+	// Generate the version specific parameters
+	m_ChildDocumentID.emplace(UnicodeString("", 2u));
+	m_AssetModTime.emplace(0.0f);	// appears to just be 0 unless this links to an asset which is unimplemented
+	m_AssetIsLocked.emplace(false);
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::string LinkedLayerItem::Data::generate_file_type(const std::filesystem::path& filepath)
+{
+	if (!filepath.has_filename() && !filepath.has_extension())
+	{
+		throw std::invalid_argument("Passed a filepath without a file extension, unable to deduce type from that.");
+	}
+
+	auto extension = filepath.extension();
+
+	if (extension == ".jpg" || extension == ".jpeg")
+	{
+		return "JPEG";
+	}
+	if (extension == ".png")
+	{
+		return "png ";	// space is not a mistake
+	}
+	if (extension == ".tiff" || extension == ".tif")
+	{
+		return "TIFF";
+	}
+	if (extension == ".mpo")
+	{
+		return "MPO ";
+	}
+	if (extension == ".psd")
+	{
+		return "8BPS";
+	}
+	if (extension == ".psb")
+	{
+		return "8BPB";
+	}
+	if (extension == ".bmp")
+	{
+		return "BMP ";
+	}
+	if (extension == ".dcm")
+	{
+		return "DCIM";
+	}
+	if (extension == ".gif")
+	{
+		return "GIFf";
+	}
+	if (extension == ".eps")
+	{
+		return "EPSF";
+	}
+	if (extension == ".jps")
+	{
+		return "JPS ";
+	}
+
+	// what photoshop considers unknown or maybe doesn't have internal parsers for it skips over here
+	// by explicly setting spaces, not zero but spaces.
+	return "    ";
 }
 
 
@@ -830,7 +905,7 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 	// Need to be able to read at least 8 bytes in order to read another block
 	while (document.getOffset() < (endOffset - 8))
 	{
-		LinkedLayer::Data data;
+		LinkedLayerItem::Data data;
 		data.read(document);
 		m_LayerData.push_back(std::move(data));
 	}

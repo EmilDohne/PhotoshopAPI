@@ -288,6 +288,8 @@ protected:
 	}
 
 	/// \brief Generates the LayerMaskData struct from the layer mask (if provided).
+	/// 
+	/// Part of the internal API, not expected to be used by users.
 	///
 	/// \return An optional containing LayerMaskData if a layer mask is present; otherwise, std::nullopt.
 	std::optional<LayerRecords::LayerMaskData> generate_mask(const FileHeader& header)
@@ -622,7 +624,7 @@ public:
 	/// \brief Function for creating a PhotoshopFile compatible types from the layer.
 	///
 	/// This is part of the internal API and as a user you will likely never have to use 
-	/// this function
+	/// this function.
 	/// 
 	/// In the future, the intention is to make this a pure virtual function. However, due to
 	/// the presence of multiple miscellaneous layers not yet implemented for the initial release,

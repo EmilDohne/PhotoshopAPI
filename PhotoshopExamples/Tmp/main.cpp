@@ -93,11 +93,13 @@ void write_to_disk(const std::unordered_map<Enum::ChannelIDInfo, std::vector<uin
 	std::span<const uint8_t> g_span = std::span<const uint8_t>(channel_map.at(green).begin(), channel_map.at(green).end());
 	Enum::ChannelIDInfo blue = { Enum::ChannelID::Blue, 2 };
 	std::span<const uint8_t> b_span = std::span<const uint8_t>(channel_map.at(blue).begin(), channel_map.at(blue).end());
+	Enum::ChannelIDInfo alpha = { Enum::ChannelID::Alpha, -1 };
+	std::span<const uint8_t> a_span = std::span<const uint8_t>(channel_map.at(alpha).begin(), channel_map.at(alpha).end());
 
-	std::vector<uint8_t> interleaved = NAMESPACE_PSAPI::Render::interleave_alloc(r_span, g_span, b_span);
+	std::vector<uint8_t> interleaved = NAMESPACE_PSAPI::Render::interleave_alloc(r_span, g_span, b_span, a_span);
 
 	// Set up the image specification
-	ImageSpec spec(width, height, 3, TypeDesc::UINT8);
+	ImageSpec spec(width, height, 4, TypeDesc::UINT8);
 	spec.channelnames = channel_names;
 
 	// Open the file with the specification
@@ -120,53 +122,56 @@ int main()
 
 	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
 
-	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
+	//LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
+	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/filetypes.psd");
 
-	auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
-	
-	// Render surface
-	{
-		auto mesh = layer_ptr->warp().mesh();
-		mesh.move({ -mesh.bbox().minimum.x, -mesh.bbox().minimum.y });
+	//auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
+	//
+	//// Render surface
+	//{
+	//	auto mesh = layer_ptr->warp().mesh();
+	//	mesh.move({ -mesh.bbox().minimum.x, -mesh.bbox().minimum.y });
 
-		std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
-		Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
-		Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
+	//	std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
+	//	Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
+	//	Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
 
-		write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpsurface.png", buffer.width, buffer.height);
-	}
+	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpsurface.png", buffer.width, buffer.height);
+	//}
 
 
-	// Render mesh
-	{
-		auto mesh = layer_ptr->warp().surface().mesh(9, 9, true);
+	//// Render mesh
+	//{
+	//	auto mesh = layer_ptr->warp().surface().mesh(9, 9, true);
 
-		std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
-		Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
-		Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
+	//	std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
+	//	Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
+	//	Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
 
-		write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
-	}
+	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
+	//}
 
-	// Render image data
-	{
-		auto orig_image_data = layer_ptr->original_image_data();
-		auto image_data = layer_ptr->get_image_data();
-		write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
-		write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
-	}
+	//// Render image data
+	//{
+	//	//auto orig_image_data = layer_ptr->original_image_data();
+	//	auto image_data = layer_ptr->get_image_data();
+	//	//write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
+	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
+	//}
 
-	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+	//layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
 
-	// Render image data replaced
-	{
-		auto orig_image_data = layer_ptr->original_image_data();
-		auto image_data = layer_ptr->get_image_data();
-		write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original_replaced.png", layer_ptr->original_width(), layer_ptr->original_height());
-		write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped_replaced.png", layer_ptr->width(), layer_ptr->height());
-	}
+	//// Render image data replaced
+	//{
+	//	//auto orig_image_data = layer_ptr->original_image_data();
+	//	auto image_data = layer_ptr->get_image_data();
+	//	//write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original_replaced.png", layer_ptr->original_width(), layer_ptr->original_height());
+	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped_replaced.png", layer_ptr->width(), layer_ptr->height());
+	//}
 
-	Instrumentor::Get().EndSession(); 
+	//Instrumentor::Get().EndSession(); 
 
-	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+	//LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+	//// Read again for error checking
+	//auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
 }

@@ -33,6 +33,13 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
+	std::optional<AdditionalLayerInfo> additional_layer_info = std::nullopt;
+	if (!layeredFile.linked_layers().empty())
+	{
+		std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
+		//auto block = layeredFile.linked_layers().
+	}
+
 	return LayerAndMaskInformation(lrInfo, maskInfo, std::nullopt);
 }
 

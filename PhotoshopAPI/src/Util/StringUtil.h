@@ -41,7 +41,7 @@ inline std::vector<std::string> splitString(std::string toSplit, char separator)
 
 
 /// Generate a UUID using the stduuid library
-inline std::string generateUUID()
+inline std::string generate_uuid()
 {
     std::random_device rd;
     auto seed_data = std::array<int, std::mt19937::state_size> {};

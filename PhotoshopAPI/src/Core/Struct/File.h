@@ -97,6 +97,11 @@ struct File
 	inline std::filesystem::path getPath() const noexcept { return m_FilePath; };
 
 
+	/// Return whether we can read the given file from the document or if it would exceed the file size
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	bool can_read(const uint64_t size) const noexcept;
+
 	/// Initialize our File object from a path on disk. If doRead is true the file is only
 	/// open for reading while if we set it to false it is only open for writing
 	// --------------------------------------------------------------------------------
