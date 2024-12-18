@@ -664,7 +664,7 @@ void declareImageLayer(py::module& m, const std::string& extension) {
 
     imageLayer.def_property_readonly("num_channels", [](Class& self)
         {
-            return self.m_ImageData.size();
+            return self.m_ImageData.size() + self.m_LayerMask.has_value();
 		});
 
     imageLayer.def_property_readonly("channels", [](Class& self)
@@ -673,6 +673,10 @@ void declareImageLayer(py::module& m, const std::string& extension) {
             for (const auto& [key, _] : self.m_ImageData)
             {
                 indices.push_back(key.index);
+            }
+            if (self.m_LayerMask)
+            {
+                indices.push_back(-2);
             }
             return indices;
         });
