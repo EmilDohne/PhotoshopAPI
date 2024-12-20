@@ -18,7 +18,8 @@ namespace Internal
 
     /// An extremely barebones ThreadPool, it is not encouraged to use this for your project and 
     /// instead use one of the many implementations out there.
-    class ThreadPool {
+    class ThreadPool 
+    {
     public:
 
         /// Constructor: Initialize the ThreadPool with the given number of threads

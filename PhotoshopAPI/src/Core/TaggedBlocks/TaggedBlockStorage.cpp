@@ -5,7 +5,17 @@
 #include "Core/FileIO/Write.h"
 #include "Logger.h"
 #include "StringUtil.h"
+
+
 #include "TaggedBlock.h"
+#include "LinkedLayerTaggedBlock.h"
+#include "LrSectionTaggedBlock.h"
+#include "Lr16TaggedBlock.h"
+#include "Lr32TaggedBlock.h"
+#include "PlacedLayerTaggedBlock.h"
+#include "ProtectedSettingTaggedBlock.h"
+#include "ReferencePointTaggedBlock.h"
+#include "UnicodeLayerNameTaggedBlock.h"
 
 PSAPI_NAMESPACE_BEGIN
 

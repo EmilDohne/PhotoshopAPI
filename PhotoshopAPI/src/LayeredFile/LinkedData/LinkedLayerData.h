@@ -30,38 +30,6 @@ enum class LinkedLayerType
 };
 
 
-
-namespace _Impl
-{
-	/// Wrapper which creates a temporary image file for reading the data.
-	struct TempImageFile
-	{
-
-		TempImageFile(std::filesystem::path file_path)
-		{
-			m_FilePath = file_path;
-			std::unique_ptr<OIIO::ImageOutput> out = OIIO::ImageOutput::create(file_path);
-			if (!out)
-				return;  // error
-
-			std::vector<uint8_t> pixels(1);
-			OIIO::ImageSpec spec(1, 1, 1, OIIO::TypeDesc::UINT8);
-			out->open(file_path, spec);
-			out->write_image(OIIO::TypeDesc::UINT8, pixels.data());
-			out->close();
-		}
-
-		~TempImageFile()
-		{
-			std::filesystem::remove(m_FilePath);
-		}
-
-	private:
-		std::filesystem::path m_FilePath;
-	};
-}
-
-
 template <typename T>
 struct LinkedLayerData
 {
@@ -142,17 +110,7 @@ struct LinkedLayerData
 			m_Type = LinkedLayerType::data;
 		}
 
-		// This is a bit hacky but to trick oiio into giving us the input fileproxy we must actually have the file created.
-		// The struct is scoped so we don't have to worry about deleting it
-		if (!std::filesystem::exists(m_FilePath))
-		{
-			_Impl::TempImageFile tmp_file(m_FilePath);
-			initialize_from_psd();
-		}
-		else
-		{
-			initialize_from_psd();
-		}
+		initialize_from_psd();
 	}
 
 	/// Get a view over the raw file data associated with this linked layer 
@@ -294,7 +252,11 @@ private:
 	/// Initialize the image from a psd handling reading/parsing from memory of the image data.
 	void initialize_from_psd()
 	{
-		auto _in = OIIO::ImageInput::create(m_FilePath);
+
+		auto extension_string = m_FilePath.extension().string();
+		extension_string.erase(extension_string.begin());	// Remove the .
+
+		auto _in = OIIO::ImageInput::create(extension_string);
 		if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
@@ -306,9 +268,12 @@ private:
 			// Try to source the file although this will only succeed if the file is relative to the photoshop file or if this
 			// is a linked file where we have the full path.
 			auto base_dir = m_FilePath.parent_path();
-			PSAPI_LOG_WARNING("LinkedLayerData",
-				"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
-				m_Filename.c_str(), base_dir.string().c_str());
+			if (!m_RawData.empty())
+			{
+				PSAPI_LOG_WARNING("LinkedLayerData",
+					"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
+					m_Filename.c_str(), base_dir.string().c_str());
+			}
 
 			auto combined_path = base_dir / m_Filename;
 			if (!std::filesystem::exists(combined_path))
@@ -432,6 +397,7 @@ struct LinkedLayers
 			return m_LinkedLayerData.at(hash);
 		}
 		PSAPI_LOG_ERROR("LinkedLayers", "Unknown linked layer hash '%s' encountered", hash.c_str());
+		return nullptr;
 	}
 
 	/// Retrieve the LinkedLayer data at the given hash. Throws an error if the hash doesnt exist

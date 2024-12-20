@@ -4,7 +4,7 @@
 #include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
-#include "Core/Struct/TaggedBlockStorage.h"
+#include "Core/TaggedBlocks/TaggedBlockStorage.h"
 #include "FileHeader.h"
 #include "Util/ProgressCallback.h"
 

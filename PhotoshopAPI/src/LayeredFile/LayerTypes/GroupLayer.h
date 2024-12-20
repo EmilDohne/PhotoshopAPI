@@ -10,8 +10,8 @@
 #include "TextLayer.h"
 #include "AdjustmentLayer.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
-#include "Core/Struct/TaggedBlock.h"
-#include "Core/Struct/TaggedBlockStorage.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
+#include "Core/TaggedBlocks/TaggedBlockStorage.h"
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 

@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Util/Enum.h"
 #include "Util/StringUtil.h"
-#include "Core/Struct/TaggedBlock.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
 #include "Core/Struct/ICCProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"

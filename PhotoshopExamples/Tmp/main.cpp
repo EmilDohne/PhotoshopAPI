@@ -122,8 +122,8 @@ int main()
 
 	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
 
-	//LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
-	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/filetypes.psd");
+	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
+	//LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/filetypes.psd");
 
 	//auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
 	//

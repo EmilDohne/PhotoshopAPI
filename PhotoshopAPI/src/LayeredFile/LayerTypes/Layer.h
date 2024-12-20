@@ -5,7 +5,16 @@
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"
-#include "Core/Struct/TaggedBlock.h"
+
+#include "Core/TaggedBlocks/TaggedBlock.h"
+#include "Core/TaggedBlocks/LinkedLayerTaggedBlock.h"
+#include "Core/TaggedBlocks/LrSectionTaggedBlock.h"
+#include "Core/TaggedBlocks/Lr16TaggedBlock.h"
+#include "Core/TaggedBlocks/Lr32TaggedBlock.h"
+#include "Core/TaggedBlocks/PlacedLayerTaggedBlock.h"
+#include "Core/TaggedBlocks/ProtectedSettingTaggedBlock.h"
+#include "Core/TaggedBlocks/ReferencePointTaggedBlock.h"
+#include "Core/TaggedBlocks/UnicodeLayerNameTaggedBlock.h"
 
 #include <vector>
 #include <optional>

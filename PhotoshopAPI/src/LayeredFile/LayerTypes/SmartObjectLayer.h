@@ -10,7 +10,7 @@
 #include "LayeredFile/LinkedData/LinkedLayerData.h"
 
 #include "Core/Struct/DescriptorStructure.h"
-#include "Core/Struct/TaggedBlock.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
 #include "Core/Warp/SmartObjectWarp.h"
 #include "Core/Render/Render.h"
 #include "Util/Enum.h"
