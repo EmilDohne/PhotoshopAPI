@@ -4,6 +4,7 @@
 #include "Util/Enum.h"
 #include "PhotoshopFile/FileHeader.h"
 #include "Util/ProgressCallback.h"
+#include "Util/Logger.h"
 
 #include <memory>
 #include <vector>

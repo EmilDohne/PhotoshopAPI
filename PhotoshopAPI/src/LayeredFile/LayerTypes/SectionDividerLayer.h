@@ -4,7 +4,7 @@
 #include "Layer.h"
 #include "Util/Enum.h"
 #include "Util/Logger.h"
-#include "Core/Struct/TaggedBlock.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
 
 #include <vector>
 #include <tuple>
