@@ -40,9 +40,6 @@ struct FileHeader : public FileSection
 		m_Depth(depth),
 		m_ColorMode(colorMode) {};
 
-	// This section will always be 26 bytes
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override { return 26u; };
-
 	/// Read and Initialize the FileHeader from disk
 	void read(File& document);
 

@@ -358,9 +358,6 @@ struct PascalString : public FileSection
 	// Initialize a padded PascalString based on its size
 	PascalString(std::string name, const uint8_t padding);
 
-	// While we return a uint64_t here we actually make sure that the size does not exceed the size of uint8_t as that would be illegal
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Return the string held by this struct, the string is ASCII and therefore 
 	/// UTF8 compliant
 	std::string getString() const noexcept;

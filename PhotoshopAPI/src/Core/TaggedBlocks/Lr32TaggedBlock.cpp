@@ -15,8 +15,6 @@ void Lr32TaggedBlock::read(File& document, const FileHeader& header, ProgressCal
 	length = RoundUpToMultiple<uint64_t>(length, padding);
 	m_Length = length;
 	m_Data.read(document, header, callback, document.getOffset(), true, std::get<uint64_t>(m_Length));
-
-	TaggedBlock::totalSize(length + 4u + 4u + SwapPsdPsb<uint32_t, uint64_t>(header.m_Version));
 };
 
 

@@ -70,6 +70,10 @@ struct File
 	// --------------------------------------------------------------------------------
 	inline uint64_t getOffset() const { return m_Offset; }
 
+	/// Return the current offset from the file start
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	inline uint64_t get_offset() const { return m_Offset; }
 
 	/// Set the current offset to the specified value, checks if the offset is possible
 	/// or if it would exceed the file size
@@ -77,6 +81,11 @@ struct File
 	// --------------------------------------------------------------------------------
 	void setOffset(const uint64_t offset);
 
+	/// Set the current offset to the specified value, checks if the offset is possible
+	/// or if it would exceed the file size
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void set_offset(const uint64_t offset);
 
 	/// Set the offset and read into a buffer using a singular lock. 
 	/// Use this if you need to skip to a section and read it in a multithreaded environment

@@ -29,15 +29,6 @@ struct LrSectionTaggedBlock : TaggedBlock
 		m_BlendMode(blendMode)
 	{
 		m_Key = Enum::TaggedBlockKey::lrSectionDivider;
-		TaggedBlock::totalSize(4u);		// Signature
-		TaggedBlock::addTotalSize(4u);	// Key
-		TaggedBlock::addTotalSize(4u);	// Length marker
-		TaggedBlock::addTotalSize(4u);	// LrSection type
-		if (blendMode.has_value())
-		{
-			TaggedBlock::addTotalSize(4u);	// LrSection Signature
-			TaggedBlock::addTotalSize(4u);	// LrSection Blendmode Key
-		}
 	};
 
 	void read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);

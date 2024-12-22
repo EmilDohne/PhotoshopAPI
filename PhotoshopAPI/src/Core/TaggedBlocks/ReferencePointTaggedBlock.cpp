@@ -1,5 +1,7 @@
 #include "ReferencePointTaggedBlock.h"
 
+#include "Core/FileIO/Util.h"
+#include "Core/FileIO/LengthMarkers.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -20,7 +22,6 @@ void ReferencePointTaggedBlock::read(File& document, const uint64_t offset, cons
 	m_Length = length;
 	m_ReferenceX = ReadBinaryData<float64_t>(document);
 	m_ReferenceY = ReadBinaryData<float64_t>(document);
-	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 }
 
 
@@ -30,7 +31,8 @@ void ReferencePointTaggedBlock::write(File& document, [[maybe_unused]] const Fil
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("fxrp").m_Value);
-	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
+
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, padding);
 
 	WriteBinaryData<float64_t>(document, m_ReferenceX);
 	WriteBinaryData<float64_t>(document, m_ReferenceY);

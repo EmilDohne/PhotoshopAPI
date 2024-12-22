@@ -151,7 +151,7 @@ int main()
 	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
 	//}
 
-	//// Render image data
+	// Render image data
 	//{
 	//	//auto orig_image_data = layer_ptr->original_image_data();
 	//	auto image_data = layer_ptr->get_image_data();
@@ -169,9 +169,11 @@ int main()
 	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped_replaced.png", layer_ptr->width(), layer_ptr->height());
 	//}
 
-	//Instrumentor::Get().EndSession(); 
 
-	//LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
-	//// Read again for error checking
-	//auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+	// Read again for error checking
+	auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+
+	Instrumentor::Get().EndSession();
+
 }

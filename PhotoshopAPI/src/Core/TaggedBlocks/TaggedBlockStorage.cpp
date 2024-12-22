@@ -30,20 +30,6 @@ TaggedBlockStorage::TaggedBlockStorage(std::vector<std::shared_ptr<TaggedBlock>>
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t TaggedBlockStorage::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-	for (const auto& block : m_TaggedBlocks)
-	{
-		// Size gets initialized upon creation of the tagged block so we can just read the value back
-		size += block->totalSize<uint64_t>();
-	}
-	return size;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
 std::shared_ptr<T> TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const
 {
@@ -141,6 +127,7 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	Signature signature = Signature(ReadBinaryData<uint32_t>(document));
 	if (signature != Signature("8BIM") && signature != Signature("8B64"))
 	{
+		// This is to make sure we don't accidentally null terminate and upset the string gods.
 		auto getPrintableChar = [](char c) { return c ? c : ' '; };
 		PSAPI_LOG_ERROR("TaggedBlock", "Signature does not match '8BIM' or '8B64', got '%c%c%c%c' instead",
 			getPrintableChar(signature.m_Representation[0]),

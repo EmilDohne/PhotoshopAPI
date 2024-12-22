@@ -48,15 +48,6 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t UnicodeString::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	// We actually already take care of initializing the size in the constructor therefore it is valid
-	return FileSection::size();
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
 const std::string UnicodeString::string() const noexcept
 {
 	return m_String;

@@ -490,7 +490,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
 
-		// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
+		// Generate our AdditionalLayerInfoSection. This will contain e.g. the placed layer data.
 		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
 		if (blockVec.size() > 0)
@@ -547,9 +547,7 @@ protected:
 		m_OriginalSize[1] = linked_layer->height();
 
 		auto descriptor = generate_placed_layer_data();
-		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>();
-		block_ptr->m_Descriptor = std::move(descriptor);
-
+		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>(descriptor);
 		blocks.push_back(block_ptr);
 
 		return blocks;
@@ -637,8 +635,8 @@ private:
 		Layer<T>::m_CenterX = _m_CachedSmartObjectWarpMesh.bbox().center().x;
 		Layer<T>::m_CenterY = _m_CachedSmartObjectWarpMesh.bbox().center().y;
 
-		Layer<T>::m_Width = static_cast<uint32_t>(_m_CachedSmartObjectWarpMesh.bbox().width());
-		Layer<T>::m_Height = static_cast<uint32_t>(_m_CachedSmartObjectWarpMesh.bbox().height());
+		Layer<T>::m_Width = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().width()));
+		Layer<T>::m_Height = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().height()));
 	}
 
 	/// Lazily evaluates (and updates if necessary) the ImageData of the SmartObjectLayer. Checks whether

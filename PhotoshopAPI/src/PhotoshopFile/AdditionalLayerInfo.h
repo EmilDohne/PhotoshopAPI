@@ -32,8 +32,6 @@ struct AdditionalLayerInfo : public FileSection
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	AdditionalLayerInfo(TaggedBlockStorage& taggedBlocks) : m_TaggedBlocks(std::move(taggedBlocks)) {};
 
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Read and Initialize this section. Unlike many other sections we do not usually know the exact size but only a max size. 
 	/// Therefore we continuously read and verify that we can read another TaggedBlock with the right signature
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);

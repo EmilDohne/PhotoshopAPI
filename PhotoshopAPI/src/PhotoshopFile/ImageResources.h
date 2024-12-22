@@ -30,8 +30,6 @@ struct ImageResources : public FileSection
 	ImageResources& operator=(const ImageResources&) = delete;
 	ImageResources& operator=(ImageResources&&) = default;
 
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Read the ImageResources from disk, any ImageResources without an implementation 
 	/// are not parsed and skipped
 	void read(File& document, const uint64_t offset);

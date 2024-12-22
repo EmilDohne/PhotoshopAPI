@@ -164,8 +164,8 @@ namespace SmartObject
 		// at the top-left
 		Geometry::Point2D<double> top_left = m_Transform[0];
 		Geometry::Point2D<double> top_rght = m_Transform[1];
-		Geometry::Point2D<double> bot_rght = m_Transform[2];
-		Geometry::Point2D<double> bot_left = m_Transform[3];
+		Geometry::Point2D<double> bot_rght = m_Transform[3];
+		Geometry::Point2D<double> bot_left = m_Transform[2];
 
 		Geometry::Point2D<double> center = (top_left + bot_rght) / 2;
 

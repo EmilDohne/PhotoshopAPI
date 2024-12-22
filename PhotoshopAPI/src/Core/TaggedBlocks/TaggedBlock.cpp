@@ -28,8 +28,6 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 		length = RoundUpToMultiple<uint64_t>(length, padding);
 		m_Length = length;
 		document.skip(length);
-
-		m_TotalLength = length + 4u + 4u + 8u;
 	}
 	else
 	{
@@ -37,9 +35,6 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 		length = RoundUpToMultiple<uint32_t>(length, padding);
 		m_Length = length;
 		document.skip(length);
-
-
-		m_TotalLength = static_cast<uint64_t>(length) + 4u + 4u + 4u;
 	}
 }
 

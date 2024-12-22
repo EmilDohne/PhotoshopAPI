@@ -1,5 +1,7 @@
 #include "ProtectedSettingTaggedBlock.h"
 
+#include "Core/FileIO/LengthMarkers.h"
+
 PSAPI_NAMESPACE_BEGIN
 
 
@@ -12,7 +14,6 @@ void ProtectedSettingTaggedBlock::read(File& document, const uint64_t offset, co
 	m_Signature = signature;
 	uint32_t length = ReadBinaryData<uint32_t>(document);
 	m_Length = length;
-	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 
 	if (length != 4u)
 	{
@@ -34,7 +35,8 @@ void ProtectedSettingTaggedBlock::write(File& document, [[maybe_unused]] const F
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("lspf").m_Value);
-	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
+
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, padding);
 
 	if (m_IsLocked)
 	{

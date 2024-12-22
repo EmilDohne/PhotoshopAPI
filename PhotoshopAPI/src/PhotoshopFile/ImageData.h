@@ -71,8 +71,6 @@ namespace ImageDataImpl
 struct ImageData : public FileSection
 {
 
-	inline uint64_t calculateSize(std::shared_ptr<FileHeader> header /* = nullptr */) const override { return 0; };
-
 	/// Write out an empty image data section from the number of channels. This section is unfortunately required
 	inline void write(File& document, const FileHeader& header)
 	{
