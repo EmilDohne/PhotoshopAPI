@@ -1,5 +1,6 @@
 #include "PlacedLayerTaggedBlock.h"
 
+#include "Core/FileIO/LengthMarkers.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -52,7 +53,7 @@ void PlacedLayerTaggedBlock::read(File& document, const uint64_t offset, const E
 	m_Signature = signature;
 
 	m_Length = ReadBinaryData<uint32_t>(document);
-	TaggedBlock::totalSize(static_cast<size_t>(std::get<uint32_t>(m_Length)) + 4u + 4u + 4u);
+	auto len_offset = document.get_offset();
 
 	// The type is always going to be 'plcL' according to the docs
 	auto type = Signature::read(document);
@@ -95,7 +96,7 @@ void PlacedLayerTaggedBlock::read(File& document, const uint64_t offset, const E
 	m_WarpInformation.read(document);
 
 	// This section is padded so we simply skip to the end
-	document.setOffset(offset + TaggedBlock::totalSize<uint64_t>());
+	document.setOffset(len_offset + std::get<uint32_t>(m_Length));
 }
 
 
@@ -106,15 +107,9 @@ void PlacedLayerTaggedBlock::write(File& document, const FileHeader& header, [[m
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("PlLd").m_Value);
 
-	auto lenOffset = document.getOffset();
-	if (header.m_Version == Enum::Version::Psd)
-	{
-		WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
-	}
-	else
-	{
-		WriteBinaryData<uint64_t>(document, TaggedBlock::totalSize<uint64_t>() - 12u);
-	}
+	Impl::ScopedLengthBlock<Impl::VariadicSize<uint32_t, uint64_t>> len_block(
+		document, header, 4u
+	);
 
 	WriteBinaryData<uint32_t>(document, Signature("plcL").m_Value);
 	WriteBinaryData<uint32_t>(document, m_Version);
@@ -131,19 +126,7 @@ void PlacedLayerTaggedBlock::write(File& document, const FileHeader& header, [[m
 	WriteBinaryData<uint32_t>(document, 0u);
 	WriteBinaryData<uint32_t>(document, 16u);
 	m_WarpInformation.write(document);
-
-	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
-	// zero-sized length block and writes it back out but now with the actual section length
-	if (header.m_Version == Enum::Version::Psd)
-	{
-		Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), 4u);
-	}
-	else
-	{
-		Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 4u);
-	}
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -154,7 +137,7 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 	m_Signature = signature;
 
 	m_Length = ReadBinaryData<uint32_t>(document);
-	TaggedBlock::totalSize(static_cast<size_t>(std::get<uint32_t>(m_Length)) + 4u + 4u + 4u);
+	auto len_offset = document.get_offset();
 
 	// The identifier is always going to be 'soLD' according to the docs
 	auto identifier = Signature::read(document);
@@ -172,7 +155,7 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 
 	m_Descriptor.read(document);
 	// Manually skip to the end as this section may be padded
-	document.setOffset(offset + TaggedBlock::totalSize<uint64_t>());
+	document.setOffset(len_offset + std::get<uint32_t>(m_Length));
 }
 
 
@@ -181,10 +164,10 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 void PlacedLayerDataTaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
+	// TODO: this might need to be 'SoLE' for externally linked blocks
 	WriteBinaryData<uint32_t>(document, Signature("SoLd").m_Value);
 
-	auto lenOffset = document.getOffset();
-	WriteBinaryData<uint32_t>(document, 0u);
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, padding);
 
 	// Write key, version and descriptor version
 	Signature("soLD").write(document);
@@ -192,10 +175,6 @@ void PlacedLayerDataTaggedBlock::write(File& document, [[maybe_unused]] const Fi
 	WriteBinaryData<uint32_t>(document, 16u);
 
 	m_Descriptor.write(document);
-
-	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
-	// zero-sized length block and writes it back out but now with the actual section length
-	Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), padding);
 }
 
 PSAPI_NAMESPACE_END

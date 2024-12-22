@@ -91,8 +91,6 @@ namespace LayerRecords
 		std::optional<uint8_t> m_VectorMaskDensity;
 		std::optional<float64_t> m_VectorMaskFeather;
 
-		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 		// Set the boolean flags according to the data read from disk
 		void setFlags(const uint8_t bitFlag);
 		// Get the currently set flags as a uint8_t for writing
@@ -141,8 +139,6 @@ namespace LayerRecords
 
 		LayerMaskData() = default;
 
-		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 		void read(File& document);
 		// Write the layer masks, currently only a single LayerMask is supported for this
 		void write(File& document) const;
@@ -159,8 +155,6 @@ namespace LayerRecords
 
 		// Initialize blending ranges with defaults, this works for all color modes
 		LayerBlendingRanges();
-
-		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 		void read(File& document);
 		void write(File& document) const;
@@ -233,8 +227,6 @@ struct LayerRecord : public FileSection
 		std::optional<AdditionalLayerInfo> additionalLayerInfo
 	);
 
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Read and Initialize the struct from disk using the given offset
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset);
 
@@ -254,9 +246,6 @@ struct GlobalLayerMaskInfo : public FileSection
 {
 	GlobalLayerMaskInfo() {};
 
-	// We dont store anythin here so just an empty size marker will do
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override { return 4u; };
-
 	// Skip the contents of the Global Layer and Mask Info based on the length marker
 	void read(File& document, const uint64_t offset);
 	void write(File& document);
@@ -274,10 +263,6 @@ struct ChannelImageData : public FileSection
 			m_ChannelCompression.push_back(item->m_Compression);
 		}
 	};
-
-	/// This function will raise a warning as we do not know the size of the compressed image data at this stage yet, only once we actually write this information 
-	/// becomes available. To get an estimate of the size use the estimateSize() function instead
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Estimate the size the of compressed data by compressing n amount of chunks from the data and averaging the compression ratio
 	/// The chunks are chosen at random and have the size of m_ChunkSize in the ImageChannels. numSamples controls how many random chunks we choose
@@ -411,8 +396,6 @@ struct LayerInfo : public FileSection
 	LayerInfo() = default;
 	LayerInfo(std::vector<LayerRecord> layerRecords, std::vector<ChannelImageData> imageData) : m_LayerRecords(std::move(layerRecords)), m_ChannelImageData(std::move(imageData)) {};
 
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Read and Initialize the struct from disk using the given offset
 	///
 	/// \param isFromAdditionalLayerInfo If true the section is parsed without a size marker as it is already stored on the tagged block
@@ -452,8 +435,6 @@ struct LayerAndMaskInformation : public FileSection
 	LayerAndMaskInformation() = default;
 	LayerAndMaskInformation(LayerInfo& layerInfo, GlobalLayerMaskInfo globalLayerMaskInfo, std::optional<AdditionalLayerInfo> additionalLayerInfo) :
 		m_LayerInfo(std::move(layerInfo)), m_GlobalLayerMaskInfo(globalLayerMaskInfo), m_AdditionalLayerInfo(std::move(additionalLayerInfo)) {};
-
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read and Initialize the struct from disk using the given offset
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset);

@@ -91,9 +91,12 @@ struct PlacedLayerDataTaggedBlock : TaggedBlock
 {
 	Descriptors::Descriptor m_Descriptor;
 
+	PlacedLayerDataTaggedBlock() = default;
+	PlacedLayerDataTaggedBlock(Descriptors::Descriptor descriptor)
+		: m_Descriptor(descriptor) {}
+
 	void read(File& document, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
-
 
 private:
 	uint32_t m_Version = 4;

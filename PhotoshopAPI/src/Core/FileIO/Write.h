@@ -88,7 +88,7 @@ inline void WritePadddingBytes(File& document, uint64_t numBytes)
 {
 	if (numBytes == 0) return;
 	std::vector<uint8_t> padding(numBytes, 0);
-	WriteBinaryArray<uint8_t>(document,std::move(padding));
+	WriteBinaryArray<uint8_t>(document, std::move(padding));
 }
 
 

@@ -36,11 +36,19 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile
 	std::optional<AdditionalLayerInfo> additional_layer_info = std::nullopt;
 	if (!layeredFile.linked_layers().empty())
 	{
-		std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-		//auto block = layeredFile.linked_layers().
+		std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+
+		AdditionalLayerInfo _additional_info;
+		_additional_info.m_TaggedBlocks = TaggedBlockStorage{ block_ptrs };
+		additional_layer_info.emplace(std::move(_additional_info));
 	}
 
-	return LayerAndMaskInformation(lrInfo, maskInfo, std::nullopt);
+	return LayerAndMaskInformation(lrInfo, maskInfo, std::move(additional_layer_info));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -54,9 +62,19 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFil
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
-	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
-	TaggedBlockStorage blockStorage(blockPtrs);
+	std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+	block_ptrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
+
+	if (!layeredFile.linked_layers().empty())
+	{
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+	}
+
+	TaggedBlockStorage blockStorage(block_ptrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
 	
@@ -73,9 +91,19 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFi
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
-	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
-	TaggedBlockStorage blockStorage(blockPtrs);
+	std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+	block_ptrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
+
+	if (!layeredFile.linked_layers().empty())
+	{
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+	}
+
+	TaggedBlockStorage blockStorage(block_ptrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
 }

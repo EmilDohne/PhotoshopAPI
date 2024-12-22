@@ -5,6 +5,7 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
+#include "Core/FileIO/LengthMarkers.h"
 #include "StringUtil.h"
 #include "FileUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
@@ -80,27 +81,6 @@ LayerRecords::BitFlags::BitFlags(const bool isTransparencyProtected, const bool 
 		m_isBit4Useful = false;
 		m_isPixelDataIrrelevant = false;
 	}
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerMask::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-	size += 16u;	// Enclosing rectangle
-	size += 1u;		// Default color
-	size += 1u;		// Flags
-	if (m_HasMaskParams)
-	{
-		size += 1u;	// Mask parameter bit flags
-		if (m_HasUserMaskDensity) size += 1u;
-		if (m_HasUserMaskFeather) size += 4u;
-		if (m_HasVectorMaskDensity) size += 1u;
-		if (m_HasVectorMaskFeather) size += 4u;
-	}
-
-	return size;
 }
 
 
@@ -241,32 +221,6 @@ uint32_t LayerRecords::LayerMask::writeMaskParams(File& document) const noexcept
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerMaskData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-	size += 4u;	// Size marker
-
-	// Since we already take care of making sure only one of these has mask parameters
-	// during initialization/read we dont actually need to perform any checks here
-	if (m_VectorMask.has_value())
-	{
-		size += m_VectorMask.value().calculateSize();
-	}
-	if (m_LayerMask.has_value())
-	{
-		size += m_LayerMask.value().calculateSize();
-	}
-	
-	// It appears as though this section is just padded to 4-bytes regardless of
-	// section lengths
-	RoundUpToMultiple<uint64_t>(size, 4u);
-
-	return size;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMaskData::read(File& document)
 {
 	FileSection::size(static_cast<uint64_t>(ReadBinaryData<uint32_t>(document)) + 4u);
@@ -313,7 +267,6 @@ void LayerRecords::LayerMaskData::read(File& document)
 			toRead -= mask.readMaskParams(document);
 		}
 
-		mask.size(mask.calculateSize());
 		// Depending on the flags this is either a vector or layer mask
 		if ((bitFlags & 1u << 3) != 0u)
 		{
@@ -356,8 +309,6 @@ void LayerRecords::LayerMaskData::read(File& document)
 			toRead -= 1u;
 			toRead -= layerMask.readMaskParams(document);
 		}
-
-		layerMask.size(layerMask.calculateSize());
 		m_LayerMask.emplace(layerMask);
 	}
 
@@ -374,13 +325,9 @@ void LayerRecords::LayerMaskData::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerRecords::LayerMaskData::write(File& document) const
 {
-	auto size = this->calculateSize();
-	assert(size < std::numeric_limits<uint32_t>::max());
-	uint32_t sizeWritten = 0u;
-
 	// Section size marker
-	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(size - 4u));
-	
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, 4u);
+
 	if (m_LayerMask && m_VectorMask)
 	{
 		PSAPI_LOG_WARNING("LayerMaskData", "Having two masks is currently unsupported by the PhotoshopAPI, currently only pixel masks are supported.");
@@ -392,22 +339,17 @@ void LayerRecords::LayerMaskData::write(File& document) const
 		WriteBinaryData<int32_t>(document, lrMask.m_Left);
 		WriteBinaryData<int32_t>(document, lrMask.m_Bottom);
 		WriteBinaryData<int32_t>(document, lrMask.m_Right);
-		sizeWritten += 16u;
+
 		WriteBinaryData<uint8_t>(document, lrMask.m_DefaultColor);
-		sizeWritten += 1u;
+
 		WriteBinaryData<uint8_t>(document, lrMask.getFlags());
-		sizeWritten += 1u;
+
 		if (lrMask.m_HasMaskParams)
 		{
 			WriteBinaryData<uint8_t>(document, lrMask.getMaskParams());
-			sizeWritten += 1u;
-			sizeWritten += lrMask.writeMaskParams(document);
+			lrMask.writeMaskParams(document);
 		}
 	}
-
-	// Pad the section to 4 bytes
-	if (size - 4u > sizeWritten)
-		WritePadddingBytes(document, size - 4u - sizeWritten);
 }
 
 
@@ -431,21 +373,6 @@ LayerRecords::LayerBlendingRanges::LayerBlendingRanges()
 	}
 	m_SourceRanges = sourceRanges;
 	m_DestinationRanges = destinationRanges;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecords::LayerBlendingRanges::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-
-	// The size should pretty much always evaluate to 44 but we do the calculations either way here in case that changes
-	size += 4u;	// Size marker
-	size += m_SourceRanges.size() * 4u;
-	size += m_DestinationRanges.size() * 4u;
-
-	return size;
 }
 
 
@@ -567,37 +494,6 @@ LayerRecord::LayerRecord(
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerRecord::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	if (!header)
-	{
-		PSAPI_LOG_ERROR("LayerRecord", "calculateSize() function requires the header to be passed");
-	}
-
-	uint64_t size = 0u;
-	size += 16u;	// Enclosing rect
-	size += 2u;		// Num of channels
-	size += m_ChannelInformation.size() * (SwapPsdPsb<uint32_t, uint64_t>(header->m_Version) + 2u);	// Channel Information size per channel
-	size += 4u;		// Blend mode signature
-	size += 4u;		// Blend mode 
-	size += 1u;		// Opacity
-	size += 1u;		// Clipping
-	size += 1u;		// Flags
-	size += 1u;		// Filler byte
-	size += 4u;		// Length of extra data 
-	if (m_LayerMaskData.has_value())
-		size += m_LayerMaskData.value().calculateSize();
-	size += m_LayerBlendingRanges.calculateSize();
-	size += m_LayerName.calculateSize();
-	if (m_AdditionalLayerInfo.has_value())
-		size += m_AdditionalLayerInfo.value().calculateSize();
-
-	return size;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
 void LayerRecord::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset)
 {
 	PSAPI_PROFILE_FUNCTION();
@@ -664,7 +560,6 @@ void LayerRecord::read(File& document, const FileHeader& header, ProgressCallbac
 
 	// This is the length of the next fields, we need this to find the length of the additional layer info
 	const uint32_t extraDataLen = ReadBinaryData<uint32_t>(document);
-	FileSection::size(FileSection::size() + 4u + extraDataLen);
 	int32_t toRead = extraDataLen;
 	{
 		LayerRecords::LayerMaskData layerMaskSection = LayerRecords::LayerMaskData{};
@@ -736,26 +631,7 @@ void LayerRecord::write(File& document, const FileHeader& header, ProgressCallba
 
 	// Write the extra data here which the official docs refer to as 5 sections but is in reality 4 (LayerMaskData, LayerBlendingRanges, LayerName, AdditionalLayerInfo)
 	{
-		// Keep in mind that these individual sections will already be padded to their respective size so we dont need to worry about padding
-		size_t extraDataSize = 0u;
-		{
-			if (m_LayerMaskData.has_value())
-			{
-				extraDataSize += m_LayerMaskData.value().calculateSize();
-			}
-			else
-			{
-				extraDataSize += 4u;	// Explicit size marker
-			}
-			extraDataSize += m_LayerBlendingRanges.calculateSize();
-			extraDataSize += m_LayerName.calculateSize();
-			if (m_AdditionalLayerInfo)
-			{
-				extraDataSize += m_AdditionalLayerInfo.value().calculateSize();
-			}
-		}
-		assert(extraDataSize < std::numeric_limits<uint32_t>::max());
-		WriteBinaryData<uint32_t>(document, RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(extraDataSize), 2u));
+		Impl::ScopedLengthBlock<uint32_t> len_block(document, 2u);
 
 		// We must explicitly write an empty section size if this is not present
 		if (m_LayerMaskData)
@@ -773,9 +649,6 @@ void LayerRecord::write(File& document, const FileHeader& header, ProgressCallba
 		{
 			m_AdditionalLayerInfo.value().write(document, header, callback);
 		}
-
-		// The additional data is aligned to 2 bytes
-		WritePadddingBytes(document, RoundUpToMultiple(static_cast<uint32_t>(extraDataSize), 2u) - extraDataSize);
 	}
 }
 
@@ -793,18 +666,6 @@ uint32_t LayerRecord::getWidth() const noexcept
 uint32_t LayerRecord::getHeight() const noexcept
 {
 	return static_cast<uint32_t>(m_Bottom - m_Top);
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t ChannelImageData::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-
-	PSAPI_LOG_WARNING("ChannelImageData", "Unable to compute size of channelImageData due to the size only being known at export time, please refrain from using this function");
-
-	return size;
 }
 
 
@@ -1140,19 +1001,6 @@ void ChannelImageData::write(File& document, std::vector<std::vector<uint8_t>>& 
 	}
 }
 
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerInfo::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-
-	PSAPI_LOG_WARNING("LayerInfo", "Unable to compute size of LayerInfo due to the size only being known upon compressing of the image channels, please refrain from using this function");
-
-	return size;
-}
-
-
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 void LayerInfo::read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo, std::optional<uint64_t> sectionSize)
@@ -1408,18 +1256,6 @@ void GlobalLayerMaskInfo::write(File& document)
 }
 
 
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t LayerAndMaskInformation::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-
-	PSAPI_LOG_WARNING("LayerAndMaskInformation", "Unable to compute size of LayerAndMaskInformation due to the size only being known upon compressing of the image channels, please refrain from using this function");
-
-	return size;
-}
-
-
 // Extract the layer and mask information section
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -1433,6 +1269,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, Pro
 	// Read the layer mask info length marker which is 4 bytes in psd and 8 bytes in psb mode
 	std::variant<uint32_t, uint64_t> size = ReadBinaryDataVariadic<uint32_t, uint64_t>(document, header.m_Version);
 	FileSection::size(ExtractWidestValue<uint32_t, uint64_t>(size));
+	auto start_marker = document.get_offset();
 
 	// Parse Layer Info Section
 	{
@@ -1450,7 +1287,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, Pro
 		m_GlobalLayerMaskInfo.read(document, document.getOffset());
 	}
 
-	int64_t toRead = FileSection::size() - m_LayerInfo.size() - m_GlobalLayerMaskInfo.size();
+	int64_t toRead = FileSection::size() - (document.get_offset() - start_marker);
 	// If there is still data left to read, this is the additional layer information which is also present at the end of each layer record
 	if (toRead >= 12u)
 	{

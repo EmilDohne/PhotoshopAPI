@@ -1,14 +1,8 @@
 #include "LinkedLayerTaggedBlock.h"
 
+#include "Core/FileIO/LengthMarkers.h"
+
 PSAPI_NAMESPACE_BEGIN
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-uint64_t LinkedLayerItem::Date::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	return sizeof(uint32_t) + 4 * sizeof(uint8_t) + sizeof(float64_t);
-}
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -156,8 +150,7 @@ void LinkedLayerItem::Data::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 void LinkedLayerItem::Data::write(File& document)
 {
-	auto lenOffset = document.getOffset();
-	WriteBinaryData<uint64_t>(document, 0);
+	Impl::ScopedLengthBlock<uint64_t> len_block(document, 1u);
 
 	writeType(document, m_Type);
 	WriteBinaryData<uint32_t>(document, m_Version);
@@ -229,10 +222,6 @@ void LinkedLayerItem::Data::write(File& document)
 	{
 		WriteBinaryArray<uint8_t>(document, m_RawFileBytes);
 	}
-
-	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
-	// zero-sized length block and writes it back out but now with the actual section length
-	Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 1u);
 }
 
 
@@ -383,7 +372,7 @@ std::string LinkedLayerItem::Data::generate_file_type(const std::filesystem::pat
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, const uint16_t padding /*= 1u*/)
+void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
 	m_Key = key;
 	m_Offset = offset;
@@ -393,18 +382,16 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 	if (m_Key == Enum::TaggedBlockKey::lrLinked || (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte && header.m_Version == Enum::Version::Psd))
 	{
 		uint32_t length = ReadBinaryData<uint32_t>(document);
-		length = RoundUpToMultiple<uint32_t>(length, padding);
+		length = RoundUpToMultiple<uint32_t>(length, 4u);
 		toRead = length;
 		m_Length = length;
-		TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 	}
 	else if (m_Key == Enum::TaggedBlockKey::lrLinked_8Byte && header.m_Version == Enum::Version::Psb)
 	{
 		uint64_t length = ReadBinaryData<uint64_t>(document);
-		length = RoundUpToMultiple<uint64_t>(length, padding);
+		length = RoundUpToMultiple<uint64_t>(length, 4u);
 		toRead = length;
 		m_Length = length;
-		TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 	}
 	else
 	{
@@ -430,33 +417,27 @@ void LinkedLayerTaggedBlock::read(File& document, const FileHeader& header, cons
 // ---------------------------------------------------------------------------------------------------------------------
 void LinkedLayerTaggedBlock::write(File& document, const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /*= 1u*/)
 {
+	auto is_linked_externally = m_LinkKey == "lnkE";
+
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
-	WriteBinaryData<uint32_t>(document, Signature("lnk2").m_Value);
+	WriteBinaryData<uint32_t>(document, Signature(m_LinkKey).m_Value);
 
-	auto lenOffset = document.getOffset();
-	if (header.m_Version == Enum::Version::Psd)
+	// The regular lnk2 block is 8 bytes in psb while lnkE is always 4 bytes.
+	if (is_linked_externally)
 	{
-		WriteBinaryData<uint32_t>(document, 0u);
+		Impl::ScopedLengthBlock<uint32_t> len_block(document, 4u);
+		for (auto& item : m_LayerData)
+		{
+			item.write(document);
+		}
 	}
 	else
 	{
-		WriteBinaryData<uint64_t>(document, 0u);
-	}
-
-	for (auto& item : m_LayerData)
-	{
-		item.write(document);
-	}
-
-	// Write out the length block as well as any padding. This essentially skips back to the point where we wrote the 
-	// zero-sized length block and writes it back out but now with the actual section length
-	if (header.m_Version == Enum::Version::Psd)
-	{
-		Impl::writeLengthBlock<uint32_t>(document, lenOffset, document.getOffset(), 1u);
-	}
-	else
-	{
-		Impl::writeLengthBlock<uint64_t>(document, lenOffset, document.getOffset(), 1u);
+		Impl::ScopedLengthBlock<Impl::VariadicSize<uint32_t, uint64_t>> len_block(document, header, 4u);
+		for (auto& item : m_LayerData)
+		{
+			item.write(document);
+		}
 	}
 }
 

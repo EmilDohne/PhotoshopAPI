@@ -33,8 +33,6 @@ namespace LinkedLayerItem
 
 		void read(File& document);
 		void write(File& document) const;
-
-		uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const;
 	};
 
 	enum class Type
@@ -97,6 +95,7 @@ namespace LinkedLayerItem
 /// Photoshop has 3 different ways of storing SmartObject data, either as Linked into the file, Linked to an external file or as an Alias (unknown)
 struct LinkedLayerTaggedBlock : TaggedBlock
 {
+	std::string m_LinkKey = "lnk2";
 	std::vector<LinkedLayerItem::Data> m_LayerData;	// A single LinkedLayer block may have multiple file descriptions stored in it
 
 	void read(File& document, const FileHeader& header, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature, const uint16_t padding = 1u);

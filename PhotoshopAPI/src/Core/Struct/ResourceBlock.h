@@ -25,11 +25,8 @@ struct ResourceBlock : public FileSection
 	/// Size of the data, padded to 2-bytes
 	uint32_t m_DataSize = 0;
 
-	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {FileSection::size(this->calculateSize()); };
+	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {}
 	
-	// This calculates the size of m_Size only, not m_DataSize!
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Force an override for the write function as we do not store
 	/// ResourceBlocks when roundtripping so we only have what we want here
 	virtual void write(File& document) = 0;

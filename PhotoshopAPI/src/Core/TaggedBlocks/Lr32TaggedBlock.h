@@ -21,11 +21,7 @@ struct Lr32TaggedBlock : TaggedBlock
 	LayerInfo m_Data;
 
 	Lr32TaggedBlock() = default;
-	Lr32TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo))
-	{
-		// We cant actually calculate the size of the tagged block here as that would require the channels to be compressed first
-		TaggedBlock::totalSize(0u);
-	};
+	Lr32TaggedBlock(LayerInfo& lrInfo) : m_Data(std::move(lrInfo)) {};
 
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;

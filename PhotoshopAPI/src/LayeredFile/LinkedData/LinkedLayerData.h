@@ -5,6 +5,7 @@
 
 #include "Core/Render/Render.h"
 #include "Core/Render/ImageBuffer.h"
+#include "Core/Render/Deinterleave.h"
 #include "Core/Struct/ImageChannel.h"
 
 #include "Util/StringUtil.h"
@@ -80,6 +81,7 @@ struct LinkedLayerData
 
 	LinkedLayerData(LinkedLayerItem::Data& data_block, std::filesystem::path photoshop_file_path)
 	{
+		PSAPI_PROFILE_FUNCTION();
 		if (data_block.m_LinkedFileDescriptor)
 		{
 			auto& linked_file_descriptor = data_block.m_LinkedFileDescriptor.value();
@@ -219,15 +221,21 @@ struct LinkedLayerData
 
 
 	/// Generate LinkedLayer::Data from the data, this is for internal API usage.
-	LinkedLayerItem::Data to_photoshop()
+	///
+	/// \param dealloc_raw_data 
+	///		Whether to move m_RawData into the new struct. Effectively invalidates this struct
+	LinkedLayerItem::Data to_photoshop(bool dealloc_raw_data)
 	{
 		auto type = m_Type == LinkedLayerType::data ? LinkedLayerItem::Type::Data : LinkedLayerItem::Type::External;
-		auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type);
 
-		if (!m_RawData.empty())
+		if (dealloc_raw_data)
 		{
-			block.m_RawFileBytes = m_RawData;
+			auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData));
+			return block;
 		}
+
+		auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData));
+		return block;
 	}
 
 private:
@@ -252,16 +260,28 @@ private:
 	/// Initialize the image from a psd handling reading/parsing from memory of the image data.
 	void initialize_from_psd()
 	{
-
+		PSAPI_PROFILE_FUNCTION();
 		auto extension_string = m_FilePath.extension().string();
-		extension_string.erase(extension_string.begin());	// Remove the .
+		extension_string.erase(extension_string.begin());	// Remove the '.' so OIIO doesn't freak out
 
 		auto _in = OIIO::ImageInput::create(extension_string);
 		if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
-			auto oiio_in = OIIO::ImageInput::open(m_FilePath.string(), nullptr, &memreader);
-			parse_oiio_input(std::move(oiio_in), m_FilePath.string());
+
+			_in->set_ioproxy(&memreader);
+			auto spec_copy = _in->spec();
+
+			bool ok = _in->open("", spec_copy);
+			if (ok)
+			{
+				parse_oiio_input(std::move(_in), m_FilePath.string());
+			}
+			else
+			{
+				auto error = _in->geterror();
+				PSAPI_LOG_ERROR("LinkedLayerData", "Unable to read image from memory, OIIO error: %s", error.c_str());
+			}
 		}
 		else
 		{
@@ -291,9 +311,12 @@ private:
 	}
 
 	/// Parse the imageinput from the given filepath into our m_ImageData populating it
-	/// \param input The imageinput to read from, either 
+	/// 
+	/// \param input The imageinput to read from, either as a file-backed image or as a memory-backed image.
+	/// \filepath The path to the file we are reading, this is just for logging.
 	void parse_oiio_input(std::unique_ptr<OIIO::ImageInput> input, std::string filepath)
 	{
+		PSAPI_PROFILE_FUNCTION();
 		if (!input)
 		{
 			PSAPI_LOG_ERROR("LinkedLayer", "Unable to construct LinkedLayer from filepath '%s', error:",
@@ -310,8 +333,13 @@ private:
 		// Get the image data as OIIO type from our T template param
 		constexpr auto type_desc = Render::get_type_desc<T>();
 
-		/// Initialize our pixels, we reuse this buffer as this data gets discarded at the end
-		std::vector<T> pixels(spec.width * spec.height);
+		/// Initialize our pixels, we read in one go as that is more efficient with openimageio
+		std::vector<T> pixels(spec.width * spec.height * spec.nchannels);
+		{
+			PSAPI_PROFILE_SCOPE("Read Image");
+			input->read_image(0, 0, 0, spec.nchannels, type_desc, pixels.data());
+		}
+		auto planar_data = Render::deinterleave_alloc<T>(std::span<T>(pixels), spec.nchannels);
 
 		// TODO: add support for non-rgb image data
 		std::array<Enum::ChannelIDInfo, 4> channelIDs = {
@@ -322,29 +350,30 @@ private:
 		};
 
 		/// Extract the image data and store it in our m_ImageData
-		for (auto name : channelnames)
-		{
-			/// Extract all indices from 0-2 as these will represent our RGB channels,
-			/// we handle alpha separately
-			int idx = spec.channelindex(name);
-			if (idx != alpha_channel && idx >= 0 && idx <= 2)
+		std::mutex insertion_mutex;
+		std::for_each(std::execution::par_unseq, channelnames.begin(), channelnames.end(), [&](auto name)
 			{
-				input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
-				auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[idx], spec.width, spec.height, 0, 0);
-				m_ImageData[channelIDs[idx]] = std::move(channel);
-			}
-			else if (idx == alpha_channel)
-			{
-				input->read_image(0, 0, idx, idx + 1, type_desc, pixels.data());
-				auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, pixels, channelIDs[3], spec.width, spec.height, 0, 0);
-				m_ImageData[channelIDs[idx]] = std::move(channel);
-			}
-			else
-			{
-				PSAPI_LOG_WARNING("LinkedLayer", "Skipping channel { %d : '%s' } in file '%s' as it is not part of our default channels we currently support.",
-					idx, name.c_str(), filepath.c_str());
-			}
-		}
+				/// Extract all indices from 0-2 as these will represent our RGB channels,
+				/// we handle alpha separately
+				int idx = spec.channelindex(name);
+				if (idx != alpha_channel && idx >= 0 && idx <= 2)
+				{
+					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, planar_data.at(idx), channelIDs[idx], spec.width, spec.height, 0, 0);
+					std::lock_guard<std::mutex> lock(insertion_mutex);
+					m_ImageData[channelIDs[idx]] = std::move(channel);
+				}
+				else if (idx == alpha_channel)
+				{
+					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, planar_data.at(idx), channelIDs[3], spec.width, spec.height, 0, 0);
+					std::lock_guard<std::mutex> lock(insertion_mutex);
+					m_ImageData[channelIDs[idx]] = std::move(channel);
+				}
+				else
+				{
+					PSAPI_LOG_WARNING("LinkedLayer", "Skipping channel { %d : '%s' } in file '%s' as it is not part of our default channels we currently support.",
+						idx, name.c_str(), filepath.c_str());
+				}
+			});
 	}
 };
 
@@ -497,20 +526,36 @@ struct LinkedLayers
 	}
 
 
-	std::vector<std::shared_ptr<LinkedLayerTaggedBlock>> to_photoshop() const
+	/// Convert the LinkedLayers into structures to be passed into the PhotoshopFile structure.
+	/// This function is for internal API usage. As photoshop likes parsing these into two
+	/// different structs for `external` and `data` type layers we mimic this behaviour and create two.
+	/// With the `data` block coming first and the `external` block second.
+	/// 
+	/// \param dealloc_raw_data 
+	///		Whether to move the raw data from the LinkedLayerData into the created structs. This will effectively
+	///		invalidate the LinkedLayerData and should therefore only be enabled when wanting to destroy the 
+	///		LayeredFile.
+	std::vector<std::shared_ptr<LinkedLayerTaggedBlock>> to_photoshop(bool dealloc_raw_data) const
 	{
 		// Photoshop likes storing 'data' and 'external' linked layers separately (for no real reason?)
 		// so we just mimic that behaviour.
 		auto data_block = std::make_shared<LinkedLayerTaggedBlock>();
 		auto external_block = std::make_shared<LinkedLayerTaggedBlock>();
+		external_block->m_LinkKey = "lnkE";
 
 		for (const auto& [hash, linked_layer] : m_LinkedLayerData)
 		{
-			if (linked_layer.type() == LinkedLayerType::data)
+			if (linked_layer->type() == LinkedLayerType::data)
 			{
-				data_block->m_LayerData.push_back(linked_layer->to_photoshop());
+				data_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data));
+			}
+			if (linked_layer->type() == LinkedLayerType::external)
+			{
+				external_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data));
 			}
 		}
+
+		return { data_block, external_block };
 	}
 
 private: 

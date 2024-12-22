@@ -19,11 +19,7 @@ struct ProtectedSettingTaggedBlock : TaggedBlock
 	bool m_IsLocked = false;	// 01000000 of the first byte
 
 	ProtectedSettingTaggedBlock() = default;
-	ProtectedSettingTaggedBlock(bool isLocked) : m_IsLocked(isLocked)
-	{
-		// This is the size of a uin32_t + 4 bytes for the signature, 4 bytes for the key and 4 bytes for the length
-		TaggedBlock::totalSize(4u + 4u + 4u + 4u);
-	};
+	ProtectedSettingTaggedBlock(bool isLocked) : m_IsLocked(isLocked) {}
 
 	void read(File& document, const uint64_t offset, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;

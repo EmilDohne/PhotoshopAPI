@@ -23,7 +23,6 @@ struct UnicodeLayerNameTaggedBlock : TaggedBlock
 	UnicodeLayerNameTaggedBlock(std::string name, const uint8_t padding = 1u)
 	{
 		m_Name = UnicodeString(name, padding);
-		TaggedBlock::totalSize(12u + m_Name.calculateSize());
 	}
 
 	void read(File& document, const uint64_t offset, const Signature signature, const uint16_t padding = 1u);

@@ -101,6 +101,26 @@ void File::setOffset(const uint64_t offset)
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
+void File::set_offset(const uint64_t offset)
+{
+	std::lock_guard<std::mutex> guard(m_Mutex);
+	if (offset == m_Offset)
+	{
+		return;
+	}
+	if (offset > m_Size)
+	{
+		PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the file size of %" PRIu64 ".", offset, m_Size);
+		return;
+	}
+	m_Offset = offset;
+	m_Document.seekg(offset, std::ios::beg);
+}
+
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
 void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t size)
 {
 	std::lock_guard<std::mutex> guard(m_Mutex);

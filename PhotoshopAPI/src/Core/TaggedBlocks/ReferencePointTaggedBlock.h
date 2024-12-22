@@ -31,11 +31,7 @@ struct ReferencePointTaggedBlock : TaggedBlock
 	double m_ReferenceY = 0.0f;
 
 	ReferencePointTaggedBlock() = default;
-	ReferencePointTaggedBlock(double refX, double refY) : m_ReferenceX(refX), m_ReferenceY(refY)
-	{
-		// This is the size of 2 doubles + 4 bytes for the signature, 4 bytes for the key and 4 bytes for the length
-		TaggedBlock::totalSize(16u + 4u + 4u + 4u);
-	};
+	ReferencePointTaggedBlock(double refX, double refY) : m_ReferenceX(refX), m_ReferenceY(refY) {};
 
 	void read(File& document, const uint64_t offset, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;

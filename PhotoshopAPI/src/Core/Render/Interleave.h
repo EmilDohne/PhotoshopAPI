@@ -16,8 +16,6 @@
 #include <span>
 #endif
 
-#include "Implementation.h"
-
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -68,8 +66,7 @@ namespace Render
 		auto indices = std::views::iota(static_cast<std::size_t>(0), first.size());
 		std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&buffer, &spans, &first](auto idx)
 			{
-				std::size_t start_idx = spans.size() * idx;
-
+				const std::size_t start_idx = spans.size() * idx;
 				for (size_t i = 0; i < spans.size(); ++i)
 				{
 					buffer[start_idx + i] = spans[i][idx];
@@ -131,10 +128,7 @@ namespace Render
 			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
 		}
 
-		return std::apply(
-			[](const auto&... spans) { return interleave_alloc(spans...); },
-			Impl::spans_to_tuple(spans)
-		);
+		throw std::runtime_error("Unimplemented");
 	}
 
 
@@ -161,11 +155,7 @@ namespace Render
 			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
 		}
 
-		// Forward spans as variadic arguments to the existing interleave function
-		std::apply(
-			[&](const auto&... spans) { interleave(buffer, spans...); },
-			Impl::spans_to_tuple(spans)
-		);
+		throw std::runtime_error("Unimplemented");
 	}
 
 

@@ -1,5 +1,6 @@
 #include "LrSectionTaggedBlock.h"
 
+#include "Core/FileIO/LengthMarkers.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -50,8 +51,6 @@ void LrSectionTaggedBlock::read(File& document, const uint64_t offset, const Sig
 		// we do not care about this currently
 		document.skip(4u);
 	}
-
-	TaggedBlock::totalSize(static_cast<size_t>(length) + 4u + 4u + 4u);
 };
 
 
@@ -61,7 +60,7 @@ void LrSectionTaggedBlock::write(File& document, [[maybe_unused]] const FileHead
 {
 	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
 	WriteBinaryData<uint32_t>(document, Signature("lsct").m_Value);
-	WriteBinaryData<uint32_t>(document, TaggedBlock::totalSize<uint32_t>() - 12u);
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, padding);
 
 	auto sectionDividerType = Enum::getSectionDivider<Enum::SectionDivider, uint32_t>(m_Type);
 	if (sectionDividerType)
