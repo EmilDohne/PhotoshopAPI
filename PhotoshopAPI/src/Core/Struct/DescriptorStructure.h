@@ -763,7 +763,7 @@ namespace Descriptors
 				{
 					if constexpr (std::is_same_v<decltype(a), decltype(b)>)
 					{
-						return a == b; // Custom equality logic here
+						return a == b;
 					}
 					else
 					{

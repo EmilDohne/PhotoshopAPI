@@ -16,7 +16,11 @@ void UnicodeLayerNameTaggedBlock::read(File& document, const uint64_t offset, co
 	length = RoundUpToMultiple<uint32_t>(length, padding);
 	m_Length = length;
 
+	auto start_offset = document.get_offset();
+
 	m_Name.read(document, 4u);
+
+	document.set_offset(start_offset + length);
 }
 
 

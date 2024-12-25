@@ -156,17 +156,19 @@ std::string UnicodeString::convertUTF16BEtoUTF8(const std::u16string& str)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::read(File& document, const uint8_t padding)
 {
+	auto start_offset = document.get_offset();
+
 	m_Padding = padding;
 	// The number of code units does not appear to include the two-byte null
 	// termination
 	uint32_t numCodeUnits = ReadBinaryData<uint32_t>(document);
 	uint32_t numBytes = numCodeUnits * 2;
 
-	FileSection::size(RoundUpToMultiple<uint32_t>(numBytes + sizeof(uint32_t), padding));
 	// This UTF16 data is now in UTF16LE format (rather than the UTF16BE stored on disk)
 	std::vector<char16_t> utf16Data = ReadBinaryArray<char16_t>(document, numBytes);
 
 	m_UTF16String = std::u16string(utf16Data.begin(), utf16Data.end());
+	auto padded_size = RoundUpToMultiple<uint32_t>(numBytes + sizeof(uint32_t), padding);
 
 	// We check for empty strings here as simdutf would return 0 on the convert_utf8_to_utf16le which
 	// would cause us to mistakenly assume its a broken input string
@@ -174,7 +176,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	{
 		m_String = {};
 		// Skip the padding bytes (if any)
-		document.skip(FileSection::size() - sizeof(uint32_t));
+		document.skip(padded_size - sizeof(uint32_t));
 		return;
 	}
 
@@ -191,7 +193,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	m_String = std::string(bytes.begin(), bytes.end());
 
 	// Skip the padding bytes (if any)
-	document.skip(FileSection::size() - sizeof(uint32_t) - numBytes);
+	document.set_offset(start_offset + padded_size);
 }
 
 
@@ -199,19 +201,27 @@ void UnicodeString::read(File& document, const uint8_t padding)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::write(File& document) const
 {
+	// Add a null termination char if it doesn't exist, photoshop gets angry otherwise.
+	// We also make any zero length strings explictly " ".
+	// Additionally, we check if the section will have a null byte inserted as part of padding in which case we will 
+	// not insert it as padding will do that
+	std::vector<uint16_t> string_data(m_UTF16String.begin(), m_UTF16String.end());
+	auto utf16strlen = string_data.size();
+	if ((string_data.empty() || (string_data.back() != static_cast<uint16_t>(0))))
+	{
+		string_data.push_back(static_cast<uint16_t>(0));
+		++utf16strlen;
+	}
+
 	// The length marker only denotes the actual number of code units not counting any padding
-	auto utf16strlen = m_UTF16String.size();
 	assert(utf16strlen < std::numeric_limits<uint32_t>::max());
 	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(utf16strlen));
 
 	// Write the string data
-	std::vector<uint16_t> stringData(m_UTF16String.begin(), m_UTF16String.end());
-	WriteBinaryArray<uint16_t>(document, std::move(stringData));
-
-	/*WriteBinaryData<uint16_t>(document, 0u);*/
+	WriteBinaryArray<uint16_t>(document, std::move(string_data));
 
 	// Finally, write the padding bytes, excluding the size marker
-	auto byte_size = utf16strlen * 2;
+	auto byte_size = utf16strlen * 2 + sizeof(uint32_t);
 	auto pad_size = RoundUpToMultiple<uint64_t>(byte_size, m_Padding) - byte_size;
 	WritePadddingBytes(document, pad_size);
 }
