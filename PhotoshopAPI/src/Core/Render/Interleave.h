@@ -110,33 +110,6 @@ namespace Render
 	/// could be called like this for example:
 	/// 
 	/// \code{.cpp}
-	/// std::vector<std::span<T>> channels(channel_r, channel_g, channel_b, channel_a);
-	/// 
-	/// std::vector<T> interleaved = Render::interleave(channels);
-	/// \endcode
-	/// 
-	/// \tparam T The data type to interleave
-	/// 
-	/// \param spans The input spans to interleave. Must all be the same size
-	/// 
-	/// \return A vector of the interleaved spans
-	template <typename T>
-	std::vector<T> interleave_alloc(const std::vector<std::span<const T>> spans)
-	{
-		if (spans.empty())
-		{
-			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
-		}
-
-		throw std::runtime_error("Unimplemented");
-	}
-
-
-	/// Interleave the spans into a unified buffer taking any number of input spans (could be channels).
-	///
-	/// could be called like this for example:
-	/// 
-	/// \code{.cpp}
 	/// std::span<T> interleaved;
 	/// std::vector<std::span<T>> channels(channel_r, channel_g, channel_b, channel_a);
 	/// 
@@ -150,14 +123,61 @@ namespace Render
 	template <typename T>
 	void interleave(std::span<T> buffer, const std::vector<std::span<const T>>& spans)
 	{
+		PSAPI_PROFILE_FUNCTION();
 		if (spans.empty())
 		{
 			throw std::invalid_argument("Interleave: No spans provided for interleaving.");
 		}
 
-		throw std::runtime_error("Unimplemented");
+		for (const auto& span : spans)
+		{
+			if (span.size() != spans.front().size())
+			{
+				throw std::invalid_argument("Interleave: All input spans must have the same size.");
+			}
+		}
+
+		if (buffer.size() != spans.front().size() * spans.size())
+		{
+			throw std::invalid_argument("Interleave: Provided buffer is not large enough to hold all the elements to interleave.");
+		}
+
+		auto indices = std::views::iota(static_cast<std::size_t>(0), spans.front().size());
+		std::for_each(std::execution::par_unseq, indices.begin(), indices.end(), [&buffer, &spans](auto idx)
+			{
+				const std::size_t start_idx = spans.size() * idx;
+				for (size_t i = 0; i < spans.size(); ++i)
+				{
+					buffer[start_idx + i] = spans[i][idx];
+				}
+			});
 	}
 
+
+	/// Interleave the spans into a unified buffer taking any number of input spans (could be channels).
+	///
+	/// could be called like this for example:
+	/// 
+	/// \code{.cpp}
+	/// std::vector<std::span<T>> channels(channel_r, channel_g, channel_b, channel_a);
+	/// 
+	/// std::vector<T> interleaved = Render::interleave(channels);
+	/// \endcode
+	/// 
+	/// \tparam T The data type to interleave
+	/// 
+	/// \param spans The input spans to interleave. Must all be the same size
+	/// 
+	/// \return A vector of the interleaved spans
+	template <typename T>
+	std::vector<T> interleave_alloc(const std::vector<std::span<const T>> spans)
+	{
+		PSAPI_PROFILE_FUNCTION();
+		std::vector<T> buffer(spans.front().size() * spans.size());
+		interleave(std::span<T>(buffer), spans);
+
+		return buffer;
+	}
 
 } // namespace Render
 

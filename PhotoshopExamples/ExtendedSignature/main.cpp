@@ -27,7 +27,7 @@ int main()
 
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
 	// variable on the PhotoshopFile to figure it out programmatically
-	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), "./LayeredFile.psd" };
 
 	// The Structure of the photoshop file we just opened is 
 	// 'Group'

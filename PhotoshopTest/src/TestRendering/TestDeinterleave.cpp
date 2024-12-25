@@ -2,7 +2,7 @@
 
 #include "PhotoshopAPI.h"
 #include "../DetectArmMac.h"
-#include "src/Core/Render/Interleave.h"
+#include "Core/Render/Interleave.h"
 
 #include <algorithm>
 
@@ -39,7 +39,7 @@ TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument")
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 #ifndef ARM_MAC_ARCH
-	TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument, mismatched span size",
+	TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument, mismatched span size"
 		* doctest::no_breaks(true)
 		* doctest::no_output(true)
 		* doctest::should_fail(true))
@@ -65,7 +65,7 @@ TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument")
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 #ifndef ARM_MAC_ARCH
-	TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument, incorrect buffer size",
+	TEST_CASE("Deinterleave buffers preallocated buffer, variadic span argument, incorrect buffer size"
 		*doctest::no_breaks(true)
 		* doctest::no_output(true)
 		* doctest::should_fail(true))
@@ -115,7 +115,7 @@ TEST_CASE("Deinterleave buffers allocate buffer")
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 #ifndef ARM_MAC_ARCH
-TEST_CASE("Deinterleave buffers allocate buffer, incorrect num channels",
+TEST_CASE("Deinterleave buffers allocate buffer, incorrect num channels"
 	*doctest::no_breaks(true)
 	* doctest::no_output(true)
 	* doctest::should_fail(true))

@@ -200,7 +200,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 void UnicodeString::write(File& document) const
 {
 	// The length marker only denotes the actual number of code units not counting any padding
-	auto utf16strlen = m_UTF16String.size() + 1;
+	auto utf16strlen = m_UTF16String.size();
 	assert(utf16strlen < std::numeric_limits<uint32_t>::max());
 	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(utf16strlen));
 
@@ -208,7 +208,7 @@ void UnicodeString::write(File& document) const
 	std::vector<uint16_t> stringData(m_UTF16String.begin(), m_UTF16String.end());
 	WriteBinaryArray<uint16_t>(document, std::move(stringData));
 
-	WriteBinaryData<uint16_t>(document, 0u);
+	/*WriteBinaryData<uint16_t>(document, 0u);*/
 
 	// Finally, write the padding bytes, excluding the size marker
 	auto byte_size = utf16strlen * 2;

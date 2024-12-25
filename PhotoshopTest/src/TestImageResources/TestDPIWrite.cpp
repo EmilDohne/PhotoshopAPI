@@ -56,7 +56,7 @@ TEST_CASE("Write DPI")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psd_path };
 		dpi = layeredFile.dpi();
 	}
 
@@ -112,7 +112,7 @@ TEST_CASE("Write DPI fractional")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psd_path };
 		dpi = layeredFile.dpi();
 	}
 
