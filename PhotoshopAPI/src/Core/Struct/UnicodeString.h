@@ -58,6 +58,8 @@ private:
 	std::string m_String;
 	// UTF-16 LE representation of the string
 	std::u16string m_UTF16String;
+
+	uint8_t m_Padding = 1u;
 };
 
 

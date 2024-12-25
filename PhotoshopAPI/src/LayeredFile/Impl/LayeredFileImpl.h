@@ -381,6 +381,11 @@ namespace _Impl
 				return true;
 			}
 		}
+		if (auto smartObjectLayerPtr = std::dynamic_pointer_cast<SmartObjectLayer<T>>(parentLayer))
+		{
+			// We just implicitly assume these have an alpha channel as we currently always add one
+			return true;
+		}
 		return false;
 	}
 

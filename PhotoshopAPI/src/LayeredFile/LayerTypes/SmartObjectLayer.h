@@ -166,18 +166,33 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			PSAPI_LOG_ERROR("SmartObject", "Unable to replace the smart objects' image without access to the original LayeredFile." \
 				" If you believe this to be an error you can try recreating the layer making sure to pass a valid LayeredFile object.");
 		}
+		auto previous_bbox = m_SmartObjectWarp._warp_bounds();
 
+		// Insert the new path, if it already exists insert() will return a reference to the previous layer.
 		LinkedLayerType type = link_externally ? LinkedLayerType::external : LinkedLayerType::data;
-
 		LinkedLayers<T>& linked_layers = m_FilePtr->linked_layers();
 		auto linked_layer = linked_layers.insert(path, type);
 
+		m_Filename = linked_layer->path().filename().string();
 		m_Hash = linked_layer->hash();
+		_m_LayerHash = generate_uuid();
 		// Clear the cache before re-evaluation
 		_m_CachedSmartObjectWarp = {};
 		_m_CachedSmartObjectWarpMesh = {};
 
-		evaluate_transforms();
+		// Update the warp original bounds so it knows the input image data scaled.
+		Geometry::BoundingBox<double> bbox(
+			Geometry::Point2D<double>(0.0f, 0.0f),
+			Geometry::Point2D<double>(linked_layer->width(), linked_layer->height()));
+
+		// Finally we also need to rescale the warp points, this is because they are in the original images' coordinate space.
+		auto pts = m_SmartObjectWarp.points();
+		auto scalar = Geometry::Point2D<double>(bbox.width() / previous_bbox.width(), bbox.height() / previous_bbox.height());
+		auto pivot = previous_bbox.minimum;
+
+		Geometry::Operations::scale(pts, scalar, pivot);
+
+		m_SmartObjectWarp.points(pts);
 	}
 
 	/// Check whether the original image file stored by this smart object is linked externally
@@ -617,14 +632,6 @@ private:
 			PSAPI_LOG_DEBUG("SmartObject", "No need to re-evaluate the transform data as it matches the cached values");
 			return;
 		}
-		if (!m_FilePtr)
-		{
-			PSAPI_LOG_ERROR("SmartObject", "Unable to evaluate the smart objects' transforms without access to the original file." \
-				" If you believe this to be an error you can try recreating the layer making sure to pass a valid LayeredFile object.");
-		}
-
-		const auto& linked_layers = m_FilePtr->linked_layers();
-		const auto& linked_layer = linked_layers.at(m_Hash);
 
 		_m_CachedSmartObjectWarpMesh = m_SmartObjectWarp.surface().mesh(
 			75,		// x resolution
@@ -633,7 +640,9 @@ private:
 		);
 
 		Layer<T>::m_CenterX = _m_CachedSmartObjectWarpMesh.bbox().center().x;
+		Layer<T>::m_CenterX -= m_FilePtr->width() / 2;
 		Layer<T>::m_CenterY = _m_CachedSmartObjectWarpMesh.bbox().center().y;
+		Layer<T>::m_CenterX -= m_FilePtr->width() / 2;
 
 		Layer<T>::m_Width = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().width()));
 		Layer<T>::m_Height = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().height()));

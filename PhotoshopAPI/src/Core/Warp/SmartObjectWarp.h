@@ -234,6 +234,10 @@ namespace SmartObject
 		/// Get the points this warp struct holds
 		inline std::vector<Geometry::Point2D<double>> points() const { return m_WarpPoints; }
 
+		/// Set the points this warp struct holds. Updates the bounding box.
+		/// This assumes that the point ordering and resolution did not change.
+		void points(const std::vector<Geometry::Point2D<double>>& pts);		
+
 		/// Get the dimensions/subdivisions across the u (x) axis.
 		inline size_t u_dimensions() const noexcept { return m_uDims; };
 

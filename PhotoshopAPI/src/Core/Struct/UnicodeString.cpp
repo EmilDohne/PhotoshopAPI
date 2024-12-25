@@ -24,7 +24,7 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	// would cause us to mistakenly assume its a broken input string
 	if (str.size() == 0)
 	{
-		FileSection::size(RoundUpToMultiple<uint32_t>(0 + sizeof(uint32_t), padding));
+		FileSection::size(RoundUpToMultiple<uint32_t>(sizeof(uint32_t), padding));
 		m_String = {};
 		m_UTF16String = {};
 		return;
@@ -38,11 +38,14 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	}
 
 	m_UTF16String.resize(expectedUtf16Len);	// The null character termination is implicit
-	if (!simdutf::convert_utf8_to_utf16le(str.data(), str.size(), m_UTF16String.data()))
+	std::size_t str_size = simdutf::convert_utf8_to_utf16le(str.data(), str.size(), m_UTF16String.data());
+	if (!str_size)
+	{
 		PSAPI_LOG_ERROR("UnicodeString", "Invalid UTF8 source string '%s' provided, unable to initialize UnicodeString", str.c_str());
-
-	FileSection::size(RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(expectedUtf16Len) * sizeof(char16_t) + sizeof(uint32_t), padding));
+	}
+	FileSection::size(RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(str_size) * sizeof(char16_t) + sizeof(uint32_t), padding));
 	m_String = str;
+	m_Padding = padding;
 }
 
 
@@ -153,6 +156,7 @@ std::string UnicodeString::convertUTF16BEtoUTF8(const std::u16string& str)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::read(File& document, const uint8_t padding)
 {
+	m_Padding = padding;
 	// The number of code units does not appear to include the two-byte null
 	// termination
 	uint32_t numCodeUnits = ReadBinaryData<uint32_t>(document);
@@ -170,7 +174,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	{
 		m_String = {};
 		// Skip the padding bytes (if any)
-		document.skip(FileSection::size() - sizeof(uint32_t) - numBytes);
+		document.skip(FileSection::size() - sizeof(uint32_t));
 		return;
 	}
 
@@ -196,7 +200,7 @@ void UnicodeString::read(File& document, const uint8_t padding)
 void UnicodeString::write(File& document) const
 {
 	// The length marker only denotes the actual number of code units not counting any padding
-	auto utf16strlen = m_UTF16String.size();
+	auto utf16strlen = m_UTF16String.size() + 1;
 	assert(utf16strlen < std::numeric_limits<uint32_t>::max());
 	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(utf16strlen));
 
@@ -204,8 +208,12 @@ void UnicodeString::write(File& document) const
 	std::vector<uint16_t> stringData(m_UTF16String.begin(), m_UTF16String.end());
 	WriteBinaryArray<uint16_t>(document, std::move(stringData));
 
-	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, FileSection::size() - m_UTF16String.size() * sizeof(char16_t) - sizeof(uint32_t));
+	WriteBinaryData<uint16_t>(document, 0u);
+
+	// Finally, write the padding bytes, excluding the size marker
+	auto byte_size = utf16strlen * 2;
+	auto pad_size = RoundUpToMultiple<uint64_t>(byte_size, m_Padding) - byte_size;
+	WritePadddingBytes(document, pad_size);
 }
 
 

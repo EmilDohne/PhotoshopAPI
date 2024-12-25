@@ -58,12 +58,21 @@ struct File
 
 
 	/// Skip n bytes in the file and increment our position marker, checks if the offset 
-	/// is possible or if it would exceed the file size. Note: this is a uint64_t
+	/// is possible or if it would exceed the file size. Note: this is an int64_t
 	/// so skipping backwards is legal
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	void skip(int64_t size);
 
+	/// Skip sizeof(T) bytes in the file incrementing the position marker. Performs checks
+	/// if the skip is valid.
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	template <typename T>
+	void skip()
+	{
+		skip(sizeof(T));
+	}
 
 	/// Return the current offset from the file start
 	// --------------------------------------------------------------------------------

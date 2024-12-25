@@ -123,9 +123,6 @@ int main()
 	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
 
 	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
-	//LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/filetypes.psd");
-
-	//auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
 	//
 	//// Render surface
 	//{
@@ -158,8 +155,13 @@ int main()
 	//	//write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
 	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
 	//}
+	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out1.psd");
 
-	//layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+	LayeredFile<bpp8_t> file2 = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
+	auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file2);
+	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+	LayeredFile<bpp8_t>::write(std::move(file2), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out2.psd");
+
 
 	//// Render image data replaced
 	//{
@@ -170,9 +172,8 @@ int main()
 	//}
 
 
-	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
 	// Read again for error checking
-	auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
+	// auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
 
 	Instrumentor::Get().EndSession();
 
