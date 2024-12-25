@@ -2,7 +2,7 @@
 
 #include "PhotoshopAPI.h"
 #include "../DetectArmMac.h"
-#include "src/Core/Render/Interleave.h"
+#include "Core/Render/Interleave.h"
 
 using namespace NAMESPACE_PSAPI;
 
@@ -19,7 +19,7 @@ TEST_CASE("Interleave buffers preallocated buffer, variadic arguments")
 
 	std::vector<type> buffer(30);
 
-	Render::interleave(std::span<type>(buffer), std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b));
+	Render::interleave(std::span<type>(buffer), std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b));
 
 	CHECK(buffer[0] == 255);
 	CHECK(buffer[1] == 100);
@@ -33,7 +33,7 @@ TEST_CASE("Interleave buffers preallocated buffer, variadic arguments")
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 #ifndef ARM_MAC_ARCH
-	TEST_CASE("Interleave buffers preallocated buffer incorrect size, variadic arguments",
+	TEST_CASE("Interleave buffers preallocated buffer incorrect size, variadic arguments"
 		* doctest::no_breaks(true)
 		* doctest::no_output(true)
 		* doctest::should_fail(true))
@@ -47,7 +47,7 @@ TEST_CASE("Interleave buffers preallocated buffer, variadic arguments")
 		std::vector<type> buffer(25);
 
 		// Should fail since buffer is too small
-		Render::interleave(std::span<type>(buffer), std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b));
+		Render::interleave(std::span<type>(buffer), std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b));
 	}
 #endif
 
@@ -55,7 +55,7 @@ TEST_CASE("Interleave buffers preallocated buffer, variadic arguments")
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 #ifndef ARM_MAC_ARCH
-	TEST_CASE("Interleave buffers preallocated buffer mismatched sizes, variadic arguments",
+	TEST_CASE("Interleave buffers preallocated buffer mismatched sizes, variadic arguments"
 		* doctest::no_breaks(true)
 		* doctest::no_output(true)
 		* doctest::should_fail(true))
@@ -69,7 +69,7 @@ TEST_CASE("Interleave buffers preallocated buffer, variadic arguments")
 		std::vector<type> buffer(35);
 
 		// Should fail since channel_r has the wrong size
-		Render::interleave(std::span<type>(buffer), std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b));
+		Render::interleave(std::span<type>(buffer), std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b));
 	}
 #endif
 
@@ -83,7 +83,7 @@ TEST_CASE("Interleave buffers alloc, variadic arguments")
 	std::vector<type> channel_g(10, 100);
 	std::vector<type> channel_b(10, 25);
 
-	auto result = Render::interleave_alloc(std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b));
+	auto result = Render::interleave_alloc(std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b));
 
 	CHECK(result.size() == 30);
 
@@ -107,7 +107,7 @@ TEST_CASE("Interleave buffers alloc, vector span argument")
 	std::vector<type> channel_g(10, 100);
 	std::vector<type> channel_b(10, 25);
 
-	std::vector<std::span<type>> channels = { std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b) };
+	std::vector<std::span<const type>> channels = { std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b) };
 
 	auto result = Render::interleave_alloc(channels);
 
@@ -133,10 +133,10 @@ TEST_CASE("Interleave buffers preallocated buffer, vector span argument")
 	std::vector<type> channel_g(10, 100);
 	std::vector<type> channel_b(10, 25);
 
-	std::vector<std::span<type>> channels = { std::span<type>(channel_r), std::span<type>(channel_g), std::span<type>(channel_b) };
+	std::vector<std::span<const type>> channels = { std::span<const type>(channel_r), std::span<const type>(channel_g), std::span<const type>(channel_b) };
 	std::vector<type> buffer(30);
 
-	Render::interleave(buffer, channels);
+	Render::interleave<type>(buffer, channels);
 
 	CHECK(buffer[0] == 255);
 	CHECK(buffer[1] == 100);

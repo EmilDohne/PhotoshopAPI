@@ -27,7 +27,7 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 	psDocumentPtr->read(inputFile, callback);
 	if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_8)
 	{
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), fullInPath };
 
 		// Write to disk
 		File::FileParams params = File::FileParams();
@@ -42,11 +42,11 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		auto psDocumentPtrRoundtripped = std::make_unique<PhotoshopFile>();
 		psDocumentPtrRoundtripped->read(inputFileRoundtripped, callback);
 
-		LayeredFile<bpp8_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped) };
+		LayeredFile<bpp8_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped), fullOutPath };
 	}
 	else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_16)
 	{
-		LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr), fullInPath };
 
 		// Write to disk
 		File::FileParams params = File::FileParams();
@@ -61,11 +61,11 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		auto psDocumentPtrRoundtripped = std::make_unique<PhotoshopFile>();
 		psDocumentPtrRoundtripped->read(inputFileRoundtripped, callback);
 
-		LayeredFile<bpp16_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped) };
+		LayeredFile<bpp16_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped), fullOutPath };
 	}
 	else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_32)
 	{
-		LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr), fullInPath };
 
 		// Write to disk
 		File::FileParams params = File::FileParams();
@@ -80,7 +80,7 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		auto psDocumentPtrRoundtripped = std::make_unique<PhotoshopFile>();
 		psDocumentPtrRoundtripped->read(inputFileRoundtripped, callback);
 
-		LayeredFile<bpp32_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped) };
+		LayeredFile<bpp32_t> layeredFileRoundtripped = { std::move(psDocumentPtrRoundtripped), fullOutPath };
 	}
 }
 

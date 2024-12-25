@@ -56,7 +56,7 @@ TEST_CASE("Write AdobeRGB1998")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psb_path};
 
 		// Get the ICC Profile we read from the PSB
 		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
@@ -118,7 +118,7 @@ TEST_CASE("Write AppleRGB")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psb_path };
 
 		// Get the ICC Profile we read from the PSB
 		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
@@ -180,7 +180,7 @@ TEST_CASE("Write CIERGB")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psb_path };
 
 		// Get the ICC Profile we read from the PSB
 		std::vector<uint8_t> readICCProfile = layeredFile.icc_profile().data();
