@@ -90,7 +90,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	///							If the given file already exists on the `LayeredFile<T>` e.g. when you link 2 layers with the same filepath
 	///							the settings for the first layer are used instead of overriding the behaviour
 	/// 
-	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, bool link_externally = false)
+	SmartObjectLayer(LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, bool link_externally = false)
 	{
 		this->construct(file, parameters, filepath, link_externally);
 	}
@@ -122,7 +122,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	///							If the given file already exists on the `LayeredFile<T>` e.g. when you link 2 layers with the same filepath
 	///							the settings for the first layer are used instead of overriding the behaviour
 	/// 
-	SmartObjectLayer(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp, bool link_externally = false)
+	SmartObjectLayer(LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, const SmartObject::Warp& warp, bool link_externally = false)
 	{
 		this->construct(file, parameters, filepath, link_externally, warp);
 	}
@@ -149,6 +149,10 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// Retrieve the warp object that is stored on this layer. 
 	SmartObject::Warp& warp() noexcept { return m_SmartObjectWarp; }
 	const SmartObject::Warp& warp() const noexcept { return m_SmartObjectWarp; }
+
+	/// Set the warp object held by this layer, this function may be used to replace the warp with e.g. the
+	/// warp from another layer
+	void warp(const SmartObject::Warp& _warp) noexcept { m_SmartObjectWarp = _warp; }
 
 
 	/// Replace the smart object with the given path keeping transformations as well 
@@ -558,8 +562,8 @@ protected:
 
 		// Before generating the descriptor we need to update the original width and height
 		// as we don't keep track of these usually.
-		m_OriginalSize[0] = linked_layer->width();
-		m_OriginalSize[1] = linked_layer->height();
+		m_OriginalSize[0] = static_cast<float>(linked_layer->width());
+		m_OriginalSize[1] = static_cast<float>(linked_layer->height());
 
 		auto descriptor = generate_placed_layer_data();
 		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>(descriptor);
@@ -642,7 +646,7 @@ private:
 		Layer<T>::m_CenterX = _m_CachedSmartObjectWarpMesh.bbox().center().x;
 		Layer<T>::m_CenterX -= m_FilePtr->width() / 2;
 		Layer<T>::m_CenterY = _m_CachedSmartObjectWarpMesh.bbox().center().y;
-		Layer<T>::m_CenterX -= m_FilePtr->width() / 2;
+		Layer<T>::m_CenterY -= m_FilePtr->height() / 2;
 
 		Layer<T>::m_Width = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().width()));
 		Layer<T>::m_Height = static_cast<uint32_t>(std::round(_m_CachedSmartObjectWarpMesh.bbox().height()));
@@ -738,7 +742,7 @@ private:
 
 
 	/// Construct the SmartObjectLayer, initializing the structure and populating the warp (if necessary).
-	void construct(const LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, bool link_externally, std::optional<SmartObject::Warp> warp = std::nullopt)
+	void construct(LayeredFile<T>& file, Layer<T>::Params& parameters, std::filesystem::path filepath, bool link_externally, std::optional<SmartObject::Warp> warp = std::nullopt)
 	{
 		PSAPI_PROFILE_FUNCTION();
 
@@ -755,6 +759,9 @@ private:
 		LinkedLayerType type = link_externally ? LinkedLayerType::external : LinkedLayerType::data;
 		// Insert (or find) the linked layer and create a rescaled version of the image data.
 		const auto& linkedlayer = file.linked_layers().insert(filepath, type);
+		m_Hash = linkedlayer->hash();
+		m_Filename = linkedlayer->path().filename().string();
+		_m_LayerHash = generate_uuid();
 
 		Layer<T>::m_ColorMode = parameters.colormode;
 		Layer<T>::m_LayerName = parameters.name;

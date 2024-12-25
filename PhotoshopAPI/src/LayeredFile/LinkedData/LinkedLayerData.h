@@ -359,13 +359,29 @@ private:
 				int idx = spec.channelindex(name);
 				if (idx != alpha_channel && idx >= 0 && idx <= 2)
 				{
-					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, planar_data.at(idx), channelIDs[idx], spec.width, spec.height, 0, 0);
+					auto channel = std::make_unique<ImageChannel>(
+						Enum::Compression::ZipPrediction, 
+						planar_data.at(idx), 
+						channelIDs[idx], 
+						spec.width, 
+						spec.height, 
+						0.0f, 
+						0.0f
+					);
 					std::lock_guard<std::mutex> lock(insertion_mutex);
 					m_ImageData[channelIDs[idx]] = std::move(channel);
 				}
 				else if (idx == alpha_channel)
 				{
-					auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, planar_data.at(idx), channelIDs[3], spec.width, spec.height, 0, 0);
+					auto channel = std::make_unique<ImageChannel>(
+						Enum::Compression::ZipPrediction, 
+						planar_data.at(idx), 
+						channelIDs[3], 
+						spec.width, 
+						spec.height, 
+						0.0f, 
+						0.0f
+					);
 					std::lock_guard<std::mutex> lock(insertion_mutex);
 					m_ImageData[channelIDs[idx]] = std::move(channel);
 				}
