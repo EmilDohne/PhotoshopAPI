@@ -123,57 +123,18 @@ int main()
 	Instrumentor::Get().BeginSession("Tmp", "Tmp.json");
 
 	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
-	//
-	//// Render surface
-	//{
-	//	auto mesh = layer_ptr->warp().mesh();
-	//	mesh.move({ -mesh.bbox().minimum.x, -mesh.bbox().minimum.y });
+	auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
+	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
 
-	//	std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
-	//	Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
-	//	Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
+	auto params = Layer<bpp8_t>::Params{};
+	params.name = "UVGrid";
+	auto layer_new = std::make_shared<SmartObjectLayer<bpp8_t>>(file, params, "C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+	layer_new->warp(layer_ptr->warp());
 
-	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpsurface.png", buffer.width, buffer.height);
-	//}
+	file.add_layer(layer_new);
 
-
-	//// Render mesh
-	//{
-	//	auto mesh = layer_ptr->warp().surface().mesh(9, 9, true);
-
-	//	std::vector<uint8_t> data(static_cast<size_t>(mesh.bbox().width()) * static_cast<size_t>(mesh.bbox().height()));
-	//	Render::ImageBuffer<uint8_t> buffer(data, static_cast<size_t>(mesh.bbox().width()), static_cast<size_t>(mesh.bbox().height()));
-	//	Render::render_mesh<uint8_t, double>(buffer, mesh, 255);
-
-	//	write_to_disk(data, "C:/Users/emild/Desktop/linkedlayers/warp/warpmesh.png", buffer.width, buffer.height);
-	//}
-
-	// Render image data
-	//{
-	//	//auto orig_image_data = layer_ptr->original_image_data();
-	//	auto image_data = layer_ptr->get_image_data();
-	//	//write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original.png", layer_ptr->original_width(), layer_ptr->original_height());
-	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped.png", layer_ptr->width(), layer_ptr->height());
-	//}
 	LayeredFile<bpp8_t>::write(std::move(file), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out1.psd");
 
-	LayeredFile<bpp8_t> file2 = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
-	auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file2);
-	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
-	LayeredFile<bpp8_t>::write(std::move(file2), "C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out2.psd");
-
-
-	//// Render image data replaced
-	//{
-	//	//auto orig_image_data = layer_ptr->original_image_data();
-	//	auto image_data = layer_ptr->get_image_data();
-	//	//write_to_disk(orig_image_data, "C:/Users/emild/Desktop/linkedlayers/warp/original_replaced.png", layer_ptr->original_width(), layer_ptr->original_height());
-	//	write_to_disk(image_data, "C:/Users/emild/Desktop/linkedlayers/warp/warped_replaced.png", layer_ptr->width(), layer_ptr->height());
-	//}
-
-
-	// Read again for error checking
-	// auto read = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp_out.psd");
 
 	Instrumentor::Get().EndSession();
 
