@@ -107,8 +107,7 @@ void LinkedLayerItem::Data::read(File& document)
 			m_Date = date;
 		}
 		// From what I can tell this data is just for internal consistency anyways.
-		document.skip(sizeof(uint64_t));
-		//uint64_t externalDataFileSize = ReadBinaryData<uint64_t>(document);
+		document.skip<uint64_t>();
 		if (m_Version > 2)
 		{
 			m_RawFileBytes = ReadBinaryArray<uint8_t>(document, dataSize);
@@ -165,6 +164,8 @@ void LinkedLayerItem::Data::write(File& document)
 
 	if (m_FileOpenDescriptor)
 	{
+		// Descriptor version and descriptor.
+		WriteBinaryData<uint32_t>(document, 16u);
 		m_FileOpenDescriptor.value().write(document);
 	}
 
@@ -173,6 +174,8 @@ void LinkedLayerItem::Data::write(File& document)
 	{
 		if (m_LinkedFileDescriptor)
 		{
+			// Descriptor version and descriptor.
+			WriteBinaryData<uint32_t>(document, 16u);
 			m_LinkedFileDescriptor.value().write(document);
 
 			// If we didnt populate a specific date we write the default initialized date which is just the current timestamp
@@ -283,6 +286,20 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 	m_ChildDocumentID.emplace(UnicodeString("", 2u));
 	m_AssetModTime.emplace(0.0f);	// appears to just be 0 unless this links to an asset which is unimplemented
 	m_AssetIsLocked.emplace(false);
+
+	{
+		auto file_open_descriptor = Descriptors::Descriptor("null");
+		constexpr int comp_id = -1;
+		constexpr int original_comp_id = -1;
+
+		auto comp_info_descriptor = Descriptors::Descriptor("null");
+		comp_info_descriptor["compID"] = comp_id;
+		comp_info_descriptor["originalCompID"] = original_comp_id;
+
+		file_open_descriptor["compInfo"] = comp_info_descriptor;
+
+		m_FileOpenDescriptor.emplace(std::move(file_open_descriptor));
+	}
 
 
 	if (m_Type == Type::External)

@@ -58,6 +58,7 @@ struct LinkedLayerData
 		m_FilePath = filepath;
 		m_Filename = filepath.filename().string();
 		m_Hash = hash;
+		m_Type = LinkedLayerType::data;
 		File data(filepath);
 		m_RawData = ReadBinaryArray<uint8_t>(data, data.getSize());
 
@@ -254,7 +255,7 @@ private:
 
 	std::string m_Filename;
 	std::string m_Hash;
-	LinkedLayerType m_Type;
+	LinkedLayerType m_Type = LinkedLayerType::data;
 
 
 	/// Initialize the image from a psd handling reading/parsing from memory of the image data.

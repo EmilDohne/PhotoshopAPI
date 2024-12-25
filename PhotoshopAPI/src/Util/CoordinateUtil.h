@@ -76,17 +76,17 @@ inline ChannelExtents generate_extents(const ChannelCoordinates coordinates, con
 
 	// Our center coordinates are relative to in the middle of the canvas, which means if continuing our 
 	// example they translate to 32, 32
-
 	float translatedCenterX = static_cast<float>(documentRight) / 2 + coordinates.centerX;
 	float translatedCenterY = static_cast<float>(documentBottom) / 2 + coordinates.centerY;
 
 	// Use our translated center variables to make Photoshop compliant coordinates. If the 
 	// image was also 64x64 pixels this would then create these extents [0, 0, 64, 64]
 
-	extents.top = static_cast<int32_t>(translatedCenterY - static_cast<float>(coordinates.height) / 2);
-	extents.left = static_cast<int32_t>(translatedCenterX - static_cast<float>(coordinates.width) / 2);
-	extents.bottom = static_cast<int32_t>(translatedCenterY + static_cast<float>(coordinates.height) / 2);
-	extents.right = static_cast<int32_t>(translatedCenterX + static_cast<float>(coordinates.width) / 2);
+	// Calculate initial extents based on the translated center.
+	extents.top = static_cast<int32_t>(std::round(translatedCenterY - static_cast<float>(coordinates.height) / 2));
+	extents.left = static_cast<int32_t>(std::round(translatedCenterX - static_cast<float>(coordinates.width) / 2));
+	extents.bottom = extents.top + coordinates.height; // Ensure exact height.
+	extents.right = extents.left + coordinates.width; // Ensure exact width.
 	
 	return extents;
 }

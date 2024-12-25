@@ -35,8 +35,8 @@ namespace SmartObject
 		Descriptors::Descriptor warp_descriptor("quiltWarp");
 		_serialize_common(warp_descriptor);
 
-		warp_descriptor.insert("deformNumRows", static_cast<int32_t>(m_uDims));
-		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_vDims));
+		warp_descriptor.insert("deformNumRows", static_cast<int32_t>(m_vDims));
+		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_uDims));
 
 		// This is where the actual warp information gets stored.
 		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
@@ -282,7 +282,7 @@ namespace SmartObject
 		warp._warp_style("warpNone");
 		Geometry::BoundingBox<double> bbox;
 		bbox.minimum = { 0.0f, 0.0f };
-		bbox.maximum = { static_cast<double>(width), static_cast<double>(height)};
+		bbox.maximum = { static_cast<double>(width), static_cast<double>(height) };
 		warp._warp_bounds(bbox);
 
 		Descriptors::Descriptor warp_descriptor("warp");
@@ -1041,6 +1041,11 @@ namespace SmartObject
 		}
 
 		return points;
+	}
+
+	void Warp::points(const std::vector<Geometry::Point2D<double>>& pts)
+	{
+		m_WarpPoints = pts;
 	}
 
 }

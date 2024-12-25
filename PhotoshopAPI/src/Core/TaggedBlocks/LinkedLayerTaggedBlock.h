@@ -52,7 +52,7 @@ namespace LinkedLayerItem
 		std::string m_UniqueID;			// Mirrors the UniqueID on a PlacedLayerTaggedBlock, this must be referenced somewhere
 		UnicodeString m_FileName;		// The actual filename itself, this does not necessarily represent a path to an actual file
 		std::string m_FileType;			// E.g. "png " for png files etc.
-		uint32_t m_FileCreator = std::numeric_limits<uint32_t>::max();		// Unknown what this is, seems to just be filled with 255 across all 4 bytes
+		uint32_t m_FileCreator = 0;		// Unknown what this is, seems to just be filled with 0 across all 4 bytes
 
 		std::optional<Descriptors::Descriptor> m_FileOpenDescriptor;
 		std::optional<Descriptors::Descriptor> m_LinkedFileDescriptor;
