@@ -227,7 +227,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to set original file linkage without the smart object knowing about the LayeredFile");
 		}
-		auto& linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
+		auto linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
 		linkedlayer_ptr->type(linkage);
 	}
 

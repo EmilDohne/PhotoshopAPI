@@ -125,6 +125,7 @@ int main()
 	LayeredFile<bpp8_t> file = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/linkedlayers/warp/warp_tmp.psd");
 	auto layer_ptr = find_layer_as<bpp8_t, SmartObjectLayer>("WarpQuilt", file);
 	layer_ptr->replace("C:/Users/emild/Desktop/linkedlayers/warp/uv_grid.jpg");
+	layer_ptr->set_linkage(LinkedLayerType::external);
 
 	auto params = Layer<bpp8_t>::Params{};
 	params.name = "UVGrid";
