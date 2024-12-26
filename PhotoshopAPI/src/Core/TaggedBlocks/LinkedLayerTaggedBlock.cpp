@@ -1,6 +1,7 @@
 #include "LinkedLayerTaggedBlock.h"
 
 #include "Core/FileIO/LengthMarkers.h"
+#include "Util/StringUtil.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -172,6 +173,7 @@ void LinkedLayerItem::Data::write(File& document)
 	// Write out the data related to the different types of linked data
 	if (m_Type == Type::External)
 	{
+		m_RawFileBytes.clear();
 		if (m_LinkedFileDescriptor)
 		{
 			// Descriptor version and descriptor.
@@ -185,7 +187,7 @@ void LinkedLayerItem::Data::write(File& document)
 			}
 
 			// This here is the file size which is probably stored for internal consistency.
-			auto file = std::ifstream(m_FileOpenDescriptor.value().at<UnicodeString>("originalPath").string(), std::ifstream::ate | std::ifstream::binary);
+			auto file = std::ifstream(m_LinkedFileDescriptor.value().at<UnicodeString>("originalPath").string(), std::ifstream::ate | std::ifstream::binary);
 			WriteBinaryData<uint64_t>(document, file.tellg());
 
 			if (m_Version > 2)
@@ -283,7 +285,7 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 	m_FileType = generate_file_type(filepath);
 
 	// Generate the version specific parameters
-	m_ChildDocumentID.emplace(UnicodeString("", 2u));
+	m_ChildDocumentID.emplace(UnicodeString(generate_random_sequence(), 2u));
 	m_AssetModTime.emplace(0.0f);	// appears to just be 0 unless this links to an asset which is unimplemented
 	m_AssetIsLocked.emplace(false);
 
@@ -312,15 +314,18 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 		// Photoshop would store the 'fullPath' as e.g. a native path on windows that would be 
 		// file:/// etc. We however just store the full path for all of them to make it easier
 		// and not to deal with platform specifics.
-		linked_file_descriptor["fullPath"] = UnicodeString(filepath.string(), 2u);
-		linked_file_descriptor["originalPath"] = UnicodeString(filepath.string(), 2u);
-		linked_file_descriptor["relPath"] = UnicodeString(filepath.string(), 2u);
+		auto filepath_full = "file:///" + filepath.string();
+		std::replace(filepath_full.begin(), filepath_full.end(), '\\', '/');
+
+		auto filepath_preferred = filepath;
+		filepath_preferred.make_preferred();
+
+
+		linked_file_descriptor["fullPath"] = UnicodeString(filepath_full, 2u);
+		linked_file_descriptor["originalPath"] = UnicodeString(filepath_preferred.string(), 2u);
+		linked_file_descriptor["relPath"] = UnicodeString(filepath.filename().string(), 2u);
 
 		m_LinkedFileDescriptor.emplace(linked_file_descriptor);
-
-		// we also need to set the version to 2 as that is what photoshop seems to prefer
-		// it that way and who am I to argue
-		m_Version = 2;
 	}
 }
 

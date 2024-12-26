@@ -44,7 +44,7 @@ struct LinkedLayerData
 	// Explicitly delete copy ctor as storage_type is not copyable
 	LinkedLayerData(const LinkedLayerData<T>&) = delete;
 
-	LinkedLayerData(std::filesystem::path filepath, std::string hash)
+	LinkedLayerData(std::filesystem::path filepath, std::string hash, LinkedLayerType type)
 	{
 		if (!std::filesystem::exists(filepath))
 		{
@@ -58,7 +58,7 @@ struct LinkedLayerData
 		m_FilePath = filepath;
 		m_Filename = filepath.filename().string();
 		m_Hash = hash;
-		m_Type = LinkedLayerType::data;
+		m_Type = type;
 		File data(filepath);
 		m_RawData = ReadBinaryArray<uint8_t>(data, data.getSize());
 
@@ -490,7 +490,7 @@ struct LinkedLayers
 	{
 		if (!m_LinkedLayerData.contains(hash))
 		{
-			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(filePath, hash);
+			m_LinkedLayerData[hash] = std::make_shared<LinkedLayerData<T>>(filePath, hash, type);
 		}
 		// Return a reference to the inserted/updated linked layer data
 		return m_LinkedLayerData[hash];
