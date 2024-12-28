@@ -225,17 +225,20 @@ struct LinkedLayerData
 	///
 	/// \param dealloc_raw_data 
 	///		Whether to move m_RawData into the new struct. Effectively invalidates this struct
-	LinkedLayerItem::Data to_photoshop(bool dealloc_raw_data)
+	/// \param file_path
+	///		The path to the psd file being written. This is required for externally linked files to properly
+	///		compute the relative path.
+	LinkedLayerItem::Data to_photoshop(bool dealloc_raw_data, std::filesystem::path file_path)
 	{
 		auto type = m_Type == LinkedLayerType::data ? LinkedLayerItem::Type::Data : LinkedLayerItem::Type::External;
 
 		if (dealloc_raw_data)
 		{
-			auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData));
+			auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData), file_path);
 			return block;
 		}
 
-		auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData));
+		auto block = LinkedLayerItem::Data(m_Hash, m_FilePath, type, std::move(m_RawData), file_path);
 		return block;
 	}
 
@@ -552,7 +555,11 @@ struct LinkedLayers
 	///		Whether to move the raw data from the LinkedLayerData into the created structs. This will effectively
 	///		invalidate the LinkedLayerData and should therefore only be enabled when wanting to destroy the 
 	///		LayeredFile.
-	std::vector<std::shared_ptr<LinkedLayerTaggedBlock>> to_photoshop(bool dealloc_raw_data) const
+	/// 
+	/// \param file_path
+	///		The path to the photoshop file that is being written. This is required to properly compute a relative path for the linked
+	///		layer data.
+	std::vector<std::shared_ptr<LinkedLayerTaggedBlock>> to_photoshop(bool dealloc_raw_data, std::filesystem::path file_path) const
 	{
 		// Photoshop likes storing 'data' and 'external' linked layers separately (for no real reason?)
 		// so we just mimic that behaviour.
@@ -564,11 +571,11 @@ struct LinkedLayers
 		{
 			if (linked_layer->type() == LinkedLayerType::data)
 			{
-				data_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data));
+				data_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data, file_path));
 			}
 			if (linked_layer->type() == LinkedLayerType::external)
 			{
-				external_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data));
+				external_block->m_LayerData.push_back(linked_layer->to_photoshop(dealloc_raw_data, file_path));
 			}
 		}
 

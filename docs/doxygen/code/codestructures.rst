@@ -9,6 +9,7 @@ Below you can find a view of the main structs you will be interacting with when 
 
 	layeredfile.rst
 	photoshopfile.rst
+	geometry/geometry.rst
 	util/file.rst
 	util/filesection.rst
 	util/imagechannel.rst

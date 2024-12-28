@@ -45,7 +45,7 @@ TEST_CASE("Write AdobeRGB1998")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psb_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -107,7 +107,7 @@ TEST_CASE("Write AppleRGB")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psb_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -169,7 +169,7 @@ TEST_CASE("Write CIERGB")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psb_path, params);
-		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psb_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}

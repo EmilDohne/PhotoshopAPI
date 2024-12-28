@@ -160,6 +160,12 @@ void LinkedLayerItem::Data::write(File& document)
 
 	Signature(m_FileType).write(document);
 	WriteBinaryData<uint32_t>(document, m_FileCreator);
+
+	// Externally linked files dont hold the image data so we clear the raw file bytes in case they were stored
+	if (m_Type == Type::External)
+	{
+		m_RawFileBytes.clear();
+	}
 	WriteBinaryData(document, m_RawFileBytes.size());	// This may be 0
 	WriteBinaryData<bool>(document, m_FileOpenDescriptor.has_value());
 
@@ -173,7 +179,6 @@ void LinkedLayerItem::Data::write(File& document)
 	// Write out the data related to the different types of linked data
 	if (m_Type == Type::External)
 	{
-		m_RawFileBytes.clear();
 		if (m_LinkedFileDescriptor)
 		{
 			// Descriptor version and descriptor.
@@ -276,7 +281,7 @@ void LinkedLayerItem::Data::writeType(File& document, Type type) const
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepath, Type type, std::vector<uint8_t> bytes)
+LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepath, Type type, std::vector<uint8_t> bytes, std::filesystem::path photoshop_file_path)
 {
 	m_Type = type;
 	m_RawFileBytes = std::move(bytes);
@@ -311,19 +316,21 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 		linked_file_descriptor["descVersion"] = static_cast<int32_t>(2);	// Seems to be fixed at 2
 		linked_file_descriptor["Nm  "] = m_FileName;
 
-		// Photoshop would store the 'fullPath' as e.g. a native path on windows that would be 
-		// file:/// etc. We however just store the full path for all of them to make it easier
-		// and not to deal with platform specifics.
+		// Photoshop stores the filepath in 3 different ways, using a URI path, a preferred filesystem path and a relative path.
+		// However, even with all of these things photoshop will still show an exclamation mark when loading externally linked files
+		// written by the PhotoshopAPI. I assume this is because it is looking for a link to the file in its xml metadata. However transforming
+		// this data in photoshop itself will lead to this warning to go away and the data is still live.
 		auto filepath_full = "file:///" + filepath.string();
 		std::replace(filepath_full.begin(), filepath_full.end(), '\\', '/');
 
 		auto filepath_preferred = filepath;
 		filepath_preferred.make_preferred();
 
-
 		linked_file_descriptor["fullPath"] = UnicodeString(filepath_full, 2u);
 		linked_file_descriptor["originalPath"] = UnicodeString(filepath_preferred.string(), 2u);
-		linked_file_descriptor["relPath"] = UnicodeString(filepath.filename().string(), 2u);
+
+		auto relpath = std::filesystem::relative(filepath, photoshop_file_path.parent_path());
+ 		linked_file_descriptor["relPath"] = UnicodeString(relpath.string(), 2u);
 
 		m_LinkedFileDescriptor.emplace(linked_file_descriptor);
 	}

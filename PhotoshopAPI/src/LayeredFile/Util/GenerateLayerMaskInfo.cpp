@@ -17,7 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, const FileHeader& header, std::filesystem::path file_path)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t");
 	return LayerAndMaskInformation();
@@ -26,7 +26,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, cons
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile, const FileHeader& header, std::filesystem::path file_path)
 {
 	LayerInfo lrInfo = generate_layerinfo<uint8_t>(layeredFile, header);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
@@ -37,7 +37,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile
 	if (!layeredFile.linked_layers().empty())
 	{
 		std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
-		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true, file_path);
 		for (const auto& block : linked_layer_blocks)
 		{
 			block_ptrs.push_back(block);
@@ -54,7 +54,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFile, const FileHeader& header, std::filesystem::path file_path)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generate_layerinfo<uint16_t>(layeredFile, header);
@@ -67,7 +67,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFil
 
 	if (!layeredFile.linked_layers().empty())
 	{
-		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true, file_path);
 		for (const auto& block : linked_layer_blocks)
 		{
 			block_ptrs.push_back(block);
@@ -83,7 +83,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFil
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFile, const FileHeader& header, std::filesystem::path file_path)
 {
 	LayerInfo emptyLrInfo{};
 	LayerInfo lrInfo = generate_layerinfo<float32_t>(layeredFile, header);
@@ -96,7 +96,7 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFi
 
 	if (!layeredFile.linked_layers().empty())
 	{
-		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true);
+		auto linked_layer_blocks = layeredFile.linked_layers().to_photoshop(true, file_path);
 		for (const auto& block : linked_layer_blocks)
 		{
 			block_ptrs.push_back(block);
