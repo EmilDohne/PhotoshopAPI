@@ -34,7 +34,7 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
-		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
+		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), fullOutPath);
 		psdOutDocumentPtr->write(outputFile, callback);
 
 		// Read back into LayeredFile
@@ -53,7 +53,7 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
-		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
+		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), fullOutPath);
 		psdOutDocumentPtr->write(outputFile, callback);
 
 		// Read back into LayeredFile
@@ -72,7 +72,7 @@ void checkFileRoundtripping(const std::filesystem::path& inDir, const std::files
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(fullOutPath, params);
-		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
+		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), fullOutPath);
 		psdOutDocumentPtr->write(outputFile, callback);
 
 		// Read back into LayeredFile

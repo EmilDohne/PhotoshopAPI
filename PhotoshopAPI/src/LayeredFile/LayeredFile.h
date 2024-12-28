@@ -627,7 +627,7 @@ struct LayeredFile
 		}
 
 		auto outputFile = File(filePath, params);
-		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
+		auto psdOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), filePath);
 		psdOutDocumentPtr->write(outputFile, callback);
 	}
 
@@ -747,18 +747,18 @@ std::shared_ptr<LayerType<T>> find_layer_as(const std::string path, const Layere
 /// \note This will not fill any specific TaggedBlocks or ResourceBlocks beyond what is required
 /// to create the layer structure.
 template <typename T>
-std::unique_ptr<PhotoshopFile> layered_to_photoshop(LayeredFile<T>&& layeredFile)
+std::unique_ptr<PhotoshopFile> layered_to_photoshop(LayeredFile<T>&& layered_file, std::filesystem::path file_path)
 {
 	PSAPI_PROFILE_FUNCTION();
 
 	// Remove any unused linked layers that do not have a reference to anything anymore
-	clear_unused_linked_layers<T>(layeredFile);
+	clear_unused_linked_layers<T>(layered_file);
 
-	FileHeader header = generate_header<T>(layeredFile);
-	ColorModeData colorModeData = generate_colormodedata<T>(layeredFile);
-	ImageResources imageResources = generate_imageresources<T>(layeredFile);
-	LayerAndMaskInformation lrMaskInfo = generate_layermaskinfo<T>(layeredFile, header);
-	ImageData imageData = ImageData(layeredFile.num_channels(true, true));	// Ignore any mask or alpha channels
+	FileHeader header = generate_header<T>(layered_file);
+	ColorModeData colorModeData = generate_colormodedata<T>(layered_file);
+	ImageResources imageResources = generate_imageresources<T>(layered_file);
+	LayerAndMaskInformation lrMaskInfo = generate_layermaskinfo<T>(layered_file, header, file_path);
+	ImageData imageData = ImageData(layered_file.num_channels(true, true));	// Ignore any mask or alpha channels
 
 	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }

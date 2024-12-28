@@ -20,7 +20,9 @@ namespace Geometry
     {
 
         /// Constructor that initializes control points, these must be in scanline order. So the points should go as follows:
+        /// 
         /// 1 2 3 4 5
+        /// 
         /// 6 7 8 9 10 ...
         BezierSurface(
             const std::vector<Point2D<double>>& controlPoints, 

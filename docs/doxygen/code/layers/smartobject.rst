@@ -1,8 +1,12 @@
 Smart Object Layer Structure
 ----------------------------
 
-.. note::
-	This Layer Type is not yet implemented and simply exists to allow us to read Files with this Layer Type. 
+SmartObject layers have an optional warp structure applied to them
+
+.. toctree::
+	:maxdepth: 2
+
+	../geometry/smartobjectwarp.rst
 
 .. doxygenstruct:: SmartObjectLayer
 	:members: 

@@ -12,7 +12,7 @@ PSAPI_NAMESPACE_BEGIN
 
 // Generate a layer and mask information section based on the information in the LayeredFile
 template <typename T>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, const FileHeader& header);
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, const FileHeader& header, std::filesystem::path file_path);
 
 
 template <typename T>

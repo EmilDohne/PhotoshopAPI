@@ -66,7 +66,7 @@ int main()
 	params.doRead = false;
 	params.forceOverwrite = true;
 	auto outputFile = File("./RearrangedFile.psd", params);
-	auto psOutDocumentPtr = layered_to_photoshop(std::move(layeredFile));
+	auto psOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), "./RearrangedFile.psd");
 
 	// We pass the same callback into the write function, clearing of data will 
 	// be handled internally

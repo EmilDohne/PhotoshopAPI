@@ -67,7 +67,7 @@ namespace LinkedLayerItem
 		std::optional<bool> m_AssetIsLocked;
 
 		Data() = default;
-		Data(std::string unique_id, std::filesystem::path filepath, Type type, std::vector<uint8_t> bytes);
+		Data(std::string unique_id, std::filesystem::path filepath, Type type, std::vector<uint8_t> bytes, std::filesystem::path photoshop_file_path);
 
 		void read(File& document);
 		/// Write the LinkedLayerData struct. Unlike the other write methods this is non-const since otherwise we would have to copy

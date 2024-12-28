@@ -17,6 +17,32 @@ PSAPI_NAMESPACE_BEGIN
 namespace Geometry
 {
 
+    /// Generate a normalized quad from [0 - 1] in the order top-left, top-right, bot-left, bot-right.
+    /// This can then be used to e.g. create a homography.
+    template <typename T>
+    std::array<Geometry::Point2D<T>, 4> create_normalized_quad()
+    {
+        auto top_left  = Geometry::Point2D<T>(static_cast<T>(0), static_cast<T>(0));
+        auto top_right = Geometry::Point2D<T>(static_cast<T>(1), static_cast<T>(0));
+        auto bot_left  = Geometry::Point2D<T>(static_cast<T>(0), static_cast<T>(1));
+        auto bot_right = Geometry::Point2D<T>(static_cast<T>(1), static_cast<T>(1));
+
+        return { top_left, top_right, bot_left, bot_right };
+    }
+
+    /// Generate a quad from [0 - width/height] in the order top-left, top-right, bot-left, bot-right.
+    /// This can then be used to e.g. create a homography.
+    template <typename T>
+    std::array<Geometry::Point2D<T>, 4> create_quad(T width, T height)
+    {
+        auto top_left  = Geometry::Point2D<T>(static_cast<T>(0), static_cast<T>(0));
+        auto top_right = Geometry::Point2D<T>(width, static_cast<T>(0));
+        auto bot_left  = Geometry::Point2D<T>(static_cast<T>(0), height);
+        auto bot_right = Geometry::Point2D<T>(width, height);
+
+        return { top_left, top_right, bot_left, bot_right };
+    }
+
     namespace Operations
     {
 

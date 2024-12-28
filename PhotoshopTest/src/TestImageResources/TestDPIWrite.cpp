@@ -47,7 +47,7 @@ TEST_CASE("Write DPI")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
-		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psd_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -103,7 +103,7 @@ TEST_CASE("Write DPI fractional")
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
-		auto psdDocumentPtr = layered_to_photoshop(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psd_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}

@@ -23,32 +23,37 @@ namespace SmartObject
 	/// Base warp structure, these encompass the warps found under Edit -> Transform which are:
 	/// 
 	/// Edit/Transform/Skew
+	/// 
 	/// Edit/Transform/Distort
+	/// 
 	/// Edit/Transform/Perspective
+	/// 
 	/// Edit/Transform/Warp
 	/// 
 	/// These are stored as part of the descriptor found on the PlacedLayer or PlacedLayerData Tagged Blocks.
 	/// The data stored on the file does not differentiate between these types and they are all stored
-	/// identically
+	/// identically (the internal structure might change thoug)
 	struct Warp
 	{
-		// Tags for dispatch
+		/// Tags for dispatch
 		struct normal_warp {};
+		/// Tags for dispatch
 		struct quilt_warp {};
 
 		enum class WarpType
 		{
-			normal,	// Normal warps in this case define a 4x4 warp grid
-			quilt,	// Quilt warps are for arbitrary warp resolutions
+			normal,	/// Normal warps in this case define a 4x4 warp grid
+			quilt,	/// Quilt warps are for arbitrary warp resolutions
 		};
 
 		Warp() = default;
 
-		/// Initialize the warp struct from a set of geometric points describing a bezier surface 
+		/// Initialize the warp struct from a set of geometric points describing a bezier surface with
 		/// one or more quadratic bezier patches. These points are in scanline order (i.e. going first along the horizontal
 		/// axis, then across the vertical axis). 
+		/// 
 		/// Being a set of quadratic bezier patches the dimensions across the u and v (x and y) must be `4` or `4 + n * 3`
-		/// where `n` is the number of subdivisions and is greater than one. In simple terms this means a valid number of 
+		/// where `n` is the number of subdivisions and is greater than one. In simple terms, this means a valid number of 
 		/// points per axis is 4, 7, 10, 13 etc.
 		/// 
 		/// \param warp The warp points in scanline order.
@@ -160,8 +165,11 @@ namespace SmartObject
 		/// follows:
 		/// 
 		/// 0  1  2  3
+		/// 
 		/// 4  5  6  7
+		/// 
 		/// 8  9  10 11
+		/// 
 		/// 12 13 14 15
 		/// 
 		/// Here point 0 would be the top left corner point. And points 1 and 4 the handles to the bezier.
@@ -195,8 +203,11 @@ namespace SmartObject
 		/// These grid points are laid out as follows (for a 4x4 grid, for other dimensions this would change accordingly):
 		/// 
 		/// 0  1  2  3
+		/// 
 		/// 4  5  6  7
+		/// 
 		/// 8  9  10 11
+		/// 
 		/// 12 13 14 15
 		/// 
 		/// Here point 0 would be the top left corner point. And points 1 and 4 the handles to the bezier.
@@ -264,7 +275,12 @@ namespace SmartObject
 		/// This represents the following step in the transformation pipeline:
 		/// 
 		/// Full image -> **Affine transform** -> Non-affine transform -> Warp
-		inline const std::array<Geometry::Point2D<double>, 4> affine_transform() const { return m_Transform; }
+		inline std::array<Geometry::Point2D<double>, 4> affine_transform() const { return m_Transform; }
+
+		// Set the affine transform for the SmartObjectWarp. The opposing sides of the quad formed by the four points
+		/// must be parallel. It is recommended to use the transformation functions on the SmartObjectLayer such as
+		/// `move()` `rotate()` `scale()` instead of modifying the quad directly for better and more intuitive control.
+		inline void affine_transform(std::array<Geometry::Point2D<double>, 4> transform) { m_Transform = transform; }
 
 		/// Set the affine transform for the SmartObjectWarp. The opposing sides of the quad formed by the four points
 		/// must be parallel. It is recommended to use the transformation functions on the SmartObjectLayer such as
@@ -277,14 +293,24 @@ namespace SmartObject
 		);
 
 		/// Retrieve the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
-		/// If no non-affine transform is present these are in a [0 - 1] unit square, pushing e.g. the top left and top right 
+		/// If no non-affine transform is present these are the same as affine_transform, pushing e.g. the top left and top right 
 		/// outwards would represent a perspective transform.
 		inline const std::array<Geometry::Point2D<double>, 4>& non_affine_transform() const { return m_NonAffineTransform; };
 
-		/// Retrieve the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
-		/// If no non-affine transform is present these are in a [0 - 1] unit square, pushing e.g. the top left and top right 
-		/// outwards would represent a perspective transform.
+		/// Set the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
+		/// These are described as positions in world-space that for a no-op must be the same as affine_transform.
+		/// When wanting to e.g. perspective warp the top corners you must push the first two points outwards or inwards.
 		inline void non_affine_transform(std::array<Geometry::Point2D<double>, 4> transform) { m_NonAffineTransform = transform; };
+
+		/// Set the non-affine transform which describes 4 points in the order {top-left, top-right, bot-left, bot-right}.
+		/// These are described as positions in world-space that for a no-op must be the same as affine_transform.
+		/// When wanting to e.g. perspective warp the top corners you must push the first two points outwards or inwards.
+		void non_affine_transform(
+			Geometry::Point2D<double> top_left,
+			Geometry::Point2D<double> top_right,
+			Geometry::Point2D<double> bot_left,
+			Geometry::Point2D<double> bot_right
+		);
 
 		bool operator==(const Warp& other) const;
 
@@ -329,10 +355,8 @@ namespace SmartObject
 
 		/// For internal API use:
 		///
-		/// Generates a normalized non-affine transformation mesh described by the transform and non affine transform
-		/// descriptors. Unlike the original transform, a no-op would be stored as a quad in the 0-1 space.
-		/// These are then later applied as a homography to the geometric mesh.
-		static std::array<Geometry::Point2D<double>, 4> _generate_non_affine_transform(const Descriptors::List& transform, const Descriptors::List& non_affine_transform);
+		/// Generates a non affine transform from the descriptor
+		static std::array<Geometry::Point2D<double>, 4> _generate_non_affine_transform(const Descriptors::List& non_affine_transform);
 
 		/// For internal API use:
 		/// Set the warp style ("warpCustom" or "warpNone")
@@ -411,20 +435,25 @@ namespace SmartObject
 		/// 
 		/// { 0, 0    } { 4500, 0    }
 		/// { 0, 2000 } { 4500, 2000 }
+		/// 
+		/// The points are stored in the order: top-left, top-right, bottom-left, bottom-right
 		std::array<Geometry::Point2D<double>, 4> m_Transform;
 
 		/// Store the non affine transform as a geometric mesh. 
 		/// 
-		/// Here we simply describe the perspective warp applied to a mesh and are along the normals.
-		/// So if we have a rotated transform, a negative offset along the x would mean that the points
-		/// move out along the line drawn by connecting the horizontal points.
+		/// Here we simply describe the shear/perspective warp applied to the mesh.
 		/// 
 		/// This transform is stored in a way that if it was a no op it would be made up of 
-		/// 4 points that just describe a square. Therefore all transforms are 
-		/// relative to this 1x1 square. Below you can see what a no op would look
-		/// like
-		/// { 0, 0 } { 1, 0 }
-		/// { 0, 1 } { 1, 1 }
+		/// 4 points that are identical to m_Transform. Continuing from the above example, a no op would
+		/// look like this:
+		/// 
+		/// { 0, 0    } { 4500, 0    }
+		/// { 0, 2000 } { 4500, 2000 }
+		/// 
+		/// Whereas an outwards perspective warp on the top edge could look like this:
+		/// 
+		/// { -500, 0 } { 5000, 0    }
+		/// { 0, 2000 } { 4500, 2000 }
 		/// 
 		/// The points are stored in the order: top-left, top-right, bottom-left, bottom-right
 		std::array<Geometry::Point2D<double>, 4> m_NonAffineTransform;
@@ -470,14 +499,14 @@ namespace SmartObject
 		
 	};
 
-
+	/// Not yet supported
 	struct PuppetWarp
 	{
 		// Not yet supported
 	};
 
 
-	/// Smart filter perspective warp
+	/// Smart filter perspective warp, not yet supported
 	struct PerspectiveWarp
 	{
 		// Not yet supported
