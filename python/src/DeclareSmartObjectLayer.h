@@ -17,6 +17,8 @@
 #include <iostream>
 #include <vector>
 
+#include <fmt/format.h>
+
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
 // library
 #if (__cplusplus < 202002L)
@@ -36,16 +38,74 @@ template <typename T>
 void declareSmartObjectLayer(py::module& m, const std::string& extension) {
     using Class = SmartObjectLayer<T>;
     std::string className = "SmartObjectLayer" + extension;
-    py::class_<Class, _ImageDataLayerType<T>, std::shared_ptr<Class>> smartObjectLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    py::class_<Class, _ImageDataLayerType<T>, std::shared_ptr<Class>> smart_object_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
-    smartObjectLayer.doc() = R"pbdoc(
+    smart_object_layer.doc() = R"pbdoc(
+
+        Smart objects are Photoshops' way of non-destructive image data edits while keeping a live link to the original file.
         
-        This class defines a single image layer in a LayeredFile. There must be at least one of these
-        in any given file for it to be valid
+        We expose not only ways to replace this linked image data but also have functionality to recreate and store the warps 
+        applied to these objects (with more features coming in the future). 
+        We currently support recreating all the warps found in the Edit->Transform tab. We do not yet support the `Edit->Puppet Warp`
+        and `Edit->Perspective Warp` which are stored as Smart Filters.
+        
+        Smart objects store their original image data on the `LayeredFile` while storing a decoded preview the size of the layer on
+        the layer itself. We provide multiple methods to get both the scaled and warped image data as well as the full size image 
+        data.
+        
+        Image Data:
+        ------------
+        
+            Due to how SmartObjects work, image data is read-only and all write methods will raise an exception if you try to access them.
+            In order to modify the underlying image data you should use the `replace()` method which will actually replace the underlying 
+            file the smart object is linked to.
+        
+            Getting the image data can be done via the `get_image_data()`, `get_channel()` and `original_image_data()` functions. 
+            These will retrieve the transformed and warped image data. If you modify these you can requery these functions and 
+            get up to date image data.
+        
+        Transformations:
+        -----------------
+        
+            Unlike normal layers, SmartObjects have slightly different transformation rules. As they link back to a file in memory or on disk
+            the transformations are stored 'live' and can be modified without negatively impacting the quality of the image. We expose a variety
+            of transformation options to allow you to express this freedom. 
+        
+            Since we have both the original image data, and the rescaled image data to worry about there is two different widths and heights available:
+        
+            - `original_width()` / `original_height()`
+        	    These represent the resolution of the original file image data, irrespective of what transforms are applied to it.
+        	    If you are e.g. loading a 4000x2000 jpeg these will return 4000 and 2000 respectively. These values may not be written to
+        
+            - `width()` / `height()`
+        	    These represent the final dimensions of the SmartObject with the warp and any transformations applied to it. 
+        
+            For actually transforming the layer we expose the following methods:
+        
+            - `move()`
+            - `rotate()`
+            - `scale()`
+            - `transform()`
+        
+            These are all individually documented and abstract away the underlying implementation of these operations. 
+            You likely will not have to dive deeper than these.
+        
+        Warp:
+        -----------
+        
+            Smart objects can also store warps which we implement using the `SmartObjectWarp` structure. These warps are stored as bezier surfaces with transformations applied on top of them.
+            The transformations should be disregarded by the user as we provide easier functions on the SmartObjectLayer directly (see above). The warp itself is stored as a bezier
+            surface. You may transfer these warps from one layer to another, modify them (although this requires knowledge of how bezier surfaces work), or clear them entirely.
+        
+            For the latter we provide the reset_transform()` and `reset_warp()` functions.
     
         Attributes
         -----------
 
+        warp : SmartObjectWarp
+            Property holding the warp (and transformation) information. May be modified,
+            although for transforming the layer it is recommended to use the transformation
+            functions such as `move`, `rotate`, `scale` and `transform`.
         image_data : dict[int, numpy.ndarray]
             Read-only property: A dictionary of the image data mapped by int.
             Accessing this will load all the image data into memory so use it sparingly and 
@@ -87,70 +147,103 @@ void declareSmartObjectLayer(py::module& m, const std::string& extension) {
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
 
-    imageLayer.def(py::init(),
-        py::arg("image_data"),
-        py::arg("layer_name"),
-        py::arg("layer_mask") = py::none(),
-        py::arg("width") = 0,
-        py::arg("height") = 0,
-        py::arg("blend_mode") = Enum::BlendMode::Normal,
-        py::arg("pos_x") = 0,
-        py::arg("pos_y") = 0,
-        py::arg("opacity") = 255,
-        py::arg("compression") = Enum::Compression::ZipPrediction,
-        py::arg("color_mode") = Enum::ColorMode::RGB,
-        py::arg("is_visible") = true,
-        py::arg("is_locked") = false, R"pbdoc(
+    smartObjectLayer.def(py::init([](
+        LayeredFile<T>& layered_file,
+        std::string path,
+        std::string layer_name,
+        LinkedLayerType link_type,
+        std::optional<SmartObject::Warp> warp,
+        std::optional<py::array_t<T>> layer_mask,
+        Enum::BlendMode blend_mode,
+        int opacity,
+        Enum::Compression compression,
+        Enum::ColorMode color_mode,
+        bool is_visible,
+        bool is_locked
+        ) {
+            Layer<T>::Params params;
 
-        Construct an image layer from image data passed as numpy.ndarray
+			if (layer_name.size() > 255)
+			{
+				throw py::value_error("layer_name parameter cannot exceed a length of 255");
+			}
+            if (opacity < 0 || opacity > 255)
+            {
+                throw py::value_error(fmt::format("opacity parameter must be between 0 and 255, instead got {}", opacity));
+            }
 
-        :param image_data: 
-            The image data as 2- or 3-Dimensional numpy array where the first dimension is the number of channels.
-    
-            If its a 2D ndarray the second dimension must hold the image data in row-major order with the size being height*width. 
-            An example could be the following shape: (3, 1024) for an RGB layer that is 32*32px. 
+            // Decode the layer mask.
+			if (layer_mask)
+			{
+                auto& mask = layer_mask.value();
+                auto& shape = Util::Impl::shape_from_py_array<T>(mask, { 2 }, mask.size());
 
-            If its a 3D ndarray the second and third dimension hold height and width respectively.
-            An example could be the following shape: (3, 32, 32) for the same RGB layer
+                if (shape.size() != 2)
+                {
+                    throw py::value_error(
+                        fmt::format(
+                            "layer_mask parameter must be a 2-dimensional ndarray with height as the first dimension and width as the second." \
+                            " Got shape ({}) but expected (height, width)", fmt::join(shape, ", ")
+                            )
+                        );
+                }
 
-            We also support adding alpha channels this way, those are always stored as the last channel and are optional. E.g. for RGB
-            there could be a ndarray like this (4, 32, 32) and it would automatically identify the last channel as alpha. For the individual
-            color modes there is always a set of required channels such as R, G and B for RGB or C, M, Y, K for CMYK with the optional alpha
-            that can be appended to the end.
+                auto width = shape[1];
+                auto height = shape[0];
+                params.mask = Util::vector_from_py_array<T>(mask, width, height);
+                params.width = width;
+                params.height = height;
+			}
+			params.name = layer_name;
+			params.blendmode = blend_mode;
+			params.opacity = opacity;
+			params.compression = compression;
+			params.colormode = color_mode;
+			params.visible = is_visible;
+			params.locked = is_locked;
 
-            The size **must** be the same as the width and height parameter
-        :type image_data: numpy.ndarray
+            if (warp)
+            {
+                return std::make_shared<SmartObjectLayer<T>>(file, std::move(params), path, warp.value(), link_type);
+            }
+            return std::make_shared<SmartObjectLayer<T>>(file, std::move(params), path, link_type);
+        }
+    ),
+    py::arg("layered_file"),
+    py::arg("path"),
+    py::arg("layer_name"),
+    py::arg("link_type") = LinkedLayerType::data,
+    py::arg("warp") = py::none(),
+    py::arg("layer_mask") = py::none(),
+    py::arg("blend_mode") = Enum::BlendMode::Normal,
+    py::arg("opacity") = 255,
+    py::arg("compression") = Enum::Compression::ZipPrediction,
+    py::arg("color_mode") = Enum::ColorMode::RGB,
+    py::arg("is_visible") = true,
+    py::arg("is_locked") = false, R"pbdoc(
+
+        Construct a SmartObjectLayer from the given filepath, linking the layer according to the link type.
+        Accepts an optional warp object to construct the layer with. If None is passed we default initialize 
+        the warp.
+
+        :param layered_file: 
+            The file into which the layer will be inserted. This needs to be present as the actual link to the
+            image file is stored globally and not on the layer itself.
+        :type layered_file: LayeredFile_*bit
+
+        :param path: The path to the image file to link into this SmartObject. This must be a valid file on disk.
+        :type path: str
 
         :param layer_name: The name of the group, its length must not exceed 255
         :type layer_name: str
 
         :param layer_mask: 
-            Optional layer mask, must have the same dimensions as height * width but can be a 1- or 2-dimensional array with row-major ordering (for a numpy
+            Optional layer mask, must have the same dimensions as height * width as a 2-dimensional array with row-major ordering (for a numpy
             2D array this would mean with a shape of (height, width)
         :type layer_mask: numpy.ndarray
 
-        :param width: 
-            Optional, width of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
-            For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type width: int
-
-        :param height: 
-            Optional, height of the layer, does not have to be the same size as the document, limited to 30,000 for PSD files and 300,000 for PSB files.
-            For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type height: int
-
         :param blend_mode: Optional, the blend mode of the layer, 'Passthrough' is the default for groups.
         :type blend_mode: psapi.enum.BlendMode
-
-        :param pos_x: 
-            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
-            For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_x: int
-
-        :param pos_y: 
-            Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
-            For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_y: int
 
         :param opacity: The opacity of the layer from 0-255 where 0 is 0% and 255 is 100%. Defaults to 255
         :type opacity: int
@@ -170,15 +263,94 @@ void declareSmartObjectLayer(py::module& m, const std::string& extension) {
         :raises:
             ValueError: if length of layer name is greater than 255
 
-            ValueError: if size of layer mask is not width*height
-
-            ValueError: if width of layer is negative
-
-            ValueError: if height of layer is negative
-
             ValueError: if opacity is not between 0-255
 
-            ValueError: if the channel size is not the same as width * height
-
 	)pbdoc");
+
+	// Attributes
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+
+
+
+	// Functions
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+
+
+	// Transformations.
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+
+    smart_object_layer.def("move", [](Class& self, double x_offset, double y_offset)
+        {
+            Geometry::Point2D<double> point(x_offset, y_offset);
+            self.move(point);
+		}, py::arg("x_offset"), py::arg("y_offset"), R"pbdoc(
+
+        Move the layer (including any warps) by the given x and y offset.
+
+	    )pbdoc");
+
+	smart_object_layer.def("rotate", [](Class& self, double angle, double x, double y)
+		{
+			Geometry::Point2D<double> point(x, y);
+			self.rotate(angle, point);
+		}, py::arg("angles"), py::arg("x"), py::arg("y"), R"pbdoc(
+
+        Rotate the layer (including any warps) by the given angle (in degrees) around
+        the point defined by the x and y coordinate. If you wish to rotate around the
+        layers center you can call the function as follows:
+
+        `layer.rotate(45, layer.center_x, layer.center_y)`
+
+        :param angle: The angle to rotate with in degrees
+        :param x:     The x position to rotate about
+        :param y:     The y position to rotate about
+
+	    )pbdoc");
+
+	smart_object_layer.def("scale", [](Class& self, double x_scalar, double y_scalar, double x, double y)
+		{
+			Geometry::Point2D<double> scalar(x_scalar, y_scalar);
+			Geometry::Point2D<double> point(x, y);
+			self.scale(scalar, point);
+		}, py::arg("x_scalar"), py::arg("y_scalar"), py::arg("x"), py::arg("y"), R"pbdoc(
+
+        Scale the layer (including any warps) by the given x and y scalar around
+        the point defined by the x and y coordinate. If you wish to scale around the
+        layers center you can call the function as follows:
+
+        `layer.scale(1.0, 1.0, layer.center_x, layer.center_y)`
+
+        :param x_scalar: The x component of the scalar
+        :param y_scalar: The y component of the scalar
+        :param x:        The x position to scale about
+        :param y:        The y position to scale about
+
+	    )pbdoc");
+
+	smart_object_layer.def("transform", [](Class& self, py::array_t<double> matrix)
+		{
+			auto& shape = Util::Impl::shape_from_py_array<double>(matrix, { 2 }, 9);
+            if (shape != {3, 3})
+            {
+                throw py::value_error(fmt::format("Expected a 3x3 matrix as the transformation matrix, instead got shape ({})",
+                    fmt::join(shape, ", ")));
+            }
+			auto vec = Util::vector_from_py_array<double>(matrix, 3, 3);
+
+            Eigen::Matrix3d mat;
+            mat << vec;
+
+			self.transform(mat);
+		}, py::arg("matrix"), R"pbdoc(
+
+        Apply the transformation matrix to the smart object layer. This must be a 3x3 matrix
+        which can contain both affine and non affine transformations.
+
+        :param matrix: The matrix to transform by, as a 3x3 matrix of np.double
+        :type matrix: np.ndarray
+
+	    )pbdoc");
 }

@@ -6,17 +6,18 @@
 #include "DeclareLayer.h"
 #include "DeclareImageLayer.h"
 #include "DeclareGroupLayer.h"
+#include "DeclareSmartObjectLayer.h"
 #include "DeclareEnums.h"
 #include "DeclareUtil.h"
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
-PYBIND11_MODULE(psapi, m) {
-	/*py::options options;
-	options.disable_function_signatures();*/
+PYBIND11_MODULE(psapi, m) 
+{
 
 	auto enum_module = m.def_submodule("enum", "A collection of enumerators used throughout the project.");
+	declareLinkedLayerTypeEnum(enum_module);
 	declareBitDepthEnum(enum_module);
 	declareColorModeEnum(enum_module);
 	declareChannelIDEnum(enum_module);
@@ -44,5 +45,9 @@ PYBIND11_MODULE(psapi, m) {
 	declareGroupLayer<bpp16_t>(m, "_16bit");
 	declareGroupLayer<bpp32_t>(m, "_32bit");
 
+	declareSmartObjectLayer<bpp8_t>(m, "_8bit");
+	declareSmartObjectLayer<bpp16_t>(m, "_16bit");
+	declareSmartObjectLayer<bpp32_t>(m, "_32bit");
+	
 	declarePhotoshopFile(m);
 }
