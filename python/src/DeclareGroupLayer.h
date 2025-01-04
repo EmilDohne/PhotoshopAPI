@@ -19,7 +19,8 @@ using namespace NAMESPACE_PSAPI;
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declareGroupLayer(py::module& m, const std::string& extension) {
+void declare_group_layer(py::module& m, const std::string& extension) 
+{
     using Class = GroupLayer<T>;
     std::string className = "GroupLayer" + extension;
     py::class_<Class, Layer<T>, std::shared_ptr<Class>> groupLayer(m, className.c_str(), py::dynamic_attr());

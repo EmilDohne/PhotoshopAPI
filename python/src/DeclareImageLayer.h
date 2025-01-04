@@ -32,7 +32,7 @@ using namespace NAMESPACE_PSAPI;
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declareImageLayer(py::module& m, const std::string& extension) {
+void declare_image_layer(py::module& m, const std::string& extension) {
     using Class = ImageLayer<T>;
     std::string className = "ImageLayer" + extension;
     py::class_<Class, Layer<T>, std::shared_ptr<Class>> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
