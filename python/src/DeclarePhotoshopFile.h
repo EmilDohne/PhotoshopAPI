@@ -12,7 +12,7 @@ namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
 
-void declarePhotoshopFile(py::module& m)
+void declare_photoshop_file(py::module& m)
 {
 	py::class_<PhotoshopFile> photoshopFile(m, "PhotoshopFile");
 

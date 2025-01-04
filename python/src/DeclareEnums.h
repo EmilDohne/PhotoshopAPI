@@ -12,7 +12,7 @@
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
-void declareLinkedLayerTypeEnum(py::module& m)
+void declare_linkedlayertype_enums(py::module& m)
 {
 	py::enum_<Enum::BitDepth> linked_layer_type(m, "LinkedLayerType", R"pbdoc(
 
@@ -37,7 +37,7 @@ void declareLinkedLayerTypeEnum(py::module& m)
 }
 
 
-void declareBitDepthEnum(py::module& m)
+void declare_bitdepth_enums(py::module& m)
 {
 	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth", R"pbdoc(
 
@@ -66,7 +66,7 @@ void declareBitDepthEnum(py::module& m)
 }
 
 
-void declareColorModeEnum(py::module& m)
+void declare_colormode_enums(py::module& m)
 {
 	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode", R"pbdoc(
 		Enum representing the color mode of an file.
@@ -92,7 +92,7 @@ void declareColorModeEnum(py::module& m)
 }
 
 
-void declareChannelIDEnum(py::module& m)
+void declare_channelid_enums(py::module& m)
 {
 	py::enum_<Enum::ChannelID> channelID(m, "ChannelID", R"pbdoc(
 		Enum representation of all the different channel ids found in a file.
@@ -141,7 +141,7 @@ void declareChannelIDEnum(py::module& m)
 }
 
 
-void declareCompressionEnums(py::module& m)
+void declare_compression_enums(py::module& m)
 {
 	py::enum_<Enum::Compression> compression(m, "Compression", R"pbdoc(
 		Enum representation of all the different Compression codecs supported by Photoshop (and PSAPI).
@@ -171,7 +171,7 @@ void declareCompressionEnums(py::module& m)
 }
 
 
-void declareBlendModeEnum(py::module& m)
+void declare_blendmode_enums(py::module& m)
 {
 	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode", R"pbdoc(
 		Enum representation of all the different blendmodes found in a file.

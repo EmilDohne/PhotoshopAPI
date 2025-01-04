@@ -50,7 +50,7 @@ struct LayeredFileWrapper
 
 
 // Declare the wrapper class for the LayeredFile instance
-void declareLayeredFileWrapper(py::module& m)
+void declare_layered_file_wrapper(py::module& m)
 {
 	py::class_<LayeredFileWrapper> layeredFileWrapper(m, "LayeredFile");
 
@@ -81,7 +81,7 @@ void declareLayeredFileWrapper(py::module& m)
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declareLayeredFile(py::module& m, const std::string& extension) {
+void declare_layered_file(py::module& m, const std::string& extension) {
 	using Class = LayeredFile<T>;
 	std::string className = "LayeredFile" + extension;
 	py::class_<Class> layeredFile(m, className.c_str(), py::dynamic_attr());
