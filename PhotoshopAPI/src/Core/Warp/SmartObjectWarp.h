@@ -32,7 +32,7 @@ namespace SmartObject
 	/// 
 	/// These are stored as part of the descriptor found on the PlacedLayer or PlacedLayerData Tagged Blocks.
 	/// The data stored on the file does not differentiate between these types and they are all stored
-	/// identically (the internal structure might change thoug)
+	/// identically (the internal structure might change though)
 	struct Warp
 	{
 		/// Tags for dispatch
@@ -231,7 +231,7 @@ namespace SmartObject
 		/// \param u_dimensions The divisions in the u (x) dimension. These must follow the formula 4 + n * 3
 		///						where n represents the number of horizontal bezier patches - 1. So if you wish
 		///						to construct 3 bezier patches horizontally this would be 10.
-		/// \param u_dimensions The divisions in the v (y) dimension. These must follow the formula 4 + n * 3
+		/// \param v_dimensions The divisions in the v (y) dimension. These must follow the formula 4 + n * 3
 		///						where n represents the number of vertical bezier patches - 1. So if you wish
 		///						to construct 3 bezier patches vertically this would be 10.
 		static Warp generate_default(size_t width, size_t height, size_t u_dimensions, size_t v_dimensions);
