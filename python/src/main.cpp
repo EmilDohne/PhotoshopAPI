@@ -9,6 +9,7 @@
 #include "DeclareSmartObjectLayer.h"
 #include "DeclareSmartObjectWarp.h"
 #include "DeclareEnums.h"
+#include "DeclareGeometry.h"
 #include "DeclareUtil.h"
 
 namespace py = pybind11;
@@ -16,7 +17,6 @@ using namespace NAMESPACE_PSAPI;
 
 PYBIND11_MODULE(psapi, m) 
 {
-
 	auto enum_module = m.def_submodule("enum", "A collection of enumerators used throughout the project.");
 	declare_linkedlayertype_enums(enum_module);
 	declare_bitdepth_enums(enum_module);
@@ -28,6 +28,9 @@ PYBIND11_MODULE(psapi, m)
 	auto util_module = m.def_submodule("util", "Utility functions and structures to support the creation/interaction with LayeredFile or PhotoshopFile");
 	declare_file_struct(util_module);
 	declare_channelidinfo(util_module);
+
+	auto geometry_module = m.def_submodule("geometry");
+	declare_point2d(geometry_module);
 
 	declareLayer<bpp8_t>(m, "_8bit");
 	declareLayer<bpp16_t>(m, "_16bit");

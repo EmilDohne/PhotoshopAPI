@@ -153,7 +153,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
 
-    smartObjectLayer.def(py::init([](
+    smart_object_layer.def(py::init([](
         LayeredFile<T>& layered_file,
         std::string path,
         std::string layer_name,
