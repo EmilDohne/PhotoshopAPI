@@ -80,7 +80,7 @@ struct LayeredFile;
 /// The transformations should be disregarded by the user as we provide easier functions on the SmartObjectLayer directly (see above). The warp itself is stored as a bezier
 /// surface. You may transfer these warps from one layer to another, modify them (although this requires knowledge of how bezier surfaces work), or clear them entirely.
 /// 
-/// For the latter we provide the reste_transform()` and `reset_warp()` functions.
+/// For the latter we provide the reset_transform()` and `reset_warp()` functions.
 /// 
 template <typename T>
 struct SmartObjectLayer : public _ImageDataLayerType<T>

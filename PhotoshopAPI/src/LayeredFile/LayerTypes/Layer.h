@@ -83,10 +83,10 @@ struct Layer
 		uint32_t width = 0u;
 		/// The height of the layer, this value must be passed explicitly as we do not deduce this from the Image Data itself
 		uint32_t height = 0u;
-		/// The Layer opacity, the value displayed by Photoshop will be this value / 2.55 so 255 corresponds to 100% 
+		/// The Layer opacity, the value displayed by Photoshop will be this value / 255 so 255 corresponds to 100% 
 		/// while 128 would correspond to ~50%
 		uint8_t opacity = 255u;
-		// The compression codec of the layer, it is perfectly valid for each layer to be compressed differently
+		// The compression codec of the layer, it is perfectly valid for each layer (and channel) to be compressed differently
 		Enum::Compression compression = Enum::Compression::ZipPrediction; 
 		// The Layers color mode, currently only RGB is supported
 		Enum::ColorMode colormode = Enum::ColorMode::RGB;

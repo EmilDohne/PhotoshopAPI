@@ -1,5 +1,6 @@
 #include "Util/Enum.h"
 #include "Macros.h"
+#include "LayeredFile/LinkedData/LinkedLayerData.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -10,6 +11,30 @@
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
+
+void declareLinkedLayerTypeEnum(py::module& m)
+{
+	py::enum_<Enum::BitDepth> linked_layer_type(m, "LinkedLayerType", R"pbdoc(
+
+		Enum representing the bit depth of an image.
+
+		Attributes
+		-------------
+
+		data : int
+			The original image data is stored directly on the photoshop file
+			and is therefore packaged and contained.
+		external : int
+			The original image data is stored in a file on disk, for packaging
+			the file therefore has to be shipped alongside the photoshop file.
+
+	)pbdoc");
+
+	linked_layer_type.value("data", LinkedLayerType::data);
+	linked_layer_type.value("external", LinkedLayerType::external);
+
+	linked_layer_type.export_values();
+}
 
 
 void declareBitDepthEnum(py::module& m)
