@@ -27,6 +27,8 @@ namespace Geometry
     template <typename T>
     struct Point2D
     {
+        using value_type = T;
+
         T x{};
         T y{};
 
@@ -51,25 +53,26 @@ namespace Geometry
 
         // Arithmetic operators
         Point2D<T> operator+(Point2D<T> other) const { return { this->x + other.x, this->y + other.y }; }
+        Point2D<T> operator+(T other) const { return { this->x + other, this->y + other }; }
 
         Point2D<T> operator-(Point2D<T> other) const { return { this->x - other.x, this->y - other.y }; }
-        Point2D<T> operator-(double other) const { return { this->x - other, this->y - other }; }
+        Point2D<T> operator-(T other) const { return { this->x - other, this->y - other }; }
         Point2D<T> operator-() const { return { -this->x, -this->y }; }
 
-        Point2D<T> operator*(double factor) const { return { this->x * factor, this->y * factor }; }
+        Point2D<T> operator*(T factor) const { return { this->x * factor, this->y * factor }; }
         Point2D<T> operator*(Point2D<T> other) const { return { this->x * other.x, this->y * other.y }; }
 
         Point2D<T>& operator*=(Point2D<T> other) { this->x *= other.x; this->y *= other.y; return *this; }
 
-        Point2D<T> operator/(double value) const 
+        Point2D<T> operator/(T value) const 
         { 
-            assert(value != static_cast<double>(0.0f));
+            assert(value != static_cast<T>(0.0f));
             return Point2D<T>(this->x / value, this->y / value); 
         }
         Point2D<T> operator/(Point2D<T> other) const 
         { 
-            assert(other.x != static_cast<double>(0.0f));
-            assert(other.y != static_cast<double>(0.0f));
+            assert(other.x != static_cast<T>(0.0f));
+            assert(other.y != static_cast<T>(0.0f));
             return Point2D<T>{this->x / other.x, this->y / other.y};
         }
 
@@ -174,7 +177,7 @@ namespace std
     {
         size_t operator()(const NAMESPACE_PSAPI::Geometry::Point2D<T>& point) const
         {
-            return point.hash(); // Use the Point2D's hash method
+            return point.hash();
         }
     };
 }

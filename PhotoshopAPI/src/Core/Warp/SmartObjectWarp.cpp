@@ -961,7 +961,8 @@ namespace SmartObject
 
 		// Create and apply the affine transform homography
 		{
-			auto bbox = Geometry::BoundingBox<double>::compute(points);
+			auto bbox = Geometry::BoundingBox<double>(Geometry::Point2D<double>(m_Bounds[1], m_Bounds[0]), Geometry::Point2D<double>(m_Bounds[3], m_Bounds[2]));
+			// auto bbox = Geometry::BoundingBox<double>::compute(points);
 			auto homography_affine = Geometry::Operations::create_homography_matrix(bbox.as_quad(), m_Transform);
 
 			Geometry::Operations::transform(points, homography_affine);
