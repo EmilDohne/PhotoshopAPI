@@ -17,7 +17,10 @@
 #endif
 
 #include "Core/Geometry/Point.h"
+#include "Util/Enum.h"
+#include "Interleave.h"
 
+#include <fmt/format.h>
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
 #include <OpenImageIO/half.h>
@@ -54,20 +57,27 @@ namespace Render
         return OIIO::TypeDesc::UNKNOWN;
     }
 
-    /// ImageBuffer for a single channel with encoded width and height. Can additionally be a const
+    /// ChannelBuffer for a single channel with encoded width and height. Can additionally be a const
     /// view if the is_const template parameter is set to true. Can be trivially passed as a copy as 
     /// it is a view over the data itself. This does however also mean that the lifetime of this buffer
-    /// is tied to the data it was created from! So e.g. returning an ImageBuffer from a temporary 
+    /// is tied to the data it was created from! So e.g. returning an ChannelBuffer from a temporary 
     /// object is unspecified
     template <typename T, bool is_const = false>
-    struct ImageBuffer
+    struct ChannelBuffer
     {
         /// Specialize using a const span or regular span depending on the is_const template
         /// parameter
         using BufferType = std::conditional_t<is_const, std::span<const T>, std::span<T>>;
 
+        using _DataType = std::conditional_t<is_const, std::vector<const T>, std::vector<T>>;
+
         /// The buffer associated with the data, this does not own the buffer
         BufferType buffer;
+
+        /// An offset to apply to the ChannelBuffer, from the Canvas center. This is only used
+        /// when we actually have a canvas such as in our compositing code. All other pixel access
+        /// code is without this position
+        Geometry::Point2D<int> position = { 0, 0 };
 
         /// The width of the held buffer
         size_t width = 0;
@@ -75,13 +85,30 @@ namespace Render
         /// The height of the held buffer
         size_t height = 0;
 
-        ImageBuffer(BufferType buffer_, size_t width_, size_t height_) :
-            buffer(buffer_), width(width_), height(height_)
+        ChannelBuffer(BufferType buffer_, size_t width_, size_t height_, int offset_x_ = 0, int offset_y_ = 0) :
+            buffer(buffer_), width(width_), height(height_), position(Geometry::Point2D<int>(offset_x_, offset_y_))
         {
             if (this->buffer.size() != this->width * this->height)
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to construct ImageBuffer from given width and height as they do not match the buffers size");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to construct ChannelBuffer from given width and height as they do not match the buffers size");
             }
+        }
+
+        /// Compute the bounding box of the channel based on the document.
+        Geometry::BoundingBox<int> bbox(size_t document_width, size_t document_height) const
+        {
+            // Get the canvas center as Point2D so we can offset the bbox by the positions
+            auto center = Geometry::Point2D<int>(
+                static_cast<int>(std::round(static_cast<double>(document_width) / 2)),
+                static_cast<int>(std::round(static_cast<double>(document_height) / 2))
+            );
+
+            auto absolute_position = center;
+            absolute_position += this->position;
+            auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));
+            _bbox.offset(absolute_position);
+
+            return _bbox;
         }
 
 
@@ -91,16 +118,16 @@ namespace Render
         {
             if constexpr (is_const)
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to construct OpenImageIO imagebuffer from const image buffer");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to construct OpenImageIO ChannelBuffer from const image buffer");
             }
 
             if (this->width > std::numeric_limits<int>::max())
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to construct OpenImageIO imagebuffer from ImageBuffer struct as width would exceed numeric limit of int");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to construct OpenImageIO ChannelBuffer from ChannelBuffer struct as width would exceed numeric limit of int");
             }
             if (this->height > std::numeric_limits<int>::max())
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to construct OpenImageIO imagebuffer from ImageBuffer struct as height would exceed numeric limit of int");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to construct OpenImageIO ChannelBuffer from ChannelBuffer struct as height would exceed numeric limit of int");
             }
 
             auto spec = OIIO::ImageSpec(static_cast<int>(this->width), static_cast<int>(this->height), 1, get_type_desc<T>());
@@ -108,6 +135,29 @@ namespace Render
             return buff;
         }
 
+        /// Access a pixel at a given x and y coordinate, does no bounds checking so the 
+        /// coordinate must be within the buffer itself.
+        T pixel(size_t x, size_t y)
+        {
+            return this->buffer[y * this->width + x];
+        }
+
+        size_t index(size_t x, size_t y)
+        {
+            return y * this->width + x;
+        }
+
+        /// Access a pixel at a given x and y coordinate, does no bounds checking so the 
+        /// coordinate must be within the buffer itself.
+        T pixel(Geometry::Point2D<size_t> pos)
+        {
+            return this->buffer[pos.y * this->width + pos.x];
+        }
+
+        size_t index(Geometry::Point2D<size_t> pos)
+        {
+            return pos.y * this->width + pos.x;
+        }
 
         /// Rescale the buffer using neares neighbour interpolation for the given precision.
         /// 
@@ -115,7 +165,7 @@ namespace Render
         /// where the width and height do not necessarily have to be the same aspect ratio as the existing width and height.
         /// The function can be instantiated for half, float and double precision where the default is float.
         ///
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam _Precision The precision of computations to perform
         ///
         /// \param width The new width of the image
@@ -158,7 +208,7 @@ namespace Render
         /// where the width and height do not necessarily have to be the same aspect ratio as the existing width and height.
         /// The function can be instantiated for half, float and double precision where the default is float.
         ///
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam _Precision The precision of computations to perform
         ///
         /// \param width The new width of the image
@@ -192,7 +242,7 @@ namespace Render
                         std::int64_t orig_x_int = static_cast<std::int64_t>(orig_x);
                         _Precision orig_x_fract = orig_x - std::floor(orig_x);
 
-                        ImageBuffer<T>::get_matrix<2, 2>(matrix, *this, orig_x_int, orig_y_int);
+                        ChannelBuffer<T>::get_matrix<2, 2>(matrix, *this, orig_x_int, orig_y_int);
                         // Interpolate along x-axis
                         _Precision top = matrix[0] + orig_x_fract * (matrix[1] - matrix[0]);
                         _Precision bot = matrix[2] + orig_x_fract * (matrix[3] - matrix[2]);
@@ -212,7 +262,7 @@ namespace Render
         /// where the width and height do not necessarily have to be the same aspect ratio as the existing width and height.
         /// The function can be instantiated for half, float and double precision where the default is float.
         ///
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam _Precision The precision of computations to perform
         ///
         /// \param width The new width of the image
@@ -262,7 +312,7 @@ namespace Render
 
                         // Get the 4x4 pixel matrix and apply the cubic hermite first across
                         // the x dimension and then across the y dimension along the combined results
-                        ImageBuffer<T>::get_matrix<4, 4>(matrix, *this, x_int, orig_y_int);
+                        ChannelBuffer<T>::get_matrix<4, 4>(matrix, *this, x_int, orig_y_int);
                         _Precision col0 = cubic_hermite<_Precision>(matrix[0], matrix[1], matrix[2], matrix[3], x_fract);
                         _Precision col1 = cubic_hermite<_Precision>(matrix[4], matrix[5], matrix[6], matrix[7], x_fract);
                         _Precision col2 = cubic_hermite<_Precision>(matrix[8], matrix[9], matrix[10], matrix[11], x_fract);
@@ -280,11 +330,11 @@ namespace Render
         /// Bilinearly interpolate the pixel value at a given floating-point coordinate.
         /// 
         /// This function samples the pixel value at the specified floating-point coordinates in the 
-        /// `ImageBuffer`. If the coordinates are integers, it directly returns the pixel value at 
+        /// `ChannelBuffer`. If the coordinates are integers, it directly returns the pixel value at 
         /// that location. Otherwise, it performs bilinear interpolation using the four surrounding 
         /// pixel values to compute a smoother result.
         /// 
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the coordinate values used in `Point2D`.
         ///
         /// \param point The `Point2D` object representing the floating-point coordinates for which 
@@ -335,11 +385,11 @@ namespace Render
         /// Bicubicly interpolate the pixel value at a given floating-point coordinate.
         /// 
         /// This function samples the pixel value at the specified floating-point coordinates in the 
-        /// `ImageBuffer`. If the coordinates are integers, it directly returns the pixel value at 
+        /// `ChannelBuffer`. If the coordinates are integers, it directly returns the pixel value at 
         /// that location. Otherwise, it performs bicubic interpolation using the 16 surrounding 
         /// pixel values to compute a smoother result.
         /// 
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the coordinate values used in `Point2D`.
         ///
         /// \param point The `Point2D` object representing the floating-point coordinates for which 
@@ -372,7 +422,7 @@ namespace Render
                 // Get the 4x4 pixel matrix and apply the cubic hermite first across
                 // the x dimension and then across the y dimension along the combined results
                 std::array<T, 4 * 4> matrix;
-                ImageBuffer<T, is_const>::get_matrix<4, 4, is_const>(matrix, *this, x_int, y_int);
+                ChannelBuffer<T, is_const>::get_matrix<4, 4, is_const>(matrix, *this, x_int, y_int);
 
                 U col0  = cubic_hermite<U>(static_cast<U>(matrix[0]),  static_cast<U>(matrix[1]),  static_cast<U>(matrix[2]),  static_cast<U>(matrix[3]),  dx);
                 U col1  = cubic_hermite<U>(static_cast<U>(matrix[4]),  static_cast<U>(matrix[5]),  static_cast<U>(matrix[6]),  static_cast<U>(matrix[7]),  dx);
@@ -388,10 +438,10 @@ namespace Render
         /// Bilinearly interpolate the pixel value based on normalized UV coordinates (0-1).
         /// 
         /// This function maps the provided UV coordinates, which range from (0,0) to (1,1), 
-        /// to the corresponding pixel coordinates in the `ImageBuffer`. It then calls 
+        /// to the corresponding pixel coordinates in the `ChannelBuffer`. It then calls 
         /// `sample_bilinear` to perform the interpolation based on the converted coordinates.
         /// 
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the UV coordinate values used in `Point2D`.
         ///
         /// \param uv The `Point2D` object representing the normalized UV coordinates.
@@ -402,7 +452,7 @@ namespace Render
         {
             if constexpr (!std::is_floating_point_v<U>)
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
             }
             // Map UV coordinates to pixel coordinates
             U x = uv.x * static_cast<U>(width) - .5;
@@ -414,10 +464,10 @@ namespace Render
         /// Bucibicly interpolate the pixel value based on normalized UV coordinates (0-1).
         /// 
         /// This function maps the provided UV coordinates, which range from (0,0) to (1,1), 
-        /// to the corresponding pixel coordinates in the `ImageBuffer`. It then calls 
+        /// to the corresponding pixel coordinates in the `ChannelBuffer`. It then calls 
         /// `sample_bicubic` to perform the interpolation based on the converted coordinates.
         /// 
-        /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the UV coordinate values used in `Point2D`.
         ///
         /// \param uv The `Point2D` object representing the normalized UV coordinates.
@@ -428,7 +478,7 @@ namespace Render
         {
             if constexpr (!std::is_floating_point_v<U>)
             {
-                PSAPI_LOG_ERROR("ImageBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
+                PSAPI_LOG_ERROR("ChannelBuffer", "Unable to sample bilinear coordinate with non-floating point UV coordinate");
             }
             // Map UV coordinates to pixel coordinates
             U x = uv.x * static_cast<U>(width)  - .5;
@@ -461,10 +511,10 @@ namespace Render
         /// \param x The x coordinate to sample at, gets clamped at boundaries
         /// \param y The y coordinate to sample at, gets clamped at boundaries
         template <size_t _m, size_t _n>
-        static std::array<T, _m * _n> get_matrix(const ImageBuffer<T>& buffer, std::int64_t x, std::int64_t y) noexcept
+        static std::array<T, _m * _n> get_matrix(const ChannelBuffer<T>& buffer, std::int64_t x, std::int64_t y) noexcept
         {
             std::array<T, _m * _n> matrix;
-            ImageBuffer<T>::get_matrix<_m, _n>(matrix, buffer, x, y);
+            ChannelBuffer<T>::get_matrix<_m, _n>(matrix, buffer, x, y);
             return matrix;
         }
 
@@ -495,7 +545,7 @@ namespace Render
         /// \param x The x coordinate to sample at, gets clamped at boundaries
         /// \param y The y coordinate to sample at, gets clamped at boundaries
         template <size_t _m, size_t _n, bool _is_const>
-        static void get_matrix(std::array<T, _m * _n>& matrix, const ImageBuffer<T, _is_const>& buffer, std::int64_t x, std::int64_t y)
+        static void get_matrix(std::array<T, _m * _n>& matrix, const ChannelBuffer<T, _is_const>& buffer, std::int64_t x, std::int64_t y)
         {
             static_assert(_m >= 2, "Must access a matrix with at least 2x2 dimensions");
             static_assert(_n >= 2, "Must access a matrix with at least 2x2 dimensions");
@@ -512,7 +562,7 @@ namespace Render
                     std::int64_t y_offset = y + col - offset_y;
 
                     // Get the pixel and insert it into the matrix
-                    matrix[col * _m + row] = ImageBuffer<T, _is_const>::get_pixel(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
+                    matrix[col * _m + row] = ChannelBuffer<T, _is_const>::get_pixel(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
                 }
             }
         }
@@ -558,9 +608,312 @@ namespace Render
 
     };
 
-
+    /// Utility typedef for a ChannelBuffer<T, true>
 	template <typename T>
-	using ConstImageBuffer = ImageBuffer<T, true>;
+	using ConstChannelBuffer = ChannelBuffer<T, true>;
+
+
+    /// Wrapper around ChannelBuffer for whole images with utility functions to e.g. write to disk.
+    /// Similarly to ChannelBuffer the ImageBuffer does not manage the memory held by it, it is just a view over 
+    /// it. Therefore constructing it with a temporary is undefined.
+    template <typename T, bool is_const = false>
+    struct ImageBuffer
+    {
+        using ChannelType = ChannelBuffer<T, is_const>;
+        using _DataType = ChannelType::_DataType;
+        using BufferType = ChannelType::BufferType;
+
+        struct Metadata
+        {
+            /// Optional name for debug logging.
+            std::string name = "";
+
+            /// Default value of the mask (i.e. what the mask pixel value is outside of the mask bbox). If this is e.g. black then 
+            /// anything outside of the masks' bbox can be discarded. If it is white the whole bbox of the channels must be considered.
+            /// TODO: fill this value
+            std::optional<uint8_t> mask_default_value;
+
+            /// An optional position parameter offsetting the whole image by the given x and y offset.
+            /// These offsets are from the canvas center, not from the top left of the canvas!
+            /// Each sub-channel may additionally have an offset that is calculated on top of this.
+            Geometry::Point2D<int> position = { 0, 0 };
+
+            /// The global opacity multiplier of the imagebuffer. To be used for compositing
+            float opacity = 1.0f;
+        };
+
+        /// The channels of the ImageBuffer mapped by their respective logical indices like e.g. 0, 1, 2 for R, G, B. 
+        /// the -1 index is reserved for alpha channels. Masks are stored on `mask` as it is the only channel which may have a potentially different resolution
+        std::unordered_map<int, ChannelType> channels;
+
+        /// Optional mask channel, this is separate as in the context of photoshop this is the only channel that can have a different bounding box than the rest of the channels.
+        /// We must account for this so that the two bounding boxes can be combined
+        std::optional<ChannelType> mask;
+
+        /// The width of the held buffers, all channels hold the same width.
+        size_t width = 0;
+
+        /// The height of the held buffers, all channels hold the same width.
+        size_t height = 0;
+
+        Metadata metadata;
+        
+
+        ImageBuffer(std::unordered_map<int, ChannelType> channels)
+        {
+            if (channels.contains(-2))
+            {
+                self.mask = channels[-2];
+                channels.erase(-2);
+            }
+
+            this->channels = channels;
+            for (auto [_index, _channel] : this->channels)
+            {
+                if (this->position.x != 0 && this->position.x != _channel.position.x)
+                {
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match position x of other previous channels, expected {}", _channel.position.x, this->position.x));
+                }
+                if (this->position.y != 0 && this->position.y != _channel.position.y)
+                {
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match position y of other previous channels, expected {}", _channel.position.y, this->position.y));
+                }
+                if (this->width != 0 && this->width != _channel.width)
+                {
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match width of other previous channels, expected {}", _channel.width, this->width));
+                }
+                if (this->height != 0 && this->height != _channel.height)
+                {
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match height of other previous channels, expected {}", _channel.height, this->height));
+                }
+                this->width = _channel.width;
+                this->height = _channel.height;
+            }
+        }
+
+        /// Does the ImageBuffer contain an alpha channel
+        bool has_alpha() const noexcept{ return this->channels.contains(-1); }
+
+        /// Return the alpha channel of the buffer, throws a std::out_of_range if the alpha channel does not exist
+        /// One may use `has_alpha` to check if the alpha channel exists.
+        ChannelType alpha() { return this->channels.at(-1); }
+
+        /// Compute the alpha for all pixels of the alpha itself. Will throw exception if alpha or mask is not present.
+        /// Internally, this will cache the computed result into _cached_alpha. If `has_mask()` returns false this method
+        /// returns the 
+        template <typename _Precision = float>
+        requires std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>;
+        BufferType compute_alpha(size_t document_width, size_t document_height)
+        {
+            if (!this->mask)
+            {
+                return this->alpha().buffer
+            }
+            if (!this->_cached_alpha.empty())
+            {
+                return BufferType(this->_cached_alpha);
+            }
+
+            constexpr T max_t = std::numeric_limits<T>::max();
+            if constexpr (std::is_same_v<T, float32_t>)
+            {
+                max_t = static_cast<float32_t>(1.0f);
+            }
+
+            // Set the alpha to either the alpha channel or the mask default value with the size of width * height
+            std::vector<T> _alpha;
+            if (this->has_alpha())
+            {
+                _alpha = std::vector<T>(this->alpha().buffer);
+            }
+            else
+            {
+                _alpha = std::vector<T>(this->width * this->height, this->mask_default_value.value_or())
+            }
+            
+            // Compose the mask on top of the alpha if present.
+            if (this->mask)
+            {
+                const auto _mask = this->mask.value().buffer;
+                auto _alpha_bbox = this->bbox(document_width, document_height);
+                auto _mask_bbox = this->mask.value().bbox(document_width, document_height);
+
+                // create the intersection bbox and compute the min and max values
+                auto roi_bbox = _bbox.intersect(_mask_bbox);
+                size_t min_y = std::max<size_t>(static_cast<size_t>(std::round(roi_bbox.minimum.y)), 0);
+                size_t max_y = std::min<size_t>(static_cast<size_t>(std::round(roi_bbox.maximum.y)), _alpha_bbox.height - 1);
+                size_t min_x = std::max<size_t>(static_cast<size_t>(std::round(roi_bbox.minimum.x)), 0);
+                size_t max_x = std::min<size_t>(static_cast<size_t>(std::round(roi_bbox.maximum.x)), _alpha_bbox.width - 1);
+
+                auto vertical_iter = std::views::iota(min_y, max_y);
+                auto horizontal_iter = std::views::iota(min_x, max_x);
+                const auto alpha_width = this->alpha().width;
+
+                std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
+                    {
+                        for (auto x : horizontal_iter)
+                        {
+                            Geometry::Point2D<size_t> point(x, y);
+                            const Geometry::Point2D<size_t> point_alpha = point - _alpha_bbox.minimum;
+                            const Geometry::Point2D<size_t> point_mask  = point - _mask_bbox.minimum;
+
+                            T& alpha_value = _alpha[point_alpha.y * alpha_width + point_alpha.x];
+                            const T mask_value = _mask.pixel(point_mask.x, point_mask.y);
+
+                            // Combine alpha and mask values
+                            alpha_value = static_cast<T>((static_cast<_Precision>(alpha_value) * mask_value) / max_t);
+                        }
+                    });
+            }
+
+            this->_cached_alpha = std::move(_alpha);
+            return BufferType(this->_cached_alpha);
+        }
+
+        /// Clear the cached alpha, freeing the memory held by this struct.
+        void clear_cached_alpha()
+        {
+            this->_cached_alpha = {};
+        }
+
+        /// Return the alpha channel as a std::optional.
+        std::optional<ChannelType> alpha_optional() { return this->has_alpha() ? std::make_optional(this->alpha()) : std::nullopt; }
+
+        constexpr int alpha_index() { return -1; }
+
+        /// Does the ImageBuffer contain a mask channel
+        bool has_mask() const noexcept { return this->mask.has_value(); }
+
+        constexpr int mask_index() { return -2; }
+
+        /// Compute the bounding box of the layer taking into account the mask (if present)
+        Geometry::BoundingBox<int> bbox(size_t document_width, size_t document_height) const
+        {
+            // Get the canvas center as Point2D so we can offset the bbox by the positions
+            auto center = Geometry::Point2D<int>(
+                static_cast<int>(std::round(static_cast<double>(document_width) / 2)),
+                static_cast<int>(std::round(static_cast<double>(document_height) / 2))
+            );
+
+            uint8_t mask_default = this->mask_default_value.value_or(255);
+            std::optional<Geometry::BoundingBox<int>> mask_bbox;
+
+            if (this->mask)
+            {
+                auto mask_width = this->mask.value().width;
+                auto mask_height = this->mask.value().height;
+
+                auto absolute_mask_position = center;
+                absolute_mask_position += this->mask.value().position;
+
+                auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(mask_width, mask_height));
+                _bbox.offset(absolute_mask_position);
+                mask_bbox.emplace(std::move(_bbox));
+            }
+
+            auto absolute_position = center;
+            absolute_position += this->position;
+            auto image_bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));
+            image_bbox.offset(absolute_position);
+
+            // If the mask default is 0 (black), we can safely discard anything outside of the intersection of the two bounding boxes
+            if (mask_default == 0 && mask_bbox)
+            {
+                return Geometry::BoundingBox<int>::intersect(image_bbox, mask_bbox.value());
+            }
+
+            // Otherwise the bbox is just the image bbox
+            return image_bbox;
+        }
+
+        /// Total number of channels in the ImageBuffer
+        size_t num_channels() { return this->channels.size(); }
+
+        /// Write the ImageBuffer to the given filepath, currently we only support writing RGB/RGBA images where the channels are laid out as follows:
+        /// 
+        /// RGB: 0, 1, 2
+        /// 
+        /// RGBA: 0, 1, 2, -1
+        /// 
+        /// \param filepath The filepath to write the image to, needs to be a valid image file path recognized by OpenImageIO
+        void write(std::filesystem::path filepath)
+        {
+            if (!filepath.has_filename())
+            {
+                throw std::invalid_argument(fmt::format("Unable to write to filepath {} as it does not have an file component", filepath.string()));
+            }
+            if (this->channels.size() != 3 && this->channels.size() != 4)
+            {
+                throw std::runtime_error(fmt::format("Unable to write image channels as we currently expect either 3 or 4 RGB/RGBA channels but instead the ImageBuffer stores {}.", this->channels.size()));
+            }
+            if (!this->channels.contains(0) || !this->channels.contains(1) || !this->channels.contains(2))
+            {
+                throw std::runtime_error("Unable to write image channels as we expect the channel indices 0, 1 and 2 to always be present for this operation.");
+            }
+
+            auto buffer_r = this->channels.at(0);
+            auto buffer_g = this->channels.at(1);
+            auto buffer_b = this->channels.at(2);
+            auto buffer_a = this->alpha_optional();
+
+            // Small utility function to convert a std::span<T> to a std::span<const T>
+            auto to_const_span = [](std::span<T> span) 
+                {
+                    return std::span<const T>(span.begin(), span.end());
+                };
+
+            std::vector<std::span<const T>> channels;
+            if constexpr (is_const)
+            {
+                channels = { buffer_r.buffer, buffer_g.buffer, buffer_b.buffer };
+            }
+            else
+            {
+                channels = { to_const_span(buffer_r.buffer), to_const_span(buffer_g.buffer), to_const_span(buffer_b.buffer) };
+            }
+
+            // Append the alpha buffer if provided
+            if (buffer_a)
+            {
+                if constexpr (is_const)
+                {
+                    channels.push_back(buffer_a.value().buffer);
+                }
+                else
+                {
+                    channels.push_back(to_const_span(buffer_a.value().buffer));
+                }
+            }
+
+            // Allocate the data for the interleaved buffer, and interleave the bytes together.
+            auto interleaved = Render::interleave_alloc(channels);
+
+            // Create OIIO primitives
+            filepath.make_preferred();
+            auto filepath_str = filepath.string();
+            auto out = OIIO::ImageOutput::create(filepath_str);
+            if (!out)
+            {
+                throw std::runtime_error(fmt::format("Unable to open output file {} for write", filepath_str));
+            }
+            auto type_desc = get_type_desc<T>();
+            auto spec = OIIO::ImageSpec(this->width, this->height, channels.size(), type_desc);
+
+            // Write file to disk
+            out->open(filepath.string(), spec);
+            out->write_image(type_desc, interleaved.data());
+            out->close();
+        }
+
+    private:
+
+        _DataType _cached_alpha;
+    };
+
+
+    /// Utility typedef for a ImageBuffer<T, true>
+    template <typename T>
+    using ConstImageBuffer = ImageBuffer<T, true>;
 }
 
 PSAPI_NAMESPACE_END

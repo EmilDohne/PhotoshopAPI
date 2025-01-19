@@ -48,11 +48,11 @@ namespace Render
 
     /// Render a line to the image buffer from pt1 to pt2 with the specified pixel value.
     ///
-    /// This function draws a line between two points, `pt1` and `pt2`, in the provided `ImageBuffer`.
+    /// This function draws a line between two points, `pt1` and `pt2`, in the provided `ChannelBuffer`.
     /// The pixel values along the line are set to the specified `value`. This implementation utilizes
     /// Wu's algorithm to achieve anti-aliasing for smoother line rendering.
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     /// \tparam U The type of the coordinate values used in `Geometry::Point2D`.
     ///
     /// \param buffer The image buffer where the line will be rendered.
@@ -61,7 +61,7 @@ namespace Render
     /// \param value The pixel value to use for rendering the line. This value will be used to set 
     ///              the color of the pixels along the line.
     template <typename T, typename U>
-    void render_line(ImageBuffer<T> buffer, Geometry::Point2D<U> pt1, Geometry::Point2D<U> pt2, T value)
+    void render_line(ChannelBuffer<T> buffer, Geometry::Point2D<U> pt1, Geometry::Point2D<U> pt2, T value)
     {
         auto fpart = [](float x) -> float {return x - std::floor(x); };
         auto rfpart = [=](float x) -> float {return 1 - fpart(x); };
@@ -166,7 +166,7 @@ namespace Render
     /// The circle can be either filled or outlined based on the specified `Style`. The value used 
     /// to color the circle is passed as a template parameter.
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     /// \tparam U The type of the coordinate values used in `Geometry::Point2D`.
     ///
     /// \param buffer The image buffer where the circle will be rendered.
@@ -175,7 +175,7 @@ namespace Render
     /// \param value The pixel value to use for rendering the circle.
     /// \param style The style of the circle rendering, which can be either filled or outlined.
     template <typename T, typename U>
-    void render_circle(ImageBuffer<T>& buffer, Geometry::Point2D<U> center, size_t radius, T value, Style style)
+    void render_circle(ChannelBuffer<T>& buffer, Geometry::Point2D<U> center, size_t radius, T value, Style style)
     {
         auto set_pixel = [&](size_t x, size_t y)
             {
@@ -236,10 +236,10 @@ namespace Render
     /// Render a rectangle at the specified coordinates into the given image buffer.
     ///
     /// This function draws a rectangle defined by two corner points (top-left and bottom-right)
-    /// in the provided `ImageBuffer`. The rectangle can be either filled or outlined based on 
+    /// in the provided `ChannelBuffer`. The rectangle can be either filled or outlined based on 
     /// the specified `Style`. The value used to color the rectangle is passed as a template parameter.
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     /// \tparam U The type of the coordinate values used in `Geometry::Point2D`. Internally converts to int
     ///
     /// \param buffer The image buffer where the rectangle will be rendered.
@@ -249,7 +249,7 @@ namespace Render
     ///              to float for rendering purposes.
     /// \param style The style of the rectangle rendering, which can be either filled or outlined.
     template <typename T, typename U>
-    void render_rectangle(ImageBuffer<T>& buffer, Geometry::Point2D<U> top_left, Geometry::Point2D<U> bottom_right, T value, Style style)
+    void render_rectangle(ChannelBuffer<T>& buffer, Geometry::Point2D<U> top_left, Geometry::Point2D<U> bottom_right, T value, Style style)
     {
         float value_float = static_cast<float>(value);
         bool fill = style == Style::filled ? true : false;
@@ -269,11 +269,11 @@ namespace Render
 
     /// Render text into the image buffer at the specified position.
     ///
-    /// This function draws the given text at the specified `position` in the provided `ImageBuffer`.
+    /// This function draws the given text at the specified `position` in the provided `ChannelBuffer`.
     /// The text is rendered using the specified font and size, with each pixel's color set to 
     /// the specified `pixel_value`. The function utilizes OpenImageIO's text rendering capabilities.
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     /// \tparam U The type of the coordinate values used in `Geometry::Point2D`.
     ///
     /// \param buffer The image buffer where the text will be rendered.
@@ -286,7 +286,7 @@ namespace Render
     ///                    to set the color of the text pixels.
     /// \param font_size The size of the font to use when rendering the text.
     template <typename T, typename U>
-    void render_text(ImageBuffer<T>& buffer, Geometry::Point2D<U> position, std::string_view text, std::string_view font_name, T pixel_value, size_t font_size)
+    void render_text(ChannelBuffer<T>& buffer, Geometry::Point2D<U> position, std::string_view text, std::string_view font_name, T pixel_value, size_t font_size)
     {
         // TODO: make this not rely on OIIO as the implementation seems to be pretty slow
         float value_float = static_cast<float>(pixel_value);
@@ -306,11 +306,11 @@ namespace Render
 
     /// Render a mesh into the image buffer at the specified position.
     ///
-    /// This function draws the given mesh at the specified `position` in the provided `ImageBuffer`.
+    /// This function draws the given mesh at the specified `position` in the provided `ChannelBuffer`.
     /// The mesh is rendered as a polygon grid for each of the segments optionally rendering point numbers
     /// on each of the points
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     /// \tparam U The type of the coordinate values used in `Geometry::QuadMesh`.
     ///
     /// \param buffer The image buffer where the mesh will be rendered.
@@ -322,7 +322,7 @@ namespace Render
     ///                  If render_pt_num is false this parameter has no effect
     /// \param render_pt_num Whether to render a point number
     template <typename T, typename U>
-    void render_mesh(ImageBuffer<T>& buffer, const Geometry::QuadMesh<U>& mesh, T value, std::string_view font_name = "", bool render_pt_num = false)
+    void render_mesh(ChannelBuffer<T>& buffer, const Geometry::QuadMesh<U>& mesh, T value, std::string_view font_name = "", bool render_pt_num = false)
     {
         std::set<std::tuple<size_t, size_t>> rendered_edges;
         std::set<size_t> rendered_point_nums;
@@ -388,7 +388,7 @@ namespace Render
     /// Note that these lines that are drawn are not polygons but rather bezier curves. To get the actual mesh
     /// from a bezier you have to run `Geometry::BezierSurface::mesh()`
     ///
-    /// \tparam T The type of pixel value stored in the `ImageBuffer`.
+    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
     ///
     /// \param buffer The image buffer where the surface will be rendered.
     /// \param surface The surface which will be drawn, as a `Geometry::BezierSurface` object.
@@ -396,7 +396,7 @@ namespace Render
     /// \param u_intervals Horizontal divisions
     /// \param v_intervals Vertical divisions
     template <typename T>
-    void render_bezier_surface(ImageBuffer<T>& buffer, const Geometry::BezierSurface& surface, T value, size_t u_intervals, size_t v_intervals)
+    void render_bezier_surface(ChannelBuffer<T>& buffer, const Geometry::BezierSurface& surface, T value, size_t u_intervals, size_t v_intervals)
     {
         // Calculate the step sizes for u and v based on the number of intervals
         float u_step = 1.0f / static_cast<float>(u_intervals);
@@ -448,7 +448,6 @@ namespace Render
             }
         }
     }
-    
 }
 
 
