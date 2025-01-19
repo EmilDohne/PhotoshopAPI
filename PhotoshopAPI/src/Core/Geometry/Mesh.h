@@ -436,7 +436,7 @@ namespace Geometry
         std::vector<Vertex<T>>  m_Vertices;
         std::vector<Face<T, 4>> m_Faces;
         BoundingBox<T>          m_BoundingBox;
-        Octree<T, 128>           m_Octree;
+        Octree<T, 128>          m_Octree;
 
         /// Initialize the mesh for a given number of vertices
         void initialize_mesh(

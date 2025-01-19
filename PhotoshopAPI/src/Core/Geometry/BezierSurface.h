@@ -196,6 +196,12 @@ namespace Geometry
         {
             PSAPI_PROFILE_FUNCTION();
 
+            if (divisions_x <= 1 || divisions_y <= 1)
+            { 
+                PSAPI_LOG_ERROR("SmartObjectWarp",
+                    fmt::format("Invalid number of divisions encountered while trying to create subdivided mesh. Expected at least 1 division across x and y but instead got {}, {}", divisions_x, divisions_y).c_str());
+            }
+
             std::vector<Vertex<double>> vertices(divisions_x * divisions_y);
             {
                 PSAPI_PROFILE_SCOPE("EvaluateBezier");

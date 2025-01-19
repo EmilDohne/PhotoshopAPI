@@ -83,14 +83,14 @@ namespace SmartObject
 		/// 
 		/// \param buffer		The buffer to render into
 		/// 
-		/// \param image		The image do warp using the local warp struct
+		/// \param image		The image to warp using the local warp struct
 		/// 
 		/// \param warp_mesh	A mesh to apply the warp with, mainly to be used as an optimization step if 
 		///						you wish to apply the warp to multiple channels at the same time to only calculate the 
 		///						mesh construction once. Can be gotten using `SmartObjectWarp::mesh()`
 		/// 
 		template <typename T>
-		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, const Geometry::QuadMesh<double>& warp_mesh) const
+		void apply(Render::ChannelBuffer<T> buffer, Render::ConstChannelBuffer<T> image, const Geometry::QuadMesh<double>& warp_mesh) const
 		{
 			PSAPI_PROFILE_FUNCTION();
 
@@ -151,7 +151,7 @@ namespace SmartObject
 		///						this parameter dictates how many pixels apart each subdivision line should be. Do note
 		///						that increasing this massively does not necessarily give a better result. Defaults to `25`.
 		template <typename T>
-		void apply(Render::ImageBuffer<T> buffer, Render::ConstImageBuffer<T> image, size_t resolution = 25) const
+		void apply(Render::ChannelBuffer<T> buffer, Render::ConstChannelBuffer<T> image, size_t resolution = 25) const
 		{
 			auto warp_surface = surface();
 			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution);

@@ -173,7 +173,7 @@ struct LinkedLayerData
 
 		for (auto& [key, channel] : data)
 		{
-			Render::ImageBuffer<T> buffer(channel, m_Width, m_Height);
+			Render::ChannelBuffer<T> buffer(channel, m_Width, m_Height);
 			// Interpolate the output channel
 			if (interpolation == Render::Interpolation::nearest_neighbour)
 			{

@@ -167,7 +167,7 @@ struct Layer
 	/// The blendmode of the layer, the `Passthrough` blendmode is only valid for groups
 	Enum::BlendMode blendmode() const noexcept { return m_BlendMode; }
 	/// The blendmode of the layer, the `Passthrough` blendmode is only valid for groups
-	void blendmode(Enum::BlendMode blend_mode) noexcept { return m_BlendMode = blend_mode; }
+	void blendmode(Enum::BlendMode blend_mode) noexcept { m_BlendMode = blend_mode; }
 
 	
 	/// Whether the layers' pixel values are locked. This is currently an all or nothing setting

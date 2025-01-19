@@ -170,12 +170,16 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	}
 
 	/// Retrieve the warp object that is stored on this layer. 
-	SmartObject::Warp& warp() noexcept { return m_SmartObjectWarp; }
-	const SmartObject::Warp& warp() const noexcept { return m_SmartObjectWarp; }
+	SmartObject::Warp warp() const noexcept { return m_SmartObjectWarp; }
 
 	/// Set the warp object held by this layer, this function may be used to replace the warp with e.g. the
 	/// warp from another layer
-	void warp(const SmartObject::Warp& _warp) noexcept { m_SmartObjectWarp = _warp; }
+	void warp(SmartObject::Warp _warp) 
+	{ 
+		m_SmartObjectWarp = std::move(_warp);
+		_m_CachedSmartObjectWarp = {};
+		evaluate_transforms();
+	}
 
 
 	/// Replace the smart object with the given path keeping transformations as well 
@@ -229,7 +233,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to get original file linkage without the smart object knowing about the LayeredFile");
 		}
-		auto& linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
+		auto linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
 		return linkedlayer_ptr->type() == LinkedLayerType::external;
 	}
 
@@ -556,8 +560,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// The layers' width from 0 - 300,000
 	uint32_t width() const noexcept override 
 	{
-		auto _width = _m_CachedSmartObjectWarpMesh.bbox().width();
-		return static_cast<uint32_t>(std::round(_width));
+		return Layer<T>::m_Width;
 	}
 	/// Set the layers' width, analogous to calling `scale()` while only scaling around the x axis.
 	void width(uint32_t layer_width) override
@@ -576,8 +579,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// The layers' height from 0 - 300,000
 	uint32_t height() const noexcept override
 	{
-		auto _height = _m_CachedSmartObjectWarpMesh.bbox().height();
-		return static_cast<uint32_t>(std::round(_height));
+		return Layer<T>::m_Height;
 	}
 	/// Set the layers' height, analogous to calling `scale()` while only scaling around the y axis.
 	void height(uint32_t layer_height) override
@@ -593,6 +595,11 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		scale(Geometry::Point2D<double>(1.0f, scalar_y), center);
 	}
 	
+	/// Return the x center coordinate, evaluates coordinates before doing so.
+	float center_x() const noexcept override
+	{
+		return Layer<T>::m_CenterX;
+	}
 	/// Set the x center coordinate, analogous to calling `move()` while only moving on the x axis
 	void center_x(float x_coord) noexcept override 
 	{
@@ -602,6 +609,11 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 
 	}
 
+	/// Return the y center coordinate, evaluates coordinates before doing so.
+	float center_y() const noexcept override
+	{
+		return Layer<T>::m_CenterY;
+	}
 	/// Set the y center coordinate, analogous to calling `move()` while only moving on the y axis
 	void center_y(float y_coord) noexcept override
 	{
@@ -836,19 +848,18 @@ private:
 			linked_layer->height() / 25,
 			true	// move_to_zero
 		);
-
 		_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
 
 		// Generate a channel buffer that can fit the fully scaled warp
 		std::vector<T> channel_warp(width() * height());
-		Render::ImageBuffer<T> channel_warp_buffer(channel_warp, width(), height());
+		Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, width(), height());
 
 		for (const auto& [key, orig_channel] : image_data)
 		{
 			// We can reuse the same channel_buffer due to the fact that the warp.apply() method
 			// will simply overwrite any values that lie on the warps uv space and seeing as the algorithm
 			// is deterministic this will just overwrite previous values
-			Render::ConstImageBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
+			Render::ConstChannelBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
 			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
 			_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
@@ -874,7 +885,7 @@ private:
 			}
 
 			std::vector<T> channel(linked_layer->width() * linked_layer->height(), value);
-			Render::ConstImageBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
+			Render::ConstChannelBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
 
 			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
@@ -918,7 +929,15 @@ private:
 		{
 			m_SmartObjectWarp = SmartObject::Warp::generate_default(linkedlayer->width(), linkedlayer->height());
 		}
-
+		auto warp_surface = m_SmartObjectWarp.surface();
+		auto warp_mesh = warp_surface.mesh(
+			linkedlayer->width() / 25,
+			linkedlayer->height() / 25,
+			true	// move_to_zero
+		);
+		_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
+		_m_CachedSmartObjectWarp = m_SmartObjectWarp;
+		
 		Layer<T>::m_ColorMode = parameters.colormode;
 		Layer<T>::m_LayerName = parameters.name;
 		if (parameters.blendmode == Enum::BlendMode::Passthrough)
@@ -950,6 +969,8 @@ private:
 		else
 		{
 			PSAPI_LOG_DEBUG("SmartObject", "Zero width or height passed to smart object layer constructor, the layer will instead be constructed using the linked image data's width and height.");
+			Layer<T>::m_Width = linkedlayer->width();
+			Layer<T>::m_Height = linkedlayer->height();
 		}
 	}
 
