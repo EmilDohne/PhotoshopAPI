@@ -167,7 +167,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
         bool is_visible,
         bool is_locked
         ) {
-            Layer<T>::Params params;
+            typename Layer<T>::Params params;
 
 			if (layer_name.size() > 255)
 			{
@@ -181,8 +181,8 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             // Decode the layer mask.
 			if (layer_mask)
 			{
-                auto& mask = layer_mask.value();
-                auto& shape = Util::Impl::shape_from_py_array<T>(mask, { 2 }, mask.size());
+                auto mask = std::move(layer_mask.value());
+                auto shape = Util::Impl::shape_from_py_array<T>(mask, { 2 }, mask.size());
 
                 if (shape.size() != 2)
                 {
@@ -210,11 +210,10 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
 
             if (warp)
             {
-                return std::make_shared<SmartObjectLayer<T>>(file, std::move(params), path, warp.value(), link_type);
+                return std::make_shared<SmartObjectLayer<T>>(layered_file, params, path, warp.value(), link_type);
             }
-            return std::make_shared<SmartObjectLayer<T>>(file, std::move(params), path, link_type);
-        }
-    ),
+            return std::make_shared<SmartObjectLayer<T>>(layered_file, params, path, link_type);
+        }),
     py::arg("layered_file"),
     py::arg("path"),
     py::arg("layer_name"),
@@ -289,9 +288,9 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
     smart_object_layer.def_property("warp", [](Class& self)
         {
             return self.warp();
-        }, [](Class& self, SmartObject::Warp& _warp)
+        }, [](Class& self, SmartObject::Warp _warp)
 		{
-            self.warp(warp);
+            self.warp(_warp);
 		});
 
 

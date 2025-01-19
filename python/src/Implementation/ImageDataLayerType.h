@@ -34,7 +34,7 @@ using namespace NAMESPACE_PSAPI;
 
 template <typename T>
 void setImageDataFromIntMapping(
-	ImageLayer<T>& layer,
+	_ImageDataLayerType<T>& layer,
 	std::unordered_map<int, py::array_t<T>>& image_data,
 	const Enum::Compression compression
 )
@@ -51,7 +51,7 @@ void setImageDataFromIntMapping(
 
 template <typename T>
 void setImageDataFromIDMapping(
-	ImageLayer<T>& layer,
+	_ImageDataLayerType<T>& layer,
 	std::unordered_map<Enum::ChannelID, py::array_t<T>>& image_data,
 	const Enum::Compression compression
 )
@@ -68,7 +68,7 @@ void setImageDataFromIDMapping(
 
 template <typename T>
 void setImageDataFromNpArray(
-	ImageLayer<T>& layer,
+	_ImageDataLayerType<T>& layer,
 	py::array_t<T>& image_data,
 	const Enum::Compression compression
 )

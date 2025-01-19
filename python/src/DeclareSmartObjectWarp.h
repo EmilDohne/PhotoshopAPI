@@ -20,7 +20,7 @@ using namespace NAMESPACE_PSAPI;
 void declare_smart_object_warp(py::module& m)
 {
 	using Class = SmartObject::Warp;
-	py::class_<Class> smart_object_warp(m, "SmartObjectWarp", py::dynamic_attr(), py::buffer_protocol());
+	py::class_<Class> smart_object_warp(m, "SmartObjectWarp");
 
 	smart_object_warp.doc() = R"pbdoc(
 
@@ -69,7 +69,7 @@ void declare_smart_object_warp(py::module& m)
         
     )pbdoc";
 
-	smart_object_warp.def(py::init<>(), py::arg("points"), py::arg("u_dims"), py::arg("v_dims"), R"pbdoc(
+	smart_object_warp.def(py::init<std::vector<Geometry::Point2D<double>>, size_t, size_t>(), py::arg("points"), py::arg("u_dims"), py::arg("v_dims"), R"pbdoc(
 	
 		Initialize the warp struct from a set of geometric points describing a bezier surface with
 		one or more quadratic bezier patches. These points are in scanline order (i.e. going first along the horizontal
@@ -97,8 +97,7 @@ void declare_smart_object_warp(py::module& m)
 		}, [](Class& self, std::vector<Geometry::Point2D<double>> _points)
 		{
 			self.points(_points);
-		}, py::arg("_points")
-	);
+		});
 
 	smart_object_warp.def_property_readonly("u_dims", &Class::u_dimensions);
 	smart_object_warp.def_property_readonly("v_dims", &Class::v_dimensions);
@@ -109,16 +108,14 @@ void declare_smart_object_warp(py::module& m)
 		}, [](Class& self, std::array<Geometry::Point2D<double>, 4> _array)
 		{
 			self.affine_transform(_array);
-		}, py::arg("_array")
-	);
+		});
 	smart_object_warp.def_property("non_affine_transform", [](Class& self)
 		{
 			return self.non_affine_transform();
 		}, [](Class& self, std::array<Geometry::Point2D<double>, 4> _array)
 		{
 			self.non_affine_transform(_array);
-		}, py::arg("_array")
-	);
+		});
 
 	// Functions
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -138,12 +135,11 @@ void declare_smart_object_warp(py::module& m)
 
 	    )pbdoc");
 
-	smart_object_warp.def("generate_default", [](
-		Class& self, 
+	smart_object_warp.def_static("generate_default", [](
 		int width, 
 		int height,
 		int u_dims,
-		int v_dims,
+		int v_dims
 		)
 		{
 			if (width < 0)

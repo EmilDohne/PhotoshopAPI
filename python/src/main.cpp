@@ -7,6 +7,7 @@
 #include "DeclareImageLayer.h"
 #include "DeclareGroupLayer.h"
 #include "DeclareSmartObjectLayer.h"
+#include "Declare_ImageDataLayerType.h"
 #include "DeclareSmartObjectWarp.h"
 #include "DeclareEnums.h"
 #include "DeclareGeometry.h"
@@ -31,10 +32,15 @@ PYBIND11_MODULE(psapi, m)
 
 	auto geometry_module = m.def_submodule("geometry");
 	declare_point2d(geometry_module);
+	declare_geometry_operations(geometry_module);
 
-	declareLayer<bpp8_t>(m, "_8bit");
-	declareLayer<bpp16_t>(m, "_16bit");
-	declareLayer<bpp32_t>(m, "_32bit");
+	declare_layer<bpp8_t>(m, "_8bit");
+	declare_layer<bpp16_t>(m, "_16bit");
+	declare_layer<bpp32_t>(m, "_32bit");
+
+	declare_image_data_layer_type<bpp8_t>(m, "_8bit");
+	declare_image_data_layer_type<bpp16_t>(m, "_16bit");
+	declare_image_data_layer_type<bpp32_t>(m, "_32bit");
 
 	declare_layered_file<bpp8_t>(m, "_8bit");
 	declare_layered_file<bpp16_t>(m, "_16bit");

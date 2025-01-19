@@ -1,8 +1,11 @@
+#pragma once
+
 #include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "Util/Enum.h"
 #include "PyUtil/ImageConversion.h"
 #include "Implementation/ImageDataLayerType.h"
+#include "Implementation/ImageLayer.h"
 #include "Macros.h"
 
 #include <pybind11/pybind11.h>
@@ -35,9 +38,9 @@ template <typename T>
 void declare_image_layer(py::module& m, const std::string& extension) {
     using Class = ImageLayer<T>;
     std::string className = "ImageLayer" + extension;
-    py::class_<Class, Layer<T>, std::shared_ptr<Class>> imageLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    py::class_<Class, _ImageDataLayerType<T>, std::shared_ptr<Class>> image_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
-    imageLayer.doc() = R"pbdoc(
+    image_layer.doc() = R"pbdoc(
         
         This class defines a single image layer in a LayeredFile. There must be at least one of these
         in any given file for it to be valid
@@ -90,7 +93,7 @@ void declare_image_layer(py::module& m, const std::string& extension) {
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
 
-    imageLayer.def(py::init(&createImageLayerFromNpArray<T>),
+    image_layer.def(py::init(&createImageLayerFromNpArray<T>),
         py::arg("image_data"),
         py::arg("layer_name"),
         py::arg("layer_mask") = py::none(),
@@ -185,7 +188,7 @@ void declare_image_layer(py::module& m, const std::string& extension) {
 
 	)pbdoc");
 
-    imageLayer.def(py::init(&createImageLayerFromIntMapping<T>),
+    image_layer.def(py::init(&createImageLayerFromIntMapping<T>),
         py::arg("image_data"),
         py::arg("layer_name"),
         py::arg("layer_mask") = py::none(),
@@ -276,7 +279,7 @@ void declare_image_layer(py::module& m, const std::string& extension) {
 
 	)pbdoc");
 
-    imageLayer.def(py::init(&createImageLayerFromIDMapping<T>),
+    image_layer.def(py::init(&createImageLayerFromIDMapping<T>),
         py::arg("image_data"),
         py::arg("layer_name"),
         py::arg("layer_mask") = py::none(),

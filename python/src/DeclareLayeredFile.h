@@ -27,17 +27,17 @@ struct LayeredFileWrapper
 		psDocumentPtr->read(inputFile, callback);
 		if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_8)
 		{
-			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), filePath };
 			return layeredFile;
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_16)
 		{
-			LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr) };
+			LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr), filePath };
 			return layeredFile;
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_32)
 		{
-			LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr) };
+			LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr), filePath };
 			return layeredFile;
 		}
 		else
@@ -219,7 +219,7 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 		});
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, &Class::set_compression);
 	layeredFile.def_property_readonly("num_channels", &Class::num_channels);
-	layeredFile.def_property_readonly("layers", [](const Class& self) { return self.layers(); });
+	layeredFile.def_property_readonly("layers", [](Class& self) { return self.layers(); });
 	layeredFile.def_property_readonly("flat_layers", [](Class& self) { return self.flat_layers(); });
 	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.bitdepth(); });
 	layeredFile.def_property("dpi",

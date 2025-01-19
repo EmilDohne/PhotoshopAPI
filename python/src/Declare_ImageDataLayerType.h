@@ -1,3 +1,5 @@
+#pragma once
+
 #include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "Util/Enum.h"
@@ -33,14 +35,14 @@ using namespace NAMESPACE_PSAPI;
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declare_ImageDataLayerType(py::module& m, const std::string& extension) 
+void declare_image_data_layer_type(py::module& m, const std::string& extension) 
 {
 
     using Class = _ImageDataLayerType<T>;
     std::string className = "_ImageDataLayerType" + extension;
-    py::class_<Class, Layer<T>, std::shared_ptr<Class>> _imageDataLayer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    py::class_<Class, Layer<T>, std::shared_ptr<Class>> _image_data_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
-    _imageDataLayer.doc() = R"pbdoc(
+    _image_data_layer.doc() = R"pbdoc(
         
         This class defines a shared base for all layers dealing with image data (ImageLayer and SmartObjectLayer). This class isn't meant to be instantiated
         directly similar to the Layer class. Provides an interface for storing, retrieving and setting image data. 
@@ -85,7 +87,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
     // Image extraction
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
-    _imageDataLayer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID id, const bool do_copy = true)
+    _image_data_layer.def("get_channel_by_id", [](Class& self, const Enum::ChannelID id, const bool do_copy = true)
         {
             std::vector<T> data = self.get_channel(id, do_copy);
             return to_py_array(std::move(data), self.width(), self.height());
@@ -104,7 +106,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("get_channel_by_index", [](Class& self, const int index, const bool do_copy = true)
+    _image_data_layer.def("get_channel_by_index", [](Class& self, const int index, const bool do_copy = true)
         {
             std::vector<T> data = self.get_channel(static_cast<int16_t>(index), do_copy);
             return to_py_array(std::move(data), self.width(), self.height());
@@ -123,7 +125,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("__getitem__", [](Class& self, const Enum::ChannelID key)
+    _image_data_layer.def("__getitem__", [](Class& self, const Enum::ChannelID key)
         {
             std::vector<T> data = self.get_channel(key, true);
             return to_py_array(std::move(data), self.width(), self.height());
@@ -139,7 +141,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("__getitem__", [](Class& self, const int key)
+    _image_data_layer.def("__getitem__", [](Class& self, const int key)
         {
             std::vector<T> data = self.get_channel(key, true);
             return to_py_array(std::move(data), self.width(), self.height());
@@ -148,7 +150,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 	)pbdoc");
 
 
-    _imageDataLayer.def("__setitem__", [](Class& self, const int key, py::array_t<T>& value)
+    _image_data_layer.def("__setitem__", [](Class& self, const int key, py::array_t<T>& value)
         {
             auto view = from_py_array(tag::view{}, value, self.width(), self.height());
             self.set_channel(static_cast<int16_t>(key), view);
@@ -164,7 +166,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
         
 	)pbdoc");
 
-    _imageDataLayer.def("__setitem__", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
+    _image_data_layer.def("__setitem__", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
             auto view = from_py_array(tag::view{}, value, self.width(), self.height());
             self.set_channel(key, view);
@@ -173,7 +175,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 	)pbdoc");
 
 
-    _imageDataLayer.def("set_channel_by_index", [](Class& self, const int key, py::array_t<const T>& value)
+    _image_data_layer.def("set_channel_by_index", [](Class& self, const int key, py::array_t<const T>& value)
         {
             auto view = from_py_array(tag::view{}, value, self.width(), self.height());
             self.set_channel(static_cast<int16_t>(key), view);
@@ -188,7 +190,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
+    _image_data_layer.def("set_channel_by_id", [](Class& self, const Enum::ChannelID key, py::array_t<const T>& value)
         {
             auto view = from_py_array(tag::view{}, value, self.width(), self.height());
             self.set_channel(key, view);
@@ -203,7 +205,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("get_image_data", [](Class& self, const bool do_copy)
+    _image_data_layer.def("get_image_data", [](Class& self, const bool do_copy)
         {
             auto data = self.get_image_data(do_copy);
             std::unordered_map<int, py::array_t<T>> outData;
@@ -225,7 +227,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 	)pbdoc");
 
 
-    _imageDataLayer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<Enum::ChannelID, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIDMapping<T>),
+    _image_data_layer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<Enum::ChannelID, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIDMapping<T>),
         py::arg("image_data"),
         py::arg("compression") = Enum::Compression::ZipPrediction,
         R"pbdoc(
@@ -256,7 +258,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<int, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIntMapping<T>),
+    _image_data_layer.def("set_image_data", py::overload_cast<Class&, std::unordered_map<int, py::array_t<T>>&, const Enum::Compression>(&setImageDataFromIntMapping<T>),
         py::arg("image_data"),
         py::arg("compression") = Enum::Compression::ZipPrediction,
         R"pbdoc(
@@ -287,7 +289,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("set_image_data", py::overload_cast<Class&, py::array_t<T>&, const Enum::Compression>(&setImageDataFromNpArray<T>),
+    _image_data_layer.def("set_image_data", py::overload_cast<Class&, py::array_t<T>&, const Enum::Compression>(&setImageDataFromNpArray<T>),
         py::arg("image_data"),
         py::arg("compression") = Enum::Compression::ZipPrediction,
         R"pbdoc(
@@ -322,7 +324,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def("set_compression", &Class::set_compression, py::arg("compression"), R"pbdoc(
+    _image_data_layer.def("set_compression", &Class::set_compression, py::arg("compression"), R"pbdoc(
 
         Change the compression codec of all the image channels.
                 
@@ -331,7 +333,7 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def_property_readonly("image_data", [](Class& self)
+    _image_data_layer.def_property_readonly("image_data", [](Class& self)
         {
             auto data = self.get_image_data(true);
             std::unordered_map<int, py::array_t<T>> outData;
@@ -344,12 +346,12 @@ void declare_ImageDataLayerType(py::module& m, const std::string& extension)
 
 	)pbdoc");
 
-    _imageDataLayer.def_property_readonly("num_channels", [](Class& self)
+    _image_data_layer.def_property_readonly("num_channels", [](Class& self)
         {
             return self.num_channels();
         });
 
-    _imageDataLayer.def_property_readonly("channels", [](Class& self)
+    _image_data_layer.def_property_readonly("channels", [](Class& self)
         {
             std::vector<int16_t> indices;
             const auto& img_data = self.image_data();
