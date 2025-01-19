@@ -28,7 +28,7 @@ using namespace NAMESPACE_PSAPI;
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declareLayer(py::module& m, const std::string& extension) {
+void declare_layer(py::module& m, const std::string& extension) {
     using Class = Layer<T>;
     std::string className = "Layer" + extension;
     // Designate shared_ptr as the holder type so pybind11 doesnt cast to unique_ptr giving us a heap corruption error
@@ -85,21 +85,14 @@ void declareLayer(py::module& m, const std::string& extension) {
 			self.set_mask_data(view);
         });
 		
-    layer.def_property("blend_mode", &Class::blendmode, &Class::blendmode);
-    layer.def_property("is_visible", &Class::visible, &Class::visible);
-    layer.def_property("opacity", [](Class& self)
-        {
-            return self.opacity();
-        }, [](Class& self, float opacity)
-        {
-            self.opacity(opacity);
-        });
-    layer.def_property("width", &Class::width, &Class::width);
-    layer.def_property("height", &Class::height, &Class::height);
-    layer.def_property("center_x", &Class::center_x, &Class::center_x);
-    layer.def_property("center_y", &Class::center_y, &Class::center_y);
-    layer.def_property("is_locked", &Class::locked, &Class::locked);
-    layer.def_property("is_visible", &Class::visible, &Class::visible);
+    layer.def_property("blend_mode", [](const Class& self) { return self.blendmode(); }, [](Class& self, Enum::BlendMode blendmode) { self.blendmode(blendmode); });
+    layer.def_property("opacity", [](const Class& self) { return self.opacity(); }, [](Class& self, float opacity) { self.opacity(opacity); });
+    layer.def_property("width", [](const Class& self) { return self.width(); }, [](Class& self, uint32_t width) { self.width(width); });
+    layer.def_property("height", [](const Class& self) { return self.height(); }, [](Class& self, uint32_t height) { self.height(height); });
+    layer.def_property("center_x", [](const Class& self) { return self.center_x(); }, [](Class& self, float center_x) { self.center_x(center_x); });
+    layer.def_property("center_y", [](const Class& self) { return self.center_y(); }, [](Class& self, float center_y) { self.center_y(center_y); });
+    layer.def_property("is_locked", [](const Class& self) { return self.locked(); }, [](Class& self, bool locked) { self.locked(locked); });
+    layer.def_property("is_visible", [](const Class& self) { return self.visible(); }, [](Class& self, bool visible) { self.visible(visible); });
 	layer.def("has_mask", &Class::has_mask, R"pbdoc(
 
         Check whether the layer has a mask channel associated with it.

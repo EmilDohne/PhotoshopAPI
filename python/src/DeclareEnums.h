@@ -14,7 +14,7 @@ using namespace NAMESPACE_PSAPI;
 
 void declare_linkedlayertype_enums(py::module& m)
 {
-	py::enum_<Enum::BitDepth> linked_layer_type(m, "LinkedLayerType", R"pbdoc(
+	py::enum_<LinkedLayerType> linked_layer_type(m, "LinkedLayerType", R"pbdoc(
 
 		Enum representing the bit depth of an image.
 
