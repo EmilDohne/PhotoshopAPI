@@ -59,9 +59,10 @@ int main()
 	// For modifying the warp directly (bezier) we can push the individual points, although this is a bit more
 	// advanced and we don't currently have a very convenient interface for it. This code right here 
 	// pushes the top left corner to the 50, 50 position which will create a slightly rounded corner
-	auto& warp = layer_new->warp();
+	auto warp = layer_new->warp();
 	warp.point(0, 0).x = 50.0f;
 	warp.point(0, 0).y = 50.0f;
+	layer_new->warp(std::move(warp));
 
 	// adding these works just as with any other layers, writing also works as usual
 	file.add_layer(layer_new);
