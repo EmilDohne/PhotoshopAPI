@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdint>
 #include <algorithm>
+#include <type_traits>
 
 
 // If we compile with C++<20 we replace the stdlib implementation with the compatibility
@@ -17,6 +18,7 @@
 #endif
 
 #include "Core/Geometry/Point.h"
+#include "Core/Geometry/BoundingBox.h"
 #include "Util/Enum.h"
 #include "Interleave.h"
 
@@ -69,7 +71,7 @@ namespace Render
         /// parameter
         using BufferType = std::conditional_t<is_const, std::span<const T>, std::span<T>>;
 
-        using _DataType = std::conditional_t<is_const, std::vector<const T>, std::vector<T>>;
+        using _DataType = std::vector<T>;
 
         /// The buffer associated with the data, this does not own the buffer
         BufferType buffer;
@@ -84,6 +86,8 @@ namespace Render
 
         /// The height of the held buffer
         size_t height = 0;
+
+        ChannelBuffer() = default;
 
         ChannelBuffer(BufferType buffer_, size_t width_, size_t height_, int offset_x_ = 0, int offset_y_ = 0) :
             buffer(buffer_), width(width_), height(height_), position(Geometry::Point2D<int>(offset_x_, offset_y_))
@@ -103,8 +107,7 @@ namespace Render
                 static_cast<int>(std::round(static_cast<double>(document_height) / 2))
             );
 
-            auto absolute_position = center;
-            absolute_position += this->position;
+            auto absolute_position = center + this->position;
             auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));
             _bbox.offset(absolute_position);
 
@@ -137,26 +140,31 @@ namespace Render
 
         /// Access a pixel at a given x and y coordinate, does no bounds checking so the 
         /// coordinate must be within the buffer itself.
-        T pixel(size_t x, size_t y)
+        T pixel(size_t x, size_t y) const
         {
             return this->buffer[y * this->width + x];
         }
 
-        size_t index(size_t x, size_t y)
+        size_t index(size_t x, size_t y) const
         {
             return y * this->width + x;
         }
 
         /// Access a pixel at a given x and y coordinate, does no bounds checking so the 
         /// coordinate must be within the buffer itself.
-        T pixel(Geometry::Point2D<size_t> pos)
+        T pixel(Geometry::Point2D<size_t> pos) const
         {
             return this->buffer[pos.y * this->width + pos.x];
         }
 
-        size_t index(Geometry::Point2D<size_t> pos)
+        size_t index(Geometry::Point2D<size_t> pos) const
         {
             return pos.y * this->width + pos.x;
+        }
+
+        size_t size() const noexcept
+        {
+            return this->buffer.size();
         }
 
         /// Rescale the buffer using neares neighbour interpolation for the given precision.
@@ -334,8 +342,11 @@ namespace Render
         /// that location. Otherwise, it performs bilinear interpolation using the four surrounding 
         /// pixel values to compute a smoother result.
         /// 
-        /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
-        /// \tparam U The type of the coordinate values used in `Point2D`.
+        /// \tparam T               The type of pixel value stored in the `ChannelBuffer`.
+        /// \tparam U               The type of the coordinate values used in `Point2D`.
+        /// \tparam clamp_border    Whether to clamp the coordinates to the border when sampling a value near it.
+        ///                         If this is set to false a value near the border will fade to black (desirable for alpha).
+        /// 
         ///
         /// \param point The `Point2D` object representing the floating-point coordinates for which 
         ///               the pixel value needs to be interpolated. If this is outside of the image buffer
@@ -344,7 +355,7 @@ namespace Render
         /// \return The interpolated pixel value at the specified coordinates, either as a direct 
         ///         pixel value if the coordinates are integers or as a result of bilinear 
         ///         interpolation if the coordinates are floating-point values.
-        template <typename U>
+        template <typename U, bool clamp_border = true>
         T sample_bilinear(const Geometry::Point2D<U> point) const
         {
             // If coordinates are integers, return the pixel directly
@@ -356,28 +367,88 @@ namespace Render
             }
             else
             {
-                // Get integer positions around the point
-                size_t x0 = static_cast<size_t>(std::fmax(std::floor(point.x), 0.0f));
-                size_t y0 = static_cast<size_t>(std::fmax(std::floor(point.y), 0.0f));
-                size_t x1 = std::min(x0 + 1, width - 1);
-                size_t y1 = std::min(y0 + 1, height - 1);
+                if constexpr (clamp_border)
+                {
+                    auto sample_point_or_black = [&](int64_t x, int64_t y)
+                        {
+                            if (x < 0 || y < 0 || x > this->width - 1 || y > this->height - 1) [[unlikely]]
+                            {
+                                return static_cast<T>(0);
+                            }
+                            return this->buffer[static_cast<size_t>(y) * this->width + static_cast<size_t>(x)];
+                        };
 
-                // Calculate weights
-                U dx = point.x - static_cast<U>(x0);
-                U dy = point.y - static_cast<U>(y0);
+                    // Get integer positions around the point, unlike with the other form we do not clamp these
+                    // values allowing them to go out of bounds
+                    int64_t x0 = static_cast<int64_t>(std::floor(point.x));
+                    int64_t y0 = static_cast<int64_t>(std::floor(point.y));
+                    int64_t x1 = x0 + 1;
+                    int64_t y1 = y0 + 1;
 
-                // Sample four surrounding pixels
-                T v00 = buffer[y0 * width + x0];
-                T v01 = buffer[y0 * width + x1];
-                T v10 = buffer[y1 * width + x0];
-                T v11 = buffer[y1 * width + x1];
+                    // Calculate weights
+                    U dx = point.x - static_cast<U>(x0);
+                    U dy = point.y - static_cast<U>(y0);
 
-                // Interpolate along x-axis
-                T top = v00 + dx * (v01 - v00);
-                T bottom = v10 + dx * (v11 - v10);
+                    // Sample four surrounding pixels getting a black pixel instead of 
+                    float v00 = sample_point_or_black(x0, y0);
+                    float v01 = sample_point_or_black(x1, y0);
+                    float v10 = sample_point_or_black(x0, y1);
+                    float v11 = sample_point_or_black(x1, y1);
 
-                // Interpolate along y-axis and return result
-                return top + dy * (bottom - top);
+                    // Interpolate along x-axis
+                    float top = v00 + dx * (v01 - v00);
+                    float bottom = v10 + dx * (v11 - v10);
+
+                    // interpolate along y-axis
+                    float result = top + dy * (bottom - top);
+
+                    // clamp into range
+                    if constexpr (std::is_floating_point_v<T>)
+                    {
+                        result = std::clamp(result, 0.0f, 1.0f);
+                    }
+                    else
+                    {
+                        result = std::clamp<float>(result, 0, std::numeric_limits<T>::max());
+                    }
+                    return static_cast<T>(result);
+                }
+                else
+                {
+                    // Get integer positions around the point
+                    size_t x0 = static_cast<size_t>(std::fmax(std::floor(point.x), 0.0f));
+                    size_t y0 = static_cast<size_t>(std::fmax(std::floor(point.y), 0.0f));
+                    size_t x1 = std::min(x0 + 1, width - 1);
+                    size_t y1 = std::min(y0 + 1, height - 1);
+
+                    // Calculate weights
+                    U dx = point.x - static_cast<U>(x0);
+                    U dy = point.y - static_cast<U>(y0);
+
+                    // Sample four surrounding pixels
+                    float v00 = this->buffer[y0 * this->width + x0];
+                    float v01 = this->buffer[y0 * this->width + x1];
+                    float v10 = this->buffer[y1 * this->width + x0];
+                    float v11 = this->buffer[y1 * this->width + x1];
+
+                    // Interpolate along x-axis
+                    float top = v00 + dx * (v01 - v00);
+                    float bottom = v10 + dx * (v11 - v10);
+
+                    // interpolate along y-axis
+                    float result = top + dy * (bottom - top);
+
+                    // clamp into range
+                    if constexpr (std::is_floating_point_v<T>)
+                    {
+                        result = std::clamp(result, 0.0f, 1.0f);
+                    }
+                    else
+                    {
+                        result = std::clamp<float>(result, 0, std::numeric_limits<T>::max());
+                    }
+                    return static_cast<T>(result);
+                }
             }
         }
 
@@ -391,6 +462,8 @@ namespace Render
         /// 
         /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the coordinate values used in `Point2D`.
+        /// \tparam clamp_border    Whether to clamp the coordinates to the border when sampling a value near it.
+        ///                         If this is set to false a value near the border will fade to black (desirable for alpha).
         ///
         /// \param point The `Point2D` object representing the floating-point coordinates for which 
         ///               the pixel value needs to be interpolated. If this is outside of the image buffer
@@ -399,7 +472,7 @@ namespace Render
         /// \return The interpolated pixel value at the specified coordinates, either as a direct 
         ///         pixel value if the coordinates are integers or as a result of bicubic 
         ///         interpolation if the coordinates are floating-point values.
-        template <typename U>
+        template <typename U, bool clamp_border = true>
         T sample_bicubic(const Geometry::Point2D<U> point) const
         {
             // If coordinates are integers, return the pixel directly
@@ -422,7 +495,7 @@ namespace Render
                 // Get the 4x4 pixel matrix and apply the cubic hermite first across
                 // the x dimension and then across the y dimension along the combined results
                 std::array<T, 4 * 4> matrix;
-                ChannelBuffer<T, is_const>::get_matrix<4, 4, is_const>(matrix, *this, x_int, y_int);
+                ChannelBuffer<T, is_const>::get_matrix<4, 4, is_const, clamp_border>(matrix, *this, x_int, y_int);
 
                 U col0  = cubic_hermite<U>(static_cast<U>(matrix[0]),  static_cast<U>(matrix[1]),  static_cast<U>(matrix[2]),  static_cast<U>(matrix[3]),  dx);
                 U col1  = cubic_hermite<U>(static_cast<U>(matrix[4]),  static_cast<U>(matrix[5]),  static_cast<U>(matrix[6]),  static_cast<U>(matrix[7]),  dx);
@@ -430,7 +503,10 @@ namespace Render
                 U col3  = cubic_hermite<U>(static_cast<U>(matrix[12]), static_cast<U>(matrix[13]), static_cast<U>(matrix[14]), static_cast<U>(matrix[15]), dx);
                 U value = cubic_hermite<U>(col0, col1, col2, col3, dy);
 
-                value = std::clamp<U>(value, 0, std::numeric_limits<T>::max());
+                if constexpr (!std::is_same_v<T, float32_t>)
+                {
+                    value = std::clamp<U>(value, 0, std::numeric_limits<T>::max());
+                }
                 return static_cast<T>(value);
             }
         }
@@ -447,7 +523,7 @@ namespace Render
         /// \param uv The `Point2D` object representing the normalized UV coordinates.
         /// 
         /// \return The interpolated pixel value at the specified UV coordinates.
-        template <typename U>
+        template <typename U, bool clamp_border = true>
         T sample_bilinear_uv(const Geometry::Point2D<U> uv) const
         {
             if constexpr (!std::is_floating_point_v<U>)
@@ -467,13 +543,16 @@ namespace Render
         /// to the corresponding pixel coordinates in the `ChannelBuffer`. It then calls 
         /// `sample_bicubic` to perform the interpolation based on the converted coordinates.
         /// 
+        /// \tparam clamp_border    Whether to clamp the coordinates to the border when sampling a value near it.
+        ///                         If this is set to false a value near the border will fade to black (desirable for alpha).
+        /// 
         /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
         /// \tparam U The type of the UV coordinate values used in `Point2D`.
         ///
         /// \param uv The `Point2D` object representing the normalized UV coordinates.
         /// 
         /// \return The interpolated pixel value at the specified UV coordinates.
-        template <typename U>
+        template <typename U, bool clamp_border = true>
         T sample_bicubic_uv(const Geometry::Point2D<U> uv) const
         {
             if constexpr (!std::is_floating_point_v<U>)
@@ -483,7 +562,7 @@ namespace Render
             // Map UV coordinates to pixel coordinates
             U x = uv.x * static_cast<U>(width)  - .5;
             U y = uv.y * static_cast<U>(height) - .5;
-            return sample_bicubic(Geometry::Point2D<U>(x, y));
+            return sample_bicubic<U, clamp_border>(Geometry::Point2D<U>(x, y));
         }
 
         /// Retrieve a m*n submatrix of a given buffer at coordinate x and y. 
@@ -504,17 +583,22 @@ namespace Render
         /// 0 0 0 0
         /// 0 0 0 0
         /// 
-        /// \tparam _m The rows of the matrix to extract
-        /// \tparam _n The columns of the matrix to extract
+        /// \tparam _m 
+        ///     The rows of the matrix to extract
+        /// \tparam _n 
+        ///     The columns of the matrix to extract
+        /// \tparam clamp_border 
+        ///     If this is true we clamp any pixels that would reach beyond the canvas and return the edge instead.
+        ///     If false this returns 0 for those pixels instead.
         /// 
         /// \param buffer The buffer to sample the matrix from
         /// \param x The x coordinate to sample at, gets clamped at boundaries
         /// \param y The y coordinate to sample at, gets clamped at boundaries
-        template <size_t _m, size_t _n>
+        template <size_t _m, size_t _n, bool clamp_border = true>
         static std::array<T, _m * _n> get_matrix(const ChannelBuffer<T>& buffer, std::int64_t x, std::int64_t y) noexcept
         {
             std::array<T, _m * _n> matrix;
-            ChannelBuffer<T>::get_matrix<_m, _n>(matrix, buffer, x, y);
+            ChannelBuffer<T>::get_matrix<_m, _n, is_const, clamp_border>(matrix, buffer, x, y);
             return matrix;
         }
 
@@ -537,14 +621,19 @@ namespace Render
         /// 0 0 0 0
         /// 0 0 0 0
         /// 
-        /// \tparam _m The rows of the matrix to extract
-        /// \tparam _n The columns of the matrix to extract
+        /// \tparam _m 
+        ///     The rows of the matrix to extract
+        /// \tparam _n 
+        ///     The columns of the matrix to extract
+        /// \tparam clamp_border 
+        ///     If this is true we clamp any pixels that would reach beyond the canvas and return the edge instead.
+        ///     If false this returns 0 for those pixels instead.
         /// 
         /// \param matrix The matrix to populate
         /// \param buffer The buffer to sample the matrix from
         /// \param x The x coordinate to sample at, gets clamped at boundaries
         /// \param y The y coordinate to sample at, gets clamped at boundaries
-        template <size_t _m, size_t _n, bool _is_const>
+        template <size_t _m, size_t _n, bool _is_const, bool clamp_border = true>
         static void get_matrix(std::array<T, _m * _n>& matrix, const ChannelBuffer<T, _is_const>& buffer, std::int64_t x, std::int64_t y)
         {
             static_assert(_m >= 2, "Must access a matrix with at least 2x2 dimensions");
@@ -562,7 +651,7 @@ namespace Render
                     std::int64_t y_offset = y + col - offset_y;
 
                     // Get the pixel and insert it into the matrix
-                    matrix[col * _m + row] = ChannelBuffer<T, _is_const>::get_pixel(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
+                    matrix[col * _m + row] = ChannelBuffer<T, _is_const>::get_pixel<clamp_border>(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
                 }
             }
         }
@@ -596,17 +685,35 @@ namespace Render
         }
 
         /// Get a pixel at the given pixel coordinate in the source image
-        /// clamping into the range 0 - (width-1) and 0 - (height-1) respectively
+        /// clamping into the range 0 - (width-1) and 0 - (height-1) respectively.
+        /// 
+        /// \tparam clamp_border 
+        ///     If this is true we clamp any pixels that would reach beyond the canvas and return the edge instead.
+        ///     If false this returns 0 for those pixels instead.
+        template <bool clamp_border = true>
         static T get_pixel(const BufferType buffer, std::int64_t x, std::int64_t y, size_t width, size_t height)
         {
-            x = std::clamp(x, static_cast<std::int64_t>(0), static_cast<std::int64_t>(width) - 1);
-            y = std::clamp(y, static_cast<std::int64_t>(0), static_cast<std::int64_t>(height) - 1);
-            auto idx = y * width + x;
-            return buffer[idx];
+            if constexpr (clamp_border)
+            {
+                x = std::clamp(x, static_cast<std::int64_t>(0), static_cast<std::int64_t>(width) - 1);
+                y = std::clamp(y, static_cast<std::int64_t>(0), static_cast<std::int64_t>(height) - 1);
+                auto idx = y * width + x;
+                return buffer[idx];
+            }
+            else
+            {
+                if (x < 0 || x > static_cast<std::int64_t>(width) - 1 || y < 0 || y > static_cast<std::int64_t>(height) - 1) [[unlikely]]
+                {
+                    return static_cast<T>(0);
+                }
+                auto idx = y * width + x;
+                return buffer[idx];
+            }
         };
 
 
     };
+
 
     /// Utility typedef for a ChannelBuffer<T, true>
 	template <typename T>
@@ -634,8 +741,8 @@ namespace Render
             std::optional<uint8_t> mask_default_value;
 
             /// An optional position parameter offsetting the whole image by the given x and y offset.
-            /// These offsets are from the canvas center, not from the top left of the canvas!
-            /// Each sub-channel may additionally have an offset that is calculated on top of this.
+            /// These offsets are from the canvas center, not from the top left of the canvas! The subchannels
+            /// are expected to have the same position except for the mask channel
             Geometry::Point2D<int> position = { 0, 0 };
 
             /// The global opacity multiplier of the imagebuffer. To be used for compositing
@@ -644,50 +751,58 @@ namespace Render
 
         /// The channels of the ImageBuffer mapped by their respective logical indices like e.g. 0, 1, 2 for R, G, B. 
         /// the -1 index is reserved for alpha channels. Masks are stored on `mask` as it is the only channel which may have a potentially different resolution
+        /// and position
         std::unordered_map<int, ChannelType> channels;
 
         /// Optional mask channel, this is separate as in the context of photoshop this is the only channel that can have a different bounding box than the rest of the channels.
         /// We must account for this so that the two bounding boxes can be combined
         std::optional<ChannelType> mask;
 
-        /// The width of the held buffers, all channels hold the same width.
+        /// The width of the held buffers, all channels hold the same width (except for mask).
         size_t width = 0;
 
-        /// The height of the held buffers, all channels hold the same width.
+        /// The height of the held buffers, all channels hold the same width (except for mask).
         size_t height = 0;
 
+        /// Additional layer metadata used for compositing and debugging but not relevant for member methods.
         Metadata metadata;
         
-
-        ImageBuffer(std::unordered_map<int, ChannelType> channels)
+        ImageBuffer(
+            std::unordered_map<int, ChannelType> channels, 
+            std::string name = "", 
+            std::optional<uint8_t> mask_default = std::nullopt, 
+            Geometry::Point2D<int> position = { 0, 0 },
+            float opacity = 1.0f)
         {
             if (channels.contains(-2))
             {
-                self.mask = channels[-2];
+                this->mask = channels[-2];
                 channels.erase(-2);
             }
 
             this->channels = channels;
             for (auto [_index, _channel] : this->channels)
             {
-                if (this->position.x != 0 && this->position.x != _channel.position.x)
+                if (this->metadata.position.x != 0 && this->metadata.position.x != _channel.position.x)
                 {
-                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match position x of other previous channels, expected {}", _channel.position.x, this->position.x));
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as position x {} does not match position x of other previous channels, expected {}", _channel.position.x, this->metadata.position.x));
                 }
-                if (this->position.y != 0 && this->position.y != _channel.position.y)
+                if (this->metadata.position.y != 0 && this->metadata.position.y != _channel.position.y)
                 {
-                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match position y of other previous channels, expected {}", _channel.position.y, this->position.y));
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as position y {} does not match position y of other previous channels, expected {}", _channel.position.y, this->metadata.position.y));
                 }
                 if (this->width != 0 && this->width != _channel.width)
                 {
-                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match width of other previous channels, expected {}", _channel.width, this->width));
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as width {} does not match width of other previous channels, expected {}", _channel.width, this->width));
                 }
                 if (this->height != 0 && this->height != _channel.height)
                 {
-                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as channel {} does not match height of other previous channels, expected {}", _channel.height, this->height));
+                    throw std::invalid_argument(fmt::format("Unable to construct ImageBuffer as height {} does not match height of other previous channels, expected {}", _channel.height, this->height));
                 }
+                this->metadata.position = _channel.position;
                 this->width = _channel.width;
                 this->height = _channel.height;
+                this->metadata = Metadata{ name, mask_default, position, opacity };
             }
         }
 
@@ -702,71 +817,97 @@ namespace Render
         /// Internally, this will cache the computed result into _cached_alpha. If `has_mask()` returns false this method
         /// returns the 
         template <typename _Precision = float>
-        requires std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>;
+            requires std::is_floating_point_v<_Precision> || std::is_same_v<_Precision, Imath::half>
         BufferType compute_alpha(size_t document_width, size_t document_height)
         {
-            if (!this->mask)
+            if (!this->mask && this->has_alpha())
             {
-                return this->alpha().buffer
+                return this->alpha().buffer;
             }
             if (!this->_cached_alpha.empty())
             {
                 return BufferType(this->_cached_alpha);
             }
 
-            constexpr T max_t = std::numeric_limits<T>::max();
-            if constexpr (std::is_same_v<T, float32_t>)
-            {
-                max_t = static_cast<float32_t>(1.0f);
-            }
+            constexpr T max_t = std::is_same_v<T, float32_t>
+                ? static_cast<float32_t>(1.0f)
+                : std::numeric_limits<T>::max();
 
             // Set the alpha to either the alpha channel or the mask default value with the size of width * height
             std::vector<T> _alpha;
             if (this->has_alpha())
             {
-                _alpha = std::vector<T>(this->alpha().buffer);
+                _alpha = std::vector<T>(this->alpha().buffer.begin(), this->alpha().buffer.end());
             }
             else
             {
-                _alpha = std::vector<T>(this->width * this->height, this->mask_default_value.value_or())
+                _alpha = std::vector<T>(this->width * this->height, this->mask_default_as_u<T>());
             }
             
             // Compose the mask on top of the alpha if present.
             if (this->mask)
             {
-                const auto _mask = this->mask.value().buffer;
+                const auto _mask = this->mask.value();
                 auto _alpha_bbox = this->bbox(document_width, document_height);
                 auto _mask_bbox = this->mask.value().bbox(document_width, document_height);
 
                 // create the intersection bbox and compute the min and max values
-                auto roi_bbox = _bbox.intersect(_mask_bbox);
-                size_t min_y = std::max<size_t>(static_cast<size_t>(std::round(roi_bbox.minimum.y)), 0);
-                size_t max_y = std::min<size_t>(static_cast<size_t>(std::round(roi_bbox.maximum.y)), _alpha_bbox.height - 1);
-                size_t min_x = std::max<size_t>(static_cast<size_t>(std::round(roi_bbox.minimum.x)), 0);
-                size_t max_x = std::min<size_t>(static_cast<size_t>(std::round(roi_bbox.maximum.x)), _alpha_bbox.width - 1);
+                auto _roi_bbox = Geometry::BoundingBox<int>::intersect(_alpha_bbox, _mask_bbox);
+                if (_roi_bbox)
+                {
+                    auto roi_bbox = _roi_bbox.value();
+                    int min_y = std::max<int>(static_cast<size_t>(std::round(roi_bbox.minimum.y)), 0);
+                    int max_y = std::min<int>(static_cast<size_t>(std::round(roi_bbox.maximum.y)), _alpha_bbox.height() - 1);
+                    int min_x = std::max<int>(static_cast<size_t>(std::round(roi_bbox.minimum.x)), 0);
+                    int max_x = std::min<int>(static_cast<size_t>(std::round(roi_bbox.maximum.x)), _alpha_bbox.width() - 1);
 
-                auto vertical_iter = std::views::iota(min_y, max_y);
-                auto horizontal_iter = std::views::iota(min_x, max_x);
-                const auto alpha_width = this->alpha().width;
+                    auto vertical_iter = std::views::iota(min_y, max_y);
+                    auto horizontal_iter = std::views::iota(min_x, max_x);
+                    const auto alpha_width = this->alpha().width;
 
-                std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
-                    {
-                        for (auto x : horizontal_iter)
+                    std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
                         {
-                            Geometry::Point2D<size_t> point(x, y);
-                            const Geometry::Point2D<size_t> point_alpha = point - _alpha_bbox.minimum;
-                            const Geometry::Point2D<size_t> point_mask  = point - _mask_bbox.minimum;
+                            for (auto x : horizontal_iter)
+                            {
+                                Geometry::Point2D<int> point(x, y);
+                                const Geometry::Point2D<int> point_alpha = point - _alpha_bbox.minimum;
+                                const Geometry::Point2D<int> point_mask = point - _mask_bbox.minimum;
 
-                            T& alpha_value = _alpha[point_alpha.y * alpha_width + point_alpha.x];
-                            const T mask_value = _mask.pixel(point_mask.x, point_mask.y);
+                                T& alpha_value = _alpha[point_alpha.y * alpha_width + point_alpha.x];
+                                const T mask_value = _mask.pixel(point_mask.x, point_mask.y);
 
-                            // Combine alpha and mask values
-                            alpha_value = static_cast<T>((static_cast<_Precision>(alpha_value) * mask_value) / max_t);
-                        }
+                                // Combine alpha and mask values
+                                alpha_value = static_cast<T>((static_cast<_Precision>(alpha_value) * mask_value) / max_t);
+                            }
+                        });
+                }
+            }
+
+            // Apply the opacity
+            if (this->metadata.opacity != 1.0f)
+            {
+                std::for_each(std::execution::par_unseq, _alpha.begin(), _alpha.end(), [&](auto& value)
+                    {
+                        value = value * this->metadata.opacity;
                     });
             }
 
+            // If the image doesn't yet have an alpha we apply the one we have just initialized
             this->_cached_alpha = std::move(_alpha);
+            if (!this->has_alpha())
+            {
+                int offset_x{};
+                int offset_y{};
+
+                if (this->channels.contains(0))
+                {
+                    offset_x = this->channels[0].position.x;
+                    offset_y = this->channels[0].position.y;
+                }
+
+                ChannelBuffer<T, is_const> alpha_buffer(BufferType(this->_cached_alpha), this->width, this->height, offset_x, offset_y);
+                this->channels[this->alpha_index()] = alpha_buffer;
+            }
             return BufferType(this->_cached_alpha);
         }
 
@@ -780,6 +921,18 @@ namespace Render
         std::optional<ChannelType> alpha_optional() { return this->has_alpha() ? std::make_optional(this->alpha()) : std::nullopt; }
 
         constexpr int alpha_index() { return -1; }
+
+        template <typename U>
+        U mask_default_as_u()
+        {
+            float mask_default = this->metadata.mask_default_value.value_or(0);
+            mask_default /= 255;
+            if constexpr (std::is_integral_v<U>)
+            {
+                mask_default *= std::numeric_limits<U>::max();
+            }
+            return static_cast<U>(mask_default);
+        }
 
         /// Does the ImageBuffer contain a mask channel
         bool has_mask() const noexcept { return this->mask.has_value(); }
@@ -795,7 +948,7 @@ namespace Render
                 static_cast<int>(std::round(static_cast<double>(document_height) / 2))
             );
 
-            uint8_t mask_default = this->mask_default_value.value_or(255);
+            uint8_t mask_default = this->metadata.mask_default_value.value_or(0);
             std::optional<Geometry::BoundingBox<int>> mask_bbox;
 
             if (this->mask)
@@ -803,23 +956,30 @@ namespace Render
                 auto mask_width = this->mask.value().width;
                 auto mask_height = this->mask.value().height;
 
-                auto absolute_mask_position = center;
-                absolute_mask_position += this->mask.value().position;
+                auto absolute_mask_position = center + this->mask.value().position;
 
                 auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(mask_width, mask_height));
                 _bbox.offset(absolute_mask_position);
                 mask_bbox.emplace(std::move(_bbox));
             }
 
-            auto absolute_position = center;
-            absolute_position += this->position;
+            auto absolute_position = center + this->metadata.position;
+
+            // construct the bbox and center it about 0 so we can then offset it in place
             auto image_bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));
+            image_bbox.offset(-image_bbox.center());
+
             image_bbox.offset(absolute_position);
 
             // If the mask default is 0 (black), we can safely discard anything outside of the intersection of the two bounding boxes
             if (mask_default == 0 && mask_bbox)
             {
-                return Geometry::BoundingBox<int>::intersect(image_bbox, mask_bbox.value());
+                auto intersection = Geometry::BoundingBox<int>::intersect(image_bbox, mask_bbox.value());
+                if (intersection)
+                {
+                    return intersection.value();
+                }
+                return Geometry::BoundingBox<int>();
             }
 
             // Otherwise the bbox is just the image bbox

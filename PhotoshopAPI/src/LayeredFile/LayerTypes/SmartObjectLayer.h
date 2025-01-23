@@ -839,13 +839,13 @@ private:
 		const LinkedLayers<T>& linkedlayers = layered_file.linked_layers();
 		const std::shared_ptr<LinkedLayerData<T>> linked_layer = linkedlayers.at(m_Hash);
 
-		// Get the warp mesh at a resolution of 25 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
+		// Get the warp mesh at a resolution of 15 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
 		const auto& image_data = linked_layer->get_image_data();
 		auto warp_surface = m_SmartObjectWarp.surface();
 
 		auto warp_mesh = warp_surface.mesh(
-			linked_layer->width() / 25,
-			linked_layer->height() / 25,
+			linked_layer->width() / 15,
+			linked_layer->height() / 15,
 			true	// move_to_zero
 		);
 		_m_CachedSmartObjectWarpMesh = std::move(warp_mesh);
@@ -860,6 +860,7 @@ private:
 			// will simply overwrite any values that lie on the warps uv space and seeing as the algorithm
 			// is deterministic this will just overwrite previous values
 			Render::ConstChannelBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
+
 			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
 			_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
@@ -887,7 +888,8 @@ private:
 			std::vector<T> channel(linked_layer->width() * linked_layer->height(), value);
 			Render::ConstChannelBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
 
-			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
+			// We don't want to clamp the border on the alpha to make it fade to black.
+			m_SmartObjectWarp.apply<T>(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
 			_ImageDataLayerType<T>::m_ImageData[alpha_id] = std::make_unique<ImageChannel>(
 				Enum::Compression::ZipPrediction,

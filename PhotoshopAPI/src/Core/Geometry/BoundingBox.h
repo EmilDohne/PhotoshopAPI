@@ -12,6 +12,14 @@ PSAPI_NAMESPACE_BEGIN
 namespace Geometry
 {
 
+    namespace lambdas
+    {
+        constexpr inline auto in_bbox = []<typename T>(const Point2D<T>&pt, const Point2D<T>&minimum, const Point2D<T>&maximum) noexcept -> bool
+        {
+            return pt.x >= minimum.x && pt.x <= maximum.x && pt.y >= minimum.y && pt.y <= maximum.y;
+        };
+    }
+
     /// Basic bounding box representation with methods for checking intersections of
     /// Point -> BoundingBox and BoundingBox -> BoundingBox
     template <typename T>
@@ -36,11 +44,12 @@ namespace Geometry
         /// Check if a point is inside the bounding box.
         /// \param pt The point to check.
         /// \return True if the point is within the bounding box; otherwise, false.
-        bool in_bbox(Point2D<T> pt) const
+        constexpr bool in_bbox(const Point2D<T>& pt) const
         {
-            return pt.x >= minimum.x && pt.x <= maximum.x &&
-                pt.y >= minimum.y && pt.y <= maximum.y;
+            return pt.x >= minimum.x && pt.x <= maximum.x && pt.y >= minimum.y && pt.y <= maximum.y;
         }
+
+        
 
         /// Check if another bounding box partially overlaps with this one.
         /// \param other The other bounding box to check.
@@ -86,8 +95,16 @@ namespace Geometry
         /// \param _offset The point to add to both the minimum and maximum corners.
         void offset(Point2D<T> _offset)
         {
-            this->minimum += _offset;
-            this->maximum += _offset;
+            this->minimum = this->minimum + _offset;
+            this->maximum = this->maximum + _offset;
+        }
+
+        /// Pad the bounding box by the given amount which may be negative.
+        /// \param _amount The amount to pad by
+        void pad(T _amount)
+        {
+            this->minimum = this->minimum - _amount;
+            this->maximum = this->maximum + _amount;
         }
 
         /// Compute the intersection of two bounding boxes.
@@ -96,7 +113,7 @@ namespace Geometry
         /// \return An optional bounding box representing the overlap between the two.
         /// If no overlap exists, returns `std::nullopt`.
         template <typename T>
-        std::optional<BoundingBox<T>> intersect(const BoundingBox<T>& a, const BoundingBox<T>& b)
+        static std::optional<BoundingBox<T>> intersect(const BoundingBox<T>& a, const BoundingBox<T>& b)
         {
             // Calculate the intersection bounds
             Point2D<T> new_minimum = {

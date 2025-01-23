@@ -76,7 +76,7 @@ namespace Geometry
             m_BoundingBox = _bbox;
         }
 
-        BoundingBox<T> bbox() const
+        const BoundingBox<T>& bbox() const
         {
             return m_BoundingBox;
         }
@@ -400,7 +400,8 @@ namespace Geometry
                 
                 // Check if the position is within this face, we first check based on bbox as that is as faster operation
                 // for rejecting false positives
-                if (face.bbox().in_bbox(position))
+                const auto& face_bbox = face.bbox();
+                if (lambdas::in_bbox(position, face_bbox.minimum, face_bbox.maximum))
                 {
                     // Retrieve vertex indices for the face's four corners
                     size_t v0_idx = face.vertex_idx(0);

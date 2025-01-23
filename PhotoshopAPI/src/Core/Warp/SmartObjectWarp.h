@@ -81,6 +81,9 @@ namespace SmartObject
 		/// are from { 0 - 4000, 0 - 2000 } the `buffer` parameter should cover these.
 		/// If this isn't the case the function won't fail but the image will not contain the full warped picture.
 		/// 
+		/// \tparam supersample_resolution The number of times to supersample mesh collisions within a given pixel along 
+		///								   one axis, the default value of 4 implies that we sample 4x4 = 16 times per pixel.
+		/// 
 		/// \param buffer		The buffer to render into
 		/// 
 		/// \param image		The image to warp using the local warp struct
@@ -89,7 +92,7 @@ namespace SmartObject
 		///						you wish to apply the warp to multiple channels at the same time to only calculate the 
 		///						mesh construction once. Can be gotten using `SmartObjectWarp::mesh()`
 		/// 
-		template <typename T>
+		template <typename T, size_t supersample_resolution = 4>
 		void apply(Render::ChannelBuffer<T> buffer, Render::ConstChannelBuffer<T> image, const Geometry::QuadMesh<double>& warp_mesh) const
 		{
 			PSAPI_PROFILE_FUNCTION();
@@ -97,17 +100,21 @@ namespace SmartObject
 			// Limit the computation of the warp to the region of interest (ROI) of the mesh itself.
 			// that way we just skip any pixels that we know wont have any warp to it
 			auto bbox = warp_mesh.bbox();
-			size_t min_y = std::max<size_t>(static_cast<size_t>(std::round(bbox.minimum.y)), 0);
-			size_t max_y = std::min<size_t>(static_cast<size_t>(std::round(bbox.maximum.y)), buffer.height - 1);
-			size_t min_x = std::max<size_t>(static_cast<size_t>(std::round(bbox.minimum.x)), 0);
-			size_t max_x = std::min<size_t>(static_cast<size_t>(std::round(bbox.maximum.x)), buffer.width - 1);
+			bbox.pad(static_cast<double>(supersample_resolution));
 
-			std::vector<size_t> vertical_iter(max_y - min_y + 1);
-			std::iota(vertical_iter.begin(), vertical_iter.end(), min_y);
+			size_t min_y = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.y), 0));
+			size_t max_y = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.y), buffer.height - 1));
+			size_t min_x = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.x), 0));
+			size_t max_x = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.x), buffer.width - 1));
 
-			std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
+			auto vertical_iter = std::views::iota(min_y, max_y);
+			std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](const size_t y)
 				{
 					constexpr double failure_condition = -1.0f;
+					constexpr T max_t = std::is_same_v<T, float32_t> ? static_cast<T>(1) : std::numeric_limits<T>::max();
+
+					constexpr size_t total_supersamples = supersample_resolution * supersample_resolution;
+
 					for (size_t x = min_x; x <= max_x; ++x)
 					{
 						// The way this works is that on creation of the mesh from the bezier we actually
@@ -119,22 +126,39 @@ namespace SmartObject
 						// original (unwarped) image as a UV space from 0-1.
 						// 
 						// We then bilinearly sample the source image to avoid artifacts from nearest 
-						// neighbour sampling. In the context of the SmartObjectWarp the resolution
-						// of the source and target are identical with downscaling happening further
-						// down the pipeline.
+						// neighbour sampling.
 
-						size_t idx = y * buffer.width + x;
-						auto position = Geometry::Point2D<double>(x, y);
-						auto uv = warp_mesh.uv_coordinate(position);
+						bool sampled = false;
+						float accumulated_color = 0;
 
-						// If the uv coordinate is outside of the image we dont bother with it.
-						// We can check against the exact -1.0f here as that is what we return
-						if (uv == failure_condition)
+						for (size_t sy = 0; sy < supersample_resolution; ++sy)
 						{
-							continue;
+							double subpixel_y = y + static_cast<double>(sy) / supersample_resolution;
+
+							for (size_t sx = 0; sx < supersample_resolution; ++sx)
+							{
+								double subpixel_x = x + static_cast<double>(sx) / supersample_resolution;
+
+								auto position = Geometry::Point2D<double>(subpixel_x, subpixel_y);
+								auto uv = warp_mesh.uv_coordinate(position);
+
+								// If the uv coordinate is outside of the image we dont bother with it.
+								// We can check against the exact -1.0f here as that is what we return
+								if (uv != failure_condition)
+								{
+									sampled = true;
+									accumulated_color += image.sample_bilinear_uv<double>(uv);
+								}
+							}
 						}
 
-						buffer.buffer[idx] = image.sample_bilinear_uv(uv);
+						if (sampled)
+						{
+							T final_value = static_cast<T>(std::clamp<double>(accumulated_color / total_supersamples, 0.0, static_cast<double>(max_t)));
+
+							size_t idx = y * buffer.width + x;
+							buffer.buffer[idx] = final_value;
+						}
 					}
 				});
 		}
@@ -144,6 +168,10 @@ namespace SmartObject
 		/// The `buffer` passed should match the general resolution of the warp points. So if e.g. the warp points 
 		/// are from { 0 - 4000, 0 - 2000 } the `buffer` parameter should cover these.
 		/// If this isn't the case the function won't fail but the image will not contain the full warped picture.
+		/// 
+		/// 
+		/// \tparam clamp_border    Whether to clamp the coordinates to the border when sampling a value near it.
+		///                         If this is set to false a value near the border will fade to black (desirable for alpha).
 		/// 
 		/// \param buffer		The buffer to render into
 		/// \param image		The image do warp using the local warp struct
@@ -155,7 +183,7 @@ namespace SmartObject
 		{
 			auto warp_surface = surface();
 			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution);
-			apply(buffer, image, warp_mesh, resolution);
+			apply<T>(buffer, image, warp_mesh, resolution);
 		}
 
 		/// Generates a default warp, this should be the main entry point if you wish to author a custom warp.
