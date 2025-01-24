@@ -53,7 +53,7 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Load or restore vcpkg libraries
+    - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'

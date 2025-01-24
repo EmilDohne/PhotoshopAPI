@@ -156,7 +156,12 @@ namespace Render
                 }
             };
 
-        plot_line_wu(pt1.x_checked<int>(), pt1.y_checked<int>(), pt2.x_checked<int>(), pt2.y_checked<int>());
+        plot_line_wu(
+            pt1.template x_checked<int>(), 
+            pt1.template y_checked<int>(), 
+            pt2.template x_checked<int>(), 
+            pt2.template y_checked<int>()
+        );
     }
 
 
@@ -257,10 +262,10 @@ namespace Render
         auto buff = buffer.to_oiio();
         OIIO::ImageBufAlgo::render_box(
             buff,
-            top_left.x_checked<int>(),
-            top_left.y_checked<int>(),
-            bottom_right.x_checked<int>(),
-            bottom_right.y_checked<int>(),
+            top_left.template x_checked<int>(),
+            top_left.template y_checked<int>(),
+            bottom_right.template x_checked<int>(),
+            bottom_right.template y_checked<int>(),
             { value_float, value_float, value_float, value_float },
             fill
         );
@@ -294,8 +299,8 @@ namespace Render
         auto buff = buffer.to_oiio();
         OIIO::ImageBufAlgo::render_text(
             buff,
-            position.x_checked<int>(),
-            position.y_checked<int>(),
+            position.template x_checked<int>(),
+            position.template y_checked<int>(),
             text,
             font_size,
             font_name,

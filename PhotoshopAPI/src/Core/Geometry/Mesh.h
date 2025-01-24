@@ -352,7 +352,7 @@ namespace Geometry
         /// If you wish to do that please re-initialize the mesh.
         void vertices(std::vector<Vertex<T>>& _vertices)
         {
-            if (vertices.size() != m_Vertices.size())
+            if (_vertices.size() != m_Vertices.size())
             {
                 PSAPI_LOG_ERROR("Mesh",
                     "Unable to replace vertices with differently sized vertex vector. This method is only intended to update existing vertices. If you wish to to rebuild the mesh re-initialize it please.");
@@ -528,7 +528,6 @@ namespace Geometry
         }
 
 
-        template<typename T>
         std::tuple<double, double, double> barycentric_coordinates(Point2D<T> p, Point2D<T> a, Point2D<T> b, Point2D<T> c) const
         {
             auto dot = [](Point2D<T> a, Point2D<T> b)

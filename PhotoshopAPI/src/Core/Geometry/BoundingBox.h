@@ -112,7 +112,6 @@ namespace Geometry
         /// \param b The second bounding box.
         /// \return An optional bounding box representing the overlap between the two.
         /// If no overlap exists, returns `std::nullopt`.
-        template <typename T>
         static std::optional<BoundingBox<T>> intersect(const BoundingBox<T>& a, const BoundingBox<T>& b)
         {
             // Calculate the intersection bounds

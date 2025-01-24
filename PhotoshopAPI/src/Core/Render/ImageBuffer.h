@@ -250,7 +250,7 @@ namespace Render
                         std::int64_t orig_x_int = static_cast<std::int64_t>(orig_x);
                         _Precision orig_x_fract = orig_x - std::floor(orig_x);
 
-                        ChannelBuffer<T>::get_matrix<2, 2>(matrix, *this, orig_x_int, orig_y_int);
+                        ChannelBuffer<T>::template get_matrix<2, 2>(matrix, *this, orig_x_int, orig_y_int);
                         // Interpolate along x-axis
                         _Precision top = matrix[0] + orig_x_fract * (matrix[1] - matrix[0]);
                         _Precision bot = matrix[2] + orig_x_fract * (matrix[3] - matrix[2]);
@@ -320,7 +320,7 @@ namespace Render
 
                         // Get the 4x4 pixel matrix and apply the cubic hermite first across
                         // the x dimension and then across the y dimension along the combined results
-                        ChannelBuffer<T>::get_matrix<4, 4>(matrix, *this, x_int, orig_y_int);
+                        ChannelBuffer<T>::template get_matrix<4, 4>(matrix, *this, x_int, orig_y_int);
                         _Precision col0 = cubic_hermite<_Precision>(matrix[0], matrix[1], matrix[2], matrix[3], x_fract);
                         _Precision col1 = cubic_hermite<_Precision>(matrix[4], matrix[5], matrix[6], matrix[7], x_fract);
                         _Precision col2 = cubic_hermite<_Precision>(matrix[8], matrix[9], matrix[10], matrix[11], x_fract);
@@ -651,7 +651,7 @@ namespace Render
                     std::int64_t y_offset = y + col - offset_y;
 
                     // Get the pixel and insert it into the matrix
-                    matrix[col * _m + row] = ChannelBuffer<T, _is_const>::get_pixel<clamp_border>(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
+                    matrix[col * _m + row] = ChannelBuffer<T, _is_const>::template get_pixel<clamp_border>(buffer.buffer, x_offset, y_offset, buffer.width, buffer.height);
                 }
             }
         }

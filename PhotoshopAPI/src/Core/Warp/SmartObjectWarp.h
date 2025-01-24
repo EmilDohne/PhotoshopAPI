@@ -147,7 +147,7 @@ namespace SmartObject
 								if (uv != failure_condition)
 								{
 									sampled = true;
-									accumulated_color += image.sample_bilinear_uv<double>(uv);
+									accumulated_color += image.template sample_bilinear_uv<double>(uv);
 								}
 							}
 						}
