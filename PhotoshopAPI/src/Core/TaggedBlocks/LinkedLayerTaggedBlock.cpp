@@ -3,7 +3,7 @@
 #include "Core/FileIO/LengthMarkers.h"
 #include "Util/StringUtil.h"
 
-#include <ctime>
+#include <time.h>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -39,16 +39,24 @@ LinkedLayerItem::Date::Date()
 {
 	auto now = std::chrono::system_clock::now();
 	std::time_t t = std::chrono::system_clock::to_time_t(now);
-	auto localTime = std::make_unique<std::tm>();
-	localtime_s(localTime.get(), &t);
 
+	std::tm* localTime = localtime(&t);
+	
 	// Set the struct fields
-	year = 1900 + localTime->tm_year;
-	month = static_cast<uint8_t>(1 + localTime->tm_mon);
-	day = static_cast<uint8_t>(localTime->tm_mday);
-	hour = static_cast<uint8_t>(localTime->tm_hour);
-	minute = static_cast<uint8_t>(localTime->tm_min);
-	seconds = static_cast<double>(localTime->tm_sec);
+	if (localTime)
+	{
+		year = 1900 + localTime->tm_year;
+		month = static_cast<uint8_t>(1 + localTime->tm_mon);
+		day = static_cast<uint8_t>(localTime->tm_mday);
+		hour = static_cast<uint8_t>(localTime->tm_hour);
+		minute = static_cast<uint8_t>(localTime->tm_min);
+		seconds = static_cast<double>(localTime->tm_sec);
+	}
+	else
+	{
+		throw std::runtime_error("Failed to get local time.");
+	}
+
 }
 
 
