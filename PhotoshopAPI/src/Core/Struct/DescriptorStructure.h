@@ -315,23 +315,7 @@ namespace Descriptors
 		/// 
 		/// \returns A reference to the ItemVariant at the given key
 		template <typename T> 
-		const T& at(const std::string key) const
-		{
-			for (auto& [stored_key, value] : m_DescriptorItems) {
-				if (stored_key == key) {
-					// Try to retrieve the value as the requested type
-					try 
-					{
-						return std::get<T>(value);
-					}
-					catch (const std::bad_variant_access&) 
-					{
-						throw std::runtime_error("Type mismatch: The stored item does not match the requested type.");
-					}
-				}
-			}
-			throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
-		}
+		const T& at(const std::string key) const;
 
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
 		void insert(std::pair<std::string, DescriptorVariant> item) noexcept;
@@ -520,6 +504,7 @@ namespace Descriptors
 		json_ordered to_json() const override;
 	};
 
+
 	// Same as a UnitFloat but stores multiple values instead of a single one.
 	struct UnitFloats : public DescriptorBase
 	{
@@ -578,6 +563,7 @@ namespace Descriptors
 		json_ordered to_json() const override;
 
 	};
+
 
 	/// Exactly the same as a List
 	struct Reference : public List
@@ -719,6 +705,26 @@ namespace Descriptors
 				},
 				lhs, rhs);
 		}
+	}
+
+
+	template <typename T>
+	const T& KeyValueMixin::at(const std::string key) const
+	{
+		for (auto& [stored_key, value] : m_DescriptorItems) {
+			if (stored_key == key) {
+				// Try to retrieve the value as the requested type
+				try
+				{
+					return std::get<T>(value);
+				}
+				catch (const std::bad_variant_access&)
+				{
+					throw std::runtime_error("Type mismatch: The stored item does not match the requested type.");
+				}
+			}
+		}
+		throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
 	}
 
 } // Namespace Descriptors
