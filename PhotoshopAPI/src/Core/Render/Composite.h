@@ -31,7 +31,7 @@ namespace Composite
 
 		/// concept for a compositing kernel taking the canvas value, the layer value as well as the layer alpha.
 		template <typename T, typename KernelFunc>
-		concept kernel = std::is_invocable_r_v<T, KernelFunc, T, T, T>;
+		concept kernel = std::is_invocable_r_v<T, KernelFunc, T, T, T, T>;
 	}
 
 
@@ -77,18 +77,23 @@ namespace Composite
 
 		template <typename T, typename _Precision = float> 
 			requires concepts::precision<_Precision>
-		inline T normal(T _canvas_pixel, T _layer_pixel, T _layer_alpha)
+		inline T normal([[maybe_unused]] T _canvas_pixel, [[maybe_unused]] T _canvas_alpha, T _layer_pixel, [[maybe_unused]] T _layer_alpha)
 		{
-			// Convert input values to the specified precision type
-			_Precision canvas	= static_cast<_Precision>(_canvas_pixel);
-			_Precision layer	= static_cast<_Precision>(_layer_pixel);
-			_Precision l_alpha	= static_cast<_Precision>(_layer_alpha) / static_cast<_Precision>(impl::calc_max_t<T>());
+			return _layer_pixel;
 
-			// The actual blending operation.
-			_Precision result = layer * l_alpha + canvas * (static_cast<_Precision>(1) - l_alpha);
+			//// Convert input values to the specified precision type
+			//_Precision canvas	= static_cast<_Precision>(_canvas_pixel) / impl::calc_max_t<T>();
+			//_Precision c_alpha  = static_cast<_Precision>(_canvas_alpha) / impl::calc_max_t<T>();
+			//_Precision layer	= static_cast<_Precision>(_layer_pixel)  / impl::calc_max_t<T>();
+			//_Precision l_alpha	= static_cast<_Precision>(_layer_alpha)  / impl::calc_max_t<T>();
 
-			result = impl::round_and_clamp_integral<T, _Precision>(result);
-			return static_cast<T>(result);
+			//// The actual blending operation.
+			////_Precision result = (layer * l_alpha) + (canvas * c_alpha * (static_cast<_Precision>(1) - l_alpha));
+			//_Precision result = layer + canvas * (static_cast<_Precision>(1) - l_alpha);
+
+			//result = result * impl::calc_max_t<T>();
+			//result = impl::round_and_clamp_integral<T, _Precision>(result);
+			//return static_cast<T>(result);
 		}
 
 		/// Generic alpha compositing kernel
@@ -96,7 +101,10 @@ namespace Composite
 			requires concepts::precision<_Precision>
 		inline T alpha(T canvas_alpha, T layer_alpha)
 		{
-			_Precision result = static_cast<_Precision>(canvas_alpha) * layer_alpha;
+			_Precision _c_alpha = static_cast<_Precision>(canvas_alpha) / impl::calc_max_t<T>();
+			_Precision _l_alpha = static_cast<_Precision>(layer_alpha)  / impl::calc_max_t<T>();
+
+			_Precision result = _l_alpha + _c_alpha * (1.0f - _l_alpha);
 			
 			if constexpr (concepts::is_floating_v<T>)
 			{
@@ -104,7 +112,7 @@ namespace Composite
 			}
 			else
 			{
-				result = result / impl::calc_max_t<T>();
+				result = result * impl::calc_max_t<T>();
 				result = impl::round_and_clamp_integral<T, _Precision>(result);
 				return static_cast<T>(result);
 			}
@@ -218,48 +226,49 @@ namespace Composite
 								auto idx_layer = layer_channel.index(point_layer.x, point_layer.y);
 
 								// Apply the kernel
-								T value = kernel_func(
+								canvas_channel.buffer[idx_canvas] = kernel_func(
 									canvas_channel.pixel(point_canvas.x, point_canvas.y), 
+									canvas_alpha[idx_canvas],
 									layer_channel.pixel(point_layer.x, point_layer.y),
-									layer_alpha[idx_layer]);
-								canvas_channel.buffer[idx_canvas] = value;
+									layer_alpha[idx_layer]
+									);
 							}
 						});
 				}
 				
-				{
-					// since all of these are the same size we can just grab any channel for our index calculations
-					const auto& [_ci, _canvas_channel] = *canvas.channels.begin();
-					const auto& [_li, _layer_channel] = *layer.channels.begin();
+				//{
+				//	// since all of these are the same size we can just grab any channel for our index calculations
+				//	const auto& [_ci, _canvas_channel] = *canvas.channels.begin();
+				//	const auto& [_li, _layer_channel] = *layer.channels.begin();
 
-					if (canvas_alpha.size() < _canvas_channel.size())
-					{
-						throw std::runtime_error("Internal error: canvas alpha is larger than canvas channels");
-					}
-					if (layer_alpha.size() < _layer_channel.size())
-					{
-						throw std::runtime_error("Internal error: layer alpha is larger than layer channels");
-					}
+				//	if (canvas_alpha.size() < _canvas_channel.size())
+				//	{
+				//		throw std::runtime_error("Internal error: canvas alpha is larger than canvas channels");
+				//	}
+				//	if (layer_alpha.size() < _layer_channel.size())
+				//	{
+				//		throw std::runtime_error("Internal error: layer alpha is larger than layer channels");
+				//	}
 
-					// Apply the alpha compositing as the last step.
-					std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
-						{
-							for (auto x : horizontal_iter)
-							{
-								Geometry::Point2D<int> _point = { static_cast<int>(x), static_cast<int>(y) };
-								const auto point_canvas = _point - canvas_bbox.minimum;
-								const auto point_layer = _point - layer_bbox.minimum;
+				//	// Apply the alpha compositing as the last step.
+				//	std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](size_t y)
+				//		{
+				//			for (auto x : horizontal_iter)
+				//			{
+				//				Geometry::Point2D<int> _point = { static_cast<int>(x), static_cast<int>(y) };
+				//				const auto point_canvas = _point - canvas_bbox.minimum;
+				//				const auto point_layer = _point - layer_bbox.minimum;
 
-								auto idx_canvas = _canvas_channel.index(point_canvas.x, point_canvas.y);
-								auto idx_layer = _layer_channel.index(point_layer.x, point_layer.y);
+				//				auto idx_canvas = _canvas_channel.index(point_canvas.x, point_canvas.y);
+				//				auto idx_layer = _layer_channel.index(point_layer.x, point_layer.y);
 
-								// Apply the kernel and compute alpha and pixel values
-								T alpha = kernel::alpha(canvas_alpha[idx_canvas], layer_alpha[idx_layer]);
-								canvas_alpha[idx_canvas] = alpha;
-							}
-						});
+				//				// Apply the kernel and compute alpha and pixel values
+				//				T alpha = kernel::alpha(canvas_alpha[idx_canvas], layer_alpha[idx_layer]);
+				//				canvas_alpha[idx_canvas] = alpha;
+				//			}
+				//		});
 
-				}
+				//}				
 
 				// We do not want to clear the alpha of the canvas since we are modifying it in-place
 				// allowing the next iteration to just have canvas.compute_alpha return a view over it.

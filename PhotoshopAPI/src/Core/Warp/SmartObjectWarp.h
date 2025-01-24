@@ -170,20 +170,20 @@ namespace SmartObject
 		/// If this isn't the case the function won't fail but the image will not contain the full warped picture.
 		/// 
 		/// 
-		/// \tparam clamp_border    Whether to clamp the coordinates to the border when sampling a value near it.
-		///                         If this is set to false a value near the border will fade to black (desirable for alpha).
+		/// \tparam supersample_resolution The number of times to supersample mesh collisions within a given pixel along 
+		///								   one axis, the default value of 4 implies that we sample 4x4 = 16 times per pixel.
 		/// 
 		/// \param buffer		The buffer to render into
 		/// \param image		The image do warp using the local warp struct
 		/// \param resolution	The resolution of warp geometry. Since we first convert the BezierSurface into a Mesh 
 		///						this parameter dictates how many pixels apart each subdivision line should be. Do note
 		///						that increasing this massively does not necessarily give a better result. Defaults to `25`.
-		template <typename T>
+		template <typename T, size_t supersample_resolution = 4>
 		void apply(Render::ChannelBuffer<T> buffer, Render::ConstChannelBuffer<T> image, size_t resolution = 25) const
 		{
 			auto warp_surface = surface();
 			auto warp_mesh = warp_surface.mesh(buffer.width / resolution, buffer.height / resolution);
-			apply<T>(buffer, image, warp_mesh, resolution);
+			apply<T, supersample_resolution>(buffer, image, warp_mesh, resolution);
 		}
 
 		/// Generates a default warp, this should be the main entry point if you wish to author a custom warp.

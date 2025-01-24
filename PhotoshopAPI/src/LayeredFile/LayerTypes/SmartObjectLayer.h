@@ -862,7 +862,6 @@ private:
 			Render::ConstChannelBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
 
 			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
-
 			_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
 				Enum::Compression::ZipPrediction,
 				channel_warp,
@@ -888,7 +887,6 @@ private:
 			std::vector<T> channel(linked_layer->width() * linked_layer->height(), value);
 			Render::ConstChannelBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
 
-			// We don't want to clamp the border on the alpha to make it fade to black.
 			m_SmartObjectWarp.apply<T>(channel_warp_buffer, orig_buffer, _m_CachedSmartObjectWarpMesh);
 
 			_ImageDataLayerType<T>::m_ImageData[alpha_id] = std::make_unique<ImageChannel>(

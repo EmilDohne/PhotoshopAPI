@@ -11,9 +11,13 @@
 #include "LayeredFile/LayeredFile.h"
 
 #include <memory>
+#include <iostream>
 #include <filesystem>
 
 #include <fmt/format.h>
+
+#include <OpenImageIO/imagebufalgo.h>
+#include <OpenImageIO/imagebuf.h>
 
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -80,8 +84,10 @@ TEST_CASE("modify warp and get dimensions")
 	warp.points(warp_points);
 	layer->warp(warp);
 
-	//CHECK(layer->width() == doctest::Approx(252.0f));
-	//CHECK(layer->height() == doctest::Approx(161.0f));
+	// Since the warp is constrained by the transformation and not the mesh
+	// we expect the same result.
+	CHECK(layer->width() == doctest::Approx(200.0f));
+	CHECK(layer->height() == doctest::Approx(108.0f));
 }
 
 
@@ -93,24 +99,80 @@ TEST_CASE("Read all supported warps and write image files")
 	using bpp_type = uint8_t;
 
 	auto file = LayeredFile<bpp_type>::read(std::filesystem::current_path() / "documents/SmartObjects/smart_objects_transformed.psd");
+	
 	auto base_out_path = std::filesystem::current_path() / "documents/SmartObjects/out";
+	auto base_ref_path = std::filesystem::current_path() / "documents/SmartObjects/reference";
 
-	auto write_smart_object_layer = [](LayeredFile<bpp_type> document, std::shared_ptr<SmartObjectLayer<bpp_type>> layer, std::filesystem::path _path)
+	/// Compare two layers within the given tolerance
+	auto compare_layer = [](
+		std::filesystem::path _reference_path,
+		Render::ImageBuffer<bpp_type>& generated_warp
+		)
+		{
+			auto inp = OIIO::ImageInput::open(_reference_path);
+			CHECK(inp);
+			const OIIO::ImageSpec& spec = inp->spec();
+			int xres = spec.width;
+			int yres = spec.height;
+			int nchannels = spec.nchannels;
+			auto pixels = std::vector<bpp_type>(xres * yres * nchannels);
+			inp->read_image(0, 0, 0, nchannels, Render::get_type_desc<bpp_type>(), pixels.data());
+			inp->close();
+
+			CHECK(xres == generated_warp.width);
+			CHECK(yres == generated_warp.height);
+			CHECK(nchannels == generated_warp.num_channels());
+			CHECK(nchannels == 4);
+
+			auto deinterleaved = Render::deinterleave_alloc<bpp_type>(pixels, nchannels);
+			std::unordered_map<int, Render::ChannelBuffer<bpp_type>> read_channels = {
+				{ 0,  Render::ChannelBuffer<bpp_type>(deinterleaved[0], xres, yres) },
+				{ 1,  Render::ChannelBuffer<bpp_type>(deinterleaved[1], xres, yres) },
+				{ 2,  Render::ChannelBuffer<bpp_type>(deinterleaved[2], xres, yres) },
+				{ -1, Render::ChannelBuffer<bpp_type>(deinterleaved[3], xres, yres) }
+			};
+
+			std::vector<int> indices = { 0, 1, 2, -1 };
+			for (auto index : indices)
+			{
+				auto oiio_buffer_read = read_channels[index].to_oiio();
+				auto oiio_buffer_created = generated_warp.channels[index].to_oiio();
+
+				auto result = OIIO::ImageBufAlgo::compare(oiio_buffer_read, oiio_buffer_created, 255.0f, 255.0f);
+
+				std::cout << _reference_path.string() << ": " << std::endl;
+				std::cout << "\tImage differed: " << result.nfail << " failures, "
+					<< result.nwarn << " warnings.\n";
+				std::cout << "\tAverage error was " << result.meanerror << "\n";
+				std::cout << "\tRMS error was " << result.rms_error << "\n";
+				std::cout << "\tPSNR was " << result.PSNR << "\n";
+				std::cout << "\tlargest error was " << result.maxerror
+					<< " on pixel (" << result.maxx << "," << result.maxy
+					<< "," << result.maxz << "), channel " << index << "\n";
+
+				// We check for less than a 1% error, since our edges are fairly different
+				// we cannot check for single pixels being below a certain tolerance.
+				CHECK(result.meanerror < 0.01f);
+			}
+		};
+
+	/// Check the warp and compare the layers
+	auto write_smart_object_layer = [&](
+		LayeredFile<bpp_type> document, 
+		std::shared_ptr<SmartObjectLayer<bpp_type>> layer, 
+		std::filesystem::path _path,
+		std::filesystem::path _reference_path)
 		{
 			auto channels = layer->get_image_data();
 			auto width = layer->width();
 			auto height = layer->height();
 			auto offset_x = static_cast<int>(std::round(layer->center_x()));
 			auto offset_y = static_cast<int>(std::round(layer->center_y()));
+
 			auto channel_r = channels.at(Enum::toChannelIDInfo<int16_t>(0, Enum::ColorMode::RGB));
 			auto channel_g = channels.at(Enum::toChannelIDInfo<int16_t>(1, Enum::ColorMode::RGB));
 			auto channel_b = channels.at(Enum::toChannelIDInfo<int16_t>(2, Enum::ColorMode::RGB));
 			auto channel_a = channels.at(Enum::toChannelIDInfo<int16_t>(-1, Enum::ColorMode::RGB));
-
-
-			/*auto rendering_buffer = Render::ChannelBuffer<bpp_type>(channel_b, width, height, offset_x, offset_y);
-			auto mesh = layer->warp().surface().mesh(20, 20, false);
-			Render::render_mesh(rendering_buffer, mesh, static_cast<bpp_type>(255));*/
 
 			auto channel_r_buffer = Render::ConstChannelBuffer<bpp_type>(channel_r, width, height, offset_x, offset_y);
 			auto channel_g_buffer = Render::ConstChannelBuffer<bpp_type>(channel_g, width, height, offset_x, offset_y);
@@ -124,7 +186,7 @@ TEST_CASE("Read all supported warps and write image files")
 				{-1, channel_a_buffer}
 				}, layer->name(), std::nullopt, Geometry::Point2D<int>(offset_x, offset_y));
 
-			/*auto canvas_r_buffer = std::vector<bpp_type>(document.width() * document.height());
+			auto canvas_r_buffer = std::vector<bpp_type>(document.width() * document.height());
 			auto canvas_g_buffer = std::vector<bpp_type>(document.width() * document.height());
 			auto canvas_b_buffer = std::vector<bpp_type>(document.width() * document.height());
 
@@ -134,11 +196,16 @@ TEST_CASE("Read all supported warps and write image files")
 					{2, Render::ChannelBuffer<bpp_type>(canvas_b_buffer, document.width(), document.height()) },
 				});
 
-			Composite::composite_rgb<bpp_type, float>(canvas, image, Enum::BlendMode::Normal);*/
-			image.write(_path);
+			Composite::composite_rgb<bpp_type, float>(canvas, image, Enum::BlendMode::Normal);
+			// Write for debugging purposes
+			canvas.write(_path);
+
+			compare_layer(_reference_path, canvas);
 		};
 
-	//std::filesystem::create_directories(base_out_path);
+
+
+	std::filesystem::create_directories(base_out_path);
 	std::filesystem::create_directories(base_out_path / "simple_warp");
 	std::filesystem::create_directories(base_out_path / "quilt_warp");
 
@@ -146,21 +213,27 @@ TEST_CASE("Read all supported warps and write image files")
 	{
 		if (auto smart_object_layer = dynamic_pointer_cast<SmartObjectLayer<bpp_type>>(layer))
 		{
-			write_smart_object_layer(file, smart_object_layer, base_out_path / fmt::format("{}.png", smart_object_layer->name()));
+			auto path = base_out_path / fmt::format("{}.png", smart_object_layer->name());
+			auto ref_path = base_ref_path / fmt::format("{}.png", smart_object_layer->name());
+			write_smart_object_layer(file, smart_object_layer, path, ref_path);
 		}
 	}
 	for (const auto& layer : find_layer_as<bpp_type, GroupLayer>("simple_warp", file)->layers())
 	{
 		if (auto smart_object_layer = dynamic_pointer_cast<SmartObjectLayer<bpp_type>>(layer))
 		{
-			write_smart_object_layer(file, smart_object_layer, base_out_path / "simple_warp" / fmt::format("{}.png", smart_object_layer->name()));
+			auto path = base_out_path / "simple_warp" / fmt::format("{}.png", smart_object_layer->name());
+			auto ref_path = base_ref_path / "simple_warp" / fmt::format("{}.png", smart_object_layer->name());
+			write_smart_object_layer(file, smart_object_layer, path, ref_path);
 		}
 	}
 	for (const auto& layer : find_layer_as<bpp_type, GroupLayer>("quilt_warp", file)->layers())
 	{
 		if (auto smart_object_layer = dynamic_pointer_cast<SmartObjectLayer<bpp_type>>(layer))
 		{
-			write_smart_object_layer(file, smart_object_layer, base_out_path / "quilt_warp" / fmt::format("{}.png", smart_object_layer->name()));
+			auto path = base_out_path / "quilt_warp" / fmt::format("{}.png", smart_object_layer->name());
+			auto ref_path = base_ref_path / "quilt_warp" / fmt::format("{}.png", smart_object_layer->name());
+			write_smart_object_layer(file, smart_object_layer, path, ref_path);
 		}
 	}
 }
