@@ -44,6 +44,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+        fetch-depth: 0
 
     # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
     # causing linking to fail.
