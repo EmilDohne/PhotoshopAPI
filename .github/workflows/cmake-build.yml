@@ -35,10 +35,10 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-           - name: MacOS ARM Clang
+           - name: MacOS ARM GCC
              os: macos-latest
-             compiler: clang
-             compilercxx: clang++
+             compiler: gcc-13
+             compilercxx: g++-13
 
     steps:
     - uses: actions/checkout@v4

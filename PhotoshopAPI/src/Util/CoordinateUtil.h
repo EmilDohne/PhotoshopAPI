@@ -3,6 +3,8 @@
 #include "Macros.h"
 #include "PhotoshopFile/FileHeader.h"
 
+#include <cmath>
+
 PSAPI_NAMESPACE_BEGIN
 
 

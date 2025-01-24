@@ -159,11 +159,11 @@ namespace Impl
 			// right offset.
 			if (header.m_Version == Enum::Version::Psd)
 			{
-				WriteBinaryData<T::psd_t>(document, static_cast<T::psd_t>(0));
+				WriteBinaryData<typename T::psd_t>(document, static_cast<typename T::psd_t>(0));
 			}
 			else
 			{
-				WriteBinaryData<T::psb_t>(document, static_cast<T::psb_t>(0));
+				WriteBinaryData<typename T::psb_t>(document, static_cast<typename T::psb_t>(0));
 			}
 		}
 

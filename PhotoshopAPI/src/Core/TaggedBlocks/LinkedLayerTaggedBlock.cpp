@@ -3,6 +3,8 @@
 #include "Core/FileIO/LengthMarkers.h"
 #include "Util/StringUtil.h"
 
+#include <ctime>
+
 PSAPI_NAMESPACE_BEGIN
 
 // ---------------------------------------------------------------------------------------------------------------------
