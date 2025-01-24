@@ -272,43 +272,6 @@ namespace Render
     }
 
 
-    /// Render text into the image buffer at the specified position.
-    ///
-    /// This function draws the given text at the specified `position` in the provided `ChannelBuffer`.
-    /// The text is rendered using the specified font and size, with each pixel's color set to 
-    /// the specified `pixel_value`. The function utilizes OpenImageIO's text rendering capabilities.
-    ///
-    /// \tparam T The type of pixel value stored in the `ChannelBuffer`.
-    /// \tparam U The type of the coordinate values used in `Geometry::Point2D`.
-    ///
-    /// \param buffer The image buffer where the text will be rendered.
-    /// \param position The position where the text will be drawn, as a `Geometry::Point2D` object.
-    /// \param text The text string to be rendered.
-    /// \param font_name The name of the font to use for rendering the text.
-    ///                  If this isn't available we instead fall back to some sensible default.
-    ///                  For more information please visit the OpenImageIO documentation
-    /// \param pixel_value The pixel value to use for rendering the text. This value will be used
-    ///                    to set the color of the text pixels.
-    /// \param font_size The size of the font to use when rendering the text.
-    template <typename T, typename U>
-    void render_text(ChannelBuffer<T>& buffer, Geometry::Point2D<U> position, std::string_view text, std::string_view font_name, T pixel_value, size_t font_size)
-    {
-        // TODO: make this not rely on OIIO as the implementation seems to be pretty slow
-        float value_float = static_cast<float>(pixel_value);
-
-        auto buff = buffer.to_oiio();
-        OIIO::ImageBufAlgo::render_text(
-            buff,
-            position.template x_checked<int>(),
-            position.template y_checked<int>(),
-            text,
-            font_size,
-            font_name,
-            { value_float, value_float, value_float, value_float }
-        );
-    }
-
-
     /// Render a mesh into the image buffer at the specified position.
     ///
     /// This function draws the given mesh at the specified `position` in the provided `ChannelBuffer`.
@@ -321,13 +284,8 @@ namespace Render
     /// \param buffer The image buffer where the mesh will be rendered.
     /// \param mesh The mesh which will be drawn, as a `Geometry::Mesh` object.
     /// \param value The intensity of the pixel value
-    /// \param font_name The name of the font to use for rendering the text.
-    ///                  If this isn't available we instead fall back to some sensible default.
-    ///                  For more information please visit the OpenImageIO documentation.
-    ///                  If render_pt_num is false this parameter has no effect
-    /// \param render_pt_num Whether to render a point number
     template <typename T, typename U>
-    void render_mesh(ChannelBuffer<T>& buffer, const Geometry::QuadMesh<U>& mesh, T value, std::string_view font_name = "", bool render_pt_num = false)
+    void render_mesh(ChannelBuffer<T>& buffer, const Geometry::QuadMesh<U>& mesh, T value)
     {
         std::set<std::tuple<size_t, size_t>> rendered_edges;
         std::set<size_t> rendered_point_nums;
@@ -351,26 +309,6 @@ namespace Render
 
             for (const auto& edge : edges)
             {
-                // Render the point numbers (if requested)
-                if (render_pt_num && !rendered_point_nums.contains(std::get<0>(edge)))
-                {
-                    auto idx = std::get<0>(edge);
-                    auto point = mesh.vertex(idx).point();
-
-                    auto str = std::to_string(idx);
-                    render_text<T, U>(buffer, point, str, font_name, value, 50);
-                    rendered_point_nums.insert(idx);
-                }
-                if (render_pt_num && !rendered_point_nums.contains(std::get<1>(edge)))
-                {
-                    auto idx = std::get<1>(edge);
-                    auto point = mesh.vertex(idx).point();
-
-                    auto str = std::to_string(idx);
-                    render_text<T, U>(buffer, point, str, font_name, value, 50);
-                    rendered_point_nums.insert(idx);
-                }
-
                 // Render the edges if it is not already rendered
                 if (!rendered_edges.contains(edge))
                 {
