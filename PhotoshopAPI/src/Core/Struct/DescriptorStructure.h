@@ -249,59 +249,6 @@ namespace Descriptors
 		/// DescriptorBase as well as standard types such as double, bool etc.
 		static json_ordered to_json(const DescriptorVariant& variant);
 
-		/// Wonky runtime reflection for all the types held by `DescriptorVariant`,
-		/// should only be used for debugging functions or something like that,
-		/// please do not use this for anything critical
-		/// 
-		/// \tparam T The type to get as string, must be one of the types held by `DescriptorVariant`
-		template <typename T>
-		const std::string_view to_string()
-		{
-			PSAPI_LOG_ERROR("Descriptors", "Invalid to_string() overload specified.");
-		}
-		template <>
-		const std::string_view to_string<Descriptor>() { return "Descriptor"; }
-		template <>
-		const std::string_view to_string<List>() { return "List"; }
-		template <>
-		const std::string_view to_string<Reference>() { return "Reference"; }
-		template <>
-		const std::string_view to_string<RawData>() { return "RawData"; }
-		template <>
-		const std::string_view to_string<Path>() { return "Path"; }
-		template <>
-		const std::string_view to_string<double>() { return "double"; }
-		template <>
-		const std::string_view to_string<UnitFloat>() { return "UnitFloat"; }
-		template <>
-		const std::string_view to_string<UnitFloats>() { return "UnitFloats"; }
-		template <>
-		const std::string_view to_string<Enumerated>() { return "Enumerated"; }
-		template <>
-		const std::string_view to_string<int32_t>() { return "int32_t"; }
-		template <>
-		const std::string_view to_string<int64_t>() { return "int64_t"; }
-		template <>
-		const std::string_view to_string<bool>() { return "bool"; }
-		template <>
-		const std::string_view to_string<UnicodeString>() { return "UnicodeString"; }
-		template <>
-		const std::string_view to_string<Class>() { return "Class"; }
-		template <>
-		const std::string_view to_string<Property>() { return "Property"; }
-		template <>
-		const std::string_view to_string<EnumeratedReference>() { return "EnumeratedReference"; }
-		template <>
-		const std::string_view to_string<Offset>() { return "Offset"; }
-		template <>
-		const std::string_view to_string<Identifier>() { return "Identifier"; }
-		template <>
-		const std::string_view to_string<Index>() { return "Index"; }
-		template <>
-		const std::string_view to_string<Name>() { return "Name"; }
-		template <>
-		const std::string_view to_string<ObjectArray>() { return "ObjectArray"; }
-
 		/// Check the two descriptors for equality
 		bool operator==(const DescriptorBase& other) const
 		{
