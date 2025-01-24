@@ -72,3 +72,13 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+
+    - name: Upload logs as artifacts
+      if: always() # This ensures it runs even if the build fails
+      uses: actions/upload-artifact@v3
+      with:
+         name: Build Logs
+         path: |
+            /Users/runner/work/PhotoshopAPI/PhotoshopAPI/thirdparty/vcpkg/buildtrees/detect_compiler/*.log
+            /Users/runner/work/PhotoshopAPI/PhotoshopAPI/build/vcpkg-manifest-install.log
