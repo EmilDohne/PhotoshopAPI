@@ -201,8 +201,8 @@ namespace Composite
 				auto vertical_iter = std::views::iota(min_y, max_y);
 				auto horizontal_iter = std::views::iota(min_x, max_x);
 
-				auto canvas_alpha = canvas.compute_alpha<_Precision>(canvas.width, canvas.height);
-				auto layer_alpha = layer.compute_alpha<_Precision>(canvas.width, canvas.height);
+				auto canvas_alpha = canvas.template compute_alpha<_Precision>(canvas.width, canvas.height);
+				auto layer_alpha = layer.template compute_alpha<_Precision>(canvas.width, canvas.height);
 
 				for (auto [_index, canvas_channel] : canvas.channels)
 				{
