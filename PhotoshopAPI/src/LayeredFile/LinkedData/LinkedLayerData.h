@@ -508,7 +508,7 @@ struct LinkedLayers
 	/// \param type		The type of LinkedLayer to create, a photoshop file may have differing values
 	/// 
 	/// \returns A reference to the LinkedLayerData we just created or an existing one
-	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, LinkedLayerType type = LinkedLayerType::Data)
+	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, LinkedLayerType type = LinkedLayerType::data)
 	{
 		// Try and find the reference based on the filepath first, if this fails we insert a new one
 		std::string hash;
