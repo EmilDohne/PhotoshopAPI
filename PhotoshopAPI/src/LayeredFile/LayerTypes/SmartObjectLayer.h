@@ -284,7 +284,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	/// Unlike the accessors `get_image_data()` and `get_channel()` this function gets the full resolution
 	/// image data that is stored on the smart object, i.e. the original image data. This may be smaller
 	/// or larger than the layers `width` or `height`. To get the actual resolution you can query: `original_width()` and `original_height()`
-	data_type original_image_data()
+	_ImageDataLayerType::data_type original_image_data()
 	{
 		if (!m_FilePtr)
 		{
@@ -309,7 +309,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 		return _ImageDataLayerType<T>::get_channel(channelID, copy);
 	}
 
-	data_type get_image_data(bool copy = true) override
+	_ImageDataLayerType::data_type get_image_data(bool copy = true) override
 	{
 		evaluate_image_data();
 		return _ImageDataLayerType<T>::get_image_data(copy);
@@ -349,7 +349,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 			" use the replace() function");
 	}
 	/// Disabled for the smart object as it links back to a file, please use `replace()` instead.
-	void set_image_data(data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction) override
+	void set_image_data(_ImageDataLayerType::data_type data, const Enum::Compression compression = Enum::Compression::ZipPrediction) override
 	{
 		PSAPI_LOG_ERROR("SmartObject",
 			"Setting the layers image data is not possible on a smart object as it links back to a file." \
@@ -358,7 +358,7 @@ struct SmartObjectLayer : public _ImageDataLayerType<T>
 	}
 
 	/// Return the stored image data in a zero-copy way. As the SmartObject is lazily evaluated this may give out of date image data.
-	const storage_type& image_data() const override
+	const _ImageDataLayerType::storage_type& image_data() const override
 	{
 		return _ImageDataLayerType<T>::image_data();
 	}

@@ -64,7 +64,7 @@ struct LinkedLayerData
 
 		// Create and read the file, if the input supports it we read it from the buffer we just read rather than from 
 		// disk again.
-		auto _in = OIIO::ImageInput::create(filepath);
+		auto _in = OIIO::ImageInput::create(filepath.string());
 		if (_in && static_cast<bool>(_in->supports("ioproxy")))
 		{
 			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
@@ -142,7 +142,7 @@ struct LinkedLayerData
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;
-				std::vector<T> data = channel->getData<T>(threads);
+				std::vector<T> data = channel->template getData<T>(threads);
 				{
 					std::lock_guard<std::mutex> lock(mutex);
 					out[key] = std::move(data);
@@ -489,7 +489,7 @@ struct LinkedLayers
 	/// \param type		The type of LinkedLayer to create, a photoshop file may have differing values
 	/// 
 	/// \returns A reference to the LinkedLayerData we just created or an existing one
-	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, const std::string& hash, LinkedLayerType type = LinkedLayerType::Data)
+	std::shared_ptr<LinkedLayerData<T>>& insert(const std::filesystem::path& filePath, const std::string& hash, LinkedLayerType type = LinkedLayerType::data)
 	{
 		if (!m_LinkedLayerData.contains(hash))
 		{

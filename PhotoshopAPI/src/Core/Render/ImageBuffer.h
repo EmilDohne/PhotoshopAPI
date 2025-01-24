@@ -495,7 +495,7 @@ namespace Render
                 // Get the 4x4 pixel matrix and apply the cubic hermite first across
                 // the x dimension and then across the y dimension along the combined results
                 std::array<T, 4 * 4> matrix;
-                ChannelBuffer<T, is_const>::get_matrix<4, 4, is_const, clamp_border>(matrix, *this, x_int, y_int);
+                ChannelBuffer<T, is_const>::template get_matrix<4, 4, is_const, clamp_border>(matrix, *this, x_int, y_int);
 
                 U col0  = cubic_hermite<U>(static_cast<U>(matrix[0]),  static_cast<U>(matrix[1]),  static_cast<U>(matrix[2]),  static_cast<U>(matrix[3]),  dx);
                 U col1  = cubic_hermite<U>(static_cast<U>(matrix[4]),  static_cast<U>(matrix[5]),  static_cast<U>(matrix[6]),  static_cast<U>(matrix[7]),  dx);
@@ -598,7 +598,7 @@ namespace Render
         static std::array<T, _m * _n> get_matrix(const ChannelBuffer<T>& buffer, std::int64_t x, std::int64_t y) noexcept
         {
             std::array<T, _m * _n> matrix;
-            ChannelBuffer<T>::get_matrix<_m, _n, is_const, clamp_border>(matrix, buffer, x, y);
+            ChannelBuffer<T>::template get_matrix<_m, _n, is_const, clamp_border>(matrix, buffer, x, y);
             return matrix;
         }
 
