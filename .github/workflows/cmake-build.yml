@@ -35,10 +35,10 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
-           - name: MacOS ARM GCC
+           - name: MacOS ARM Clang
              os: macos-latest
-             compiler: gcc-13
-             compilercxx: g++-13      
+             compiler: clang
+             compilercxx: clang++
 
     steps:
     - uses: actions/checkout@v4
@@ -64,20 +64,3 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-
-    # Call our python script to generate the relevant release artifacts after which we upload
-    # them for each platform
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    
-    - name: Generate artifacts for ${{ matrix.os }}-${{ matrix.compilercxx }}
-      run: python scripts/generate_release.py --build-dir ${{github.workspace}}/build
-
-    - name: Upload Release Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: PhotoshopAPI-${{ matrix.os }}-${{ matrix.compilercxx }}
-        path: ${{github.workspace}}/release

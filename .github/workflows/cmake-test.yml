@@ -41,10 +41,10 @@ jobs:
              compilercxx: msvc
              cflags: ""
              cxxflags: ""
-           - name: MacOS ARM GCC
+           - name: MacOS ARM Clang
              os: macos-latest
-             compiler: gcc-13
-             compilercxx: g++-13
+             compiler: clang
+             compilercxx: clang++
              cflags: ""
              cxxflags: ""
 

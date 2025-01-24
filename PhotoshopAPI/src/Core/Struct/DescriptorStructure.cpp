@@ -1438,7 +1438,7 @@ namespace Descriptors
 		data["name"] = m_Name.getString();
 		data["class_id"] = m_ClassID;
 
-		auto values = json_ordered::basic_json();
+		json_ordered values{};
 		for (const auto& [key, item] : m_DescriptorItems)
 		{
 			values[key] = (DescriptorBase::to_json(item));
@@ -1542,10 +1542,10 @@ namespace Descriptors
 		data["implementation"] = DescriptorBase::get_json_repr("Descriptor");
 		data["name"] = m_Name.getString();
 
-		auto values = json_ordered::basic_json();
+		json_ordered values{};
 		for (const auto& [key, item] : m_DescriptorItems)
 		{
-			values[key] = (DescriptorBase::to_json(item));
+			values[key] = DescriptorBase::to_json(item);
 		}
 		data["values"] = std::move(values);
 

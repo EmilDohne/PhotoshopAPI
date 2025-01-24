@@ -540,23 +540,7 @@ namespace Descriptors
 
 		/// Get the List items as a certain type, requires that all list items are the exact same
 		template <typename T>
-		std::vector<T> as() const
-		{
-			std::vector<T> out;
-			out.reserve(m_Items.size());
-			for (const auto& item : m_Items)
-			{
-				if (std::holds_alternative<T>(item))
-				{
-					out.push_back(std::get<T>(item));
-				}
-				else
-				{
-					throw std::runtime_error("Unable to access item as type T as it is not of that type");
-				}
-			}
-			return out;
-		}
+		std::vector<T> as() const;
 
 		bool operator==(const List& other) const;
 
@@ -694,7 +678,9 @@ namespace Descriptors
 			return std::visit(
 				[](const auto& a, const auto& b) -> bool
 				{
-					if constexpr (std::is_same_v<decltype(a), decltype(b)>)
+					using A = std::decay_t<decltype(a)>;
+					using B = std::decay_t<decltype(b)>;
+					if constexpr (std::is_same_v<A, B>)
 					{
 						return a == b;
 					}
@@ -725,6 +711,26 @@ namespace Descriptors
 			}
 		}
 		throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
+	}
+
+
+	template <typename T>
+	std::vector<T> List::as() const
+	{
+		std::vector<T> out;
+		out.reserve(m_Items.size());
+		for (const auto& item : m_Items)
+		{
+			if (std::holds_alternative<T>(item))
+			{
+				out.push_back(std::get<T>(item));
+			}
+			else
+			{
+				throw std::runtime_error("Unable to access item as type T as it is not of that type");
+			}
+		}
+		return out;
 	}
 
 } // Namespace Descriptors
