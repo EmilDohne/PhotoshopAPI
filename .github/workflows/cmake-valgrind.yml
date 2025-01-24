@@ -36,6 +36,11 @@ jobs:
       with:
         submodules: 'recursive'
 
+    - name: Load or restore vcpkg libraries
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
+
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
         CC: ${{ matrix.compiler }}

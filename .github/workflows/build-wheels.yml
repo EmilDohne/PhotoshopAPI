@@ -65,20 +65,17 @@ jobs:
       with:
         submodules: true
 
-    # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.3
-      if: matrix.os == 'macos-latest'
-      uses: maxim-lobanov/setup-xcode@v1
+    - name: Load or restore vcpkg libraries
+      uses: lukka/run-vcpkg@v11
       with:
-        xcode-version: '15.3'
+        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
     - uses: pypa/cibuildwheel@v2.16
       env:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
-        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
         # Test not only by running the test suite but also by executing every example we provide. This is to ensure
         # our examples are working and users can rely on them for starting off points
