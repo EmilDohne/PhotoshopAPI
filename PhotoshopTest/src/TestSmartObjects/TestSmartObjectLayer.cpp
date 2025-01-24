@@ -104,7 +104,7 @@ TEST_CASE("Read all supported warps and write image files")
 	auto base_ref_path = std::filesystem::current_path() / "documents/SmartObjects/reference";
 
 	/// Compare two layers within the given tolerance
-	auto compare_layer = [](
+	auto compare_layer = [&base_ref_path](
 		std::filesystem::path _reference_path,
 		Render::ImageBuffer<bpp_type>& generated_warp
 		)
@@ -150,9 +150,20 @@ TEST_CASE("Read all supported warps and write image files")
 					<< " on pixel (" << result.maxx << "," << result.maxy
 					<< "," << result.maxz << "), channel " << index << "\n";
 
-				// We check for less than a 1% error, since our edges are fairly different
+				// We check for less than a .4% error, since our edges are fairly different
 				// we cannot check for single pixels being below a certain tolerance.
-				CHECK(result.meanerror < 0.01f);
+				if (_reference_path == base_ref_path / "perspective_transform.png")
+				{
+					// This needs some extra clarification, photoshop when just using a perspective warp (no warp) changes the image
+					// by warping the image similar to how an st map would do, not by actually warping the mesh defined by the 4 corners.
+					// This seems to be an edge case and we don't intend to reproduce what photoshop does 1 to 1 because it is close enough
+					// and would add a lot of overhead
+					CHECK(result.meanerror < 0.01f);
+				}
+				else
+				{
+					CHECK(result.meanerror < 0.004f);
+				}
 			}
 		};
 
