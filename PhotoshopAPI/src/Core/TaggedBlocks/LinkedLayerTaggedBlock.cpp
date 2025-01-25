@@ -202,9 +202,11 @@ void LinkedLayerItem::Data::write(File& document)
 			{
 				m_Date.value_or(Date{}).write(document);
 			}
+			auto& linked_file_descriptor = m_LinkedFileDescriptor.value();
+			auto original_path = linked_file_descriptor.at<UnicodeString>("originalPath");
 
 			// This here is the file size which is probably stored for internal consistency.
-			auto file = std::ifstream(m_LinkedFileDescriptor.value().at<UnicodeString>("originalPath").string(), std::ifstream::ate | std::ifstream::binary);
+			auto file = std::ifstream(original_path.string(), std::ifstream::ate | std::ifstream::binary);
 			WriteBinaryData<uint64_t>(document, file.tellg());
 
 			if (m_Version > 2)
@@ -308,14 +310,14 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 
 	{
 		auto file_open_descriptor = Descriptors::Descriptor("null");
-		constexpr int comp_id = -1;
-		constexpr int original_comp_id = -1;
+		constexpr int32_t comp_id = -1;
+		constexpr int32_t original_comp_id = -1;
 
-		auto comp_info_descriptor = Descriptors::Descriptor("null");
-		comp_info_descriptor["compID"] = comp_id;
-		comp_info_descriptor["originalCompID"] = original_comp_id;
+		auto comp_info_descriptor = std::make_unique<Descriptors::Descriptor>("null");
+		comp_info_descriptor->insert("compID",comp_id);
+		comp_info_descriptor->insert("originalCompID",original_comp_id);
 
-		file_open_descriptor["compInfo"] = comp_info_descriptor;
+		file_open_descriptor["compInfo"] = std::move(comp_info_descriptor);
 
 		m_FileOpenDescriptor.emplace(std::move(file_open_descriptor));
 	}

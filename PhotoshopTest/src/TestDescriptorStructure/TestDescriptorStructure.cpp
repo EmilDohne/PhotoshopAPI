@@ -8,9 +8,8 @@ TEST_CASE("Test Descriptor Insertion")
 	using namespace PhotoshopAPI;
 	Descriptors::Descriptor descriptor{};
 
-	descriptor.insert("key", 20.0f);
+	descriptor.insert("key", static_cast<double>(20.0f));
 
 	CHECK(descriptor.contains("key"));
-	CHECK(std::get<double>(descriptor.at("key")) == 20.0f);
-	CHECK(std::holds_alternative<double>(descriptor["key"]));
+	CHECK(descriptor.at<double>("key") == 20.0f);
 }

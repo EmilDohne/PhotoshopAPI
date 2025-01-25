@@ -98,7 +98,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::tuple<std::string, DescriptorVariant> Impl::ReadDescriptorVariant(File& document, bool readKey/* = true */)
+	std::tuple<std::string, std::unique_ptr<DescriptorBase>> Impl::ReadDescriptorVariant(File& document, bool readKey/* = true */)
 	{
 		// Each descriptor has a key as well as a OSType which is the data type it actually is,
 		// after this we dispatch to the actual read function
@@ -109,42 +109,37 @@ namespace Descriptors
 		}
 		auto ostype = Impl::readKey(document);
 		auto osTypeEnum = getOSTypeFromKey(ostype);
+
 		if (osTypeEnum == Impl::OSTypes::Double)
 		{
-			return std::make_tuple(key, ReadBinaryData<double>(document));
+			return construct_descriptor<double_Wrapper>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Integer)
 		{
-			return std::make_tuple(key, ReadBinaryData<int32_t>(document));
+			return construct_descriptor<int32_t_Wrapper>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::LargeInteger)
 		{
-			return std::make_tuple(key, ReadBinaryData<int64_t>(document));
+			return construct_descriptor<int64_t_Wrapper>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Boolean)
 		{
-			return std::make_tuple(key, ReadBinaryData<bool>(document));
+			return construct_descriptor<bool_Wrapper>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Alias)
 		{
 			// An alias is basically just raw data but even though its just
 			// a length field with some raw data we need to disambiguate it through
 			// the ostype so we can write it out correctly
-			RawData alias(key, ostype);
-			alias.read(document);
-			return std::make_tuple(key, alias);
+			return construct_descriptor<RawData>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::UnitFloat)
 		{
-			UnitFloat unitFloat(key, ostype);
-			unitFloat.read(document);
-			return std::make_tuple(key, unitFloat);
+			return construct_descriptor<UnitFloat>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::UnitFloats)
 		{
-			UnitFloats unitFloats(key, ostype);
-			unitFloats.read(document);
-			return std::make_tuple(key, unitFloats);
+			return construct_descriptor<UnitFloats>(document, key, ostype);
 		}
 		else if (
 			osTypeEnum == Impl::OSTypes::Class_1 ||
@@ -152,268 +147,66 @@ namespace Descriptors
 			osTypeEnum == Impl::OSTypes::Class_3
 			)
 		{
-			Class clss(key, ostype);
-			clss.read(document);
-			return std::make_tuple(key, clss);
+			return construct_descriptor<Class>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Descriptor)
 		{
-			Descriptor descriptor(key);
-			descriptor.read(document);
-			return std::make_tuple(key, descriptor);
+			return construct_descriptor<Descriptor>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::ObjectArray)
 		{
-			ObjectArray objectarray(key, ostype);
-			objectarray.read(document);
-			return std::make_tuple(key, objectarray);
+			return construct_descriptor<ObjectArray>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Enumerated)
 		{
-			Enumerated enumerated(key, ostype);
-			enumerated.read(document);
-			return std::make_tuple(key, enumerated);
+			return construct_descriptor<Enumerated>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::EnumeratedReference)
 		{
-			EnumeratedReference enumeratedReference(key, ostype);
-			enumeratedReference.read(document);
-			return std::make_tuple(key, enumeratedReference);
+			return construct_descriptor<EnumeratedReference>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Reference)
 		{
-			Reference reference(key, ostype);
-			reference.read(document);
-			return std::make_tuple(key, reference);
+			return construct_descriptor<Reference>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::RawData)
 		{
-			RawData rawdata(key, ostype);
-			rawdata.read(document);
-			return std::make_tuple(key, rawdata);
+			return construct_descriptor<RawData>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::List)
 		{
-			List list(key, ostype);
-			list.read(document);
-			return std::make_tuple(key, list);
+			return construct_descriptor<List>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Property)
 		{
-			Property property(key, ostype);
-			property.read(document);
-			return std::make_tuple(key, property);
+			return construct_descriptor<Property>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Offset)
 		{
-			Offset offset(key, ostype);
-			offset.read(document);
-			return std::make_tuple(key, offset);
+			return construct_descriptor<Offset>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Identifier)
 		{
-			Identifier ident(key, ostype);
-			ident.read(document);
-			return std::make_tuple(key, ident);
+			return construct_descriptor<Identifier>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Index)
 		{
-			Index index(key, ostype);
-			index.read(document);
-			return std::make_tuple(key, index);
+			return construct_descriptor<Index>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::Name)
 		{
-			Name name(key, ostype);
-			name.read(document);
-			return std::make_tuple(key, name);
+			return construct_descriptor<Name>(document, key, ostype);
 		}
 		else if (osTypeEnum == Impl::OSTypes::String)
 		{
-			UnicodeString str{};
-			str.read(document, 1u);
-			return std::make_tuple(key, str);
+			return construct_descriptor<UnicodeString_Wrapper>(key, ostype);
 		}
 		else
 		{
 			PSAPI_LOG_ERROR("Descriptor", "Unable to find type match for OSType '%c%c%c%c' while searching key '%s'",
 				ostype.at(0), ostype.at(1), ostype.at(2), ostype.at(3), key.c_str());
-			return std::make_tuple(key, 0u);
+			return std::make_tuple(key, nullptr);
 		}
-	}
-
-
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
-	void Impl::WriteDescriptorVariant(File& document, const std::string& key, const DescriptorVariant& value, bool writeKey /*= true*/)
-	{
-		if (writeKey)
-		{
-			Impl::writeLengthDenotedKey(document, key);
-		}
-
-		if (std::holds_alternative<double>(value))
-		{
-			auto item = std::get<double>(value);
-			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Double);
-			WriteBinaryArray(document, descriptorKey);
-			WriteBinaryData<double>(document, item);
-		}
-		else if (std::holds_alternative<int32_t>(value))
-		{
-			auto item = std::get<int32_t>(value);
-			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Integer);
-			WriteBinaryArray(document, descriptorKey);
-			WriteBinaryData<int32_t>(document, item);
-		}
-		else if (std::holds_alternative<int64_t>(value))
-		{
-			auto item = std::get<int64_t>(value);
-			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::LargeInteger);
-			WriteBinaryArray(document, descriptorKey);
-			WriteBinaryData<int64_t>(document, item);
-		}
-		else if (std::holds_alternative<bool>(value))
-		{
-			auto item = std::get<bool>(value);
-			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::Boolean);
-			WriteBinaryArray(document, descriptorKey);
-			WriteBinaryData<bool>(document, item);
-		}
-		else if (std::holds_alternative<RawData>(value))
-		{
-			// This could hold an alias or a rawdata type, we use the getOSKey function
-			// so that it gets disambiguated
-			WriteDescriptorBaseType(document, std::get<RawData>(value));
-		}
-		else if (std::holds_alternative<UnitFloat>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<UnitFloat>(value));
-		}
-		else if (std::holds_alternative<UnitFloats>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<UnitFloats>(value));
-		}
-		else if (std::holds_alternative<Reference>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Reference>(value));
-		}
-		else if (std::holds_alternative<Class>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Class>(value));
-		}
-		else if (std::holds_alternative<Descriptor>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Descriptor>(value));
-		}
-		else if (std::holds_alternative<ObjectArray>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<ObjectArray>(value));
-		}
-		else if (std::holds_alternative<Enumerated>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Enumerated>(value));
-		}
-		else if (std::holds_alternative<EnumeratedReference>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<EnumeratedReference>(value));
-		}
-		else if (std::holds_alternative<List>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<List>(value));
-		}
-		else if (std::holds_alternative<Property>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Property>(value));
-		}
-		else if (std::holds_alternative<Offset>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Offset>(value));
-		}
-		else if (std::holds_alternative<Identifier>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Identifier>(value));
-		}
-		else if (std::holds_alternative<Index>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Index>(value));
-		}
-		else if (std::holds_alternative<Name>(value))
-		{
-			WriteDescriptorBaseType(document, std::get<Name>(value));
-		}
-		else if (std::holds_alternative<UnicodeString>(value))
-		{
-			auto descriptorKey = Impl::descriptorKeys.at(Impl::OSTypes::String);
-			WriteBinaryArray(document, descriptorKey);
-			const auto& str = std::get<UnicodeString>(value);
-			str.write(document);
-		}
-		else
-		{
-			PSAPI_LOG_ERROR("Descriptor", "Unable to write DescriptorItem to disk, please ensure a proper parser was registered" \
-				" for it");
-		}
-	}
-
-
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
-	json_ordered DescriptorBase::to_json(const DescriptorVariant& variant)
-	{
-		return std::visit([](const auto& value) -> json_ordered 
-			{
-			using T = std::decay_t<decltype(value)>;
-
-			// If the type is derived from DescriptorBase, call its to_json method
-			if constexpr (std::is_base_of_v<DescriptorBase, T>) 
-			{
-				return value.to_json();
-			}
-			// Special handling for integral and other built-in types
-			else if constexpr (std::is_same_v<T, int32_t>) 
-			{
-				return {
-					{"implementation", { {"_data_type", "int32_t"} }},
-					{ "value", value }
-				};
-			}
-			else if constexpr (std::is_same_v<T, int64_t>) 
-			{
-				return {
-					{"implementation", { {"_data_type", "int64_t"} }},
-					{ "value", value }
-				};
-			}
-			else if constexpr (std::is_same_v<T, double>) 
-			{
-				return {
-					{"implementation", { {"_data_type", "double"} }},
-					{ "value", value }
-				};
-			}
-			else if constexpr (std::is_same_v<T, bool>) 
-			{
-				return 
-				{
-					{"implementation", { {"_data_type", "bool"} }},
-					{ "value", value }
-				};
-			}
-			else if constexpr (std::is_same_v<T, UnicodeString>)
-			{
-				return
-				{
-					{"implementation", { {"_data_type", "UnicodeString"} }},
-					{ "value", value.getString()}
-				};
-			}
-			else 
-			{
-				PSAPI_LOG_ERROR("DescriptorBase", "No matching to_json() function or builtin found for type");
-				return {};
-			}
-			}, variant);
 	}
 
 
@@ -433,19 +226,19 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	DescriptorVariant& KeyValueMixin::operator[](const std::string_view key) noexcept
+	std::unique_ptr<DescriptorBase>& KeyValueMixin::operator[](const std::string_view key) noexcept
 	{
 		for (auto& [_key, value] : m_DescriptorItems)
 		{
 			if (_key == key)
 				return value;
 		}
-		m_DescriptorItems.push_back(std::make_pair(std::string(key), DescriptorVariant{}));
+		m_DescriptorItems.push_back(std::make_pair(std::string(key), std::make_unique<Descriptor>()));
 		return m_DescriptorItems.back().second;
 	}
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	DescriptorVariant& KeyValueMixin::at(const std::string_view key)
+	std::unique_ptr<DescriptorBase>& KeyValueMixin::at(const std::string_view key)
 	{
 		for (auto& [_key, value] : m_DescriptorItems)
 		{
@@ -458,7 +251,7 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	const DescriptorVariant& KeyValueMixin::at(const std::string_view key) const
+	const std::unique_ptr<DescriptorBase>& KeyValueMixin::at(const std::string_view key) const
 	{
 		for (const auto& [_key, value] : m_DescriptorItems)
 		{
@@ -471,32 +264,11 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void KeyValueMixin::insert(std::pair<std::string, DescriptorVariant> item) noexcept
+	void KeyValueMixin::insert(std::pair<std::string, std::unique_ptr<DescriptorBase>> item) noexcept
 	{
 		// If the key already exists we return
-		if (contains(item.first))
-			return;
-		m_DescriptorItems.push_back(item);
-	}
-
-
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
-	void KeyValueMixin::insert(std::string key, DescriptorVariant value) noexcept
-	{
-		insert(std::make_pair(key, value));
-	}
-
-
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
-	void KeyValueMixin::insert_or_assign(std::pair<std::string, DescriptorVariant> item) noexcept
-	{
-		// If the key already exists we simply override the value
-		if (contains(item.first))
+		if (this->contains(item.first))
 		{
-			auto& valueRef = at(item.first);
-			valueRef = item.second;
 			return;
 		}
 		m_DescriptorItems.push_back(item);
@@ -505,7 +277,64 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void KeyValueMixin::insert_or_assign(std::string key, DescriptorVariant value) noexcept
+	void KeyValueMixin::insert(std::string key, std::unique_ptr<DescriptorBase> value) noexcept
+	{
+		insert(std::make_pair(key, value));
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void KeyValueMixin::insert(std::string key, std::variant<bool, int32_t, int64_t, double, UnicodeString> value)
+	{
+		if (std::holds_alternative<bool>(value))
+		{
+			auto ptr = std::make_unique<bool_Wrapper>(std::get<bool>(value));
+			this->insert(std::move(key), std::move(ptr));
+		}
+		else if (std::holds_alternative<int32_t>(value))
+		{
+			auto ptr = std::make_unique<int32_t_Wrapper>(std::get<int32_t>(value));
+			this->insert(std::move(key), std::move(ptr));
+		}
+		else if (std::holds_alternative<int64_t>(value))
+		{
+			auto ptr = std::make_unique<int64_t_Wrapper>(std::get<int64_t>(value));
+			this->insert(std::move(key), std::move(ptr));
+		}
+		else if (std::holds_alternative<double>(value))
+		{
+			auto ptr = std::make_unique<double_Wrapper>(std::get<double>(value));
+			this->insert(std::move(key), std::move(ptr));
+		}
+		else if (std::holds_alternative<UnicodeString>(value))
+		{
+			auto ptr = std::make_unique<UnicodeString_Wrapper>(std::get<UnicodeString>(value));
+			this->insert(std::move(key), std::move(ptr));
+		}
+		else
+		{
+			throw std::runtime_error("Unhandled variant type");
+		}
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void KeyValueMixin::insert_or_assign(std::pair<std::string, std::unique_ptr<DescriptorBase>> item) noexcept
+	{
+		// If the key already exists we simply override the value
+		if (contains(item.first))
+		{
+			auto& valueRef = this->at(item.first);
+			valueRef = std::move(item.second);
+			return;
+		}
+		m_DescriptorItems.push_back(item);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void KeyValueMixin::insert_or_assign(std::string key, std::unique_ptr<DescriptorBase> value) noexcept
 	{
 		insert_or_assign(std::make_pair(key, value));
 	}
@@ -528,7 +357,7 @@ namespace Descriptors
 		{
 			if (_key == key)
 			{
-				remove(idx);
+				this->remove(idx);
 				return;
 			}
 			++idx;
@@ -545,7 +374,9 @@ namespace Descriptors
 		for (const auto& [_key, value] : m_DescriptorItems)
 		{
 			if (_key == key)
+			{
 				return true;
+			}
 		}
 		return false;
 	}
@@ -744,6 +575,8 @@ namespace Descriptors
 		std::vector<uint8_t> unitTypeData(unitTypeKey.begin(), unitTypeKey.end());
 		WriteBinaryArray(document, unitTypeData);
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Values.size()));
+
+		// copy to avoid in-place byteswap
 		auto values = m_Values;
 		WriteBinaryArray<double>(document, values);
 	}
@@ -1329,7 +1162,7 @@ namespace Descriptors
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_Items.size()));
 		for (auto& item : m_Items)
 		{
-			Impl::WriteDescriptorVariant(document, "", item, false);
+			Impl::WriteDescriptor(document, "", item, false);
 		}
 	}
 
@@ -1345,7 +1178,7 @@ namespace Descriptors
 		auto values = json_ordered::array();
 		for (const auto& item : m_Items)
 		{
-			values.push_back(DescriptorBase::to_json(item));
+			values.push_back(item->to_json());
 		}
 		data["values"] = std::move(values);
 
@@ -1369,7 +1202,7 @@ namespace Descriptors
 
 		for (size_t i = 0; i < m_Items.size(); ++i)
 		{
-			bool result = Impl::descriptors_are_equal(m_Items[i], other.m_Items[i]);
+			bool result = *m_Items[i] == *other.m_Items[i];
 			if (!result)
 			{
 				return false;
@@ -1389,7 +1222,7 @@ namespace Descriptors
 		for (uint32_t i = 0; i < descriptorCount; ++i)
 		{
 			auto [key, value] = Impl::ReadDescriptorVariant(document);
-			m_DescriptorItems.push_back(std::make_pair(key, value));
+			m_DescriptorItems.push_back(std::make_pair(key, std::move(value)));
 		}
 	}
 
@@ -1404,7 +1237,7 @@ namespace Descriptors
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_DescriptorItems.size()));
 		for (auto& [key, value] : m_DescriptorItems)
 		{
-			Impl::WriteDescriptorVariant(document, key, value);
+			Impl::WriteDescriptor(document, key, value);
 		}
 	}
 
@@ -1417,13 +1250,13 @@ namespace Descriptors
 		uint32_t itemsCount, 
 		std::string name, 
 		std::string classID,
-		std::vector<std::pair<std::string, DescriptorVariant>> items)
+		std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> items)
 		: DescriptorBase(key, osKey)
 	{
 		m_ItemsCount = itemsCount;
 		m_Name = UnicodeString(name, 1u);
 		m_ClassID = classID;
-		m_DescriptorItems = items;
+		m_DescriptorItems = std::move(items);
 	}
 
 
@@ -1441,7 +1274,7 @@ namespace Descriptors
 		json_ordered values{};
 		for (const auto& [key, item] : m_DescriptorItems)
 		{
-			values[key] = (DescriptorBase::to_json(item));
+			values[key] = item->to_json();
 		}
 		data["values"] = std::move(values);
 
@@ -1487,7 +1320,7 @@ namespace Descriptors
 				return false;
 			}
 
-			if (!Impl::descriptors_are_equal(std::get<1>(pair_self), std::get<1>(pair_other)))
+			if (*std::get<1>(pair_self) != *std::get<1>(pair_other))
 			{
 				return false;
 			}
@@ -1506,7 +1339,7 @@ namespace Descriptors
 		for (uint32_t i = 0; i < descriptorCount; ++i)
 		{
 			auto [key, value] = Impl::ReadDescriptorVariant(document);
-			m_DescriptorItems.push_back(std::make_pair(key, value));
+			m_DescriptorItems.push_back(std::make_pair(key, std::move(value)));
 		}
 	}
 
@@ -1519,14 +1352,14 @@ namespace Descriptors
 		WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(m_DescriptorItems.size()));
 		for (auto& [key, value] : m_DescriptorItems)
 		{
-			Impl::WriteDescriptorVariant(document, key, value);
+			Impl::WriteDescriptor(document, key, value);
 		}
 	}
 
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptor::Descriptor(std::string key, std::vector<std::pair<std::string, DescriptorVariant>> items)
+	Descriptor::Descriptor(std::string key, std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> items)
 		: DescriptorBase(key, Impl::descriptorKeys.at(Impl::OSTypes::Descriptor))
 	{
 		m_DescriptorItems = std::move(items);
@@ -1545,7 +1378,7 @@ namespace Descriptors
 		json_ordered values{};
 		for (const auto& [key, item] : m_DescriptorItems)
 		{
-			values[key] = DescriptorBase::to_json(item);
+			values[key] = item->to_json();
 		}
 		data["values"] = std::move(values);
 
@@ -1582,12 +1415,144 @@ namespace Descriptors
 				return false;
 			}
 
-			if (!Impl::descriptors_are_equal(std::get<1>(pair_self), std::get<1>(pair_other)))
+			if (*std::get<1>(pair_self) != *std::get<1>(pair_other))
 			{
 				return false;
 			}
 		}
 		return true;
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void double_Wrapper::read(File& document)
+	{
+		m_Value = ReadBinaryData<double>(document);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void double_Wrapper::write(File& document) const
+	{
+		WriteBinaryData<double>(document, m_Value);
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool double_Wrapper::operator==(const double_Wrapper& other) const
+	{
+		return this->m_Value == other.m_Value
+	}
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	json_ordered double_Wrapper::to_json() const
+	{
+		return {
+					{"implementation", { {"_data_type", "double"} }},
+					{ "value", m_Value }
+		};
+	}
+
+	
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void int32_t_Wrapper::read(File& document)
+	{
+		m_Value = ReadBinaryData<int32_t>(document);
+	}
+
+	void int32_t_Wrapper::write(File& document) const
+	{
+		WriteBinaryData<int32_t>(document, m_Value);
+	}
+
+	bool int32_t_Wrapper::operator==(const int32_t_Wrapper& other) const
+	{
+		return this->m_Value == other.m_Value
+	}
+
+	json_ordered int32_t_Wrapper::to_json() const
+	{
+		return {
+					{"implementation", { {"_data_type", "int32_t"} }},
+					{ "value", m_Value }
+		};
+	}
+
+	void int64_t_Wrapper::read(File& document)
+	{
+		m_Value = ReadBinaryData<int64_t>(document);
+	}
+
+	void int64_t_Wrapper::write(File& document) const
+	{
+		WriteBinaryData<int64_t>(document, m_Value);
+	}
+
+	bool int64_t_Wrapper::operator==(const int64_t_Wrapper& other) const
+	{
+		return this->m_Value == other.m_Value
+	}
+
+	json_ordered int64_t_Wrapper::to_json() const
+	{
+		return {
+					{"implementation", { {"_data_type", "int64_t"} }},
+					{ "value", value }
+		};
+	}
+
+	void bool_Wrapper::read(File& document)
+	{
+		m_Value = ReadBinaryData<bool>(document);
+	}
+
+	void bool_Wrapper::write(File& document) const
+	{
+		WriteBinaryData<bool>(document, m_Value);
+	}
+
+	bool bool_Wrapper::operator==(const bool_Wrapper& other) const
+	{
+		return this->m_Value == other.m_Value
+	}
+
+	json_ordered bool_Wrapper::to_json() const
+	{
+		return
+		{
+			{"implementation", { {"_data_type", "bool"} }},
+			{ "value", value }
+		};
+	}
+
+	void UnicodeString_Wrapper::read(File& document)
+	{
+		m_Value.read(document, 1u);
+	}
+
+	void UnicodeString_Wrapper::write(File& document) const
+	{
+		m_Value.write(document);
+	}
+
+	bool UnicodeString_Wrapper::operator==(const UnicodeString_Wrapper& other) const
+	{
+		return this->m_Value == other.m_Value
+	}
+
+	json_ordered UnicodeString_Wrapper::to_json() const
+	{
+		return
+		{
+			{"implementation", { {"_data_type", "UnicodeString"} }},
+			{ "value", value.getString()}
+		};
 	}
 
 }

@@ -6,6 +6,9 @@
 #include "Section.h"
 #include "BidirectionalMap.h"
 
+#include "Core/FileIO/Read.h"
+#include "Core/FileIO/Write.h"
+
 #include "Core/Geometry/Point.h"
 
 #include <variant>
@@ -23,51 +26,158 @@ using json_ordered = nlohmann::ordered_json;
 
 namespace Descriptors
 {
-	// Forward declaration for use in some of the DescriptorItems
-	struct Descriptor;
-	struct GlobalObject;
-	// Forward declare these items to use them in the DescriptorVariant type
-	struct Property;
-	struct Class;
-	struct Enumerated;
-	struct Index;
-	struct Name;
-	struct Reference;
-	struct EnumeratedReference;
-	struct ObjectArray;
-	struct Offset;
-	struct RawData;
-	struct Path;
-	struct Identifier;
-	struct UnitFloat;
-	struct UnitFloats;
-	struct List;
 
-	/// std::variant type which holds all the types that may be encountered within a Descriptor Structure.
-	/// This includes Descriptors themselves
-	using DescriptorVariant = std::variant<
-		Descriptor,
-		List,
-		Reference,
-		RawData,
-		Path,
-		double,
-		UnitFloat,
-		UnitFloats,
-		Enumerated,
-		int32_t,
-		int64_t,
-		bool,
-		UnicodeString,
-		Class,
-		Property,
-		EnumeratedReference,
-		Offset,
-		Identifier,
-		Index,
-		Name,
-		ObjectArray>;
+	/// Base struct for descriptor items which stores information about the key as well as the OSType it is. All subclasses
+	/// must implement the read() and write() methods as well as calculateSize()
+	struct DescriptorBase
+	{
+		DescriptorBase() = default;
+		DescriptorBase(std::string key, std::vector<char> osKey) : m_Key(key), m_OSKey(osKey) {};
 
+		virtual ~DescriptorBase() = default;
+
+		/// Read the DescriptorItem from disk decoding it as well as populating any child nodes (if present)
+		///
+		/// \param document The file instance to read from, must point to a valid descriptor start
+		virtual void read(File& document) = 0;
+		/// Write the DescriptorItem to disk encoding it as well as any of its child nodes (if present)
+		///
+		/// \param document The file instance to write to, must be open for write access
+		virtual void write(File& document) const = 0;
+
+		/// Recursively convert the descriptor into a json object for easy visualization 
+		/// of the data or writing to disk for debugging
+		virtual json_ordered to_json() const = 0;
+
+		/// Check the two descriptors for equality
+		bool operator==(const DescriptorBase& other) const
+		{
+			if (this->os_key() != other.os_key())
+			{
+				return false;
+			}
+			if (this->key() != other.key())
+			{
+				return false;
+			}
+			return true;
+		};
+
+		/// Retrieve the key associated with the given descriptor item. This may be empty in the case of a list.
+		/// In most cases retrieving this should not be necessary
+		std::string key() const noexcept { return m_Key; }
+		/// Retrieve the OSKey (type) of the descriptor item, since our OSType mapping is lossy this holds
+		/// the original key and is intended to be used for identifying the OSType associated with the item
+		std::vector<char> os_key() const noexcept { return m_OSKey; }
+
+	protected:
+		std::string m_Key{};
+		std::vector<char> m_OSKey{};
+
+		/// Get a json representation of the implementation, this includes things like 
+		/// Class name, m_Key, m_OSKey
+		/// 
+		/// The json structure then looks something like this:
+		/// {
+		///		"_data_type": "Descriptor",
+		///		"_key": m_Key,
+		///		"_os_key": m_OSKey,
+		/// }
+		json_ordered get_json_repr(std::string data_type) const;
+	};
+
+
+	// Wrapper types for polymorphism to work properly, these just wrap the basic types and only have the necessary 
+	// methods implemented to make them work
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+
+	struct double_Wrapper : public DescriptorBase
+	{
+		double m_Value{};
+
+		double_Wrapper() = default;
+		double_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		double_Wrapper(std::string key, std::vector<char> osKey, double value) : DescriptorBase(key, osKey) { m_Value = value; };
+
+		void read(File& document) override;
+		void write(File& document) const override;
+
+		bool operator==(const double_Wrapper& other) const;
+
+		json_ordered to_json() const override;
+	};
+
+
+	struct int32_t_Wrapper : public DescriptorBase
+	{
+		int32_t m_Value{};
+
+		int32_t_Wrapper() = default;
+		int32_t_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		int32_t_Wrapper(std::string key, std::vector<char> osKey, int32_t value) : DescriptorBase(key, osKey) { m_Value = value; };
+
+		void read(File& document) override;
+		void write(File& document) const override;
+
+		bool operator==(const int32_t_Wrapper& other) const;
+
+		json_ordered to_json() const override;
+	};
+
+
+	struct int64_t_Wrapper : public DescriptorBase
+	{
+		int64_t m_Value{};
+
+		int64_t_Wrapper() = default;
+		int64_t_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		int64_t_Wrapper(std::string key, std::vector<char> osKey, int64_t value) : DescriptorBase(key, osKey) { m_Value = value; };
+
+		void read(File& document) override;
+		void write(File& document) const override;
+
+		bool operator==(const int64_t_Wrapper& other) const;
+
+		json_ordered to_json() const override;
+	};
+
+
+	struct bool_Wrapper : public DescriptorBase
+	{
+		bool m_Value{};
+
+		bool_Wrapper() = default;
+		bool_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		bool_Wrapper(std::string key, std::vector<char> osKey, bool value) : DescriptorBase(key, osKey) { m_Value = value; };
+
+		void read(File& document) override;
+		void write(File& document) const override;
+
+		bool operator==(const bool_Wrapper& other) const;
+
+		json_ordered to_json() const override;
+	};
+
+	struct UnicodeString_Wrapper : public DescriptorBase
+	{
+		UnicodeString m_Value{};
+
+		UnicodeString_Wrapper() = default;
+		UnicodeString_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
+		UnicodeString_Wrapper(std::string key, std::vector<char> osKey, UnicodeString value) : DescriptorBase(key, osKey) { m_Value = value; };
+
+		void read(File& document) override;
+		void write(File& document) const override;
+
+		bool operator==(const UnicodeString_Wrapper& other) const;
+
+		json_ordered to_json() const override;
+	};
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	// End wrapper types
 
 	namespace Impl
 	{
@@ -185,6 +295,15 @@ namespace Descriptors
 		OSTypes getOSTypeFromKey(std::vector<char> key);
 
 
+		template <typename T>
+			requires std::is_base_of_v<T, DescriptorBase>
+		std::tuple<std::string, std::unique_ptr<DescriptorBase>> construct_descriptor(File& document, std::string key, std::vector<char> ostype)
+		{
+			auto descriptor = std::make_unique(key, ostype);
+			descriptor.read(document);
+			return std::make_tuple(key, std::move(descriptor));
+		}
+
 		/// Read a descriptor variant from the given File document and return it. It will handle any nested calls so this can be done
 		/// once per item and if any nested levels are encountered a Descriptor is returned with its child nodes filled.
 		/// 
@@ -193,19 +312,7 @@ namespace Descriptors
 		///				   to be set to false while for a descriptor this should be true, defaults to initializing the key with ""
 		/// 
 		/// \returns the key of the data as well as one of the filled Descriptor types which can be extracted with std::get<type>. 
-		std::tuple<std::string, DescriptorVariant> ReadDescriptorVariant(File& document, bool readKey = true);
-
-
-		/// Write a Descriptor item that derives from the DescriptorBase
-		///
-		/// \param document The file object to write to disk to
-		/// \tparam item	The item (which inherits from DescriptorBase) which you would like to write to disk.
-		template <typename T>
-		void WriteDescriptorBaseType(File& document, T item)
-		{
-			WriteBinaryArray(document, item.os_key());
-			item.write(document);
-		}
+		std::tuple<std::string, std::unique_ptr<DescriptorBase>> ReadDescriptorVariant(File& document, bool readKey = true);
 
 
 		/// Write a given key-value pair to disk, use this function to write a generic DescriptorVariant to disk without knowing
@@ -218,84 +325,27 @@ namespace Descriptors
 		/// \param value	The value you intend to write to disk, will write the child items as well if present
 		/// \param readKey	Whether to write the key to disk or discard it (such as with lists), this does not propagate to any child 
 		///					nodes and only applies to the given node
-		void WriteDescriptorVariant(File& document, const std::string& key, const DescriptorVariant& value, bool writeKey = true);
-	}
-
-
-	/// Base struct for descriptor items which stores information about the key as well as the OSType it is. All subclasses
-	/// must implement the read() and write() methods as well as calculateSize()
-	struct DescriptorBase
-	{
-		DescriptorBase() = default;
-		DescriptorBase(std::string key, std::vector<char> osKey) : m_Key(key), m_OSKey(osKey) {};
-
-		/// Read the DescriptorItem from disk decoding it as well as populating any child nodes (if present)
-		///
-		/// \param document The file instance to read from, must point to a valid descriptor start
-		virtual void read(File& document) = 0;
-		/// Write the DescriptorItem to disk encoding it as well as any of its child nodes (if present)
-		///
-		/// \param document The file instance to write to, must be open for write access
-		virtual void write(File& document) const = 0;
-		/// Calculate the total size of the struct as well as its child nodes if it were
-		/// to be written to disk as-is
-		virtual void calculateSize() {};	// TODO: pure virtual 
-
-		/// Recursively convert the descriptor into a json object for easy visualization 
-		/// of the data or writing to disk for debugging
-		virtual json_ordered to_json() const = 0;
-
-		/// Converts the DewscriptorVariant into a json handling both types inherited from 
-		/// DescriptorBase as well as standard types such as double, bool etc.
-		static json_ordered to_json(const DescriptorVariant& variant);
-
-		/// Check the two descriptors for equality
-		bool operator==(const DescriptorBase& other) const
+		inline void WriteDescriptor(File& document, const std::string& key, const std::unique_ptr<DescriptorBase>& value, bool writeKey = true)
 		{
-			if (this->os_key() != other.os_key())
+			if (writeKey)
 			{
-				return false;
+				Impl::writeLengthDenotedKey(document, key);
 			}
-			if (this->key() != other.key())
-			{
-				return false;
-			}
-			return true;
-		};
-
-		/// Retrieve the key associated with the given descriptor item. This may be empty in the case of a list.
-		/// In most cases retrieving this should not be necessary
-		std::string key() const noexcept { return m_Key; }
-		/// Retrieve the OSKey (type) of the descriptor item, since our OSType mapping is lossy this holds
-		/// the original key and is intended to be used for identifying the OSType associated with the item
-		std::vector<char> os_key() const noexcept { return m_OSKey; }
-
-	protected:
-		std::string m_Key{};
-		std::vector<char> m_OSKey{};
-
-		/// Get a json representation of the implementation, this includes things like 
-		/// Class name, m_Key, m_OSKey
-		/// 
-		/// The json structure then looks something like this:
-		/// {
-		///		"_data_type": "Descriptor",
-		///		"_key": m_Key,
-		///		"_os_key": m_OSKey,
-		/// }
-		json_ordered get_json_repr(std::string data_type) const;
-	};
+			WriteBinaryArray(document, value->os_key());
+			value->write(document);
+		}
+	}
 
 
 	/// A mixin for any classes that need key-value like access to descriptor items. These items are insertion-ordered
 	/// but no other guarantees for ordering are done. Items may not occur more than once
 	struct KeyValueMixin
 	{
-		/// Access one of the sub-elements, if the key doesnt exist we create a new item at the given key
+		/// Access one of the sub-elements, if the key doesnt exist we create a new Descriptor at the given key
 		///
 		/// \param key The key to search for
-		/// \returns The ItemVariant at the given key or a default constructred ItemVariant if the key doesnt exist
-		DescriptorVariant& operator[] (const std::string_view key) noexcept;
+		/// \returns The Descriptor ptr at the given key or a default constructred ItemVariant if the key doesnt exist
+		std::unique_ptr<DescriptorBase>& operator[] (const std::string_view key) noexcept;
 
 		/// Access one of the sub-elements performing bounds checking and throwing if the specified 
 		/// key does not exist
@@ -303,30 +353,113 @@ namespace Descriptors
 		/// \param key The key to search for
 		/// 
 		/// \returns A reference to the ItemVariant at the given key
-		DescriptorVariant& at(const std::string_view key);
-		const DescriptorVariant& at(const std::string_view key) const;
+		std::unique_ptr<DescriptorBase>& at(const std::string_view key);
+		const std::unique_ptr<DescriptorBase>& at(const std::string_view key) const;
 
-		/// Access one of the sub-elements as the given type, essentially calling std::get on the item
-		/// performing bounds checking and throwing if the specified key does not exist or if the template
-		/// type T does not match the actual index of the item
+		/// Access one of the sub-elements as the given type, performing bounds checking and 
+		/// throwing if the specified key does not exist or if the template type T does not 
+		/// match the item
 		/// 
 		/// \param key The key to search for
 		/// \tparam T The type to retrieve it as
 		/// 
-		/// \returns A reference to the ItemVariant at the given key
+		/// \returns A copy of the descriptor
 		template <typename T> 
-		const T& at(const std::string key) const;
+			requires std::is_base_of_v<T, DescriptorBase>
+		T at(const std::string key) const
+		{
+			for (auto& [stored_key, value] : m_DescriptorItems) 
+			{
+				if (stored_key == key) 
+				{
+					const T* casted = dynamic_cast<const T*>(value.get());
+					if (casted)
+					{
+						return *casted;
+					}
+					throw std::invalid_argument(fmt::format("Invalid type T while accessing key {}", key));
+				}
+			}
+			throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
+		}
+
+		/// Access one of the sub-elements as the given type, performing bounds checking and 
+		/// throwing if the specified key does not exist or if the template type T does not 
+		/// match the item. This is an overload to directly acces value of type `bool`, `int32_t`, 
+		/// `int64_t`, `double` and `UnicodeString` directly without first getting their wrapper types.
+		/// Copies the parameters, if you wish to modify them you must instead call the non-templated 
+		/// at() function
+		/// 
+		/// \param key The key to search for
+		/// \tparam T The type to retrieve it as
+		/// 
+		/// \returns A copy of the descriptor
+		template <typename T>
+			requires std::is_same_v<T, bool> || std::is_same_v<T, int32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, double> || std::is_same_v<T, UnicodeString>
+		T at(const std::string key) const
+		{
+			for (auto& [stored_key, value] : m_DescriptorItems)
+			{
+				if (stored_key == key)
+				{
+					if constexpr (std::is_same_v<T, bool>)
+					{
+						const bool_Wrapper* casted = dynamic_cast<const bool_Wrapper*>(value.get());
+						if (casted)
+						{
+							return casted->m_Value;
+						}
+					}
+					else if constexpr (std::is_same_v<T, int32_t>)
+					{
+						const int32_t_Wrapper* casted = dynamic_cast<const int32_t_Wrapper*>(value.get());
+						if (casted)
+						{
+							return casted->m_Value;
+						}
+					}
+					else if constexpr (std::is_same_v<T, int64_t>)
+					{
+						const int64_t_Wrapper* casted = dynamic_cast<const int64_t_Wrapper*>(value.get());
+						if (casted)
+						{
+							return casted->m_Value;
+						}
+					}
+					else if constexpr (std::is_same_v<T, double>)
+					{
+						const double_Wrapper* casted = dynamic_cast<const double_Wrapper*>(value.get());
+						if (casted)
+						{
+							return casted->m_Value;
+						}
+					}
+					else if constexpr (std::is_same_v<T, UnicodeString>)
+					{
+						const UnicodeString_Wrapper* casted = dynamic_cast<const UnicodeString_Wrapper*>(value.get());
+						if (casted)
+						{
+							return casted->m_Value;
+						}
+					}
+					throw std::invalid_argument(fmt::format("Invalid type T while accessing key {}", key));
+				}
+			}
+			throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
+		}
 
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
-		void insert(std::pair<std::string, DescriptorVariant> item) noexcept;
+		void insert(std::pair<std::string, std::unique_ptr<DescriptorBase>> item) noexcept;
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
-		void insert(std::string key, DescriptorVariant value) noexcept;
+		void insert(std::string key, std::unique_ptr<DescriptorBase> value) noexcept;
+		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
+		/// under the hood creates a wrapper around these types
+		void insert(std::string key, std::variant<bool, int32_t, int64_t, double, UnicodeString> value);
 
 		/// Insert the given key-value pair into the Descriptor overriding the value if the key is identical
-		void insert_or_assign(std::pair<std::string, DescriptorVariant> item) noexcept;
+		void insert_or_assign(std::pair<std::string, std::unique_ptr<DescriptorBase>> item) noexcept;
 		/// Insert the given key-value pair into the Descriptor overriding the value if the key is identical
-		void insert_or_assign(std::string key, DescriptorVariant value) noexcept;
-
+		void insert_or_assign(std::string key, std::unique_ptr<DescriptorBase> value) noexcept;
 		/// Remove an item by its logical index, throws if the index is not valid
 		void remove(size_t index);
 		/// Remove an item by its key, throws if the key is not valid
@@ -343,8 +476,9 @@ namespace Descriptors
 
 	protected:
 		/// The storage of our key-value items
-		std::vector<std::pair<std::string, DescriptorVariant>> m_DescriptorItems;
+		std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> m_DescriptorItems;
 	};
+
 
 
 	struct Property : public DescriptorBase
@@ -529,18 +663,38 @@ namespace Descriptors
 	/// list where each item just stores the OSType and the actual item
 	struct List : public DescriptorBase
 	{
-		std::vector<DescriptorVariant> m_Items;
+		std::vector<std::unique_ptr<DescriptorBase>> m_Items;
 
 		List() = default;
 		List(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
-		List(std::string key, std::vector<char> osKey, std::vector<DescriptorVariant> items);
+		List(std::string key, std::vector<char> osKey, std::vector<std::unique_ptr<DescriptorBase>> items);
 
 		void read(File& document) override;
 		void write(File& document) const override;
 
-		/// Get the List items as a certain type, requires that all list items are the exact same
+		/// Get the List items as a certain type, requires that all list items are the exact same. Returns 
+		/// a copy of all the items so you may not modify them in-place
 		template <typename T>
-		std::vector<T> as() const;
+			requires std::is_base_of_v<T, DescriptorBase>
+		std::vector<T> as() const
+		{
+			std::vector<T> out;
+			out.reserve(m_Items.size());
+
+			for (const auto& item : m_Items) 
+			{
+				const T* casted = dynamic_cast<const T*>(item.get());
+				if (casted) 
+				{
+					out.push_back(*casted); // Dereference and copy the object
+				}
+				else 
+				{
+					throw std::runtime_error("Unable to access item as type T; it is not of that type");
+				}
+			}
+			return out;
+		}
 
 		bool operator==(const List& other) const;
 
@@ -616,7 +770,7 @@ namespace Descriptors
 			uint32_t itemsCount, 
 			std::string name, 
 			std::string classID,
-			std::vector<std::pair<std::string, DescriptorVariant>> items);
+			std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> items);
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -653,7 +807,7 @@ namespace Descriptors
 
 		Descriptor() { m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::Descriptor); };
 		Descriptor(std::string key) : DescriptorBase(key, Impl::descriptorKeys.at(Impl::OSTypes::Descriptor)) {};
-		Descriptor(std::string key, std::vector<std::pair<std::string, DescriptorVariant>> items);
+		Descriptor(std::string key, std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> items);
 
 		void read(File& document) override;
 		void write(File& document) const override;
@@ -670,68 +824,6 @@ namespace Descriptors
 	};
 
 
-	namespace Impl
-	{
-		// Check that two descriptor variants are equal
-		inline bool descriptors_are_equal(const DescriptorVariant& lhs, const DescriptorVariant& rhs)
-		{
-			return std::visit(
-				[](const auto& a, const auto& b) -> bool
-				{
-					using A = std::decay_t<decltype(a)>;
-					using B = std::decay_t<decltype(b)>;
-					if constexpr (std::is_same_v<A, B>)
-					{
-						return a == b;
-					}
-					else
-					{
-						return false;
-					}
-				},
-				lhs, rhs);
-		}
-	}
-
-
-	template <typename T>
-	const T& KeyValueMixin::at(const std::string key) const
-	{
-		for (auto& [stored_key, value] : m_DescriptorItems) {
-			if (stored_key == key) {
-				// Try to retrieve the value as the requested type
-				try
-				{
-					return std::get<T>(value);
-				}
-				catch (const std::bad_variant_access&)
-				{
-					throw std::runtime_error("Type mismatch: The stored item does not match the requested type.");
-				}
-			}
-		}
-		throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
-	}
-
-
-	template <typename T>
-	std::vector<T> List::as() const
-	{
-		std::vector<T> out;
-		out.reserve(m_Items.size());
-		for (const auto& item : m_Items)
-		{
-			if (std::holds_alternative<T>(item))
-			{
-				out.push_back(std::get<T>(item));
-			}
-			else
-			{
-				throw std::runtime_error("Unable to access item as type T as it is not of that type");
-			}
-		}
-		return out;
-	}
 
 } // Namespace Descriptors
 

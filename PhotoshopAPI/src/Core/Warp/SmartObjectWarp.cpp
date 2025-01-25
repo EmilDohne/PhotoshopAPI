@@ -280,15 +280,15 @@ namespace SmartObject
 		try
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
-			const auto& boundsDescriptor = warp_descriptor.at<Descriptors::Descriptor>("bounds");
-			warp.m_Bounds[0] = boundsDescriptor.at<double>("Top ");
-			warp.m_Bounds[1] = boundsDescriptor.at<double>("Left");
-			warp.m_Bounds[2] = boundsDescriptor.at<double>("Btom");
-			warp.m_Bounds[3] = boundsDescriptor.at<double>("Rght");
+			auto boundsDescriptor = warp_descriptor.at<Descriptors::Descriptor>("bounds");
+			warp.m_Bounds[0] = boundsDescriptor.at<Descriptors::double_Wrapper>("Top ").m_Value;
+			warp.m_Bounds[1] = boundsDescriptor.at<Descriptors::double_Wrapper>("Left").m_Value;
+			warp.m_Bounds[2] = boundsDescriptor.at<Descriptors::double_Wrapper>("Btom").m_Value;
+			warp.m_Bounds[3] = boundsDescriptor.at<Descriptors::double_Wrapper>("Rght").m_Value;
 
 			// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-			const auto& customEnvelopeWarp = warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
-			const auto& meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
+			const auto customEnvelopeWarp = warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
+			const auto meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
 
 			// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
 			const auto& hrznValues = meshPoints.at<Descriptors::UnitFloats>("Hrzn").m_Values;
@@ -341,11 +341,11 @@ namespace SmartObject
 		try
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
-			const auto& boundsDescriptor = quilt_warp_descriptor.at<Descriptors::Descriptor>("bounds");
-			const auto& top = boundsDescriptor.at<double>("Top ");
-			const auto& left = boundsDescriptor.at<double>("Left");
-			const auto& bottom = boundsDescriptor.at<double>("Btom");
-			const auto& right = boundsDescriptor.at<double>("Rght");
+			const auto boundsDescriptor = quilt_warp_descriptor.at<Descriptors::Descriptor>("bounds");
+			const auto top		= boundsDescriptor.at<Descriptors::double_Wrapper>("Top ")->m_Value;
+			const auto left		= boundsDescriptor.at<Descriptors::double_Wrapper>("Left")->m_Value;
+			const auto bottom	= boundsDescriptor.at<Descriptors::double_Wrapper>("Btom")->m_Value;
+			const auto right	= boundsDescriptor.at<Descriptors::double_Wrapper>("Rght")->m_Value;
 
 			// Retrieve deformNumRows and deformNumCols (int32_t)
 			const auto& deformNumRows = quilt_warp_descriptor.at<int32_t>("deformNumRows");
@@ -614,8 +614,8 @@ namespace SmartObject
 		try
 		{
 			// 1. Retrieve warpStyle (Enumerated)
-			const auto& warpStyle = warpDescriptor.at<Descriptors::Enumerated>("warpStyle");
-			warpStruct._warp_style(warpStyle.m_Enum);
+			const Descriptors::Enumerated* warpStyle = warpDescriptor.at<Descriptors::Enumerated>("warpStyle");
+			warpStruct._warp_style(warpStyle->m_Enum);
 
 			// 2. Retrieve warpValue (double)
 			const auto& warpValue = warpDescriptor.at<double>("warpValue");

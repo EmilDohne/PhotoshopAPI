@@ -53,15 +53,7 @@ jobs:
       with:
         submodules: 'recursive'
         fetch-depth: 0
-
-    # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.3
-      if: matrix.os == 'macos-latest'
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.3'
-
+        
     # Further brew packages needed to run/install vcpkg dependencies
     - name: Setup MacOS dependencies
       if: matrix.os == 'macos-latest'
@@ -83,7 +75,7 @@ jobs:
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:

@@ -45,15 +45,7 @@ jobs:
       with:
         submodules: 'recursive'
         fetch-depth: 0
-
-    # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.3
-      if: matrix.os == 'macos-latest'
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: '15.3'
-
+        
     # Further brew packages needed to run/install vcpkg dependencies
     - name: Setup MacOS dependencies
       if: matrix.os == 'macos-latest'
@@ -82,13 +74,4 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-
-    - name: Upload logs as artifacts
-      if: always() # This ensures it runs even if the build fails
-      uses: actions/upload-artifact@v3
-      with:
-         name: Build Logs
-         path: |
-            /Users/runner/work/PhotoshopAPI/PhotoshopAPI/thirdparty/vcpkg/buildtrees/detect_compiler/*.log
-            /Users/runner/work/PhotoshopAPI/PhotoshopAPI/build/vcpkg-manifest-install.log
+      
