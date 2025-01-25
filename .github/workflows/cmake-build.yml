@@ -54,13 +54,14 @@ jobs:
       with:
         xcode-version: '15.3'
 
-    # vcpkg requires ninja which isnt available by default on macos so we add it manually
-    - name: Setup Ninja MacOS
+    # Further brew packages needed to run/install vcpkg dependencies
+    - name: Setup MacOS dependencies
       if: matrix.os == 'macos-latest'
       run: |
           brew install ninja
           brew install autoconf
-          echo "Ninja build system installed"
+          brew install libtool
+          brew install automake
 
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11

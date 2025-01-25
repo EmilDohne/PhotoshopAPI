@@ -66,6 +66,15 @@ jobs:
         submodules: 'recursive'
         fetch-depth: 0
 
+    # Further brew packages needed to run/install vcpkg dependencies
+    - name: Setup MacOS dependencies
+      if: matrix.os == 'macos-latest'
+      run: |
+          brew install ninja
+          brew install autoconf
+          brew install libtool
+          brew install automake
+
     - name: Load or restore vcpkg libraries
       uses: lukka/run-vcpkg@v11
       with:
