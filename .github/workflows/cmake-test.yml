@@ -32,9 +32,9 @@ jobs:
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
+             compilercxx: clang++
              cflags: "-fsanitize=address,leak,undefined"
              cxxflags: "-fsanitize=address,leak,undefined"
-             compilercxx: clang++
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
@@ -45,6 +45,12 @@ jobs:
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
+           - name: MacOS ARM Clang
+             os: macos-latest
+             compiler: clang
+             compilercxx: clang++
              cflags: "-fsanitize=address,leak,undefined"
              cxxflags: "-fsanitize=address,leak,undefined"
 

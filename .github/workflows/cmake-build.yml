@@ -39,6 +39,10 @@ jobs:
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+           - name: MacOS ARM Clang
+             os: macos-latest
+             compiler: clang
+             compilercxx: clang++
 
     steps:
     - uses: actions/checkout@v4
