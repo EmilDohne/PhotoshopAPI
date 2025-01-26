@@ -85,5 +85,5 @@ jobs:
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc || echo $NUMBER_OF_PROCESSORS)
       

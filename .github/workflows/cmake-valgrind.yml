@@ -5,6 +5,7 @@ on:
   push:
     branches:
      - dev
+     - 57-add-support-for-adjustment-layers
   pull_request:
     branches:
      - master
@@ -53,7 +54,7 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc || echo $NUMBER_OF_PROCESSORS)
       
     - name: Run Valgrind
       if: matrix.os == 'ubuntu-24.04'
