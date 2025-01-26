@@ -41,18 +41,18 @@ jobs:
              compilercxx: msvc
              cflags: ""
              cxxflags: ""
+           - name: Windows Clang
+             os: windows-latest
+             compiler: clang-cl
+             compilercxx: clang-cl
+             cflags: ""
+             cxxflags: ""
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
              cflags: ""
              cxxflags: ""
-           - name: MacOS ARM Clang
-             os: macos-latest
-             compiler: clang
-             compilercxx: clang++
-             cflags: "-fsanitize=address,undefined"
-             cxxflags: "-fsanitize=address,undefined"
 
     steps:
     - uses: actions/checkout@v4

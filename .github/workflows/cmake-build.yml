@@ -35,14 +35,16 @@ jobs:
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+           - name: Windows Clang
+             os: windows-latest
+             compiler: clang-cl
+             compilercxx: clang-cl
+             cflags: ""
+             cxxflags: ""
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-           - name: MacOS ARM Clang
-             os: macos-latest
-             compiler: clang
-             compilercxx: clang++
 
     steps:
     - uses: actions/checkout@v4
@@ -69,7 +71,7 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
 
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
