@@ -69,7 +69,7 @@ jobs:
 
     # Further brew packages needed to run/install vcpkg dependencies
     - name: Setup MacOS dependencies
-      if: matrix.os == 'macos-latest'
+      if: matrix.os_dist.os == 'macos-latest'
       run: |
           brew install ninja
           brew install autoconf
@@ -77,10 +77,9 @@ jobs:
           brew install automake
 
 
-    - name : Ensure CMake Windows
-      if: matrix.os == 'windows-latest'
+    - name: Ensure CMake Windows
+      if: matrix.os_dist.os == 'windows-latest'
       run: choco install cmake --install-args 'ADD_CMAKE_TO_PATH=System' -y
-
 
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
