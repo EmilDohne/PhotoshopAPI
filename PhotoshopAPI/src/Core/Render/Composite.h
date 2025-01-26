@@ -187,7 +187,7 @@ namespace Composite
 				auto _intersected_bbox = Geometry::BoundingBox<int>::intersect(canvas_bbox, layer_bbox);
 				if (!_intersected_bbox)
 				{
-					PSAPI_LOG_DEBUG("Composite", "Skipping compositing of layer '%s' as the intersected bbox is 0-sized.", layer.metadata.name);
+					PSAPI_LOG_DEBUG("Composite", "Skipping compositing of layer '%s' as the intersected bbox is 0-sized.", layer.metadata.name.c_str());
 					return;
 				}
 				auto intersected_bbox = _intersected_bbox.value();
