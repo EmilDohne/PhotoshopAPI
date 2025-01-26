@@ -76,6 +76,12 @@ jobs:
           brew install libtool
           brew install automake
 
+
+    - name : Ensure CMake Windows
+      if: matrix.os == 'windows-latest'
+      run: choco install cmake --install-args 'ADD_CMAKE_TO_PATH=System' -y
+
+
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
       with:
@@ -111,14 +117,7 @@ jobs:
       with:
         name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
-
-    - name: Upload logs as artifact
-      if: always() # Ensure this runs no matter what
-      uses: actions/upload-artifact@v3
-      with:
-        name: build-logs
-        path: D:\a\PhotoshopAPI\PhotoshopAPI\build\temp.win-amd64-cpython-37\Release\psapi\vcpkg-manifest-install.log
-
+        
   mock-publish:
     name: Mock Upload release to PyPI
     permissions:
