@@ -33,8 +33,8 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 struct ImageLayer : public _ImageDataLayerType<T>
 {
-	using _ImageDataLayerType<T>::data_type;
-	using _ImageDataLayerType<T>::storage_type;
+	using typename _ImageDataLayerType<T>::data_type;
+	using typename _ImageDataLayerType<T>::storage_type;
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document. 
 	/// 

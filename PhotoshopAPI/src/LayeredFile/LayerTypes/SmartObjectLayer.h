@@ -85,8 +85,8 @@ struct LayeredFile;
 template <typename T>
 struct SmartObjectLayer : public _ImageDataLayerType<T>
 {
-	using _ImageDataLayerType<T>::data_type;
-	using _ImageDataLayerType<T>::storage_type;
+	using typename _ImageDataLayerType<T>::data_type;
+	using typename _ImageDataLayerType<T>::storage_type;
 
 	SmartObjectLayer() = default;
 
