@@ -358,8 +358,8 @@ namespace Geometry
                     "Unable to replace vertices with differently sized vertex vector. This method is only intended to update existing vertices. If you wish to to rebuild the mesh re-initialize it please.");
             }
 
-            m_Vertices = vertices;
-            m_BoundingBox = BoundingBox<T>::compute(vertices);
+            m_Vertices = _vertices;
+            m_BoundingBox = BoundingBox<T>::compute(_vertices);
             rebuild_face_bboxes();
             rebuild_octree();
         }
