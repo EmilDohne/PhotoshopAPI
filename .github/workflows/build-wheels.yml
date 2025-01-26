@@ -81,12 +81,12 @@ jobs:
       with:
         vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
-    - uses: pypa/cibuildwheel@v2.16
+    - uses: pypa/cibuildwheel@v2.22.0
       env:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
-        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_34
+        CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
         # Test not only by running the test suite but also by executing every example we provide. This is to ensure
         # our examples are working and users can rely on them for starting off points
