@@ -76,7 +76,7 @@ jobs:
           brew install libtool
           brew install automake
 
-    - name: Load or restore vcpkg libraries
+    - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
@@ -86,6 +86,7 @@ jobs:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
+        MACOSX_DEPLOYMENT_TARGET: 14.0
         CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
         # Test not only by running the test suite but also by executing every example we provide. This is to ensure
@@ -110,6 +111,13 @@ jobs:
       with:
         name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
+
+    - name: Upload logs as artifact
+      if: always() # Ensure this runs no matter what
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-logs
+        path: D:\a\PhotoshopAPI\PhotoshopAPI\build\temp.win-amd64-cpython-37\Release\psapi\vcpkg-manifest-install.log
 
   mock-publish:
     name: Mock Upload release to PyPI
