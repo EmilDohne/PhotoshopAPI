@@ -54,8 +54,8 @@ namespace LinkedLayerItem
 		std::string m_FileType;			// E.g. "png " for png files etc.
 		uint32_t m_FileCreator = 0;		// Unknown what this is, seems to just be filled with 0 across all 4 bytes
 
-		std::optional<Descriptors::Descriptor> m_FileOpenDescriptor;
-		std::optional<Descriptors::Descriptor> m_LinkedFileDescriptor;
+		std::unique_ptr<Descriptors::Descriptor> m_FileOpenDescriptor = nullptr;
+		std::unique_ptr<Descriptors::Descriptor> m_LinkedFileDescriptor = nullptr;
 
 		std::optional<Date> m_Date;
 

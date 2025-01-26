@@ -199,7 +199,7 @@ namespace Descriptors
 		}
 		else if (osTypeEnum == Impl::OSTypes::String)
 		{
-			return construct_descriptor<UnicodeString_Wrapper>(key, ostype);
+			return construct_descriptor<UnicodeString_Wrapper>(document, key, ostype);
 		}
 		else
 		{
@@ -271,7 +271,7 @@ namespace Descriptors
 		{
 			return;
 		}
-		m_DescriptorItems.push_back(item);
+		m_DescriptorItems.push_back(std::move(item));
 	}
 
 
@@ -279,7 +279,7 @@ namespace Descriptors
 	// ---------------------------------------------------------------------------------------------------------------------
 	void KeyValueMixin::insert(std::string key, std::unique_ptr<DescriptorBase> value) noexcept
 	{
-		insert(std::make_pair(key, value));
+		insert(std::make_pair(key, std::move(value)));
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -328,7 +328,7 @@ namespace Descriptors
 			valueRef = std::move(item.second);
 			return;
 		}
-		m_DescriptorItems.push_back(item);
+		m_DescriptorItems.push_back(std::move(item));
 	}
 
 
@@ -336,7 +336,7 @@ namespace Descriptors
 	// ---------------------------------------------------------------------------------------------------------------------
 	void KeyValueMixin::insert_or_assign(std::string key, std::unique_ptr<DescriptorBase> value) noexcept
 	{
-		insert_or_assign(std::make_pair(key, value));
+		insert_or_assign(std::make_pair(key, std::move(value)));
 	}
 
 
@@ -396,6 +396,18 @@ namespace Descriptors
 		return size() == 0;
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	KeyValueMixin& KeyValueMixin::operator=(KeyValueMixin&& other) noexcept
+	{
+
+		if (this != &other) 
+		{
+			this->m_DescriptorItems = std::move(other.m_DescriptorItems);
+		}
+		return *this;
+	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1134,10 +1146,10 @@ namespace Descriptors
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	List::List(std::string key, std::vector<char> osKey, std::vector<DescriptorVariant> items)
+	List::List(std::string key, std::vector<char> osKey, std::vector<std::unique_ptr<DescriptorBase>> items)
 		: DescriptorBase(key, osKey)
 	{
-		m_Items = items;
+		m_Items = std::move(items);
 	}
 
 
@@ -1444,7 +1456,7 @@ namespace Descriptors
 	// ---------------------------------------------------------------------------------------------------------------------
 	bool double_Wrapper::operator==(const double_Wrapper& other) const
 	{
-		return this->m_Value == other.m_Value
+		return this->m_Value == other.m_Value;
 	}
 
 
@@ -1458,7 +1470,15 @@ namespace Descriptors
 		};
 	}
 
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	double_Wrapper::double_Wrapper(double value)
+	{
+		m_Value = value; DescriptorBase::m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::Double);
+	}
 	
+
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void int32_t_Wrapper::read(File& document)
@@ -1466,14 +1486,18 @@ namespace Descriptors
 		m_Value = ReadBinaryData<int32_t>(document);
 	}
 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	void int32_t_Wrapper::write(File& document) const
 	{
 		WriteBinaryData<int32_t>(document, m_Value);
 	}
 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
 	bool int32_t_Wrapper::operator==(const int32_t_Wrapper& other) const
 	{
-		return this->m_Value == other.m_Value
+		return this->m_Value == other.m_Value;
 	}
 
 	json_ordered int32_t_Wrapper::to_json() const
@@ -1482,6 +1506,11 @@ namespace Descriptors
 					{"implementation", { {"_data_type", "int32_t"} }},
 					{ "value", m_Value }
 		};
+	}
+
+	int32_t_Wrapper::int32_t_Wrapper(int32_t value)
+	{
+		m_Value = value; DescriptorBase::m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::Integer);
 	}
 
 	void int64_t_Wrapper::read(File& document)
@@ -1496,15 +1525,20 @@ namespace Descriptors
 
 	bool int64_t_Wrapper::operator==(const int64_t_Wrapper& other) const
 	{
-		return this->m_Value == other.m_Value
+		return this->m_Value == other.m_Value;
 	}
 
 	json_ordered int64_t_Wrapper::to_json() const
 	{
 		return {
 					{"implementation", { {"_data_type", "int64_t"} }},
-					{ "value", value }
+					{ "value", m_Value }
 		};
+	}
+
+	int64_t_Wrapper::int64_t_Wrapper(int64_t value)
+	{
+		m_Value = value; DescriptorBase::m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::LargeInteger);
 	}
 
 	void bool_Wrapper::read(File& document)
@@ -1519,7 +1553,7 @@ namespace Descriptors
 
 	bool bool_Wrapper::operator==(const bool_Wrapper& other) const
 	{
-		return this->m_Value == other.m_Value
+		return this->m_Value == other.m_Value;
 	}
 
 	json_ordered bool_Wrapper::to_json() const
@@ -1527,8 +1561,13 @@ namespace Descriptors
 		return
 		{
 			{"implementation", { {"_data_type", "bool"} }},
-			{ "value", value }
+			{ "value", m_Value }
 		};
+	}
+
+	bool_Wrapper::bool_Wrapper(bool value)
+	{
+		m_Value = value; DescriptorBase::m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::Boolean);
 	}
 
 	void UnicodeString_Wrapper::read(File& document)
@@ -1543,7 +1582,7 @@ namespace Descriptors
 
 	bool UnicodeString_Wrapper::operator==(const UnicodeString_Wrapper& other) const
 	{
-		return this->m_Value == other.m_Value
+		return this->m_Value == other.m_Value;
 	}
 
 	json_ordered UnicodeString_Wrapper::to_json() const
@@ -1551,8 +1590,13 @@ namespace Descriptors
 		return
 		{
 			{"implementation", { {"_data_type", "UnicodeString"} }},
-			{ "value", value.getString()}
+			{ "value", m_Value.getString()}
 		};
+	}
+
+	UnicodeString_Wrapper::UnicodeString_Wrapper(UnicodeString value)
+	{
+		m_Value = value; DescriptorBase::m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::String);
 	}
 
 }

@@ -349,42 +349,49 @@ namespace SmartObject
 
 		/// For internal API use:
 		/// Create a "warp"/"quiltWarp" descriptor from this class ready to be stored on a PlacedLayer or PlacedLayerData tagged block
-		Descriptors::Descriptor _serialize() const;
+		std::unique_ptr<Descriptors::Descriptor> _serialize() const;
 
 		/// For internal API use:
 		/// Create the transform and non-affine transform descriptors
-		std::tuple<Descriptors::List, Descriptors::List> _generate_transform_descriptors() const;
+		std::tuple<std::unique_ptr<Descriptors::List>, std::unique_ptr<Descriptors::List>> _generate_transform_descriptors() const;
 
 		/// For internal API use:
 		/// Serialize the common parts between both quilt and normal warps
-		void _serialize_common(Descriptors::Descriptor& warp_descriptor) const;
+		void _serialize_common(std::unique_ptr<Descriptors::Descriptor>& warp_descriptor) const;
 
 		/// For internal API use:
 		/// 
 		/// Create an empty "warp" descriptor from this class. This is to be used if the actual warp type
 		/// is a quilt warp. Photoshop, if the warp is a "quiltWarp" stores a default initialized (but with the given
 		/// width and height) "warp" descriptor to store after
-		static Descriptors::Descriptor _serialize_default(size_t width, size_t height);
+		static std::unique_ptr<Descriptors::Descriptor> _serialize_default(size_t width, size_t height);
 
 		/// For internal API use:
 		/// Deserialize the SmartObjectWarp from a warp descriptor. In the context 
 		/// of the smart object this would be at the "warp" key.
-		static Warp _deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp);
+		static Warp _deserialize(
+			const Descriptors::Descriptor* warp_descriptor,
+			const Descriptors::List* transform, 
+			const Descriptors::List* non_affine_transform, normal_warp);
 		
 		/// For internal API use:
 		/// Deserialize the SmartObjectWarp from a warp descriptor. In the context 
 		/// of the smart object this would be at the "warp" key.
-		static Warp _deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp);
+		static Warp _deserialize(
+			const Descriptors::Descriptor* quilt_warp_descriptor, 
+			const Descriptors::List* transform, 
+			const Descriptors::List* non_affine_transform, 
+			quilt_warp);
 
 		/// For internal API use:
 		///
 		/// Generates an affine transform mesh from the descriptor.
-		static std::array<Geometry::Point2D<double>, 4> _generate_affine_transform(const Descriptors::List& transform);
+		static std::array<Geometry::Point2D<double>, 4> _generate_affine_transform(const Descriptors::List* transform);
 
 		/// For internal API use:
 		///
 		/// Generates a non affine transform from the descriptor
-		static std::array<Geometry::Point2D<double>, 4> _generate_non_affine_transform(const Descriptors::List& non_affine_transform);
+		static std::array<Geometry::Point2D<double>, 4> _generate_non_affine_transform(const Descriptors::List* non_affine_transform);
 
 		/// For internal API use:
 		/// Set the warp style ("warpCustom" or "warpNone")
@@ -516,14 +523,14 @@ namespace SmartObject
 		std::vector<Geometry::Point2D<double>> get_transformed_source_points() const;
 
 		/// Deserialize the common components between the quilt and normal warp
-		static void _deserialize_common(Warp& warpStruct, const Descriptors::Descriptor& warpDescriptor);
+		static void _deserialize_common(Warp& warpStruct, const Descriptors::Descriptor* warpDescriptor);
 
 		/// Validate the number of u and v dimensions making sure they form cubic bezier patches.
 		static void validate_u_v_dims(size_t u_dimensions, size_t v_dimensions);
 
 		// Overloads for serializing specific types
-		Descriptors::Descriptor _serialize(quilt_warp) const;
-		Descriptors::Descriptor _serialize(normal_warp) const;
+		std::unique_ptr<Descriptors::Descriptor> _serialize(quilt_warp) const;
+		std::unique_ptr<Descriptors::Descriptor> _serialize(normal_warp) const;
 		
 	};
 

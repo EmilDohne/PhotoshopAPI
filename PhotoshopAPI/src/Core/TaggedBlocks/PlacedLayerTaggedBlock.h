@@ -89,11 +89,19 @@ private:
 /// Likely to keep backwards compatibility
 struct PlacedLayerDataTaggedBlock : TaggedBlock
 {
-	Descriptors::Descriptor m_Descriptor;
+	std::unique_ptr<Descriptors::Descriptor> m_Descriptor = std::make_unique<Descriptors::Descriptor>();
 
 	PlacedLayerDataTaggedBlock() = default;
-	PlacedLayerDataTaggedBlock(Descriptors::Descriptor descriptor)
-		: m_Descriptor(descriptor) {}
+	PlacedLayerDataTaggedBlock(std::unique_ptr<Descriptors::Descriptor> descriptor)
+		: m_Descriptor(std::move(descriptor)) {}
+
+	// Delete copy constructor and copy assignment operator
+	PlacedLayerDataTaggedBlock(const PlacedLayerDataTaggedBlock&) = delete;
+	PlacedLayerDataTaggedBlock& operator=(const PlacedLayerDataTaggedBlock&) = delete;
+
+	// Enable move constructor and move assignment operator
+	PlacedLayerDataTaggedBlock(PlacedLayerDataTaggedBlock&&) noexcept = default;
+	PlacedLayerDataTaggedBlock& operator=(PlacedLayerDataTaggedBlock&&) noexcept = default;
 
 	void read(File& document, const uint64_t offset, const Enum::TaggedBlockKey key, const Signature signature);
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;

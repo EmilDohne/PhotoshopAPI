@@ -731,7 +731,7 @@ protected:
 		m_OriginalSize[1] = static_cast<float>(linked_layer->height());
 
 		auto descriptor = generate_placed_layer_data();
-		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>(descriptor);
+		auto block_ptr = std::make_shared<PlacedLayerDataTaggedBlock>(std::move(descriptor));
 		blocks.push_back(block_ptr);
 
 		return blocks;
@@ -1014,59 +1014,59 @@ private:
 
 
 		const auto& descriptor = local->m_Descriptor;
-		if (descriptor.contains("filterFX"))
+		if (descriptor->contains("filterFX"))
 		{
 			PSAPI_LOG_WARNING("SmartObject", "Filter based warps are not supported at the moment (Edit->Puppet Warp and Edit->Perspective Warp)." \
 				" These will not be represented properly in the API");
 			return;
 		}
 
-		m_Hash = descriptor.at<UnicodeString>("Idnt").string();	// The identifier that maps back to the LinkedLayer
+		m_Hash = descriptor->at<UnicodeString>("Idnt").string();	// The identifier that maps back to the LinkedLayer
 
 		// These we all ignore for the time being, we store them locally and just rewrite them back out later
 		// This isn't necessarily in order
 		{
-			_m_LayerHash = descriptor.at<UnicodeString>("placed").getString();
-			_m_PageNum = descriptor.at<int32_t>("PgNm");
-			_m_NumPages = descriptor.at<int32_t>("totalPages");
-			_m_Crop = descriptor.at<int32_t>("Crop");
+			_m_LayerHash = descriptor->at<UnicodeString>("placed").getString();
+			_m_PageNum = descriptor->at<int32_t>("PgNm");
+			_m_NumPages = descriptor->at<int32_t>("totalPages");
+			_m_Crop = descriptor->at<int32_t>("Crop");
 
-			const auto& _frame_step = descriptor.at<Descriptors::Descriptor>("frameStep");
-			_m_FrameStepNumerator = _frame_step.at<int32_t>("numerator");
-			_m_FrameStepDenominator = _frame_step.at<int32_t>("denominator");
+			const auto _frame_step = descriptor->at<Descriptors::Descriptor>("frameStep");
+			_m_FrameStepNumerator = _frame_step->at<int32_t>("numerator");
+			_m_FrameStepDenominator = _frame_step->at<int32_t>("denominator");
 
-			const auto& _duration = descriptor.at<Descriptors::Descriptor>("duration");
-			_m_DurationStepNumerator = _duration.at<int32_t>("numerator");
-			_m_DurationStepDenominator = _duration.at<int32_t>("denominator");
+			const auto _duration = descriptor->at<Descriptors::Descriptor>("duration");
+			_m_DurationStepNumerator = _duration->at<int32_t>("numerator");
+			_m_DurationStepDenominator = _duration->at<int32_t>("denominator");
 
-			_m_FrameCount = descriptor.at<int32_t>("frameCount");
-			_m_AntiAliasing = descriptor.at<int32_t>("Annt");
+			_m_FrameCount = descriptor->at<int32_t>("frameCount");
+			_m_AntiAliasing = descriptor->at<int32_t>("Annt");
 
-			_m_Type = descriptor.at<int32_t>("Type");
+			_m_Type = descriptor->at<int32_t>("Type");
 
-			_m_Comp = descriptor.at<int32_t>("comp");
+			_m_Comp = descriptor->at<int32_t>("comp");
 
-			const auto& _comp_info = descriptor.at<Descriptors::Descriptor>("compInfo");
-			_m_CompInfoID = _comp_info.at<int32_t>("compID");
-			_m_CompInfoOriginalID = _comp_info.at<int32_t>("originalCompID");
+			const auto _comp_info = descriptor->at<Descriptors::Descriptor>("compInfo");
+			_m_CompInfoID = _comp_info->at<int32_t>("compID");
+			_m_CompInfoOriginalID = _comp_info->at<int32_t>("originalCompID");
 		}
 
-		const auto& size = descriptor.at<Descriptors::Descriptor>("Sz  ");		// The spaces are not a mistake
-		m_OriginalSize = { size.at<double>("Wdth"), size.at<double>("Hght") };
-		const auto& resolution = descriptor.at<Descriptors::UnitFloat>("Rslt");	// In DPI
-		m_Resolution = resolution.m_Value;
+		const auto size = descriptor->at<Descriptors::Descriptor>("Sz  ");		// The spaces are not a mistake
+		m_OriginalSize = { size->at<double>("Wdth"), size->at<double>("Hght") };
+		const auto resolution = descriptor->at<Descriptors::UnitFloat>("Rslt");	// In DPI
+		m_Resolution = resolution->m_Value;
 
-		const auto& transform = descriptor.at<Descriptors::List>("Trnf");
-		const auto& non_affine_transform = descriptor.at<Descriptors::List>("nonAffineTransform");
+		const auto transform = descriptor->at<Descriptors::List>("Trnf");
+		const auto non_affine_transform = descriptor->at<Descriptors::List>("nonAffineTransform");
 
 		// The warp struct is present on all descriptors, if it is however a warp with a non-standard
 		// number of subdivisions (i.e. not 4x4) the warp struct will be empty and instead we will be dealing with a quilt warp
-		const auto& warp = descriptor.at<Descriptors::Descriptor>("warp");
+		const auto warp = descriptor->at<Descriptors::Descriptor>("warp");
 		SmartObject::Warp warpStruct;
 		
-		if (descriptor.contains("quiltWarp"))
+		if (descriptor->contains("quiltWarp"))
 		{
-			warpStruct = SmartObject::Warp::_deserialize(descriptor.at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
+			warpStruct = SmartObject::Warp::_deserialize(descriptor->at<Descriptors::Descriptor>("quiltWarp"), transform, non_affine_transform, SmartObject::Warp::quilt_warp{});
 		}
 		else
 		{
@@ -1078,38 +1078,38 @@ private:
 
 
 	/// Generate a PlacedLayerData descriptor from the SmartObject that can be passed to the tagged blocks of the layer.
-	Descriptors::Descriptor generate_placed_layer_data() const
+	std::unique_ptr<Descriptors::Descriptor> generate_placed_layer_data() const
 	{
-		Descriptors::Descriptor placed_layer("null");
+		auto placed_layer = std::make_unique<Descriptors::Descriptor>("null");
 
-		placed_layer.insert("Idnt", UnicodeString(m_Hash, 2u));
-		placed_layer.insert("placed", UnicodeString(_m_LayerHash, 2u));
+		placed_layer->insert("Idnt", UnicodeString(m_Hash, 2u));
+		placed_layer->insert("placed", UnicodeString(_m_LayerHash, 2u));
 
-		placed_layer.insert("PgNm", _m_PageNum);
-		placed_layer.insert("totalPages", _m_NumPages);
+		placed_layer->insert("PgNm", _m_PageNum);
+		placed_layer->insert("totalPages", _m_NumPages);
 
-		placed_layer.insert("Crop", _m_Crop);
+		placed_layer->insert("Crop", _m_Crop);
 		
-		auto frame_step = Descriptors::Descriptor("null");
-		frame_step.insert("numerator", _m_FrameStepNumerator);
-		frame_step.insert("denominator", _m_FrameStepDenominator);
-		placed_layer.insert("frameStep", frame_step);
+		auto frame_step = std::make_unique<Descriptors::Descriptor>("null");
+		frame_step->insert("numerator", _m_FrameStepNumerator);
+		frame_step->insert("denominator", _m_FrameStepDenominator);
+		placed_layer->insert("frameStep", std::move(frame_step));
 
 		auto duration = Descriptors::Descriptor("null");
 		duration.insert("numerator", _m_DurationStepNumerator);
 		duration.insert("denominator", _m_DurationStepDenominator);
-		placed_layer.insert("duration", duration);
+		placed_layer->insert("duration", std::make_unique<Descriptors::Descriptor>(std::move(duration)));
 
-		placed_layer.insert("frameCount", _m_FrameCount);
-		placed_layer.insert("Annt", _m_AntiAliasing);
-		placed_layer.insert("Type", _m_Type);
+		placed_layer->insert("frameCount", _m_FrameCount);
+		placed_layer->insert("Annt", _m_AntiAliasing);
+		placed_layer->insert("Type", _m_Type);
 
 		// Store the Transformation and non-affine transformation. 
 		{
 			auto [affine_transform, non_affine_transform] = m_SmartObjectWarp._generate_transform_descriptors();
 
-			placed_layer.insert("Trnf", affine_transform);
-			placed_layer.insert("nonAffineTransform", non_affine_transform);
+			placed_layer->insert("Trnf", std::move(affine_transform));
+			placed_layer->insert("nonAffineTransform", std::move(non_affine_transform));
 		}
 
 		// Store the warp, in the case of a quilt warp this would hold 2 descriptors
@@ -1120,46 +1120,46 @@ private:
 				auto quilt_descriptor = m_SmartObjectWarp._serialize();
 				auto warp_descriptor = m_SmartObjectWarp._serialize_default(m_OriginalSize[0], m_OriginalSize[1]);
 			
-				placed_layer.insert("quiltWarp", quilt_descriptor);
-				placed_layer.insert("warp", warp_descriptor);
+				placed_layer->insert("quiltWarp", std::move(quilt_descriptor));
+				placed_layer->insert("warp", std::move(warp_descriptor));
 			}
 			else
 			{
 				auto warp_descriptor = m_SmartObjectWarp._serialize();
 
-				placed_layer.insert("warp", warp_descriptor);
+				placed_layer->insert("warp", std::move(warp_descriptor));
 			}
 		}
 
 		{
-			Descriptors::Descriptor size_descriptor("Pnt ");
+			auto size_descriptor = std::make_unique<Descriptors::Descriptor>("Pnt ");
 
-			size_descriptor.insert("Wdth", m_OriginalSize[0]);
-			size_descriptor.insert("Hght", m_OriginalSize[1]);
+			size_descriptor->insert("Wdth", m_OriginalSize[0]);
+			size_descriptor->insert("Hght", m_OriginalSize[1]);
 
-			placed_layer.insert("Sz  ", size_descriptor);
+			placed_layer->insert("Sz  ", std::move(size_descriptor));
 		}
 		{
-			Descriptors::UnitFloat resolution_descriptor(
+			auto resolution_descriptor = std::make_unique<Descriptors::UnitFloat>(
 				"Rslt",
 				Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::UnitFloat),
 				Descriptors::Impl::UnitFloatType::Density,
 				m_Resolution
 				);
 
-			placed_layer.insert("Rslt", resolution_descriptor);
+			placed_layer->insert("Rslt", std::move(resolution_descriptor));
 		}
 
-		placed_layer.insert("comp", _m_Comp);
+		placed_layer->insert("comp", _m_Comp);
 		{
 			Descriptors::Descriptor comp_info_descriptor("null");
 
 			comp_info_descriptor.insert("compID", _m_CompInfoID);
 			comp_info_descriptor.insert("originalCompID", _m_CompInfoOriginalID);
 
-			placed_layer.insert("compInfo", comp_info_descriptor);
+			placed_layer->insert("compInfo", std::make_unique<Descriptors::Descriptor>(std::move(comp_info_descriptor)));
 		}
-		return placed_layer;
+		return std::move(placed_layer);
 		
 	}
 

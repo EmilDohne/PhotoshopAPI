@@ -97,6 +97,7 @@ namespace Descriptors
 		double m_Value{};
 
 		double_Wrapper() = default;
+		double_Wrapper(double value);
 		double_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		double_Wrapper(std::string key, std::vector<char> osKey, double value) : DescriptorBase(key, osKey) { m_Value = value; };
 
@@ -114,6 +115,7 @@ namespace Descriptors
 		int32_t m_Value{};
 
 		int32_t_Wrapper() = default;
+		int32_t_Wrapper(int32_t value);
 		int32_t_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		int32_t_Wrapper(std::string key, std::vector<char> osKey, int32_t value) : DescriptorBase(key, osKey) { m_Value = value; };
 
@@ -131,6 +133,7 @@ namespace Descriptors
 		int64_t m_Value{};
 
 		int64_t_Wrapper() = default;
+		int64_t_Wrapper(int64_t value);
 		int64_t_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		int64_t_Wrapper(std::string key, std::vector<char> osKey, int64_t value) : DescriptorBase(key, osKey) { m_Value = value; };
 
@@ -148,6 +151,7 @@ namespace Descriptors
 		bool m_Value{};
 
 		bool_Wrapper() = default;
+		bool_Wrapper(bool value);
 		bool_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		bool_Wrapper(std::string key, std::vector<char> osKey, bool value) : DescriptorBase(key, osKey) { m_Value = value; };
 
@@ -164,6 +168,7 @@ namespace Descriptors
 		UnicodeString m_Value{};
 
 		UnicodeString_Wrapper() = default;
+		UnicodeString_Wrapper(UnicodeString value);
 		UnicodeString_Wrapper(std::string key, std::vector<char> osKey) : DescriptorBase(key, osKey) {};
 		UnicodeString_Wrapper(std::string key, std::vector<char> osKey, UnicodeString value) : DescriptorBase(key, osKey) { m_Value = value; };
 
@@ -296,11 +301,11 @@ namespace Descriptors
 
 
 		template <typename T>
-			requires std::is_base_of_v<T, DescriptorBase>
+			requires std::is_base_of_v<DescriptorBase, T>
 		std::tuple<std::string, std::unique_ptr<DescriptorBase>> construct_descriptor(File& document, std::string key, std::vector<char> ostype)
 		{
-			auto descriptor = std::make_unique(key, ostype);
-			descriptor.read(document);
+			auto descriptor = std::make_unique<T>(key, ostype);
+			descriptor->read(document);
 			return std::make_tuple(key, std::move(descriptor));
 		}
 
@@ -341,6 +346,18 @@ namespace Descriptors
 	/// but no other guarantees for ordering are done. Items may not occur more than once
 	struct KeyValueMixin
 	{
+
+		KeyValueMixin() = default;
+
+		// Delete copy constructor and copy assignment operator
+		KeyValueMixin(const KeyValueMixin&) = delete;
+		KeyValueMixin& operator=(const KeyValueMixin&) = delete;
+
+		// Enable move constructor and move assignment operator
+		KeyValueMixin(KeyValueMixin&&) noexcept = default;
+		KeyValueMixin& operator=(KeyValueMixin&& other) noexcept;
+
+
 		/// Access one of the sub-elements, if the key doesnt exist we create a new Descriptor at the given key
 		///
 		/// \param key The key to search for
@@ -363,10 +380,10 @@ namespace Descriptors
 		/// \param key The key to search for
 		/// \tparam T The type to retrieve it as
 		/// 
-		/// \returns A copy of the descriptor
+		/// \returns A const ref to the item, no copy is performed
 		template <typename T> 
-			requires std::is_base_of_v<T, DescriptorBase>
-		T at(const std::string key) const
+			requires std::is_base_of_v<DescriptorBase, T>
+		const T* at(const std::string key) const
 		{
 			for (auto& [stored_key, value] : m_DescriptorItems) 
 			{
@@ -375,7 +392,7 @@ namespace Descriptors
 					const T* casted = dynamic_cast<const T*>(value.get());
 					if (casted)
 					{
-						return *casted;
+						return casted;
 					}
 					throw std::invalid_argument(fmt::format("Invalid type T while accessing key {}", key));
 				}
@@ -675,7 +692,7 @@ namespace Descriptors
 		/// Get the List items as a certain type, requires that all list items are the exact same. Returns 
 		/// a copy of all the items so you may not modify them in-place
 		template <typename T>
-			requires std::is_base_of_v<T, DescriptorBase>
+			requires std::is_base_of_v<DescriptorBase, T>
 		std::vector<T> as() const
 		{
 			std::vector<T> out;
@@ -689,6 +706,63 @@ namespace Descriptors
 					out.push_back(*casted); // Dereference and copy the object
 				}
 				else 
+				{
+					throw std::runtime_error("Unable to access item as type T; it is not of that type");
+				}
+			}
+			return out;
+		}
+
+		template <typename T>
+			requires std::is_same_v<T, bool> || std::is_same_v<T, int32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, double> || std::is_same_v<T, UnicodeString>
+		std::vector<T> as() const
+		{
+			std::vector<T> out;
+			out.reserve(m_Items.size());
+
+			for (const auto& value : m_Items)
+			{
+				if constexpr (std::is_same_v<T, bool>)
+				{
+					const bool_Wrapper* casted = dynamic_cast<const bool_Wrapper*>(value.get());
+					if (casted)
+					{
+						out.push_back(casted->m_Value);
+					}
+				}
+				else if constexpr (std::is_same_v<T, int32_t>)
+				{
+					const int32_t_Wrapper* casted = dynamic_cast<const int32_t_Wrapper*>(value.get());
+					if (casted)
+					{
+						out.push_back(casted->m_Value);
+					}
+				}
+				else if constexpr (std::is_same_v<T, int64_t>)
+				{
+					const int64_t_Wrapper* casted = dynamic_cast<const int64_t_Wrapper*>(value.get());
+					if (casted)
+					{
+						out.push_back(casted->m_Value);
+					}
+				}
+				else if constexpr (std::is_same_v<T, double>)
+				{
+					const double_Wrapper* casted = dynamic_cast<const double_Wrapper*>(value.get());
+					if (casted)
+					{
+						out.push_back(casted->m_Value);
+					}
+				}
+				else if constexpr (std::is_same_v<T, UnicodeString>)
+				{
+					const UnicodeString_Wrapper* casted = dynamic_cast<const UnicodeString_Wrapper*>(value.get());
+					if (casted)
+					{
+						out.push_back(casted->m_Value);
+					}
+				}
+				else
 				{
 					throw std::runtime_error("Unable to access item as type T; it is not of that type");
 				}
@@ -807,7 +881,16 @@ namespace Descriptors
 
 		Descriptor() { m_OSKey = Impl::descriptorKeys.at(Impl::OSTypes::Descriptor); };
 		Descriptor(std::string key) : DescriptorBase(key, Impl::descriptorKeys.at(Impl::OSTypes::Descriptor)) {};
+		Descriptor(std::string key, std::vector<char> ostype) : DescriptorBase(key, ostype) {};
 		Descriptor(std::string key, std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> items);
+
+		// Delete copy constructor and copy assignment operator
+		Descriptor(const Descriptor&) = delete;
+		Descriptor& operator=(const Descriptor&) = delete;
+
+		// Enable move constructor and move assignment operator
+		Descriptor(Descriptor&&) noexcept = default;
+		Descriptor& operator=(Descriptor&&) noexcept = default;
 
 		void read(File& document) override;
 		void write(File& document) const override;

@@ -85,8 +85,8 @@ struct LinkedLayerData
 		PSAPI_PROFILE_FUNCTION();
 		if (data_block.m_LinkedFileDescriptor)
 		{
-			auto& linked_file_descriptor = data_block.m_LinkedFileDescriptor.value();
-			m_FilePath = linked_file_descriptor.at<Descriptors::UnicodeString_Wrapper>("originalPath")->m_Value.string();
+			auto& linked_file_descriptor = data_block.m_LinkedFileDescriptor;
+			m_FilePath = linked_file_descriptor->at<UnicodeString>("originalPath").string();
 		}
 		else
 		{

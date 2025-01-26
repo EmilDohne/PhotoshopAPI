@@ -153,7 +153,8 @@ void PlacedLayerDataTaggedBlock::read(File& document, const uint64_t offset, con
 		PSAPI_LOG_ERROR("PlacedLayerData", "Unknown version or descriptor version encountered. Version: %d. Descriptor Version: %d. Expected 4 and 16 for these respectively", m_Version, descriptorVersion);
 	}
 
-	m_Descriptor.read(document);
+	m_Descriptor = std::make_unique<Descriptors::Descriptor>();
+	m_Descriptor->read(document);
 	// Manually skip to the end as this section may be padded
 	document.setOffset(len_offset + std::get<uint32_t>(m_Length));
 }
@@ -174,7 +175,7 @@ void PlacedLayerDataTaggedBlock::write(File& document, [[maybe_unused]] const Fi
 	WriteBinaryData<uint32_t>(document, m_Version);
 	WriteBinaryData<uint32_t>(document, 16u);
 
-	m_Descriptor.write(document);
+	m_Descriptor->write(document);
 }
 
 PSAPI_NAMESPACE_END

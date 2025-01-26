@@ -96,9 +96,9 @@ void LinkedLayerItem::Data::read(File& document)
 		{
 			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptorVersion);
 		}
-		Descriptors::Descriptor fileOpenDescriptor;
-		fileOpenDescriptor.read(document);
-		m_FileOpenDescriptor = fileOpenDescriptor;
+		auto fileOpenDescriptor = std::make_unique<Descriptors::Descriptor>();
+		fileOpenDescriptor->read(document);
+		m_FileOpenDescriptor = std::move(fileOpenDescriptor);
 	}
 
 	// Decode the actual "data" section of the LinkedLayer
@@ -109,9 +109,9 @@ void LinkedLayerItem::Data::read(File& document)
 		{
 			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptorVersion);
 		}
-		Descriptors::Descriptor linkedFileDescriptor;
-		linkedFileDescriptor.read(document);
-		m_LinkedFileDescriptor = linkedFileDescriptor;
+		auto linkedFileDescriptor = std::make_unique<Descriptors::Descriptor>();
+		linkedFileDescriptor->read(document);
+		m_LinkedFileDescriptor = std::move(linkedFileDescriptor);
 
 		if (m_Version > 3)
 		{
@@ -179,13 +179,13 @@ void LinkedLayerItem::Data::write(File& document)
 		m_RawFileBytes.clear();
 	}
 	WriteBinaryData(document, m_RawFileBytes.size());	// This may be 0
-	WriteBinaryData<bool>(document, m_FileOpenDescriptor.has_value());
+	WriteBinaryData<bool>(document, m_FileOpenDescriptor != nullptr);
 
 	if (m_FileOpenDescriptor)
 	{
 		// Descriptor version and descriptor.
 		WriteBinaryData<uint32_t>(document, 16u);
-		m_FileOpenDescriptor.value().write(document);
+		m_FileOpenDescriptor->write(document);
 	}
 
 	// Write out the data related to the different types of linked data
@@ -195,15 +195,14 @@ void LinkedLayerItem::Data::write(File& document)
 		{
 			// Descriptor version and descriptor.
 			WriteBinaryData<uint32_t>(document, 16u);
-			m_LinkedFileDescriptor.value().write(document);
+			m_LinkedFileDescriptor->write(document);
 
 			// If we didnt populate a specific date we write the default initialized date which is just the current timestamp
 			if (m_Version > 3)
 			{
 				m_Date.value_or(Date{}).write(document);
 			}
-			auto& linked_file_descriptor = m_LinkedFileDescriptor.value();
-			auto original_path = linked_file_descriptor.at<UnicodeString>("originalPath");
+			auto original_path = m_LinkedFileDescriptor->at<UnicodeString>("originalPath");
 
 			// This here is the file size which is probably stored for internal consistency.
 			auto file = std::ifstream(original_path.string(), std::ifstream::ate | std::ifstream::binary);
@@ -309,7 +308,7 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 	m_AssetIsLocked.emplace(false);
 
 	{
-		auto file_open_descriptor = Descriptors::Descriptor("null");
+		auto file_open_descriptor = std::make_unique<Descriptors::Descriptor>("null");
 		constexpr int32_t comp_id = -1;
 		constexpr int32_t original_comp_id = -1;
 
@@ -317,18 +316,18 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 		comp_info_descriptor->insert("compID",comp_id);
 		comp_info_descriptor->insert("originalCompID",original_comp_id);
 
-		file_open_descriptor["compInfo"] = std::move(comp_info_descriptor);
+		file_open_descriptor->insert("compInfo", std::move(comp_info_descriptor));
 
-		m_FileOpenDescriptor.emplace(std::move(file_open_descriptor));
+		m_FileOpenDescriptor = std::move(file_open_descriptor);
 	}
 
 
 	if (m_Type == Type::External)
 	{
-		auto linked_file_descriptor = Descriptors::Descriptor("ExternalFileLink");
+		auto linked_file_descriptor = std::make_unique<Descriptors::Descriptor>("ExternalFileLink");
 
-		linked_file_descriptor["descVersion"] = static_cast<int32_t>(2);	// Seems to be fixed at 2
-		linked_file_descriptor["Nm  "] = m_FileName;
+		linked_file_descriptor->insert("descVersion", static_cast<int32_t>(2));	// Seems to be fixed at 2
+		linked_file_descriptor->insert("Nm  ", m_FileName);
 
 		// Photoshop stores the filepath in 3 different ways, using a URI path, a preferred filesystem path and a relative path.
 		// However, even with all of these things photoshop will still show an exclamation mark when loading externally linked files
@@ -340,13 +339,13 @@ LinkedLayerItem::Data::Data(std::string unique_id, std::filesystem::path filepat
 		auto filepath_preferred = filepath;
 		filepath_preferred.make_preferred();
 
-		linked_file_descriptor["fullPath"] = UnicodeString(filepath_full, 2u);
-		linked_file_descriptor["originalPath"] = UnicodeString(filepath_preferred.string(), 2u);
+		linked_file_descriptor->insert("fullPath", UnicodeString(filepath_full, 2u));
+		linked_file_descriptor->insert("originalPath", UnicodeString(filepath_preferred.string(), 2u));
 
 		auto relpath = std::filesystem::relative(filepath, photoshop_file_path.parent_path());
- 		linked_file_descriptor["relPath"] = UnicodeString(relpath.string(), 2u);
+ 		linked_file_descriptor->insert("relPath", UnicodeString(relpath.string(), 2u));
 
-		m_LinkedFileDescriptor.emplace(linked_file_descriptor);
+		m_LinkedFileDescriptor = std::move(linked_file_descriptor);
 	}
 }
 

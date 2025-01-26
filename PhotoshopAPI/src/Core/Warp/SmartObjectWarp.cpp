@@ -11,7 +11,7 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptors::Descriptor Warp::_serialize() const
+	std::unique_ptr<Descriptors::Descriptor> Warp::_serialize() const
 	{
 		if (m_WarpType == WarpType::quilt)
 		{
@@ -23,7 +23,7 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptors::Descriptor Warp::_serialize(quilt_warp) const
+	std::unique_ptr<Descriptors::Descriptor> Warp::_serialize(quilt_warp) const
 	{
 		// Helper lambda to reduce the signature a bit
 		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
@@ -32,85 +32,85 @@ namespace SmartObject
 			};
 
 
-		Descriptors::Descriptor warp_descriptor("quiltWarp");
+		auto warp_descriptor = std::make_unique<Descriptors::Descriptor>("quiltWarp");
 		_serialize_common(warp_descriptor);
 
-		warp_descriptor.insert("deformNumRows", static_cast<int32_t>(m_vDims));
-		warp_descriptor.insert("deformNumCols", static_cast<int32_t>(m_uDims));
+		warp_descriptor->insert("deformNumRows", static_cast<int32_t>(m_vDims));
+		warp_descriptor->insert("deformNumCols", static_cast<int32_t>(m_uDims));
 
 		// This is where the actual warp information gets stored.
-		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
+		auto custom_envelope_warp = std::make_unique<Descriptors::Descriptor>("customEnvelopeWarp");
 
 		// Store the quilt information
 		{
 			// X Slices
-			Descriptors::ObjectArray quilt_slice_x("quiltSliceX", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
-			quilt_slice_x.m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesX.size());
-			quilt_slice_x.m_ClassID = "UntF";
+			auto quilt_slice_x = std::make_unique<Descriptors::ObjectArray>("quiltSliceX", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			quilt_slice_x->m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesX.size());
+			quilt_slice_x->m_ClassID = "UntF";
 
-			Descriptors::UnitFloats slice_values_x(
+			auto slice_values_x = std::make_unique<Descriptors::UnitFloats>(
 				"quiltSliceX", 
 				_os_key(Descriptors::Impl::OSTypes::UnitFloats), 
 				Descriptors::Impl::UnitFloatType::Pixel,
 				m_QuiltSlicesX
 				);
 
-			quilt_slice_x.insert("quiltSliceX", slice_values_x);
+			quilt_slice_x->insert("quiltSliceX", std::move(slice_values_x));
 
 			// Y slices
-			Descriptors::ObjectArray quilt_slice_y("quiltSliceY", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
-			quilt_slice_y.m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesY.size());
-			quilt_slice_y.m_ClassID = "UntF";
+			auto quilt_slice_y = std::make_unique<Descriptors::ObjectArray>("quiltSliceY", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			quilt_slice_y->m_ItemsCount = static_cast<uint32_t>(m_QuiltSlicesY.size());
+			quilt_slice_y->m_ClassID = "UntF";
 
-			Descriptors::UnitFloats slice_values_y(
+			auto slice_values_y = std::make_unique<Descriptors::UnitFloats>(
 				"quiltSliceY",
 				_os_key(Descriptors::Impl::OSTypes::UnitFloats),
 				Descriptors::Impl::UnitFloatType::Pixel,
 				m_QuiltSlicesY
 			);
 
-			quilt_slice_y.insert("quiltSliceY", slice_values_y);
+			quilt_slice_y->insert("quiltSliceY", std::move(slice_values_y));
 
 			// Insert them into the warp, these go first before the envelope warp
-			custom_envelope_warp.insert("quiltSliceX", quilt_slice_x);
-			custom_envelope_warp.insert("quiltSliceY", quilt_slice_y);
+			custom_envelope_warp->insert("quiltSliceX", std::move(quilt_slice_x));
+			custom_envelope_warp->insert("quiltSliceY", std::move(quilt_slice_y));
 		}
 
 
 		// Store the mesh points
 		{
-			Descriptors::ObjectArray mesh_points("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			auto mesh_points = std::make_unique<Descriptors::ObjectArray>("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
 			// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
 			// instead stores the number of items in the sub-descriptors
-			mesh_points.m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
-			mesh_points.m_ClassID = "rationalPoint";
+			mesh_points->m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
+			mesh_points->m_ClassID = "rationalPoint";
 
-			Descriptors::UnitFloats horizontal_values("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
-			Descriptors::UnitFloats vertical_values("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			auto horizontal_values = std::make_unique<Descriptors::UnitFloats>("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			auto vertical_values = std::make_unique <Descriptors::UnitFloats>("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
 
-			horizontal_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
-			vertical_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			horizontal_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			vertical_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
 
 			for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
 			{
-				horizontal_values.m_Values.push_back(warp_point.x);
-				vertical_values.m_Values.push_back(warp_point.y);
+				horizontal_values->m_Values.push_back(warp_point.x);
+				vertical_values->m_Values.push_back(warp_point.y);
 			}
 
-			mesh_points.insert("Hrzn", horizontal_values);
-			mesh_points.insert("Vrtc", vertical_values);
+			mesh_points->insert("Hrzn", std::move(horizontal_values));
+			mesh_points->insert("Vrtc", std::move(vertical_values));
 
-			custom_envelope_warp.insert("meshPoints", mesh_points);
+			custom_envelope_warp->insert("meshPoints", std::move(mesh_points));
 		}
-		warp_descriptor.insert("customEnvelopeWarp", custom_envelope_warp);
+		warp_descriptor->insert("customEnvelopeWarp", std::move(custom_envelope_warp));
 
-		return warp_descriptor;
+		return std::move(warp_descriptor);
 	}
 
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptors::Descriptor Warp::_serialize(normal_warp) const
+	std::unique_ptr<Descriptors::Descriptor> Warp::_serialize(normal_warp) const
 	{
 		// Helper lambda to reduce the signature a bit
 		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
@@ -119,36 +119,36 @@ namespace SmartObject
 			};
 
 
-		Descriptors::Descriptor warp_descriptor("warp");
+		auto warp_descriptor = std::make_unique<Descriptors::Descriptor>("warp");
 		_serialize_common(warp_descriptor);
 		
 		// This is where the actual warp information gets stored.
-		Descriptors::Descriptor custom_envelope_warp("customEnvelopeWarp");
+		auto custom_envelope_warp = std::make_unique<Descriptors::Descriptor>("customEnvelopeWarp");
 		{
-			Descriptors::ObjectArray mesh_points("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+			auto mesh_points = std::make_unique<Descriptors::ObjectArray>("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
 			// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
 			// instead stores the number of items in the sub-descriptors
-			mesh_points.m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
-			mesh_points.m_ClassID = "rationalPoint";
+			mesh_points->m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
+			mesh_points->m_ClassID = "rationalPoint";
 
-			Descriptors::UnitFloats horizontal_values("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
-			Descriptors::UnitFloats vertical_values("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			auto horizontal_values = std::make_unique<Descriptors::UnitFloats>("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+			auto vertical_values = std::make_unique<Descriptors::UnitFloats>("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
 
-			horizontal_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
-			vertical_values.m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			horizontal_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+			vertical_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
 
 			for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
 			{
-				horizontal_values.m_Values.push_back(warp_point.x);
-				vertical_values.m_Values.push_back(warp_point.y);
+				horizontal_values->m_Values.push_back(warp_point.x);
+				vertical_values->m_Values.push_back(warp_point.y);
 			}
 
-			mesh_points.insert("Hrzn", horizontal_values);
-			mesh_points.insert("Vrtc", vertical_values);
+			mesh_points->insert("Hrzn", std::move(horizontal_values));
+			mesh_points->insert("Vrtc", std::move(vertical_values));
 
-			custom_envelope_warp.insert("meshPoints", mesh_points);
+			custom_envelope_warp->insert("meshPoints", std::move(mesh_points));
 		}
-		warp_descriptor.insert("customEnvelopeWarp", custom_envelope_warp);
+		warp_descriptor->insert("customEnvelopeWarp", std::move(custom_envelope_warp));
 
 		return warp_descriptor;
 	}
@@ -156,9 +156,9 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::tuple<Descriptors::List, Descriptors::List> Warp::_generate_transform_descriptors() const
+	std::tuple<std::unique_ptr<Descriptors::List>, std::unique_ptr<Descriptors::List>> Warp::_generate_transform_descriptors() const
 	{
-		std::tuple<Descriptors::List, Descriptors::List> out;
+		std::tuple<std::unique_ptr<Descriptors::List>, std::unique_ptr<Descriptors::List>> out;
 
 		// The transform is just the regular bbox as 4 corners in clockwise order starting
 		// at the top-left
@@ -168,21 +168,21 @@ namespace SmartObject
 		Geometry::Point2D<double> bot_left = m_Transform[2];
 
 		{
-			Descriptors::List transform("Trnf", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
+			auto transform = std::make_unique<Descriptors::List>("Trnf", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
 
-			transform.m_Items.push_back(top_left.x);
-			transform.m_Items.push_back(top_left.y);
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(top_left.x));
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(top_left.y));
 
-			transform.m_Items.push_back(top_rght.x);
-			transform.m_Items.push_back(top_rght.y);
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(top_rght.x));
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(top_rght.y));
 
-			transform.m_Items.push_back(bot_rght.x);
-			transform.m_Items.push_back(bot_rght.y);
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(bot_rght.x));
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(bot_rght.y));
 
-			transform.m_Items.push_back(bot_left.x);
-			transform.m_Items.push_back(bot_left.y);
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(bot_left.x));
+			transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(bot_left.y));
 
-			std::get<0>(out) = transform;
+			std::get<0>(out) = std::move(transform);
 		}
 
 		Geometry::Point2D<double> non_aff_top_left = m_NonAffineTransform[0];
@@ -191,21 +191,21 @@ namespace SmartObject
 		Geometry::Point2D<double> non_aff_bot_left = m_NonAffineTransform[2];
 
 		{
-			Descriptors::List non_affine_transform("nonAffineTransform", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
+			auto non_affine_transform = std::make_unique<Descriptors::List>("nonAffineTransform", Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::List));
 			
-			non_affine_transform.m_Items.push_back(non_aff_top_left.x);
-			non_affine_transform.m_Items.push_back(non_aff_top_left.y);
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_top_left.x));
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_top_left.y));
 
-			non_affine_transform.m_Items.push_back(non_aff_top_rght.x);
-			non_affine_transform.m_Items.push_back(non_aff_top_rght.y);
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_top_rght.x));
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_top_rght.y));
 
-			non_affine_transform.m_Items.push_back(non_aff_bot_rght.x);
-			non_affine_transform.m_Items.push_back(non_aff_bot_rght.y);
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_bot_rght.x));
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_bot_rght.y));
 
-			non_affine_transform.m_Items.push_back(non_aff_bot_left.x);
-			non_affine_transform.m_Items.push_back(non_aff_bot_left.y);
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_bot_left.x));
+			non_affine_transform->m_Items.push_back(std::make_unique<Descriptors::double_Wrapper>(non_aff_bot_left.y));
 
-			std::get<1>(out) = non_affine_transform;
+			std::get<1>(out) = std::move(non_affine_transform);
 		}
 		return out;
 	}
@@ -213,7 +213,7 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Warp::_serialize_common(Descriptors::Descriptor& warp_descriptor) const
+	void Warp::_serialize_common(std::unique_ptr<Descriptors::Descriptor>& warp_descriptor) const
 	{
 		// Helper lambda to reduce the signature a bit
 		auto _os_key = [](Descriptors::Impl::OSTypes os_type)
@@ -221,39 +221,38 @@ namespace SmartObject
 				return Descriptors::Impl::descriptorKeys.at(os_type);
 			};
 
-		auto warp_style = Descriptors::Enumerated("warpStyle", _os_key(Descriptors::Impl::OSTypes::Enumerated), "warpStyle", m_WarpStyle);
-		warp_descriptor.insert("warpStyle", warp_style);
+		auto warp_style = std::make_unique<Descriptors::Enumerated>("warpStyle", _os_key(Descriptors::Impl::OSTypes::Enumerated), "warpStyle", m_WarpStyle);
+		warp_descriptor->insert("warpStyle", std::move(warp_style));
 
-		warp_descriptor.insert("warpValue", m_WarpValue);
-		warp_descriptor.insert("warpPerspective", m_WarpPerspective);
-		warp_descriptor.insert("warpPerspectiveOther", m_WarpPerspectiveOther);
+		warp_descriptor->insert("warpValue", m_WarpValue);
+		warp_descriptor->insert("warpPerspective", m_WarpPerspective);
+		warp_descriptor->insert("warpPerspectiveOther", m_WarpPerspectiveOther);
 
-		auto warp_rotation = Descriptors::Enumerated("warpRotate", _os_key(Descriptors::Impl::OSTypes::Enumerated), "Ornt", m_WarpRotate);
-		warp_descriptor.insert("warpRotate", warp_rotation);
+		auto warp_rotation = std::make_unique<Descriptors::Enumerated>("warpRotate", _os_key(Descriptors::Impl::OSTypes::Enumerated), "Ornt", m_WarpRotate);
+		warp_descriptor->insert("warpRotate", std::move(warp_rotation));
 
-		Descriptors::Descriptor bounds("classFloatRect");
+		auto bounds = std::make_unique<Descriptors::Descriptor>("classFloatRect");
 		{
 			auto top = m_Bounds[0];
 			auto left = m_Bounds[1];
 			auto bottom = m_Bounds[2];
 			auto right = m_Bounds[3];
 
-			bounds.insert("Top ", top);
-			bounds.insert("Left", left);
-			bounds.insert("Btom", bottom);
-			bounds.insert("Rght", right);
+			bounds->insert("Top ", top);
+			bounds->insert("Left", left);
+			bounds->insert("Btom", bottom);
+			bounds->insert("Rght", right);
 		}
-		warp_descriptor.insert("bounds", bounds);
+		warp_descriptor->insert("bounds", std::move(bounds));
 
-		warp_descriptor.insert("uOrder", m_uOrder);
-		warp_descriptor.insert("vOrder", m_vOrder);
-
+		warp_descriptor->insert("uOrder", m_uOrder);
+		warp_descriptor->insert("vOrder", m_vOrder);
 	}
 
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Descriptors::Descriptor Warp::_serialize_default(size_t width, size_t height)
+	std::unique_ptr<Descriptors::Descriptor> Warp::_serialize_default(size_t width, size_t height)
 	{
 		// Set up the base warp object which has all the info we need
 		Warp warp;
@@ -263,36 +262,46 @@ namespace SmartObject
 		bbox.maximum = { static_cast<double>(width), static_cast<double>(height) };
 		warp._warp_bounds(bbox);
 
-		Descriptors::Descriptor warp_descriptor("warp");
+		auto warp_descriptor = std::make_unique<Descriptors::Descriptor>("warp");
 		warp._serialize_common(warp_descriptor);
 
 		// The "customEnvelopeWarp" descriptor doesn't get set by photoshop
 
-		return warp_descriptor;
+		return std::move(warp_descriptor);
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Warp Warp::_deserialize(const Descriptors::Descriptor& warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, normal_warp)
+	Warp Warp::_deserialize(
+		const Descriptors::Descriptor* warp_descriptor, 
+		const Descriptors::List* transform, 
+		const Descriptors::List* non_affine_transform, 
+		normal_warp)
 	{
+		if (!warp_descriptor || !transform || !non_affine_transform)
+		{
+			throw std::runtime_error("Cannot pass nullptr to _deserialize");
+		}
+
+
 		Warp warp;
 		warp._warp_type(WarpType::normal);
 		try
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
-			auto boundsDescriptor = warp_descriptor.at<Descriptors::Descriptor>("bounds");
-			warp.m_Bounds[0] = boundsDescriptor.at<Descriptors::double_Wrapper>("Top ").m_Value;
-			warp.m_Bounds[1] = boundsDescriptor.at<Descriptors::double_Wrapper>("Left").m_Value;
-			warp.m_Bounds[2] = boundsDescriptor.at<Descriptors::double_Wrapper>("Btom").m_Value;
-			warp.m_Bounds[3] = boundsDescriptor.at<Descriptors::double_Wrapper>("Rght").m_Value;
+			auto boundsDescriptor = warp_descriptor->at<Descriptors::Descriptor>("bounds");
+			warp.m_Bounds[0] = boundsDescriptor->at<double>("Top ");
+			warp.m_Bounds[1] = boundsDescriptor->at<double>("Left");
+			warp.m_Bounds[2] = boundsDescriptor->at<double>("Btom");
+			warp.m_Bounds[3] = boundsDescriptor->at<double>("Rght");
 
 			// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-			const auto customEnvelopeWarp = warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
-			const auto meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
+			auto customEnvelopeWarp = warp_descriptor->at<Descriptors::Descriptor>("customEnvelopeWarp");
+			const auto meshPoints = customEnvelopeWarp->at<Descriptors::ObjectArray>("meshPoints");
 
 			// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
-			const auto& hrznValues = meshPoints.at<Descriptors::UnitFloats>("Hrzn").m_Values;
-			const auto& vrtcValues = meshPoints.at<Descriptors::UnitFloats>("Vrtc").m_Values;
+			const auto hrznValues = meshPoints->at<Descriptors::UnitFloats>("Hrzn")->m_Values;
+			const auto vrtcValues = meshPoints->at<Descriptors::UnitFloats>("Vrtc")->m_Values;
 
 			if (hrznValues.size() != vrtcValues.size())
 			{
@@ -333,31 +342,40 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	Warp Warp::_deserialize(const Descriptors::Descriptor& quilt_warp_descriptor, const Descriptors::List& transform, const Descriptors::List& non_affine_transform, quilt_warp)
+	Warp Warp::_deserialize(
+		const Descriptors::Descriptor* quilt_warp_descriptor,
+		const Descriptors::List* transform,
+		const Descriptors::List* non_affine_transform,
+		quilt_warp)
 	{
+		if (!quilt_warp_descriptor || !transform || !non_affine_transform)
+		{
+			throw std::runtime_error("Cannot pass nullptr to _deserialize");
+		}
+
 		Warp warp;
 		warp._warp_type(WarpType::quilt);
 
 		try
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
-			const auto boundsDescriptor = quilt_warp_descriptor.at<Descriptors::Descriptor>("bounds");
-			const auto top		= boundsDescriptor.at<Descriptors::double_Wrapper>("Top ")->m_Value;
-			const auto left		= boundsDescriptor.at<Descriptors::double_Wrapper>("Left")->m_Value;
-			const auto bottom	= boundsDescriptor.at<Descriptors::double_Wrapper>("Btom")->m_Value;
-			const auto right	= boundsDescriptor.at<Descriptors::double_Wrapper>("Rght")->m_Value;
+			const auto boundsDescriptor = quilt_warp_descriptor->at<Descriptors::Descriptor>("bounds");
+			const auto top		= boundsDescriptor->at<double>("Top ");
+			const auto left		= boundsDescriptor->at<double>("Left");
+			const auto bottom	= boundsDescriptor->at<double>("Btom");
+			const auto right	= boundsDescriptor->at<double>("Rght");
 
 			// Retrieve deformNumRows and deformNumCols (int32_t)
-			const auto& deformNumRows = quilt_warp_descriptor.at<int32_t>("deformNumRows");
-			const auto& deformNumCols = quilt_warp_descriptor.at<int32_t>("deformNumCols");
+			const auto deformNumRows = quilt_warp_descriptor->at<int32_t>("deformNumRows");
+			const auto deformNumCols = quilt_warp_descriptor->at<int32_t>("deformNumCols");
 
 			// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-			const auto& customEnvelopeWarp = quilt_warp_descriptor.at<Descriptors::Descriptor>("customEnvelopeWarp");
-			const auto& meshPoints = customEnvelopeWarp.at<Descriptors::ObjectArray>("meshPoints");
+			const auto customEnvelopeWarp = quilt_warp_descriptor->at<Descriptors::Descriptor>("customEnvelopeWarp");
+			const auto meshPoints = customEnvelopeWarp->at<Descriptors::ObjectArray>("meshPoints");
 
 			// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
-			const auto& hrznValues = meshPoints.at<Descriptors::UnitFloats>("Hrzn").m_Values;
-			const auto& vrtcValues = meshPoints.at<Descriptors::UnitFloats>("Vrtc").m_Values;
+			const auto hrznValues = meshPoints->at<Descriptors::UnitFloats>("Hrzn")->m_Values;
+			const auto vrtcValues = meshPoints->at<Descriptors::UnitFloats>("Vrtc")->m_Values;
 
 			if (hrznValues.size() != vrtcValues.size())
 			{
@@ -377,11 +395,11 @@ namespace SmartObject
 
 			// Retrieve the quilt slices over x and y, these are probably the actual slice locations?
 			// They are for some reason nested two levels deep
-			const auto& quiltSlicesX = customEnvelopeWarp.at<Descriptors::ObjectArray>("quiltSliceX").at<Descriptors::UnitFloats>("quiltSliceX");
-			const auto& quiltSlicesY = customEnvelopeWarp.at<Descriptors::ObjectArray>("quiltSliceY").at<Descriptors::UnitFloats>("quiltSliceY");
+			const auto quiltSlicesX = customEnvelopeWarp->at<Descriptors::ObjectArray>("quiltSliceX")->at<Descriptors::UnitFloats>("quiltSliceX");
+			const auto quiltSlicesY = customEnvelopeWarp->at<Descriptors::ObjectArray>("quiltSliceY")->at<Descriptors::UnitFloats>("quiltSliceY");
 
-			warp._quilt_slices_x(quiltSlicesX.m_Values);
-			warp._quilt_slices_y(quiltSlicesY.m_Values);
+			warp._quilt_slices_x(quiltSlicesX->m_Values);
+			warp._quilt_slices_y(quiltSlicesY->m_Values);
 		}
 		catch (const std::runtime_error& e)
 		{
@@ -403,9 +421,9 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::array<Geometry::Point2D<double>, 4> Warp::_generate_affine_transform(const Descriptors::List& transform)
+	std::array<Geometry::Point2D<double>, 4> Warp::_generate_affine_transform(const Descriptors::List* transform)
 	{
-		std::vector<double> transform_items = transform.as<double>();
+		std::vector<double> transform_items = transform->as<double>();
 		if (transform_items.size() != 8)
 		{
 			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid transform encountered, expected it to be of size 8, instead got %zu", transform_items.size());
@@ -425,9 +443,9 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::array<Geometry::Point2D<double>, 4> Warp::_generate_non_affine_transform(const Descriptors::List& non_affine_transform)
+	std::array<Geometry::Point2D<double>, 4> Warp::_generate_non_affine_transform(const Descriptors::List* non_affine_transform)
 	{
-		std::vector<double> nonAffineTransformItems = non_affine_transform.as<double>();
+		std::vector<double> nonAffineTransformItems = non_affine_transform->as<double>();
 		if (nonAffineTransformItems.size() != 8)
 		{
 			PSAPI_LOG_ERROR("SmartObjectWarp", "Invalid transform and non-affine transform encountered, expected both to be of size 8, instead got %zu", nonAffineTransformItems.size());
@@ -609,41 +627,41 @@ namespace SmartObject
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void Warp::_deserialize_common(Warp& warpStruct, const Descriptors::Descriptor& warpDescriptor)
+	void Warp::_deserialize_common(Warp& warpStruct, const Descriptors::Descriptor* warpDescriptor)
 	{
 		try
 		{
 			// 1. Retrieve warpStyle (Enumerated)
-			const Descriptors::Enumerated* warpStyle = warpDescriptor.at<Descriptors::Enumerated>("warpStyle");
+			const auto warpStyle = warpDescriptor->at<Descriptors::Enumerated>("warpStyle");
 			warpStruct._warp_style(warpStyle->m_Enum);
 
 			// 2. Retrieve warpValue (double)
-			const auto& warpValue = warpDescriptor.at<double>("warpValue");
+			const auto warpValue = warpDescriptor->at<double>("warpValue");
 			warpStruct._warp_value(warpValue);
 
 			// 3. Retrieve warpPerspective (double)
-			const auto& warpPerspective = warpDescriptor.at<double>("warpPerspective");
-			const auto& warpPerspectiveOther = warpDescriptor.at<double>("warpPerspectiveOther");
+			const auto warpPerspective = warpDescriptor->at<double>("warpPerspective");
+			const auto warpPerspectiveOther = warpDescriptor->at<double>("warpPerspectiveOther");
 			warpStruct._warp_perspective(warpPerspective);
 			warpStruct._warp_perspective_other(warpPerspectiveOther);
 
-			const auto& warpBounds = warpDescriptor.at<Descriptors::Descriptor>("bounds");
-			const auto top = warpBounds.at<double>("Top ");
-			const auto left = warpBounds.at<double>("Left");
-			const auto bottom = warpBounds.at<double>("Btom");
-			const auto right = warpBounds.at<double>("Rght");
+			const auto warpBounds = warpDescriptor->at<Descriptors::Descriptor>("bounds");
+			const auto top = warpBounds->at<double>("Top ");
+			const auto left = warpBounds->at<double>("Left");
+			const auto bottom = warpBounds->at<double>("Btom");
+			const auto right = warpBounds->at<double>("Rght");
 			Geometry::BoundingBox<double> bbox;
 			bbox.minimum = { left, top };
 			bbox.maximum = { right, bottom };
 			warpStruct._warp_bounds(bbox);
 
 			// 4. Retrieve warpRotate (Enumerated)
-			const auto& warpRotate = warpDescriptor.at<Descriptors::Enumerated>("warpRotate");
-			warpStruct._warp_rotate(warpRotate.m_Enum);
+			const auto warpRotate = warpDescriptor->at<Descriptors::Enumerated>("warpRotate");
+			warpStruct._warp_rotate(warpRotate->m_Enum);
 
 			// 5. Retrieve uOrder and vOrder (int32_t), always 4
-			const auto& uOrder = warpDescriptor.at<int32_t>("uOrder");
-			const auto& vOrder = warpDescriptor.at<int32_t>("vOrder");
+			const auto uOrder = warpDescriptor->at<int32_t>("uOrder");
+			const auto vOrder = warpDescriptor->at<int32_t>("vOrder");
 			// We don't break here as files may work but redirect to the support page as I was not able to find any
 			// files with non-4 values here
 
