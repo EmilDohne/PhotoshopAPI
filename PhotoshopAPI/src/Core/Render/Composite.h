@@ -168,7 +168,7 @@ namespace Composite
 				{
 					PSAPI_LOG_DEBUG("Composite", 
 						"Skipping compositing of layer '%s' as either the layer or the canvas has no channels. Canvas channels: %zu; Layer channels: %zu", 
-						layer.metadata.name, canvas.channels.size(), layer.channels.size());
+						layer.metadata.name.c_str(), canvas.channels.size(), layer.channels.size());
 					return;
 				}
 
