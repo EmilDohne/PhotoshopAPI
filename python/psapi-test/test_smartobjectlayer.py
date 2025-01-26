@@ -64,35 +64,35 @@ class TestSmartObjectLayer(unittest.TestCase):
         warp = psapi.SmartObjectWarp.generate_default(200, 108, 4, 4)
         file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data, warp)
         
-        # previous_image_data = layer.image_data
+        previous_image_data = layer.image_data
 
-        # self.assertIn(0, previous_image_data)
-        # self.assertIn(1, previous_image_data)
-        # self.assertIn(2, previous_image_data)
+        self.assertIn(0, previous_image_data)
+        self.assertIn(1, previous_image_data)
+        self.assertIn(2, previous_image_data)
         
-        # self.assertTrue(previous_image_data[0].shape == (108, 200))
-        # self.assertTrue(previous_image_data[1].shape == (108, 200))
-        # self.assertTrue(previous_image_data[2].shape == (108, 200))
+        self.assertTrue(previous_image_data[0].shape == (108, 200))
+        self.assertTrue(previous_image_data[1].shape == (108, 200))
+        self.assertTrue(previous_image_data[2].shape == (108, 200))
 
-        # warp = layer.warp
-        # points = warp.points
-        # points[0] = points[0] + 25.0
-        # warp.points = points
-        # layer.warp = warp
+        warp = layer.warp
+        points = warp.points
+        points[0] = points[0] + 25.0
+        warp.points = points
+        layer.warp = warp
 
-        # current_image_data = layer.image_data
+        current_image_data = layer.image_data
         
-        # self.assertIn(0, current_image_data)
-        # self.assertIn(1, current_image_data)
-        # self.assertIn(2, current_image_data)
+        self.assertIn(0, current_image_data)
+        self.assertIn(1, current_image_data)
+        self.assertIn(2, current_image_data)
         
-        # self.assertTrue(current_image_data[0].shape == (108, 200))
-        # self.assertTrue(current_image_data[1].shape == (108, 200))
-        # self.assertTrue(current_image_data[2].shape == (108, 200))
+        self.assertTrue(current_image_data[0].shape == (108, 200))
+        self.assertTrue(current_image_data[1].shape == (108, 200))
+        self.assertTrue(current_image_data[2].shape == (108, 200))
         
-        # self.assertTrue(len(previous_image_data) == len(previous_image_data))
-        # for key in previous_image_data:
-        #     self.assertTrue(np.any(np.not_equal(previous_image_data[key], current_image_data[key])))
+        self.assertTrue(len(previous_image_data) == len(previous_image_data))
+        for key in previous_image_data:
+            self.assertTrue(np.any(np.not_equal(previous_image_data[key], current_image_data[key])))
             
     @nose.tools.raises(RuntimeError)
     def test_set_image_data(self):
@@ -210,36 +210,36 @@ class TestSmartObjectLayer(unittest.TestCase):
         """
         file, layer_1 = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
         
-        # layer_1_image_data = layer_1.image_data
-        # layer_2 = layer = psapi.SmartObjectLayer_8bit(
-        #     file,
-        #     self._get_image_file_path("uv_grid.jpg"),
-        #     "SmartObjectLayer_external",
-        #     psapi.enum.LinkedLayerType.external,
-        #     )
-        # file.add_layer(layer_2)
-        # layer_2_image_data = layer_2.image_data
+        layer_1_image_data = layer_1.image_data
+        layer_2 = layer = psapi.SmartObjectLayer_8bit(
+            file,
+            self._get_image_file_path("uv_grid.jpg"),
+            "SmartObjectLayer_external",
+            psapi.enum.LinkedLayerType.external,
+            )
+        file.add_layer(layer_2)
+        layer_2_image_data = layer_2.image_data
         
-        # tmp_file = tempfile.NamedTemporaryFile(suffix=".psb", )
-        # file.write(tmp_file.name)
+        tmp_file = tempfile.NamedTemporaryFile(suffix=".psb", )
+        file.write(tmp_file.name)
         
-        # read_file = psapi.LayeredFile.read(tmp_file.name)
+        read_file = psapi.LayeredFile.read(tmp_file.name)
 
-        # read_layer_1 = read_file["SmartObjectLayer"]
-        # read_layer_1_image_data = read_layer_1.image_data
-        # read_layer_2 = read_file["SmartObjectLayer_external"]
-        # read_layer_2_image_data = read_layer_2.image_data
+        read_layer_1 = read_file["SmartObjectLayer"]
+        read_layer_1_image_data = read_layer_1.image_data
+        read_layer_2 = read_file["SmartObjectLayer_external"]
+        read_layer_2_image_data = read_layer_2.image_data
         
-        # for key in layer_1_image_data:
-        #      self.assertTrue(
-        #         np.array_equal(layer_1_image_data[key], read_layer_1_image_data[key]),
-        #         f"Arrays for key {key} are not equal: {layer_1_image_data[key]} != {read_layer_1_image_data[key]}"
-        #     )
-        # for key in layer_2_image_data:
-        #      self.assertTrue(
-        #         np.array_equal(layer_2_image_data[key], read_layer_2_image_data[key]),
-        #         f"Arrays for key {key} are not equal: {layer_2_image_data[key]} != {read_layer_2_image_data[key]}"
-        #     )
+        for key in layer_1_image_data:
+             self.assertTrue(
+                np.array_equal(layer_1_image_data[key], read_layer_1_image_data[key]),
+                f"Arrays for key {key} are not equal: {layer_1_image_data[key]} != {read_layer_1_image_data[key]}"
+            )
+        for key in layer_2_image_data:
+             self.assertTrue(
+                np.array_equal(layer_2_image_data[key], read_layer_2_image_data[key]),
+                f"Arrays for key {key} are not equal: {layer_2_image_data[key]} != {read_layer_2_image_data[key]}"
+            )
         
     def test_move(self):
         """

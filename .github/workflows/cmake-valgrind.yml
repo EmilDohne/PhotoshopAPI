@@ -27,10 +27,14 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: "-fsanitize=address,leak,undefined"
+             cxxflags: "-fsanitize=address,leak,undefined"
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
+             cflags: "-fsanitize=address,leak,undefined"
+             cxxflags: "-fsanitize=address,leak,undefined"
 
     steps:
     - uses: actions/checkout@v4
@@ -47,6 +51,8 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
         cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
 
@@ -54,6 +60,8 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc || echo $NUMBER_OF_PROCESSORS)
       
     - name: Run Valgrind
@@ -62,5 +70,5 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y valgrind
-        valgrind --leak-check=full ./PhotoshopTest
+        valgrind --leak-check=full --show-leak-kinds=all ./PhotoshopTest
       continue-on-error: false
