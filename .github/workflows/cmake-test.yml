@@ -27,8 +27,8 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: ""
-             cxxflags: ""
+             cflags: "-fsanitize=address,leak,undefined"
+             cxxflags: "-fsanitize=address,leak,undefined"
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
@@ -45,8 +45,8 @@ jobs:
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: ""
-             cxxflags: ""
+             cflags: "-fsanitize=address,leak,undefined"
+             cxxflags: "-fsanitize=address,leak,undefined"
 
     steps:
     - uses: actions/checkout@v4
