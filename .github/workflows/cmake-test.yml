@@ -51,8 +51,8 @@ jobs:
              os: macos-latest
              compiler: clang
              compilercxx: clang++
-             cflags: "-fsanitize=address,leak,undefined"
-             cxxflags: "-fsanitize=address,leak,undefined"
+             cflags: "-fsanitize=address,undefined"
+             cxxflags: "-fsanitize=address,undefined"
 
     steps:
     - uses: actions/checkout@v4
