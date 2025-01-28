@@ -5,6 +5,8 @@
 #include "LayeredFile/LayerTypes/SmartObjectLayer.h"
 #include "Core/Warp/SmartObjectWarp.h"
 
+#include "../DetectArmMac.h"
+
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Render/Composite.h"
 #include "Core/Render/Render.h"
@@ -248,3 +250,109 @@ TEST_CASE("Read all supported warps and write image files")
 		}
 	}
 }
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer read-write internal linkage")
+{
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>(Enum::ColorMode::RGB, 64, 64);
+
+	Layer<bpp_type>::Params lr_params{};
+	lr_params.name = "SmartObject";
+	lr_params.width = 64;
+	lr_params.height = 32;
+
+	auto layer = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params, "documents/image_data/ImageStackerImage.jpg");
+	file.add_layer(layer);
+
+	LayeredFile<bpp_type>::write(std::move(file), "smart_object_out.psd");
+
+	auto read_file = LayeredFile<bpp_type>::read("smart_object_out.psd");
+	auto read_layer = find_layer_as<bpp_type, SmartObjectLayer>("SmartObject", read_file);
+
+	auto image_data = read_layer->get_image_data();
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer read-write external linkage")
+{
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>(Enum::ColorMode::RGB, 64, 64);
+
+	Layer<bpp_type>::Params lr_params{};
+	lr_params.name = "SmartObject";
+	lr_params.width = 64;
+	lr_params.height = 32;
+
+	auto layer = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params, "documents/image_data/ImageStackerImage.jpg", LinkedLayerType::external);
+	file.add_layer(layer);
+
+	LayeredFile<bpp_type>::write(std::move(file), "smart_object_out.psd");
+
+	auto read_file = LayeredFile<bpp_type>::read("smart_object_out.psd");
+	auto read_layer = find_layer_as<bpp_type, SmartObjectLayer>("SmartObject", read_file);
+
+	auto image_data = read_layer->get_image_data();
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer read-write mixed linkage")
+{
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>(Enum::ColorMode::RGB, 64, 64);
+
+	Layer<bpp_type>::Params lr_params{};
+	lr_params.name = "SmartObject";
+	Layer<bpp_type>::Params lr_params2{};
+	lr_params2.name = "SmartObject2";
+
+	auto layer = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params, "documents/image_data/ImageStackerImage.jpg", LinkedLayerType::external);
+	file.add_layer(layer);
+	auto layer_external = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params2, "documents/image_data/uv_grid.jpg");
+	file.add_layer(layer_external);
+
+	LayeredFile<bpp_type>::write(std::move(file), "smart_object_out.psd");
+
+	auto read_file = LayeredFile<bpp_type>::read("smart_object_out.psd");
+	auto read_layer = find_layer_as<bpp_type, SmartObjectLayer>("SmartObject", read_file);
+	auto read_layer2 = find_layer_as<bpp_type, SmartObjectLayer>("SmartObject2", read_file);
+
+	auto image_data = read_layer->get_image_data();
+	auto image_data2 = read_layer2->get_image_data();
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+#ifndef ARM_MAC_ARCH
+TEST_CASE("Create layer invalid filepath"
+	* doctest::no_breaks(true)
+	* doctest::no_output(true)
+	* doctest::should_fail(true))
+{
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>(Enum::ColorMode::RGB, 64, 64);
+
+	Layer<bpp_type>::Params lr_params{};
+	lr_params.name = "SmartObject";
+
+	auto layer = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params, "foo/bar.jpg", LinkedLayerType::external);
+}
+#endif

@@ -12,6 +12,7 @@
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
+
 void declare_linkedlayertype_enums(py::module& m)
 {
 	py::enum_<LinkedLayerType> linked_layer_type(m, "LinkedLayerType", R"pbdoc(

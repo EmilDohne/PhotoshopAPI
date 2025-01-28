@@ -796,12 +796,6 @@ private:
 	void evaluate_transforms()
 	{
 		PSAPI_PROFILE_FUNCTION();
-		if (m_SmartObjectWarp == _m_CachedSmartObjectWarp)
-		{
-			PSAPI_LOG_DEBUG("SmartObject", "No need to re-evaluate the transform data as it matches the cached values");
-			return;
-		}
-
 		_m_CachedSmartObjectWarpMesh = m_SmartObjectWarp.surface().mesh(
 			75,		// x resolution
 			75,		// y resolution
@@ -823,12 +817,6 @@ private:
 	void evaluate_image_data()
 	{
 		PSAPI_PROFILE_FUNCTION();
-		if (m_SmartObjectWarp == _m_CachedSmartObjectWarp)
-		{
-			PSAPI_LOG_DEBUG("SmartObject", "No need to re-evaluate the image data as it matches the cached values");
-			return;
-		}
-
 		if (!m_FilePtr)
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to evaluate the smart objects' image data without access to the original file." \
