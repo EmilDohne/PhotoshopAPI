@@ -567,6 +567,14 @@ namespace Geometry
             }
         }
     };
+
+
+    // In most cases we will deal with doubles so we get advantages by explicitly instantiating them
+    extern template struct Face<double, 4>;
+    extern template struct OctreeNode<double, 128>;
+    extern template class Octree<double, 128>;
+    extern template struct QuadMesh<double>;
+
 }
 
 PSAPI_NAMESPACE_END

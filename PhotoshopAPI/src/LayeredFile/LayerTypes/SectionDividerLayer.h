@@ -75,4 +75,8 @@ public:
 };
 
 
+extern template struct SectionDividerLayer<bpp8_t>;
+extern template struct SectionDividerLayer<bpp16_t>;
+extern template struct SectionDividerLayer<bpp32_t>;
+
 PSAPI_NAMESPACE_END

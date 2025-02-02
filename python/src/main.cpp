@@ -32,6 +32,7 @@ PYBIND11_MODULE(psapi, m)
 
 	auto geometry_module = m.def_submodule("geometry");
 	declare_point2d(geometry_module);
+	declare_boundingbox2d(geometry_module);
 	declare_geometry_operations(geometry_module);
 
 	declare_layer<bpp8_t>(m, "_8bit");

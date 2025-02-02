@@ -15,6 +15,8 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-
+template struct LayeredFile<bpp8_t>;
+template struct LayeredFile<bpp16_t>;
+template struct LayeredFile<bpp32_t>;
 
 PSAPI_NAMESPACE_END

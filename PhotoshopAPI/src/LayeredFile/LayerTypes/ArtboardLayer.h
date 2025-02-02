@@ -15,4 +15,8 @@ struct ArtboardLayer : Layer<T>
 	ArtboardLayer() = default;
 };
 
+extern template struct ArtboardLayer<bpp8_t>;
+extern template struct ArtboardLayer<bpp16_t>;
+extern template struct ArtboardLayer<bpp32_t>;
+
 PSAPI_NAMESPACE_END

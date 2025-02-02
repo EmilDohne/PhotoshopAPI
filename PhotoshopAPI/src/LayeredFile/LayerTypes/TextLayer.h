@@ -13,4 +13,8 @@ struct TextLayer : Layer<T>
 };
 
 
+extern template struct TextLayer<bpp8_t>;
+extern template struct TextLayer<bpp16_t>;
+extern template struct TextLayer<bpp32_t>;
+
 PSAPI_NAMESPACE_END

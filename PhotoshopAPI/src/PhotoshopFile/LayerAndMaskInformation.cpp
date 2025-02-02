@@ -865,7 +865,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 	}
 
 	// Allocate a binary vector for the maximum extents such that we can then reuse the buffer in the loops rather than reallocating memory
-	ChannelCoordinates extent = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
+	ChannelCoordinates extent = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right));
 	uint32_t maxWidth = extent.width;
 	uint32_t maxHeight = extent.height;
 	if (layerRecord.m_LayerMaskData)
@@ -874,7 +874,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 			// Generate our coordinates from the mask extents instead
-			ChannelCoordinates lrMask = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
+			ChannelCoordinates lrMask = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right));
 			if (static_cast<uint32_t>(lrMask.width) > maxWidth)
 			{
 				maxWidth = static_cast<uint32_t>(lrMask.width);
@@ -912,7 +912,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		const uint64_t channelOffset = channelOffsets[index];
 
 		// Generate our coordinates from the layer extents
-		ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right), header);
+		ChannelCoordinates coordinates = generateChannelCoordinates(ChannelExtents(layerRecord.m_Top, layerRecord.m_Left, layerRecord.m_Bottom, layerRecord.m_Right));
 
 		// If the channel is a mask the extents are actually stored in the layermaskdata
 		if (channel.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask || channel.m_ChannelID.id == Enum::ChannelID::RealUserSuppliedLayerMask)
@@ -921,7 +921,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			{
 				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
 				// Generate our coordinates from the mask extents instead
-				coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right), header);
+				coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right));
 			}
 		}
 		// Get the compression of the channel. We must read it this way as the offset has to be correct before parsing

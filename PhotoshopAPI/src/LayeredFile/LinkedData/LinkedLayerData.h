@@ -116,6 +116,18 @@ struct LinkedLayerData
 		initialize_from_psd();
 	}
 
+	size_t num_channels() const { return m_ImageData.size(); }
+
+	std::vector<Enum::ChannelIDInfo> channel_indices() const
+	{
+		std::vector<Enum::ChannelIDInfo> out;
+		for (const auto& [key, _] : m_ImageData)
+		{
+			out.push_back(key);
+		}
+		return key;
+	}
+
 	/// Get a view over the raw file data associated with this linked layer 
 	const std::span<const uint8_t> raw_data() const
 	{
@@ -128,6 +140,14 @@ struct LinkedLayerData
 		return m_ImageData;
 	}
 
+	std::vector<T> get_channel(Enum::ChannelIDInfo _id) const
+	{
+		if (!m_ImageData.contains(_id))
+		{
+			throw std::invalid_argument(fmt::format("LinkedLayer: Invalid channel index {} for file {}", _id.index, m_FilePath.string()))
+		}
+		return m_ImageData[_id]->template getData<T>();
+	}
 
 	data_type get_image_data() const
 	{
@@ -586,5 +606,15 @@ private:
 	std::unordered_map<std::string, std::shared_ptr<LinkedLayerData<T>>> m_LinkedLayerData;
 
 };
+
+
+extern template struct LinkedLayerData<bpp8_t>;
+extern template struct LinkedLayerData<bpp16_t>;
+extern template struct LinkedLayerData<bpp32_t>;
+
+extern template struct LinkedLayers<bpp8_t>;
+extern template struct LinkedLayers<bpp16_t>;
+extern template struct LinkedLayers<bpp32_t>;
+
 
 PSAPI_NAMESPACE_END

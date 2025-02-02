@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Util/Enum.h"
 #include "Layer.h"
-#include "_ImageDataLayerType.h"
+#include "ImageDataMixins.h"
 
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
@@ -13,14 +13,7 @@
 #include <unordered_map>
 #include <optional>
 #include <iostream>
-
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
 
 #define __STDC_FORMAT_MACROS 1
 #include <inttypes.h>
@@ -29,156 +22,399 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// A pixel based image layer, the image data is stored on the ImageDataLayerType
 template <typename T>
-struct ImageLayer : public _ImageDataLayerType<T>
+struct ImageLayer final : public Layer<T>, public WritableImageDataMixin<T>
 {
-	using typename _ImageDataLayerType<T>::data_type;
-	using typename _ImageDataLayerType<T>::storage_type;
+	using typename Layer<T>::value_type;
+	using typename WritableImageDataMixin<T>::data_type;
+	using typename WritableImageDataMixin<T>::channel_type;
+	using typename WritableImageDataMixin<T>::image_type;
+
+public:
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	std::vector<int> channel_indices(bool include_mask) const
+	{
+		std::vector<int> indices{};
+		for (const auto& [key, _] : WritableImageDataMixin<T>::m_ImageData)
+		{
+			indices.push_back(key.index);
+		}
+		if (Layer<T>::has_mask() && include_mask)
+		{
+			indices.push_back(Layer<T>::s_mask_index.index);
+		}
+		return channel_indices();
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	size_t num_channels(bool include_mask) const override
+	{
+		if (Layer<T>::has_mask() && include_mask)
+		{
+			return WritableImageDataMixin<T>::m_ImageData.size() + 1;
+		}
+		return WritableImageDataMixin<T>::m_ImageData.size();
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_write_compression(Enum::Compression _compcode)
+	{
+		for (const auto& [_, channel_ptr] : WritableImageDataMixin<T>::m_ImageData)
+		{
+			channel_ptr->m_Compression = _compcode;
+		}
+		Layer<T>::set_mask_compression(_compcode);
+	}
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document. 
 	/// 
-	/// \tparam ExecutionPolicy the execution policy to generate the image layer with, at most parallelizes to data.size()
-	/// 
 	/// \param data the ImageData to associate with the layer
 	/// \param parameters The parameters dictating layer name, width, height, mask etc.
-	/// \param policy The execution policy for the image data compression
-	template <typename  ExecutionPolicy = std::execution::parallel_policy, std::enable_if_t<std::is_execution_policy_v<ExecutionPolicy>, int> = 0>
-	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>>&& data, Layer<T>::Params& parameters, const ExecutionPolicy policy = std::execution::par)
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>> data, Layer<T>::Params& parameters)
 	{
-		// Change the data from being Enum::ChannelID mapped to instead being mapped to a ChannelIDInfo so we can forward it
-		// to the other constructor
-		typename _ImageDataLayerType<T>::data_type remapped{};
+		data_type remapped{};
 		for (auto& [key, value] : data)
 		{
-			// Check in a strict manner whether the channel is even valid for the colormode
-			if (!Enum::channelValidForColorMode(key, parameters.colormode))
-			{
-				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel '%s' as it is not valid for the '%s' colormode. Skipping creation of this channel",
-					Enum::channelIDToString(key).c_str(), Enum::colorModeToString(parameters.colormode).c_str());
-				continue;
-			}
 			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
-			remapped[info] = std::move(value);
+			remapped[info.index] = std::move(value);
 		}
-		_ImageDataLayerType<T>::construct(std::move(remapped), parameters);
+		construct(std::move(remapped), parameters);
 	}
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
 	/// 
 	/// \param imageData the ImageData to associate with the channel
 	/// \param layerParameters The parameters dictating layer name, width, height, mask etc.
-	ImageLayer(std::unordered_map<int16_t, std::vector<T>>&& data, Layer<T>::Params& parameters) 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ImageLayer(std::unordered_map<int, std::vector<T>> data, Layer<T>::Params& parameters) 
 	{
-		// Change the data from being int16_t mapped to instead being mapped to a ChannelIDInfo so we can forward it
-		// to construct
-		typename _ImageDataLayerType<T>::data_type remapped{};
-		for (auto& [key, value] : data)
-		{
-			// Check in a strict manner whether the channel is even valid for the colormode
-			if (!Enum::channelValidForColorMode(key, parameters.colormode))
-			{
-				PSAPI_LOG_WARNING("ImageLayer", "Unable to construct channel with index %d as it is not valid for the '%s' colormode. Skipping creation of this channel",
-					key, Enum::colorModeToString(parameters.colormode).c_str());
-				continue;
-			}
-			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
-			remapped[info] = std::move(value);
-		}
-		_ImageDataLayerType<T>::construct(std::move(remapped), parameters);
+		this->construct(std::move(data), parameters);
 	}
 
-	/// Initialize our imageLayer by first parsing the base Layer instance and then moving
-	/// the additional channels into our representation. This constructor is primarily for internal usage and it is 
-	/// encouraged to use the other constructors taking image data directly instead.
-	ImageLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header) :
-		_ImageDataLayerType<T>(layerRecord, channelImageData, header)
+	/// Initialize the ImageLayer from the photoshop primitives
+	///
+	/// This is part of the internal API and as a user you will likely never have to use 
+	/// this function
+	//
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	ImageLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header) :
+		: Layer<T>(layer_record, channel_image_data, header)
 	{
 		// Move the layers into our own layer representation
-		for (int i = 0; i < layerRecord.m_ChannelCount; ++i)
+		for (int i = 0; i < layer_record.m_ChannelCount; ++i)
 		{
-			auto& channelInfo = layerRecord.m_ChannelInformation[i];
+			auto& channel_info = layer_record.m_ChannelInformation[i];
 
-			// We already extract masks ahead of time and skip them here to avoid raising warnings
-			if (channelInfo.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
+			// We already extract masks ahead of time in ctor of Layer<T> and skip them here to avoid raising warnings
+			if (channel_info.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
 
-			auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
+			auto channelPtr = channel_image_data.extractImagePtr(channel_info.m_ChannelID);
 			// Pointers might have already been released previously
 			if (!channelPtr) continue;
 
 			// Insert any valid pointers to channels we have. We move to avoid having 
 			// to uncompress / recompress
-			_ImageDataLayerType<T>::m_ImageData[channelInfo.m_ChannelID] = std::move(channelPtr);
+			WritableImageDataMixin<T>::m_ImageData[channel_info.m_ChannelID] = std::move(channelPtr);
 		}
 	}
 
-	/// Change the compression codec of all the image channels. This applies
-	/// on-write
-	void set_compression(const Enum::Compression compCode) override
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const data_type& data) override
 	{
-		// Change the mask channels' compression codec
-		Layer<T>::set_compression(compCode);
-		// Change the image channel compression codecs
-		for (const auto& [key, val] : _ImageDataLayerType<T>::m_ImageData)
-		{
-			_ImageDataLayerType<T>::m_ImageData[key]->m_Compression = compCode;
-		}
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data, 
+			Layer<T>::m_Width, 
+			Layer<T>::m_Height, 
+			Layer<T>::m_CenterX, 
+			Layer<T>::m_CenterY, 
+			Layer<T>::m_ColorMode
+		);
 	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const data_type& data, int32_t width, int32_t height)
+	{
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data,
+			width,
+			height
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(int _id, const std::vector<T>& channel) override
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			std::span<const T>(channel.begin(), channel.end()),
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(Enum::ChannelID _id, const std::vector<T>& channel) override
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			std::span<const T>(channel.begin(), channel.end()),
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(Enum::ChannelIDInfo _id, const std::vector<T>& channel)
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			std::span<const T>(channel.begin(), channel.end()),
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
 
 	/// \brief Converts the image layer to Photoshop layerRecords and imageData.
 	/// 
 	/// This is part of the internal API and as a user you will likely never have to use 
 	/// this function
 	/// 
-	/// \param colorMode The color mode for the conversion.
-	/// \param header The file header for the conversion.
-	/// \return A tuple containing layerRecords and imageData.
-	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
+	/// \return A tuple containing LayerRecord and ChannelImageData.
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
-		PascalString lrName = Layer<T>::generate_name();
-		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
-		uint16_t channelCount = _ImageDataLayerType<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
+		PascalString name = Layer<T>::generate_name();
+		ChannelExtents extents = this->generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 
 		uint8_t clipping = 0u;	// No clipping mask for now
-		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
-		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
-		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
+		LayerRecords::BitFlags bit_flags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
+		std::optional<LayerRecords::LayerMaskData> lr_mask_data = Layer<T>::internal_generate_mask_data();
+		LayerRecords::LayerBlendingRanges blending_ranges = Layer<T>::generate_blending_ranges();
 
 		// Generate our AdditionalLayerInfoSection. We dont need any special Tagged Blocks besides what is stored by the generic layer
-		auto blockVec = this->generate_tagged_blocks();
-		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
-		if (blockVec.size() > 0)
+		auto block_vec = this->generate_tagged_blocks();
+		std::optional<AdditionalLayerInfo> tagged_blocks = std::nullopt;
+		if (block_vec.size() > 0)
 		{
-			TaggedBlockStorage blockStorage = { blockVec };
-			taggedBlocks.emplace(blockStorage);
+			TaggedBlockStorage blockStorage = { block_vec };
+			tagged_blocks.emplace(AdditionalLayerInfo(blockStorage));
 		}
 
 		// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 		// the compression mode chosen on export and must therefore be updated later. This step is done last as generateChannelImageData() invalidates
 		// all image data which we might need for operations above
-		auto channelData = _ImageDataLayerType<T>::generate_channel_image_data();
-		auto& channelInfoVec = std::get<0>(channelData);
-		ChannelImageData channelImgData = std::move(std::get<1>(channelData));
+		auto channel_data = this->generate_channel_image_data();
+		auto& channel_info = std::get<0>(channel_data);
+		ChannelImageData channel_img_data = std::move(std::get<1>(channel_data));
 
-		LayerRecord lrRecord = LayerRecord(
-			lrName,
+		LayerRecord lr_record = LayerRecord(
+			name,
 			extents.top,
 			extents.left,
 			extents.bottom,
 			extents.right,
-			channelCount,
-			channelInfoVec,
+			static_cast<uint16_t>(this->num_channels()),
+			channel_info,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,
 			clipping,
-			bitFlags,
-			lrMaskData,
-			blendingRanges,
-			std::move(taggedBlocks)
+			bit_flags,
+			lr_mask_data,
+			blending_ranges,
+			std::move(tagged_blocks)
 		);
-
-		return std::make_tuple(std::move(lrRecord), std::move(channelImgData));
+		return std::make_tuple(std::move(lr_record), std::move(channel_img_data));
 	}
+
+protected:
+
+	/// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 
+	/// itself. This also takes care of generating our layer mask channel if it is present. Invalidates any data held by the ImageLayer
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
+	{
+		std::vector<LayerRecords::ChannelInformation> channel_info;
+		std::vector<std::unique_ptr<ImageChannel>> channel_data;
+
+		// First extract our mask data, the order of our channels does not matter as long as the 
+		// order of channelInfo and channelData is the same
+		auto mask_data = Layer<T>::internal_extract_mask();
+		if (mask_data.has_value())
+		{
+			channel_info.push_back(std::get<0>(mask_data.value()));
+			channel_data.push_back(std::move(std::get<1>(mask_data.value())));
+		}
+
+		// Extract all the channels next and push them into our data representation
+		for (auto& [id, channel] : WritableImageDataMixin<T>::m_ImageData)
+		{
+			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->m_OrigByteSize });
+			channel_data.push_back(std::move(channel));
+		}
+
+		// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
+		ChannelImageData channel_image_data(std::move(channel_data));
+		return std::make_tuple(channel_info, std::move(channel_image_data));
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	data_type evaluate_image_data() override
+	{
+		int num_channels_no_mask = this->num_channels(false);
+		auto _channel_indices = this->channel_indices(false);
+
+		if (num_channels_no_mask == 0)
+		{
+			throw std::runtime_error(fmt::format("ImageLayer '{}': Unable to evaluate image data without any channels present.", Layer<T>::m_LayerName));
+		}
+		if (!WritableImageDataMixin<T>::validate_channel_sizes())
+		{
+			throw std::runtime_error(fmt::format("ImageLayer '{}': Not all channels in the ImageLayer are the same size, unable to evaluate image data", Layer<T>::m_LayerName));
+		}
+		auto channel_size = WritableImageDataMixin<T>::m_ImageData.begin()->second.m_OrigByteSize / sizeof(T);
+
+		size_t num_threads = std::thread::hardware_concurrency() / WritableImageDataMixin<T>::m_ImageData.size();
+		num_threads = std::min(static_cast<size_t>(1), numThreads);
+
+		// Allocate image data and then fill it by decompressing in parallel
+		data_type data = WritableImageDataMixin<T>::parallel_alloc_image_data(_channel_indices, channel_size);
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&WritableImageDataMixin<T>::m_ImageData, num_threads](auto& pair)
+			{
+				auto& [key, channel_buffer] = pair;
+				channel_buffer->template getData<T>(std::span<T>(channel_buffer.begin(), channel_buffer.end()), num_threads);
+			});
+
+		if (Layer<T>::has_mask())
+		{
+			data[Layer<T>::s_mask_index.index] = Layer<T>::get_mask();
+		}
+
+		return std::move(data);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	std::vector<T> evaluate_channel(std::variant<int, Enum::ChannelID, Enum::ChannelIDInfo> _id) override
+	{
+		auto idinfo = WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode);
+		// short-circuit masks
+		if (idinfo == Layer<T>::s_mask_index && Layer<T>::has_mask())
+		{
+			return Layer<T>::get_mask();
+		}
+
+		if (!WritableImageDataMixin<T>::m_ImageData.contains(idinfo))
+		{
+			throw std::invalid_argument(fmt::format("ImageLayer '{}': Invalid channel '{}' accessed while calling evaluate_channel()", Layer<T>::m_LayerName, Enum::channelIDToString(idinfo.id)));
+		}
+		return WritableImageDataMixin<T>::m_ImageData.at(idinfo)->template getData<T>();
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height, float center_x, float center_y)
+	{
+		Layer<T>::set_mask(data, width, height);
+		Layer<T>::mask_position(Geometry::Point2D<double>(center_x, center_y));
+	}
+
+private:
+
+	/// Construct and initialize the layer from memory.
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void construct(data_type data, Layer<T>::Params& parameters)
+	{
+		PSAPI_PROFILE_FUNCTION();
+		Layer<T>::m_ColorMode = parameters.colormode;
+		Layer<T>::m_LayerName = parameters.name;
+		if (parameters.blendmode == Enum::BlendMode::Passthrough)
+		{
+			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
+			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
+		}
+		else
+		{
+			Layer<T>::m_BlendMode = parameters.blendmode;
+		}
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.visible;
+		Layer<T>::m_IsLocked = parameters.locked;
+		Layer<T>::m_CenterX = parameters.center_x;
+		Layer<T>::m_CenterY = parameters.center_y;
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+
+		// Forward the mask channel if it was passed as part of the image data to the layer mask
+		// The actual populating of the mask channel will be done further down
+		if (data.contains(Layer<T>::s_mask_index))
+		{
+			if (parameters.mask)
+			{
+				PSAPI_LOG_ERROR("ImageLayer",
+					"Got mask from both the ImageData as index -2 and as part of the layer parameter, please only pass it as one of these");
+			}
+
+			PSAPI_LOG_DEBUG("ImageLayer", "Forwarding mask channel passed as part of image data to m_LayerMask");
+			parameters.mask = std::move(data[Layer<T>::s_mask_index]);
+			data.erase(Layer<T>::s_mask_index);
+		}
+
+
+		// Apply the image data and mask channel.
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data, 
+			Layer<T>::m_Width, 
+			Layer<T>::m_Height, 
+			Layer<T>::m_CenterX, 
+			Layer<T>::m_CenterY, 
+			Layer<T>::m_ColorMode
+		);
+		Layer<T>::parse_mask(parameters);
+
+		// Do a check if the channels contain the minimum required for the given colormode.
+		if (!WritableImageDataMixin<T>::validate_channels(Layer<T>::m_ColorMode))
+		{
+			throw std::runtime_error(fmt::format("ImageLayer '{}': Invalid channels passed to constructor", Layer<T>::m_LayerName));
+		}
+	}
+
 };
+
+
+extern template struct ImageLayer<bpp8_t>;
+extern template struct ImageLayer<bpp16_t>;
+extern template struct ImageLayer<bpp32_t>;
+
 
 PSAPI_NAMESPACE_END

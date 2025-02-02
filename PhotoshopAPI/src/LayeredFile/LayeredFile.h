@@ -126,6 +126,12 @@ struct LayeredFile
 	}
 	/// @} 
 
+	/// Retrieve the bounding box describing the canvas, will always have a minimum of 0, 0
+	Geometry::BoundingBox<double> bbox() noexcept 
+	{ 
+		return Geometry::BoundingBox<double>(Geometry::Point2D<double>(0, 0), Geometry::Point2D<double>(width(), height()));
+	}
+
 	/// \defgroup colormode The files' colormode
 	/// 
 	/// Currently we only fully support RGB, CMYK and Greyscale.
@@ -155,8 +161,8 @@ struct LayeredFile
 	/// than the smart object and for deduplication.
 	/// 
 	/// @{
-	LinkedLayers<T>& linked_layers() noexcept { return m_LinkedLayers; }
-	const LinkedLayers<T>& linked_layers() const noexcept { return m_LinkedLayers; }
+	std::shared_ptr<LinkedLayers<T>> linked_layers() noexcept { return m_LinkedLayers; }
+	const std::shared_ptr<LinkedLayers<T>> linked_layers() const noexcept { return m_LinkedLayers; }
 	/// @} 
 
 
@@ -186,7 +192,7 @@ struct LayeredFile
 		m_DotsPerInch = _Impl::read_dpi(document.get());
 		if (document->m_LayerMaskInfo.m_AdditionalLayerInfo)
 		{
-			m_LinkedLayers = LinkedLayers<T>(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
+			m_LinkedLayers = std::make_shared<LinkedLayers<T>>?(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
 		}
 
 		m_Layers = _Impl::template build_layer_hierarchy<T>(*this, std::move(document));
@@ -673,7 +679,7 @@ private:
 	/// Linked layers are external files associated with the layered file. In the context of 
 	/// e.g. SmartObjects these will hold the raw file bytes so that multiple smart objects
 	/// can access the same layers without data duplication
-	LinkedLayers<T> m_LinkedLayers;
+	std::shared_ptr<LinkedLayers<T>> m_LinkedLayers;
 
 
 	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers_impl(const LayerOrder order, bool generateSectionDividers)
@@ -762,6 +768,11 @@ std::unique_ptr<PhotoshopFile> layered_to_photoshop(LayeredFile<T>&& layered_fil
 
 	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }
+
+
+extern template struct LayeredFile<bpp8_t>;
+extern template struct LayeredFile<bpp16_t>;
+extern template struct LayeredFile<bpp32_t>;
 
 
 PSAPI_NAMESPACE_END

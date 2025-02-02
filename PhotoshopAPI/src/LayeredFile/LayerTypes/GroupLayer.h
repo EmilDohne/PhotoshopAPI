@@ -32,7 +32,7 @@ struct LayeredFile;
 /// \tparam T The data type for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
 template <typename T>
-struct GroupLayer : public Layer<T>
+struct GroupLayer final: public Layer<T>
 {
 	/// \defgroup layer The groups' child layers
 	/// @{
@@ -151,13 +151,13 @@ struct GroupLayer : public Layer<T>
 	/// \param colorMode The color mode for the conversion.
 	/// \param header The file header for the conversion.
 	/// \return A tuple containing layerRecords and imageData.
-	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, const FileHeader& header) override
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
 		PascalString lrName = Layer<T>::generate_name();
-		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY), header);
+		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
-		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask(header);
+		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask();
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
 
 
@@ -298,6 +298,10 @@ protected:
 	}
 };
 
+
+extern template struct GroupLayer<bpp8_t>;
+extern template struct GroupLayer<bpp16_t>;
+extern template struct GroupLayer<bpp32_t>;
 
 
 PSAPI_NAMESPACE_END

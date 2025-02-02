@@ -28,17 +28,17 @@ struct LayeredFileWrapper
 		if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_8)
 		{
 			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), filePath };
-			return layeredFile;
+			return std::move(layeredFile);
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_16)
 		{
 			LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr), filePath };
-			return layeredFile;
+			return std::move(layeredFile);
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_32)
 		{
 			LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr), filePath };
-			return layeredFile;
+			return std::move(layeredFile);
 		}
 		else
 		{

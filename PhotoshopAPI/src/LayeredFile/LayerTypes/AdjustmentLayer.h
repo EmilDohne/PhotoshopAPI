@@ -15,4 +15,8 @@ struct AdjustmentLayer : Layer<T>
 
 };
 
+extern template struct AdjustmentLayer<bpp8_t>;
+extern template struct AdjustmentLayer<bpp16_t>;
+extern template struct AdjustmentLayer<bpp32_t>;
+
 PSAPI_NAMESPACE_END

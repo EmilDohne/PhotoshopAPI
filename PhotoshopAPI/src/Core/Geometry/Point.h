@@ -29,8 +29,8 @@ namespace Geometry
     {
         using value_type = T;
 
-        T x{};
-        T y{};
+        T x = static_cast<T>(0);
+        T y = static_cast<T>(0);
 
         Point2D() = default;
         constexpr Point2D(T x_val, T y_val) : x(x_val), y(y_val) {}
@@ -134,8 +134,32 @@ namespace Geometry
             // Use a simple hash combination method
             return std::hash<T>()(x) ^ (std::hash<T>()(y) << 1); // XOR combined with left shift for distribution
         }
-    };
 
+        // Provide a get<I> function for structured bindings
+        template <std::size_t I>
+        constexpr auto& get(Point2D<T>& point) 
+        {
+            if constexpr (I == 0) return point.x;
+            else if constexpr (I == 1) return point.y;
+        }
+
+        // Provide a get<I> function for structured bindings
+        template <std::size_t I>
+        constexpr const auto& get(const Point2D<T>& point) 
+        {
+            if constexpr (I == 0) return point.x;
+            else if constexpr (I == 1) return point.y;
+        }
+
+        // Provide a get<I> function for structured bindings
+        template <std::size_t I>
+        constexpr auto&& get(Point2D<T>&& point) 
+        {
+            if constexpr (I == 0) return std::move(point.x);
+            else if constexpr (I == 1) return std::move(point.y);
+        }
+
+    };
 
     /// Extension of a Point2D to additionally describe the UV coordinate of a given point.
     template <typename T>
@@ -179,5 +203,17 @@ namespace std
         {
             return point.hash();
         }
+    };
+}
+
+// Enable structured bindings
+namespace std {
+    template <typename T>
+    struct tuple_size<NAMESPACE_PSAPI::Geometry::Point2D<T>> : std::integral_constant<std::size_t, 2> {};
+
+    template <typename T, std::size_t I>
+    struct tuple_element<I, NAMESPACE_PSAPI::Geometry::Point2D<T>> {
+        static_assert(I < 2, "Index out of bounds for Point2D");
+        using type = T;
     };
 }

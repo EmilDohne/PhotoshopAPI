@@ -535,4 +535,10 @@ protected:
 	}
 };
 
+
+extern template struct _ImageDataLayerType<bpp8_t>;
+extern template struct _ImageDataLayerType<bpp16_t>;
+extern template struct _ImageDataLayerType<bpp32_t>;
+
+
 PSAPI_NAMESPACE_END

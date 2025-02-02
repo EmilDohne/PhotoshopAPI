@@ -12,4 +12,8 @@ struct ShapeLayer : Layer<T>
 	ShapeLayer() = default;
 };
 
+extern template struct ShapeLayer<bpp8_t>;
+extern template struct ShapeLayer<bpp16_t>;
+extern template struct ShapeLayer<bpp32_t>;
+
 PSAPI_NAMESPACE_END

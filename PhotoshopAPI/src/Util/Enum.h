@@ -338,10 +338,13 @@ namespace Enum
 	// --------------------------------------------------------------------------------
 	struct ChannelIDInfo
 	{
-		ChannelID id;
-		int16_t index;
+		ChannelID id{};
+		int16_t index{};
 
-		inline bool operator==(const ChannelIDInfo& other) const
+		constexpr inline ChannelIDInfo(ChannelID id, int16_t index) noexcept
+			: id(id), index(index) {}
+
+		constexpr inline bool operator==(const ChannelIDInfo& other) const
 		{
 			return (this->id == other.id && this->index == other.index);
 		}
@@ -585,7 +588,7 @@ namespace Enum
 	}
 
 
-	inline std::string channelIDToString(const Enum::ChannelID value)
+	inline std::string channelIDToString(const Enum::ChannelID value) noexcept
 	{
 		switch (value)
 		{
