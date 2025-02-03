@@ -1,4 +1,8 @@
+#pragma once
+
 #include "Macros.h"
+
+#include "MaskDataMixin.h"
 
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"
@@ -11,11 +15,9 @@
 #include <span>
 
 #include <fmt/format.h>
+#include <fmt/ranges.h>
 
 PSAPI_NAMESPACE_BEGIN
-
-template <typename T>
-struct LayeredFile;
 
 
 /// \brief A mixin struct for handling read-only image data within layers.
@@ -33,7 +35,7 @@ public:
 	/// Type used for a single channel
 	using channel_type = std::unique_ptr<ImageChannel>;
 	/// Type used for a mapping of channels.
-	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher> ;
+	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher>;
 	/// Type used for data as it is passed back to the user.
 	using data_type = std::unordered_map<int, std::vector<T>>;
 	/// Type used for a view as it is passed back to the user.
@@ -99,7 +101,7 @@ public:
 	/// \return The evaluated channel
 	std::vector<T> get_channel(int _id)
 	{
-		auto data = evaluate_channel(document, _id);
+		auto data = evaluate_channel(_id);
 		return std::move(data);
 	}
 
@@ -115,7 +117,7 @@ public:
 	/// \return The evaluated channel
 	std::vector<T> get_channel(Enum::ChannelID _id)
 	{
-		auto data = evaluate_channel(document, _id);
+		auto data = evaluate_channel(_id);
 		return std::move(data);
 	}
 
@@ -131,17 +133,9 @@ public:
 	/// \return The evaluated channel
 	std::vector<T> get_channel(Enum::ChannelIDInfo _id)
 	{
-		auto data = evaluate_channel(document, _id);
+		auto data = evaluate_channel(_id);
 		return std::move(data);
 	}
-
-	/// Set the write compression for all channels.
-	///
-	/// This has no effect on the in-memory compression of these channels but only on write.
-	/// Setting this therefore has a near-zero runtime cost.
-	/// 
-	/// \param _compcode The new compression setting.
-	virtual void set_write_compression(Enum::Compression _compcode) = 0;
 
 	virtual ~ImageDataMixin() = default;
 
@@ -194,7 +188,7 @@ protected:
 		// Check that vector a is a subset of vector b
 		auto is_subset = [](std::vector<Enum::ChannelIDInfo> a, std::vector<Enum::ChannelIDInfo> b) -> bool
 			{
-				return std::all_of(a.begin(), a.end(), [](int a_element) 
+				return std::all_of(a.begin(), a.end(), [&b](Enum::ChannelIDInfo a_element)
 					{
 						return std::find(b.begin(), b.end(), a_element) != b.end();
 					});
@@ -211,10 +205,10 @@ protected:
 						missing_channels.push_back(Enum::channelIDToString(expected_channel.id));
 					}
 				}
-
 				std::string warn_message = fmt::format("Warning: <{}> The following expected channels are missing in the image data:\n{}", colormode, fmt::join(missing_channels, ", "));
 				PSAPI_LOG_WARNING("ImageData", "%s", warn_message.c_str());
-			}
+				return missing_channels;
+			};
 
 		// Since a mask channel is never a requirement we can acces m_ImageData directly and don't need to 
 		// go fetching the mask
@@ -222,10 +216,10 @@ protected:
 
 		if (colormode == Enum::ColorMode::RGB)
 		{
-			constexpr Enum::ChannelIDInfo channel_r = { .id = Enum::ChannelID::Red, .index = 0 };
-			constexpr Enum::ChannelIDInfo channel_g = { .id = Enum::ChannelID::Green, .index = 1 };
-			constexpr Enum::ChannelIDInfo channel_b = { .id = Enum::ChannelID::Blue, .index = 2 };
-			constexpr std::vector<Enum::ChannelIDInfo> expected = { channel_r, channel_g, channel_b };
+			constexpr Enum::ChannelIDInfo channel_r = {Enum::ChannelID::Red, 0 };
+			constexpr Enum::ChannelIDInfo channel_g = {Enum::ChannelID::Green, 1 };
+			constexpr Enum::ChannelIDInfo channel_b = {Enum::ChannelID::Blue, 2 };
+			std::vector<Enum::ChannelIDInfo> expected = { channel_r, channel_g, channel_b };
 
 			if (!is_subset(expected, held_channels))
 			{
@@ -238,11 +232,11 @@ protected:
 		}
 		else if (colormode == Enum::ColorMode::CMYK)
 		{
-			constexpr Enum::ChannelIDInfo channel_c = { .id = Enum::ChannelID::Cyan, .index = 0 };
-			constexpr Enum::ChannelIDInfo channel_m = { .id = Enum::ChannelID::Magenta, .index = 1 };
-			constexpr Enum::ChannelIDInfo channel_y = { .id = Enum::ChannelID::Yellow, .index = 2 };
-			constexpr Enum::ChannelIDInfo channel_k = { .id = Enum::ChannelID::Black, .index = 3 };
-			constexpr std::vector<Enum::ChannelIDInfo> expected = { channel_c, channel_m, channel_y, channel_k };
+			constexpr Enum::ChannelIDInfo channel_c = {Enum::ChannelID::Cyan, 0 };
+			constexpr Enum::ChannelIDInfo channel_m = {Enum::ChannelID::Magenta, 1 };
+			constexpr Enum::ChannelIDInfo channel_y = {Enum::ChannelID::Yellow, 2 };
+			constexpr Enum::ChannelIDInfo channel_k = {Enum::ChannelID::Black, 3 };
+			std::vector<Enum::ChannelIDInfo> expected = { channel_c, channel_m, channel_y, channel_k };
 
 			if (!is_subset(expected, held_channels))
 			{
@@ -255,8 +249,8 @@ protected:
 		}
 		else if (colormode == Enum::ColorMode::Grayscale)
 		{
-			constexpr Enum::ChannelIDInfo channel_g = { .id = Enum::ChannelID::Gray, .index = 0 };
-			constexpr std::vector<Enum::ChannelIDInfo> expected = { channel_g };
+			constexpr Enum::ChannelIDInfo channel_g = { Enum::ChannelID::Gray, 0 };
+			std::vector<Enum::ChannelIDInfo> expected = { channel_g };
 
 			if (!is_subset(expected, held_channels))
 			{
@@ -284,7 +278,7 @@ protected:
 	/// /// \return `true` if all channels have the same size, `false` otherwise.
 	bool validate_channel_sizes(bool no_warn = false) const
 	{
-		std::unordered_map<Enum::ChannelIDInfo, size_t> channel_sizes{};
+		std::unordered_map<Enum::ChannelIDInfo, size_t, Enum::ChannelIDInfoHasher> channel_sizes{};
 		for (const auto& [key, channel_ptr] : m_ImageData)
 		{
 			channel_sizes[key] = channel_ptr->m_OrigByteSize / sizeof(T);
@@ -339,7 +333,7 @@ protected:
 
 		std::mutex img_data_mutex;
 
-		std::for_each(std::execution::par_unseq, keys.begin(), keys.end(), [&out_map, data_size](auto key) 
+		std::for_each(std::execution::par_unseq, keys.begin(), keys.end(), [&](auto key) 
 			{
 				auto vec = std::vector<T>(data_size);
 				std::lock_guard<std::mutex> lock(img_data_mutex);
@@ -363,7 +357,7 @@ protected:
 			keys.push_back(key);
 		}
 
-		return std::make_tuple(keys, vals);
+		return keys;
 	}
 
 	/// Utility function to extract the keys and values of a map as a std::vector.
@@ -392,11 +386,11 @@ protected:
 		Enum::ChannelIDInfo idinfo{};
 		if (std::holds_alternative<int>(_id))
 		{
-			idinfo = Enum::toChannelIDInfo(std::get<int>(_id), Layer<T>::m_ColorMode);
+			idinfo = Enum::toChannelIDInfo(std::get<int>(_id), colormode);
 		}
 		else if (std::holds_alternative<Enum::ChannelID>(_id))
 		{
-			idinfo = Enum::toChannelIDInfo(std::get<Enum::ChannelID>(_id), Layer<T>::m_ColorMode);
+			idinfo = Enum::toChannelIDInfo(std::get<Enum::ChannelID>(_id), colormode);
 		}
 		else
 		{
@@ -463,6 +457,30 @@ public:
 	/// \param height The height of the image.
 	virtual void set_image_data(const data_type& data, int32_t width, int32_t height) = 0;
 
+	/// \brief Sets the image data.
+	///
+	/// \param data The data to be set.
+	virtual void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data) = 0;
+
+	/// \brief Sets the image data with specified dimensions.
+	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	virtual void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data, int32_t width, int32_t height) = 0;
+
+	/// \brief Sets the image data.
+	///
+	/// \param data The data to be set.
+	virtual void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data) = 0;
+
+	/// \brief Sets the image data with specified dimensions.
+	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	virtual void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data, int32_t width, int32_t height) = 0;
+
 	/// \brief Sets the data for a specific channel.
 	///
 	/// \param _id The channel ID to set the data for.
@@ -508,7 +526,7 @@ protected:
 		// Construct variables for correct exception stack unwinding
 		struct exception_info
 		{
-			data_type::key_type key;
+			typename data_type::key_type key;
 			std::exception_ptr exception;
 		};
 		std::vector<exception_info> exceptions;
@@ -558,6 +576,76 @@ protected:
 		}
 	}
 
+	/// \brief Internal helper method to set image data with advanced parameters.
+	///
+	/// This private method handles setting image data while managing exceptions
+	/// during the process. It supports parallel processing across multiple channels.
+	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_image_data(
+		const std::unordered_map<Enum::ChannelID, std::vector<T>>& data,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		data_type remapped{};
+		for (const auto& [key, value] : data)
+		{
+			remapped[Enum::toChannelIDInfo(key, colormode).index] = std::move(value);
+		}
+		this->impl_set_image_data(
+			remapped,
+			width,
+			height,
+			center_x,
+			center_y,
+			colormode
+		);
+	}
+
+	/// \brief Internal helper method to set image data with advanced parameters.
+	///
+	/// This private method handles setting image data while managing exceptions
+	/// during the process. It supports parallel processing across multiple channels.
+	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_image_data(
+		const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		data_type remapped{};
+		for (const auto& [key, value] : data)
+		{
+			remapped[key.index] = std::move(value);
+		}
+		this->impl_set_image_data(
+			remapped,
+			width,
+			height,
+			center_x,
+			center_y,
+			colormode
+		);
+	}
+
 	/// \brief Internal helper method to set data for a specific channel.
 	///
 	/// This method validates the channel and data size, then stores the data
@@ -583,19 +671,19 @@ protected:
 		PSAPI_PROFILE_FUNCTION();
 		if (!Enum::channelValidForColorMode(id.id, colormode))
 		{
-			throw std::invalid_argument(fmt::format("Unable to construct channel '{}' as it is not valid for the colormode '{}', skipping setting of this channel"),
-				Enum::channelIDToString(id.id), Enum::colorModeToString(colormode));
+			throw std::invalid_argument(fmt::format("Unable to construct channel '{}' as it is not valid for the colormode '{}', skipping setting of this channel",
+				Enum::channelIDToString(id.id), Enum::colorModeToString(colormode)));
 		}
 		if (data.size() != static_cast<size_t>(width) * height)
 		{
 			throw std::invalid_argument(
-				fmt::format("Invalid data size encountered while calling set_channel(), expected <{}x{} = {:L}> but instead got <{:L}>"),
-				width, height, width * height, data.size());
+				fmt::format("Invalid data size encountered while calling set_channel(), expected <{}x{} = {:L}> but instead got <{:L}>",
+				width, height, width * height, data.size()));
 		}
 
 		if (id.id == Enum::ChannelID::UserSuppliedLayerMask)
 		{
-			this->impl_set_mask(data, width, height);
+			this->impl_set_mask(data, width, height, center_x, center_y);
 		}
 		else
 		{

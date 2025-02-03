@@ -25,7 +25,7 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 	{
 		LayeredFile<type> file(Enum::ColorMode::RGB, width, height);
 		{
-			std::unordered_map<int16_t, std::vector<type>> data =
+			std::unordered_map<int, std::vector<type>> data =
 			{
 				{0, std::vector<type>(size)},
 				{1, std::vector<type>(size)},

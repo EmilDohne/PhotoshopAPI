@@ -12,16 +12,16 @@ PSAPI_NAMESPACE_BEGIN
 
 // Generate a layer and mask information section based on the information in the LayeredFile
 template <typename T>
-LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, const FileHeader& header, std::filesystem::path file_path);
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, std::filesystem::path file_path);
 
 
 template <typename T>
-LayerInfo generate_layerinfo(LayeredFile<T>& layeredFile, const FileHeader& header);
+LayerInfo generate_layerinfo(LayeredFile<T>& layeredFile);
 
 
 // Generates the accompanying layer data (LayerRecord and ChannelImageData) for each of the layers in the scene
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> generate_layerdata(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header);
+std::tuple<LayerRecord, ChannelImageData> generate_layerdata(std::shared_ptr<Layer<T>> layer);
 
 
 PSAPI_NAMESPACE_END

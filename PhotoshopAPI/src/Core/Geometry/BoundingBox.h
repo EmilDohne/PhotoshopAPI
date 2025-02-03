@@ -6,6 +6,7 @@
 #include "Point.h"
 
 #include <array>
+#include <optional>
 
 PSAPI_NAMESPACE_BEGIN
 

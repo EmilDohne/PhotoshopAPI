@@ -341,6 +341,7 @@ namespace Enum
 		ChannelID id{};
 		int16_t index{};
 
+		constexpr inline ChannelIDInfo() noexcept = default;
 		constexpr inline ChannelIDInfo(ChannelID id, int16_t index) noexcept
 			: id(id), index(index) {}
 
@@ -510,6 +511,27 @@ namespace Enum
 		}
 	}
 	
+
+	// Specialization for int
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	template<>
+	inline ChannelIDInfo toChannelIDInfo<int>(const int value, const Enum::ColorMode colorMode)
+	{
+		switch (colorMode)
+		{
+		case Enum::ColorMode::RGB:
+			return Impl::rgbIntToChannelID(static_cast<int16_t>(value));
+		case Enum::ColorMode::CMYK:
+			return Impl::cmykIntToChannelID(static_cast<int16_t>(value));
+		case Enum::ColorMode::Grayscale:
+			return Impl::grayscaleIntToChannelID(static_cast<int16_t>(value));
+		default:
+			PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given index %d and colormode %s", value, Enum::colorModeToString(colorMode).c_str());
+			return ChannelIDInfo{};
+		}
+	}
+
 
 	/// Checks whether the channelid is valid for the given colormode, valid template instantiations are with
 	/// T: Enum::ChannelID

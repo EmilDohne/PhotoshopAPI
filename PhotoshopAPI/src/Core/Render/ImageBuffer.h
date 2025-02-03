@@ -7,15 +7,8 @@
 #include <cstdint>
 #include <algorithm>
 #include <type_traits>
-
-
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
+#include <filesystem>
 #include <span>
-#endif
 
 #include "Core/Geometry/Point.h"
 #include "Core/Geometry/BoundingBox.h"
@@ -238,7 +231,7 @@ namespace Render
                     // coordinate space of the original buffer rather than in our rescaled
                     // buffer
                     _Precision v = static_cast<_Precision>(y) / height;
-                    _Precision orig_y = (v * this->height) - .5;
+                    _Precision orig_y = static_cast<_Precision>((v * this->height) - .5);
                     std::int64_t orig_y_int = static_cast<std::int64_t>(orig_y);
                     _Precision orig_y_fract = orig_y - std::floor(orig_y);
 
@@ -246,7 +239,7 @@ namespace Render
                     for (size_t x = 0; x < width; ++x)
                     {
                         _Precision u = static_cast<_Precision>(x) / width;
-                        _Precision orig_x = (u * this->width) - .5;
+                        _Precision orig_x = static_cast<_Precision>((u * this->width) - .5);
                         std::int64_t orig_x_int = static_cast<std::int64_t>(orig_x);
                         _Precision orig_x_fract = orig_x - std::floor(orig_x);
 
@@ -297,7 +290,7 @@ namespace Render
             std::for_each(horizontal_iter.begin(), horizontal_iter.end(), [&](size_t x)
                 {
                     _Precision u = static_cast<_Precision>(x) / width;
-                    _Precision orig_x = (u * this->width) - .5;
+                    _Precision orig_x = static_cast<_Precision>((u * this->width) - .5);
                     orig_x_int[x] = static_cast<std::int64_t>(orig_x);
                     orig_x_fract[x] = orig_x - std::floor(orig_x);
                 });
@@ -308,7 +301,7 @@ namespace Render
                     // coordinate space of the original buffer rather than in our rescaled
                     // buffer
                     _Precision v = static_cast<_Precision>(y) / height;
-                    _Precision orig_y = (v * this->height) - .5;
+                    _Precision orig_y = static_cast<_Precision>((v * this->height) - .5);
                     std::int64_t orig_y_int = static_cast<std::int64_t>(orig_y);
                     _Precision orig_y_fract = orig_y - std::floor(orig_y);
 
@@ -371,7 +364,7 @@ namespace Render
                 {
                     auto sample_point_or_black = [&](int64_t x, int64_t y)
                         {
-                            if (x < 0 || y < 0 || x > this->width - 1 || y > this->height - 1) [[unlikely]]
+                            if (x < 0 || y < 0 || x > static_cast<int64_t>(this->width) - 1 || y > static_cast<int64_t>(this->height) - 1) [[unlikely]]
                             {
                                 return static_cast<T>(0);
                             }
@@ -386,8 +379,8 @@ namespace Render
                     int64_t y1 = y0 + 1;
 
                     // Calculate weights
-                    U dx = point.x - static_cast<U>(x0);
-                    U dy = point.y - static_cast<U>(y0);
+                    float dx = static_cast<float>(point.x) - x0;
+                    float dy = static_cast<float>(point.y) - y0;
 
                     // Sample four surrounding pixels getting a black pixel instead of 
                     float v00 = sample_point_or_black(x0, y0);

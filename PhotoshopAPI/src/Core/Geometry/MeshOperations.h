@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <execution>
 
 #include "Point.h"
 #include "BoundingBox.h"

@@ -2,6 +2,7 @@
 
 #include "Macros.h"
 #include "Util/Logger.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 #include <algorithm>

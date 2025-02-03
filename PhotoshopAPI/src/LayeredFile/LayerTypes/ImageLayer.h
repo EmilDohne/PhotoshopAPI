@@ -7,6 +7,7 @@
 
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
+#include "LayeredFile/concepts.h"
 
 
 #include <vector>
@@ -23,6 +24,7 @@ PSAPI_NAMESPACE_BEGIN
 
 
 template <typename T>
+	requires concepts::bit_depth<T>
 struct ImageLayer final : public Layer<T>, public WritableImageDataMixin<T>
 {
 	using typename Layer<T>::value_type;
@@ -45,7 +47,7 @@ public:
 		{
 			indices.push_back(Layer<T>::s_mask_index.index);
 		}
-		return channel_indices();
+		return indices;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -105,7 +107,7 @@ public:
 	//
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	ImageLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header) :
+	ImageLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header)
 		: Layer<T>(layer_record, channel_image_data, header)
 	{
 		// Move the layers into our own layer representation
@@ -148,7 +150,63 @@ public:
 		WritableImageDataMixin<T>::impl_set_image_data(
 			data,
 			width,
-			height
+			height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data) override
+	{
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data,
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data, int32_t width, int32_t height) override
+	{
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data,
+			width,
+			height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data) override
+	{
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data,
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data, int32_t width, int32_t height) override
+	{
+		WritableImageDataMixin<T>::impl_set_image_data(
+			data,
+			width,
+			height,
 			Layer<T>::m_CenterX,
 			Layer<T>::m_CenterY,
 			Layer<T>::m_ColorMode
@@ -212,7 +270,7 @@ public:
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
 		PascalString name = Layer<T>::generate_name();
-		ChannelExtents extents = this->generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
+		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bit_flags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
@@ -241,7 +299,7 @@ public:
 			extents.left,
 			extents.bottom,
 			extents.right,
-			static_cast<uint16_t>(this->num_channels()),
+			static_cast<uint16_t>(this->num_channels(true)),
 			channel_info,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,
@@ -290,7 +348,7 @@ protected:
 	// ---------------------------------------------------------------------------------------------------------------------
 	data_type evaluate_image_data() override
 	{
-		int num_channels_no_mask = this->num_channels(false);
+		size_t num_channels_no_mask = this->num_channels(false);
 		auto _channel_indices = this->channel_indices(false);
 
 		if (num_channels_no_mask == 0)
@@ -301,17 +359,19 @@ protected:
 		{
 			throw std::runtime_error(fmt::format("ImageLayer '{}': Not all channels in the ImageLayer are the same size, unable to evaluate image data", Layer<T>::m_LayerName));
 		}
-		auto channel_size = WritableImageDataMixin<T>::m_ImageData.begin()->second.m_OrigByteSize / sizeof(T);
+		auto channel_size = WritableImageDataMixin<T>::m_ImageData.begin()->second->m_OrigByteSize / sizeof(T);
 
 		size_t num_threads = std::thread::hardware_concurrency() / WritableImageDataMixin<T>::m_ImageData.size();
-		num_threads = std::min(static_cast<size_t>(1), numThreads);
+		num_threads = std::min(static_cast<size_t>(1), num_threads);
 
 		// Allocate image data and then fill it by decompressing in parallel
 		data_type data = WritableImageDataMixin<T>::parallel_alloc_image_data(_channel_indices, channel_size);
-		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&WritableImageDataMixin<T>::m_ImageData, num_threads](auto& pair)
+		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](auto& pair)
 			{
 				auto& [key, channel_buffer] = pair;
-				channel_buffer->template getData<T>(std::span<T>(channel_buffer.begin(), channel_buffer.end()), num_threads);
+				auto idinfo = Enum::toChannelIDInfo(key, Layer<T>::m_ColorMode);
+				auto buffer_span = std::span<T>(channel_buffer.begin(), channel_buffer.end());
+				WritableImageDataMixin<T>::m_ImageData[idinfo]->getData<T>(buffer_span, num_threads);
 			});
 
 		if (Layer<T>::has_mask())
@@ -370,14 +430,14 @@ private:
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.visible;
 		Layer<T>::m_IsLocked = parameters.locked;
-		Layer<T>::m_CenterX = parameters.center_x;
-		Layer<T>::m_CenterY = parameters.center_y;
+		Layer<T>::m_CenterX = static_cast<float>(parameters.center_x);
+		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 
 		// Forward the mask channel if it was passed as part of the image data to the layer mask
 		// The actual populating of the mask channel will be done further down
-		if (data.contains(Layer<T>::s_mask_index))
+		if (data.contains(Layer<T>::s_mask_index.index))
 		{
 			if (parameters.mask)
 			{
@@ -386,8 +446,8 @@ private:
 			}
 
 			PSAPI_LOG_DEBUG("ImageLayer", "Forwarding mask channel passed as part of image data to m_LayerMask");
-			parameters.mask = std::move(data[Layer<T>::s_mask_index]);
-			data.erase(Layer<T>::s_mask_index);
+			parameters.mask = std::move(data[Layer<T>::s_mask_index.index]);
+			data.erase(Layer<T>::s_mask_index.index);
 		}
 
 

@@ -7,12 +7,15 @@
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Render/Deinterleave.h"
 #include "Core/Struct/ImageChannel.h"
+#include "Core/TaggedBlocks/LinkedLayerTaggedBlock.h"
+
+#include "Core/FileIO/Read.h"
 
 #include "Util/StringUtil.h"
 
-
 #include <vector>
 #include <unordered_map>
+#include <filesystem>
 #include <string>
 #include <memory>
 
@@ -125,8 +128,10 @@ struct LinkedLayerData
 		{
 			out.push_back(key);
 		}
-		return key;
+		return out;
 	}
+
+	bool has_channel(Enum::ChannelIDInfo _id) const { return m_ImageData.contains(_id); }
 
 	/// Get a view over the raw file data associated with this linked layer 
 	const std::span<const uint8_t> raw_data() const
@@ -144,9 +149,9 @@ struct LinkedLayerData
 	{
 		if (!m_ImageData.contains(_id))
 		{
-			throw std::invalid_argument(fmt::format("LinkedLayer: Invalid channel index {} for file {}", _id.index, m_FilePath.string()))
+			throw std::invalid_argument(fmt::format("LinkedLayer: Invalid channel index {} for file {}", _id.index, m_FilePath.string()));
 		}
-		return m_ImageData[_id]->template getData<T>();
+		return m_ImageData.at(_id)->template getData<T>();
 	}
 
 	data_type get_image_data() const
@@ -491,7 +496,7 @@ struct LinkedLayers
 	{
 		for (const auto& [_hash, item] : m_LinkedLayerData)
 		{
-			if (item.path() == path)
+			if (item->path() == path)
 			{
 				return true;
 			}

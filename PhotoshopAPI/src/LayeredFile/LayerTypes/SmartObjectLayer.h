@@ -2,12 +2,14 @@
 
 #include "Macros.h"
 #include "Layer.h"
-#include "_ImageDataLayerType.h"
+#include "LayeredFile/concepts.h"
+#include "ImageDataMixins.h"
 
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"
 
 #include "LayeredFile/LinkedData/LinkedLayerData.h"
+#include "LayeredFile/LayeredFile.h"
 
 #include "Core/Struct/DescriptorStructure.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
@@ -25,9 +27,6 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-// Forward declare LayeredFile here
-template <typename T>
-struct LayeredFile;
 
 
 /// Smart objects are Photoshops' way of non-destructive image data edits while keeping a live link to the original file.
@@ -83,7 +82,8 @@ struct LayeredFile;
 /// For the latter we provide the reset_transform()` and `reset_warp()` functions.
 /// 
 template <typename T>
-struct SmartObjectLayer final: public ImageDataMixin<T>
+	requires concepts::bit_depth<T>
+struct SmartObjectLayer final: public Layer<T>, public ImageDataMixin<T>
 {
 	using typename Layer<T>::value_type;
 	using typename ImageDataMixin<T>::data_type;
@@ -95,7 +95,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::vector<int> channel_indices(bool include_mask) const
+	std::vector<int> channel_indices(bool include_mask) const override
 	{
 		std::vector<int> indices{};
 		for (const auto& [key, _] : ImageDataMixin<T>::m_ImageData)
@@ -106,7 +106,7 @@ public:
 		{
 			indices.push_back(Layer<T>::s_mask_index.index);
 		}
-		return channel_indices();
+		return indices;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -203,7 +203,7 @@ public:
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	SmartObjectLayer(LayeredFile<T>& file, const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header, const AdditionalLayerInfo& globalAdditionalLayerInfo)
-		: _ImageDataLayerType<T>(layerRecord, channelImageData, header)
+		: Layer<T>(layerRecord, channelImageData, header)
 	{
 		// Local and global additional layer info in this case refer to the one stored on the individual layer and the one 
 		// stored on the LayerAndMaskInfo section respectively
@@ -257,7 +257,7 @@ public:
 
 		// Insert the new path, if it already exists insert() will return a reference to the previous layer.
 		LinkedLayerType type = link_externally ? LinkedLayerType::external : LinkedLayerType::data;
-		auto linked_layer = linked_layers.insert(path, type);
+		auto linked_layer = m_LinkedLayers->insert(path, type);
 
 		m_Filename = linked_layer->path().filename().string();
 		m_Hash = linked_layer->hash();
@@ -266,7 +266,9 @@ public:
 		// Update the warp original bounds so it knows the input image data scaled.
 		Geometry::BoundingBox<double> bbox(
 			Geometry::Point2D<double>(0.0f, 0.0f),
-			Geometry::Point2D<double>(linked_layer->width(), linked_layer->height()));
+			Geometry::Point2D<double>(
+				static_cast<double>(linked_layer->width()), 
+				static_cast<double>(linked_layer->height())));
 
 		// Finally we also need to rescale the warp points, this is because they are in the original images' coordinate space.
 		auto pts = m_SmartObjectWarp.points();
@@ -277,6 +279,7 @@ public:
 
 		m_SmartObjectWarp.points(pts);
 		invalidate_cache();
+		invalidate_mesh_cache();
 	}
 
 
@@ -285,11 +288,11 @@ public:
 	// ---------------------------------------------------------------------------------------------------------------------
 	bool linked_externally() const
 	{
-		if (!m_FilePtr)
+		if (!m_LinkedLayers)
 		{
-			PSAPI_LOG_ERROR("SmartObject", "Unable to get original file linkage without the smart object knowing about the LayeredFile");
+			PSAPI_LOG_ERROR("SmartObject", "Unable to get original file linkage without the smart object knowing about the LinkedLayers");
 		}
-		auto linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
+		auto linkedlayer_ptr = m_LinkedLayers->at(m_Hash);
 		return linkedlayer_ptr->type() == LinkedLayerType::external;
 	}
 
@@ -307,11 +310,11 @@ public:
 	// ---------------------------------------------------------------------------------------------------------------------
 	void set_linkage(LinkedLayerType linkage)
 	{
-		if (!m_FilePtr)
+		if (!m_LinkedLayers)
 		{
-			PSAPI_LOG_ERROR("SmartObject", "Unable to set original file linkage without the smart object knowing about the LayeredFile");
+			PSAPI_LOG_ERROR("SmartObject", "Unable to set original file linkage without the smart object knowing about the LinkedLayers");
 		}
-		auto linkedlayer_ptr = m_FilePtr->linked_layers().at(m_Hash);
+		auto linkedlayer_ptr = m_LinkedLayers->at(m_Hash);
 		linkedlayer_ptr->type(linkage);
 	}
 
@@ -336,7 +339,7 @@ public:
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to query filepath without the smart object knowing about the linked layers");
 		}
-		const auto& layer = linkedlayers->at(m_Hash);
+		const auto& layer = m_LinkedLayers->at(m_Hash);
 		return layer->path();
 	}
 
@@ -354,7 +357,13 @@ public:
 			PSAPI_LOG_ERROR("SmartObject", "Unable to query original file image data without the smart object knowing about the linked layers");
 		}
 		const auto& layer = m_LinkedLayers->at(m_Hash);
-		return layer->get_image_data();
+		auto original = layer->get_image_data();
+		data_type out{};
+		for (const auto [key, channel] : original)
+		{
+			out[key.index] = std::move(channel);
+		}
+		return std::move(out);
 	}
 
 	/// Retrieve the original image datas' width.
@@ -373,7 +382,7 @@ public:
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to query original file width without the smart object knowing about the linked layers");
 		}
-		const auto& layer = m_LinkedLayers->(m_Hash);
+		const auto& layer = m_LinkedLayers->at(m_Hash);
 		return layer->width();
 	}
 
@@ -393,7 +402,7 @@ public:
 		{
 			PSAPI_LOG_ERROR("SmartObject", "Unable to query original file height without the smart object knowing about the linked layers");
 		}
-		const auto& layer = m_LinkedLayers->(m_Hash);
+		const auto& layer = m_LinkedLayers->at(m_Hash);
 		return layer->height();
 	}
 
@@ -569,6 +578,10 @@ public:
 		evaluate_transforms();
 	}
 
+	uint32_t width() const noexcept override
+	{
+		return Layer<T>::m_Width;
+	}
 	/// Set the layers' width, analogous to calling `scale()` while only scaling around the x axis.
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -576,7 +589,7 @@ public:
 	{
 		// Explicitly dont use the width() function on the SmartObjectLayer to avoid
 		// floating to int conversion issues
-		auto current_width = _m_CachedSmartObjectWarpMesh.bbox().width();
+		auto current_width = this->evaluate_mesh_or_get_cached().bbox().width();
 
 		double scalar_x = static_cast<double>(layer_width) / current_width;
 		auto center = Geometry::Point2D<double>(Layer<T>::center_x(), Layer<T>::center_y());
@@ -585,6 +598,10 @@ public:
 		scale(Geometry::Point2D<double>(scalar_x, 1.0f), center);
 	}
 
+	uint32_t height() const noexcept override
+	{
+		return Layer<T>::m_Height;
+	}
 	/// Set the layers' height, analogous to calling `scale()` while only scaling around the y axis.
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -592,7 +609,7 @@ public:
 	{
 		// Explicitly dont use the height() function on the SmartObjectLayer to avoid
 		// floating to int conversion issues
-		auto current_height = _m_CachedSmartObjectWarpMesh.bbox().height();
+		auto current_height = this->evaluate_mesh_or_get_cached().bbox().height();
 
 		double scalar_y = static_cast<double>(layer_height) / current_height;
 		auto center = Geometry::Point2D<double>(Layer<T>::center_x(), Layer<T>::center_y());
@@ -602,6 +619,10 @@ public:
 	}
 	
 
+	float center_x() const noexcept override
+	{
+		return Layer<T>::m_CenterX;
+	}
 	/// Set the x center coordinate, analogous to calling `move()` while only moving on the x axis
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -613,6 +634,10 @@ public:
 
 	}
 
+	float center_y() const noexcept override
+	{
+		return Layer<T>::m_CenterY;
+	}
 	/// Set the y center coordinate, analogous to calling `move()` while only moving on the y axis
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -636,7 +661,10 @@ public:
 	void reset_transform()
 	{
 		auto current_transform = m_SmartObjectWarp.non_affine_transform();
-		auto goal_transform = Geometry::create_quad<double>(original_width(), original_height());
+		auto goal_transform = Geometry::create_quad<double>(
+			static_cast<double>(original_width()), 
+			static_cast<double>(original_height())
+		);
 
 		auto homography = Geometry::Operations::create_homography_matrix<double>(current_transform, goal_transform);
 		transform(homography);
@@ -675,7 +703,7 @@ public:
 
 		PascalString lrName = Layer<T>::generate_name();
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
-		uint16_t channelCount = _ImageDataLayerType<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::m_LayerMask.has_value());
+		size_t channelCount = ImageDataMixin<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::has_mask());
 
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
@@ -704,7 +732,7 @@ public:
 			extents.left,
 			extents.bottom,
 			extents.right,
-			channelCount,
+			static_cast<int16_t>(channelCount),
 			channelInfoVec,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,
@@ -720,11 +748,14 @@ public:
 
 protected:
 
-	virtual std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks(LayeredFile<T>& file) override
+	virtual std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
 	{
 		auto blocks = Layer<T>::generate_tagged_blocks();
-		auto& linked_layers = file->linked_layers();
-		auto linked_layer = linked_layers.at(m_Hash);
+		if (!m_LinkedLayers)
+		{
+			throw std::runtime_error(fmt::format("SmartObjectLayer '{}': Unexpected failure while generating tagged blocks: m_LinkedLayers is a nullptr", Layer<T>::m_LayerName));
+		}
+		auto linked_layer = m_LinkedLayers->at(m_Hash);
 
 		// Before generating the descriptor we need to update the original width and height
 		// as we don't keep track of these usually.
@@ -758,7 +789,7 @@ protected:
 		}
 
 		// Extract all the channels next and push them into our data representation
-		for (auto& [id, channel] : WritableImageDataMixin<T>::m_ImageData)
+		for (auto& [id, channel] : ImageDataMixin<T>::m_ImageData)
 		{
 			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->m_OrigByteSize });
 			channel_data.push_back(std::move(channel));
@@ -821,19 +852,18 @@ private:
 	/// Maps back to m_ImageData.
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::unordered_map<Enum::ChannelIDInfo, bool> m_Cache;
+	std::unordered_map<Enum::ChannelIDInfo, bool, Enum::ChannelIDInfoHasher> m_Cache;
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	bool is_cache_valid()
 	{
-		for (const auto [key, _] : ImageDataMixin<T>::m_ImageData)
+		for (const auto& [key, _] : ImageDataMixin<T>::m_ImageData)
 		{
-			if (std::find(m_Cache.begin(), m_Cache.end()) == m_Cache.end)
+			if (!m_Cache.contains(key))
 			{
 				return false;
 			}
-			
 		}
 		return true;
 	}
@@ -846,7 +876,7 @@ private:
 		{
 			return m_Cache[channel];
 		}
-		return false
+		return false;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -881,7 +911,7 @@ private:
 	// ---------------------------------------------------------------------------------------------------------------------
 	void store_was_cached()
 	{
-		for (const auto [key, _] : ImageDataMixin<T>::m_ImageData)
+		for (const auto& [key, _] : ImageDataMixin<T>::m_ImageData)
 		{
 			m_Cache[key] = true;
 		}
@@ -894,6 +924,61 @@ private:
 		m_Cache[channel] = true;
 	}
 
+
+	/// Cache storing the latest mesh data so we don't have to recompute it on the fly
+	/// for every transformation.
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	Geometry::QuadMesh<double> m_MeshCache{};
+	bool m_MeshCacheValid = false;
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	bool is_mesh_cache_valid()
+	{
+		return m_MeshCacheValid;
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void invalidate_mesh_cache()
+	{
+		m_MeshCacheValid = false;
+		m_MeshCache = {};
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void store_mesh_was_cached()
+	{
+		m_MeshCacheValid = true;
+	}
+
+	/// Evaluate the mesh from the smartobject warp or retrieve it from the cache (if it is valid).
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	const Geometry::QuadMesh<double>& evaluate_mesh_or_get_cached()
+	{
+		PSAPI_PROFILE_FUNCTION();
+		if (!m_LinkedLayers)
+		{
+			throw std::runtime_error(fmt::format("SmartObjectLayer '{}': Unexpected failure while evaluating the mesh: m_LinkedLayers is a nullptr", Layer<T>::m_LayerName));
+		}
+
+		if (!is_mesh_cache_valid())
+		{
+			// Get the warp mesh at a resolution of 20 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
+			auto warp_surface = m_SmartObjectWarp.surface();
+			m_MeshCache = warp_surface.mesh(
+				m_LinkedLayers->at(m_Hash)->width() / 20,
+				m_LinkedLayers->at(m_Hash)->height() / 20,
+				true	// move_to_zero, that way we don't have to deal with bbox stuff
+			);
+			store_mesh_was_cached();
+		}
+		return m_MeshCache;
+	}
+
 protected:
 
 	/// Evaluates the transformation (updates center coordinates and width/height) meaning grabbing the bbox width and height will give the 
@@ -902,16 +987,13 @@ protected:
 	// ---------------------------------------------------------------------------------------------------------------------
 	void evaluate_transforms()
 	{
+		// Invalidate and re-evaluate all the caches.
 		this->invalidate_cache();
-		PSAPI_PROFILE_FUNCTION();
-		auto mesh = m_SmartObjectWarp.surface().mesh(
-			75,		// x resolution
-			75,		// y resolution
-			false	// move_to_zero
-		);
+		this->invalidate_mesh_cache();
+		auto& mesh = this->evaluate_mesh_or_get_cached();
 
-		Layer<T>::m_CenterX = mesh.bbox().center().x;
-		Layer<T>::m_CenterY = mesh.bbox().center().y;
+		Layer<T>::m_CenterX = static_cast<float>(mesh.bbox().center().x);
+		Layer<T>::m_CenterY = static_cast<float>(mesh.bbox().center().y);
 
 		Layer<T>::m_Width = static_cast<uint32_t>(std::round(mesh.bbox().width()));
 		Layer<T>::m_Height = static_cast<uint32_t>(std::round(mesh.bbox().height()));
@@ -925,75 +1007,37 @@ protected:
 	data_type evaluate_image_data()
 	{
 		PSAPI_PROFILE_FUNCTION();
-
-		// First see if all of the channels are already cached (including generated alpha)
-		constexpr s_alpha_idinfo = Enum::ChannelIDInfo{ Enum::ChannelID::Alpha, static_cast<int16_t>(-1) };
-
-
 		if (!m_LinkedLayers)
 		{
 			throw std::runtime_error(fmt::format("SmartObjectLayer '{}': Unexpected failure while evaluating the image data: m_LinkedLayers is a nullptr", Layer<T>::m_LayerName));
 		}
+
+		constexpr auto s_alpha_idinfo = Enum::ChannelIDInfo{ Enum::ChannelID::Alpha, static_cast<int16_t>(-1) };
 		const std::shared_ptr<LinkedLayerData<T>> linked_layer = m_LinkedLayers->at(m_Hash);
 
-		// Get the warp mesh at a resolution of 20 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
-		const auto image_data = linked_layer->get_image_data();
-		auto warp_surface = m_SmartObjectWarp.surface();
-		auto warp_mesh = warp_surface.mesh(
-			linked_layer->width() / 20,
-			linked_layer->height() / 20,
-			true	// move_to_zero, that way we don't have to deal with bbox stuff
-		);
-
-		// Generate a channel buffer that can fit the fully scaled warp
-		std::vector<T> channel_warp(width() * height());
-		Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, width(), height());
-
-		for (const auto& [key, orig_channel] : image_data)
+		// Construct all the channel indices including alpha and mask
+		auto all_channel_indices = linked_layer->channel_indices();
+		if (std::find(all_channel_indices.begin(), all_channel_indices.end(), s_alpha_idinfo) == all_channel_indices.end())
 		{
-			// We can reuse the same channel_buffer due to the fact that the warp.apply() method
-			// will simply overwrite any values that lie on the warps uv space and seeing as the algorithm
-			// is deterministic this will just overwrite previous values
-			Render::ConstChannelBuffer<T> orig_buffer(orig_channel, linked_layer->width(), linked_layer->height());
-
-			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, warp_mesh);
-			_ImageDataLayerType<T>::m_ImageData[key] = std::make_unique<ImageChannel>(
-				Enum::Compression::ZipPrediction,
-				channel_warp,
-				key,
-				width(),
-				height(),
-				Layer<T>::m_CenterX,
-				Layer<T>::m_CenterY
-			);
+			// We always insert an alpha channel
+			all_channel_indices.push_back(s_alpha_idinfo);
+		}
+		if (Layer<T>::has_mask())
+		{
+			all_channel_indices.push_back(Layer<T>::s_mask_index);
 		}
 
-		// If the original data held no alpha we need to account for this by warping in place the alpha and setting it
-		// so that we dont get a result on black
-		auto alpha_id = Enum::toChannelIDInfo(Enum::ChannelID::Alpha, Layer<T>::m_ColorMode);
-		if (!image_data.contains(alpha_id))
+		// evaluate all the channels and return them. This could be a bit 
+		// more efficient by preallocating the channels in parallel but since 
+		// evaluate_channel calls the apply function which is already parallelized
+		// we will keep it like this
+		data_type out{};
+		for (auto& item : all_channel_indices)
 		{
-			T value = std::numeric_limits<T>::max();
-			if constexpr (std::is_same_v<T, float32_t>)
-			{
-				value = 1.0f;
-			}
-
-			std::vector<T> channel(linked_layer->width() * linked_layer->height(), value);
-			Render::ConstChannelBuffer<T> orig_buffer(channel, linked_layer->width(), linked_layer->height());
-
-			m_SmartObjectWarp.apply<T>(channel_warp_buffer, orig_buffer, warp_mesh);
-
-			_ImageDataLayerType<T>::m_ImageData[alpha_id] = std::make_unique<ImageChannel>(
-				Enum::Compression::ZipPrediction,
-				channel_warp,
-				alpha_id,
-				width(),
-				height(),
-				Layer<T>::m_CenterX,
-				Layer<T>::m_CenterY
-			);
+			out[item.index] = this->evaluate_channel(item);
 		}
+
+		return out;
 	}
 
 	// ---------------------------------------------------------------------------------------------------------------------
@@ -1002,6 +1046,8 @@ protected:
 	{
 		PSAPI_PROFILE_FUNCTION();
 		auto idinfo = ImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode);
+		constexpr auto s_alpha_idinfo = Enum::ChannelIDInfo{ Enum::ChannelID::Alpha, static_cast<int16_t>(-1) };
+
 		if (!m_LinkedLayers)
 		{
 			throw std::runtime_error(fmt::format("SmartObjectLayer '{}': Unexpected failure while evaluating the image data: m_LinkedLayers is a nullptr", Layer<T>::m_LayerName));
@@ -1029,27 +1075,40 @@ protected:
 		else
 		{
 			// Evaluate the warp and cache the result.
-			auto& linked_layer = m_LinkedLayers->at(m_Hash);
-			const auto image_data = linked_layer->get_channel(idinfo);
+			auto linked_layer = m_LinkedLayers->at(m_Hash);
+
+			// The alpha channel may not necessarily exist on the image data, however we always
+			// want to create it if that is the case. Other channels we do not generate though.
+			std::vector<T> image_data;
+			if (linked_layer->has_channel(idinfo))
+			{
+				image_data = linked_layer->get_channel(idinfo);
+			}
+			else if (idinfo == s_alpha_idinfo)
+			{
+				image_data = std::vector<T>(linked_layer->width() * linked_layer->height());
+			}
+			else
+			{
+				throw std::invalid_argument(fmt::format(
+					"SmartObjectLayer '{}': Invalid channel '{}' accessed while calling evaluate_channel(). This does not exist on the smart object",
+					Layer<T>::m_LayerName,
+					Enum::channelIDToString(idinfo.id))
+				);
+			}
 			Render::ConstChannelBuffer<T> orig_buffer(image_data, linked_layer->width(), linked_layer->height());
 
 			// Generate the warped result
-			std::vector<T> channel_warp(width() * height());
-			Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, width(), height());
+			std::vector<T> channel_warp(Layer<T>::width() * Layer<T>::height());
+			Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, Layer<T>::width(), Layer<T>::height());
 
-			// Generate the warp mesh
-			auto warp_surface = m_SmartObjectWarp.surface();
-			auto warp_mesh = warp_surface.mesh(
-				linked_layer->width() / 20,
-				linked_layer->height() / 20,
-				true	// move_to_zero, that way we don't have to deal with bbox stuff
-			);
+			auto& warp_mesh = this->evaluate_mesh_or_get_cached();
 
 			// Restore the saved compression codec of the channel (if previously evaluated).
 			auto compression_codec = Enum::Compression::ZipPrediction;
-			if (ImageDataMixin<T>m_ImageData.contains(idinfo))
+			if (ImageDataMixin<T>::m_ImageData.contains(idinfo))
 			{
-				compression_codec = m_ImageData[idinfo]->m_Compression;
+				compression_codec = ImageDataMixin<T>::m_ImageData[idinfo]->m_Compression;
 			}
 
 			// Finally apply the warp and store the cache
@@ -1057,13 +1116,14 @@ protected:
 			ImageDataMixin<T>::m_ImageData[idinfo] = std::make_unique<ImageChannel>(
 				compression_codec,
 				channel_warp,
-				key,
-				width(),
-				height(),
+				idinfo,
+				Layer<T>::width(),
+				Layer<T>::height(),
 				Layer<T>::m_CenterX,
 				Layer<T>::m_CenterY
 			);
 			this->store_was_cached(idinfo);
+			return std::move(channel_warp);
 		}
 	};
 
@@ -1108,8 +1168,8 @@ private:
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.visible;
 		Layer<T>::m_IsLocked = parameters.locked;
-		Layer<T>::m_CenterX = parameters.center_x;
-		Layer<T>::m_CenterY = parameters.center_y;
+		Layer<T>::m_CenterX = static_cast<float>(parameters.center_x);
+		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 		Layer<T>::parse_mask(parameters);
@@ -1125,8 +1185,8 @@ private:
 		else
 		{
 			PSAPI_LOG_DEBUG("SmartObject", "Zero width or height passed to smart object layer constructor, the layer will instead be constructed using the linked image data's width and height.");
-			Layer<T>::m_Width = linkedlayer->width();
-			Layer<T>::m_Height = linkedlayer->height();
+			Layer<T>::m_Width = static_cast<uint32_t>(linkedlayer->width());
+			Layer<T>::m_Height = static_cast<uint32_t>(linkedlayer->height());
 		}
 	}
 
@@ -1145,7 +1205,7 @@ private:
 		// Prefer decoding via placed layer data as that is more up to date
 		if (!g_linked_layers.empty() && !l_placed_layers_data.empty())
 		{
-			decode_placed_layer_data(l_placed_layers_data, name);
+			decode_placed_layer_data(l_placed_layers_data);
 		}
 		else if (!g_linked_layers.empty() && !l_placed_layers.empty())
 		{
@@ -1162,9 +1222,7 @@ private:
 	/// Decode the smart object from the PlacedLayerData Tagged Block, this contains information such as 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void decode_placed_layer_data(
-		const std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>& locals, 
-		const std::string& name)
+	void decode_placed_layer_data(const std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>& locals)
 	{
 		if (locals.size() > 1)
 		{
@@ -1279,7 +1337,10 @@ private:
 			if (m_SmartObjectWarp._warp_type() == SmartObject::Warp::WarpType::quilt)
 			{
 				auto quilt_descriptor = m_SmartObjectWarp._serialize();
-				auto warp_descriptor = m_SmartObjectWarp._serialize_default(m_OriginalSize[0], m_OriginalSize[1]);
+				auto warp_descriptor = m_SmartObjectWarp._serialize_default(
+					static_cast<size_t>(m_OriginalSize[0]), 
+					static_cast<size_t>(m_OriginalSize[1])
+				);
 			
 				placed_layer->insert("quiltWarp", std::move(quilt_descriptor));
 				placed_layer->insert("warp", std::move(warp_descriptor));
@@ -1328,8 +1389,8 @@ private:
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	void decode_placed_layer(
-		const std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>& locals,
-		const std::string& name)
+		[[maybe_unused]] const std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>& locals,
+		[[maybe_unused]] const std::string& name)
 	{
 		PSAPI_LOG_ERROR("SmartObject", "Parsing of the PlacedLayerTaggedBlock is currently unimplemented, this is likely due to trying to open an older file.");
 	}

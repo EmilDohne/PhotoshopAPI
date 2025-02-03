@@ -102,10 +102,10 @@ namespace SmartObject
 			auto bbox = warp_mesh.bbox();
 			bbox.pad(static_cast<double>(supersample_resolution));
 
-			size_t min_y = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.y), 0));
-			size_t max_y = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.y), buffer.height - 1));
-			size_t min_x = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.x), 0));
-			size_t max_x = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.x), buffer.width - 1));
+			size_t min_y = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.y), static_cast<double>(0)));
+			size_t max_y = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.y), static_cast<double>(buffer.height - 1)));
+			size_t min_x = static_cast<size_t>(std::max<double>(std::round(bbox.minimum.x), static_cast<double>(0)));
+			size_t max_x = static_cast<size_t>(std::min<double>(std::round(bbox.maximum.x), static_cast<double>(buffer.width - 1)));
 
 			auto vertical_iter = std::views::iota(min_y, max_y);
 			std::for_each(std::execution::par_unseq, vertical_iter.begin(), vertical_iter.end(), [&](const size_t y)

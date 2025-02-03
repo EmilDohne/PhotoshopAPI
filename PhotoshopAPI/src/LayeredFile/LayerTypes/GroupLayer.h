@@ -2,18 +2,12 @@
 
 #include "Macros.h"
 #include "Layer.h"
-#include "ImageLayer.h"
-#include "SectionDividerLayer.h"
-#include "ArtboardLayer.h"
-#include "ShapeLayer.h"
-#include "SmartObjectLayer.h"
-#include "TextLayer.h"
-#include "AdjustmentLayer.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
 #include "Core/TaggedBlocks/TaggedBlockStorage.h"
+#include "LayeredFile/concepts.h"
+#include "LayeredFile/fwd.h"
 #include "LayeredFile/LayeredFile.h"
-#include "LayeredFile/LayerTypes/Layer.h"
 
 #include <vector>
 #include <variant>
@@ -22,16 +16,13 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Forward declare LayeredFile here
-template <typename T>
-struct LayeredFile;
-
 
 /// \brief Represents a group of layers that may contain nested child layers.
 /// 
 /// \tparam T The data type for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
 template <typename T>
+	requires concepts::bit_depth<T>
 struct GroupLayer final: public Layer<T>
 {
 	/// \defgroup layer The groups' child layers
@@ -60,8 +51,8 @@ struct GroupLayer final: public Layer<T>
 		Layer<T>::m_Opacity = parameters.opacity;
 		Layer<T>::m_IsVisible = parameters.visible;
 		Layer<T>::m_IsLocked = parameters.locked;
-		Layer<T>::m_CenterX = parameters.center_x;
-		Layer<T>::m_CenterY = parameters.center_y;
+		Layer<T>::m_CenterX = static_cast<float>(parameters.center_x);
+		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 
@@ -70,14 +61,14 @@ struct GroupLayer final: public Layer<T>
 		Layer<T>::parse_mask(parameters);
 
 		// If the mask was passed but not a width and height we throw an error 
-		if (Layer<T>::m_LayerMask && Layer<T>::m_Width == 0 && Layer<T>::m_Height == 0)
+		if (Layer<T>::has_mask() && Layer<T>::m_Width == 0 && Layer<T>::m_Height == 0)
 		{
 			PSAPI_LOG_ERROR("GroupLayer", "Mask parameter specified but width and height are not set to the masks' dimensions");
 		}
 
 		// Throw an error if the width and height are set but no mask is passed. This is technically not necessary as 
 		// writing a file with width and height but no image data is a no-op but we want to enforce good practice
-		if (!Layer<T>::m_LayerMask && (Layer<T>::m_Width > 0 || Layer<T>::m_Height > 0))
+		if (!Layer<T>::has_mask() && (Layer<T>::m_Width > 0 || Layer<T>::m_Height > 0))
 		{
 			PSAPI_LOG_ERROR("GroupLayer", "Non-zero height or width passed but no mask specified. Got {width: %d, height: %d} but expected {0, 0}", 
 				static_cast<int>(Layer<T>::m_Width), static_cast<int>(Layer<T>::m_Height));
@@ -157,7 +148,7 @@ struct GroupLayer final: public Layer<T>
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
-		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::generate_mask();
+		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::internal_generate_mask_data();
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
 
 
@@ -168,7 +159,7 @@ struct GroupLayer final: public Layer<T>
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same
-		auto maskData = Layer<T>::extract_mask();
+		auto maskData = Layer<T>::internal_extract_mask();
 		if (maskData.has_value())
 		{
 			channelInfoVec.push_back(std::get<0>(maskData.value()));
@@ -185,7 +176,7 @@ struct GroupLayer final: public Layer<T>
 
 		// Applications such as krita expect empty channels to be in-place for the given colormode
 		// to actually parse the file. 
-		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, colorMode);
+		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, Layer<T>::m_ColorMode);
 
 		if (Layer<T>::m_BlendMode != Enum::BlendMode::Passthrough)
 		{
@@ -297,7 +288,6 @@ protected:
 		return blockVec;
 	}
 };
-
 
 extern template struct GroupLayer<bpp8_t>;
 extern template struct GroupLayer<bpp16_t>;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Macros.h"
+#include "Util/Logger.h"
 
 #include <vector>
 #include <array>
@@ -9,13 +10,7 @@
 #include <cassert>
 #include <algorithm>
 
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -134,6 +129,14 @@ namespace Geometry
             // Use a simple hash combination method
             return std::hash<T>()(x) ^ (std::hash<T>()(y) << 1); // XOR combined with left shift for distribution
         }
+
+		// Provide a get<I> function for structured bindings
+		template <std::size_t I>
+		constexpr auto get(Point2D<T>& point)
+		{
+			if constexpr (I == 0) return point.x;
+			else if constexpr (I == 1) return point.y;
+		}
 
         // Provide a get<I> function for structured bindings
         template <std::size_t I>

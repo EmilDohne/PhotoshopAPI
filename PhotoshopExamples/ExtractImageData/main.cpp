@@ -45,13 +45,13 @@ int main()
 	// If this doesnt have a mask channel we will simply get an empty channel. In this case though, even though
 	// we have a mask it will be empty as well as Photoshop fills in the gaps in the layer with the defaultColor
 	// parameter.
-	std::vector<bpp8_t> channel_mask = maskImageLayerPtr->get_mask_data();
+	std::vector<bpp8_t> channel_mask = maskImageLayerPtr->get_mask();
 
 	// To extract this default color we can do this:
-	if (maskImageLayerPtr->mask())
+	if (maskImageLayerPtr->has_mask())
 	{
 		// This value is always uint8_t even for 16- and 32- bit files!
-		uint8_t defaultColor = maskImageLayerPtr->mask().value().default_color;
+		uint8_t defaultColor = maskImageLayerPtr->mask_default_color();
 	}
 	// This would tell us that we have an empty white layer mask with no pixel values.
 	// One can however write out explicit zeroes for mask channels or set a default color

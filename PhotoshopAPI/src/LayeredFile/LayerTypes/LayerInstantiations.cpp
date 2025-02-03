@@ -2,7 +2,6 @@
 #include "ImageLayer.h"
 #include "GroupLayer.h"
 #include "SectionDividerLayer.h"
-#include "_ImageDataLayerType.h"
 #include "TextLayer.h"
 #include "SmartObjectLayer.h"
 #include "AdjustmentLayer.h"
@@ -54,10 +53,6 @@ template struct SmartObjectLayer<bpp32_t>;
 template struct TextLayer<bpp8_t>;
 template struct TextLayer<bpp16_t>;
 template struct TextLayer<bpp32_t>;
-
-template struct _ImageDataLayerType<bpp8_t>;
-template struct _ImageDataLayerType<bpp16_t>;
-template struct _ImageDataLayerType<bpp32_t>;
 
 template struct MaskMixin<bpp8_t>;
 template struct MaskMixin<bpp16_t>;

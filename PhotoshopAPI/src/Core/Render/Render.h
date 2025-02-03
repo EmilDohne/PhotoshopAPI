@@ -14,20 +14,14 @@ Support for this is still experimental and primarily for debug purposes
 #include <cmath>
 #include <algorithm>
 #include <tuple>
+#include <set>
+#include <span>
 
 #include "ImageBuffer.h"
 
 #include "Core/Geometry/Point.h"
 #include "Core/Geometry/Mesh.h"
 #include "Core/Geometry/BezierSurface.h"
-
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
-#include <span>
-#endif
 
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>

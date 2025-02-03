@@ -2,6 +2,7 @@
 
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/GroupLayer.h"
+#include "LayeredFile/LayerTypes/ImageLayer.h"
 
 #include <variant>
 

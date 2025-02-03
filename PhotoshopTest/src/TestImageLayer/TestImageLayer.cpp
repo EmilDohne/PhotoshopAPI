@@ -20,7 +20,7 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{0, std::vector<type>(size)},
 		{1, std::vector<type>(size)},
@@ -38,7 +38,7 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->num_channels() == data.size());
+	CHECK(layer->num_channels(true) == data.size());
 }
 
 
@@ -52,7 +52,7 @@ TEST_CASE("Construct ImageLayer with mask as part of image data")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -71,7 +71,7 @@ TEST_CASE("Construct ImageLayer with mask as part of image data")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 }
 
 
@@ -85,7 +85,7 @@ TEST_CASE("Construct ImageLayer with explicit mask")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{0, std::vector<type>(size)},
 		{1, std::vector<type>(size)},
@@ -104,7 +104,7 @@ TEST_CASE("Construct ImageLayer with explicit mask")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 }
 
 
@@ -122,7 +122,7 @@ TEST_CASE("Construct ImageLayer with both mask as part of imagedata and through 
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -142,7 +142,7 @@ TEST_CASE("Construct ImageLayer with both mask as part of imagedata and through 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 }
 #endif
 
@@ -161,7 +161,7 @@ TEST_CASE("Construct ImageLayer with invalid channels"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -180,7 +180,7 @@ TEST_CASE("Construct ImageLayer with invalid channels"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 }
 #endif
 
@@ -199,7 +199,7 @@ TEST_CASE("Construct ImageLayer with too little channels"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -217,7 +217,7 @@ TEST_CASE("Construct ImageLayer with too little channels"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 }
 #endif
 
@@ -232,7 +232,7 @@ TEST_CASE("Set layer channel with Enum::ChannelID")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -251,11 +251,11 @@ TEST_CASE("Set layer channel with Enum::ChannelID")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
 	layer->set_channel(Enum::ChannelID::Red, channel);
-	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
+	CHECK(layer->get_channel(Enum::ChannelID::Red) == channel);
 }
 
 
@@ -269,7 +269,7 @@ TEST_CASE("Set layer channel with int16_t")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -288,11 +288,11 @@ TEST_CASE("Set layer channel with int16_t")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
 	layer->set_channel(2, channel);
-	CHECK(layer->get_channel(2, false) == channel);
+	CHECK(layer->get_channel(2) == channel);
 }
 
 
@@ -306,7 +306,7 @@ TEST_CASE("Set layer channel mask channel with int16_t")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{0, std::vector<type>(size)},
 		{1, std::vector<type>(size)},
@@ -327,9 +327,9 @@ TEST_CASE("Set layer channel mask channel with int16_t")
 
 	std::vector<type> channel(size, 65535u);
 	layer->set_channel(-2, channel);
-	CHECK(layer->get_channel(-2, true) == channel);
+	CHECK(layer->get_channel(-2) == channel);
 	CHECK(layer->has_mask());
-	CHECK(layer->get_mask_data(true) == channel);
+	CHECK(layer->get_mask() == channel);
 }
 
 
@@ -347,7 +347,7 @@ TEST_CASE("Set layer invalid channel"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -366,7 +366,7 @@ TEST_CASE("Set layer invalid channel"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
 	layer->set_channel(Enum::ChannelID::Cyan, channel);
@@ -388,7 +388,7 @@ TEST_CASE("Set layer invalid size channel"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -407,7 +407,7 @@ TEST_CASE("Set layer invalid size channel"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size - 5u, 65535u);
 	layer->set_channel(Enum::ChannelID::Red, channel);
@@ -426,7 +426,7 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -445,7 +445,7 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 
 	std::vector<type> channel(size, 65535u);
@@ -458,13 +458,13 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 	};
 	layer->set_image_data(std::move(data_new));
 	CHECK(layer->has_mask());
-	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
+	CHECK(layer->get_channel(Enum::ChannelID::Red) == channel);
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-TEST_CASE("Set layer data with int16_t")
+TEST_CASE("Set layer data with int")
 {
 	using namespace NAMESPACE_PSAPI;
 	using type = bpp16_t;
@@ -472,7 +472,7 @@ TEST_CASE("Set layer data with int16_t")
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -491,10 +491,10 @@ TEST_CASE("Set layer data with int16_t")
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
-	std::unordered_map<int16_t, std::vector<type>> data_new =
+	std::unordered_map<int, std::vector<type>> data_new =
 	{
 		{-2, std::vector<type>(size)},
 		{0, channel},
@@ -503,7 +503,7 @@ TEST_CASE("Set layer data with int16_t")
 	};
 	layer->set_image_data(std::move(data_new));
 	CHECK(layer->has_mask());
-	CHECK(layer->get_channel(Enum::ChannelID::Red, false) == channel);
+	CHECK(layer->get_channel(Enum::ChannelID::Red) == channel);
 }
 
 
@@ -522,7 +522,7 @@ TEST_CASE("Set layer invalid channel"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -541,10 +541,10 @@ TEST_CASE("Set layer invalid channel"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
-	std::unordered_map<int16_t, std::vector<type>> data_new =
+	std::unordered_map<int, std::vector<type>> data_new =
 	{
 		{-2, std::vector<type>(size)},
 		{0, channel},
@@ -571,7 +571,7 @@ TEST_CASE("Set layer invalid size channel"
 	constexpr int32_t height = 64;
 	constexpr int32_t size = width * height;
 
-	std::unordered_map<int16_t, std::vector<type>> data =
+	std::unordered_map<int, std::vector<type>> data =
 	{
 		{-2, std::vector<type>(size)},
 		{0, std::vector<type>(size)},
@@ -590,10 +590,10 @@ TEST_CASE("Set layer invalid size channel"
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
 	CHECK(layer->name() == "Layer");
-	CHECK(layer->mask());
+	CHECK(layer->has_mask());
 
 	std::vector<type> channel(size, 65535u);
-	std::unordered_map<int16_t, std::vector<type>> data_new =
+	std::unordered_map<int, std::vector<type>> data_new =
 	{
 		{-2, std::vector<type>(size)},
 		{0, channel},

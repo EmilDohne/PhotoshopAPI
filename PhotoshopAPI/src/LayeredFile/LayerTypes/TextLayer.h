@@ -2,11 +2,13 @@
 
 #include "Macros.h"
 #include "Layer.h"
+#include "LayeredFile/concepts.h"
 
 PSAPI_NAMESPACE_BEGIN
 
 /// This struct holds no data, we just use it to identify its type
 template <typename T>
+	requires concepts::bit_depth<T>
 struct TextLayer : Layer<T>
 {
 	TextLayer() = default;

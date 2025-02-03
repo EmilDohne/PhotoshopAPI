@@ -16,7 +16,9 @@
 #include "Core/TaggedBlocks/ReferencePointTaggedBlock.h"
 #include "Core/TaggedBlocks/UnicodeLayerNameTaggedBlock.h"
 
-#include "ImageDataMixins.h"
+#include "MaskDataMixin.h"
+#include "LayeredFile/concepts.h"
+
 
 #include <vector>
 #include <optional>
@@ -28,6 +30,7 @@ PSAPI_NAMESPACE_BEGIN
 
 /// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.) which includes the minimum to parse a generic layer type
 template <typename T>
+	requires concepts::bit_depth<T>
 struct Layer : public MaskMixin<T>
 {
 	/// Template type accessor which can be used using decltype(layer::value_type)
@@ -154,8 +157,19 @@ struct Layer : public MaskMixin<T>
 	/// allow better detection during channel access for e.g. image layers
 	Enum::ColorMode color_mode() const noexcept { return m_ColorMode; }
 
+	/// Set the write compression for all channels.
+	///
+	/// This has no effect on the in-memory compression of these channels but only on write.
+	/// Setting this therefore has a near-zero runtime cost.
+	/// 
+	/// \param _compcode The new compression setting.
+	virtual void set_write_compression(Enum::Compression _compcode)
+	{
+		MaskMixin<T>::set_mask_compression(_compcode);
+	}
 
-	Layer() : m_LayerName(""), m_LayerMask({}), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
+
+	Layer() : m_LayerName(""), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
 
 	/// \brief Initialize a Layer instance from the internal Photoshop File Format structures.
 	///
@@ -213,7 +227,9 @@ struct Layer : public MaskMixin<T>
 		m_Opacity = layerRecord.m_Opacity;
 
 		// Generate our coordinates from the extents
-		Geometry::BoundingBox<float> bbox(Geometry::Point2D<float>(layerRecord.m_Left, layerRecord.m_Top), Geometry::Point2D<float>(layerRecord.m_Right, layerRecord.m_Bottom));
+		Geometry::BoundingBox<float> bbox(
+			Geometry::Point2D<float>(static_cast<float>(layerRecord.m_Left), static_cast<float>(layerRecord.m_Top)), 
+			Geometry::Point2D<float>(static_cast<float>(layerRecord.m_Right), static_cast<float>(layerRecord.m_Bottom)));
 		m_Width = static_cast<int32_t>(bbox.width());
 		m_Height = static_cast<int32_t>(bbox.height());
 		m_CenterX = bbox.center().x;
@@ -260,7 +276,9 @@ struct Layer : public MaskMixin<T>
 				// not store this explicitly when e.g. dealing with group layers.
 				if (m_Width == 0 && m_Height == 0)
 				{
-					Geometry::BoundingBox<float> mask_bbox(Geometry::Point2D<float>(layerMaskParams.m_Left, layerMaskParams.m_Top), Geometry::Point2D<float>(layerMaskParams.m_Right, layerMaskParams.m_Bottom));
+					Geometry::BoundingBox<float> mask_bbox(
+						Geometry::Point2D<float>(static_cast<float>(layerMaskParams.m_Left), static_cast<float>(layerMaskParams.m_Top)),
+						Geometry::Point2D<float>(static_cast<float>(layerMaskParams.m_Right), static_cast<float>(layerMaskParams.m_Bottom)));
 					m_Width = static_cast<int32_t>(mask_bbox.width());
 					m_Height = static_cast<int32_t>(mask_bbox.height());
 					m_CenterX = mask_bbox.center().x;
@@ -362,7 +380,6 @@ protected:
 
 	float m_CenterY{};
 
-
 	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
@@ -379,7 +396,7 @@ protected:
 				static_cast<float>(parameters.center_x),
 				static_cast<float>(parameters.center_y)
 			);
-			MaskMixin<T>::m_MaskData = std::move(mask);
+			MaskMixin<T>::m_MaskData = std::move(mask_data);
 		}
 	}
 
@@ -478,6 +495,15 @@ protected:
 		}
 	}
 
+
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointX = std::nullopt;
+	/// Optional argument which specifies in global coordinates where the top left of the layer is to e.g. flip or rotate a layer
+	/// currently this is only used for roundtripping, therefore optional. This value must be within the layers bounding box (or no
+	/// more than .5 away since it is a double)
+	std::optional<double> m_ReferencePointY = std::nullopt;
 };
 
 

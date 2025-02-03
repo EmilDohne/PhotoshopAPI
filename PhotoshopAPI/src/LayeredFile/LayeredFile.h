@@ -8,15 +8,8 @@
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
 #include "LayeredFile/Impl/LayeredFileImpl.h"
-#include "LayerTypes/Layer.h"
-#include "LayerTypes/ImageLayer.h"
-#include "LayerTypes/GroupLayer.h"
-#include "LayerTypes/AdjustmentLayer.h"
-#include "LayerTypes/ArtboardLayer.h"
-#include "LayerTypes/SectionDividerLayer.h"
-#include "LayerTypes/ShapeLayer.h"
-#include "LayerTypes/SmartObjectLayer.h"
-#include "LayerTypes/TextLayer.h"
+#include "fwd.h"
+#include "concepts.h"
 
 #include "LinkedData/LinkedLayerData.h"
 
@@ -68,6 +61,7 @@ enum class LayerOrder
 /// \tparam T The data type used for pixel values in layers (e.g., uint8_t, uint16_t, float32_t).
 /// 
 template <typename T>
+	requires concepts::bit_depth<T>
 struct LayeredFile
 {
 
@@ -127,9 +121,11 @@ struct LayeredFile
 	/// @} 
 
 	/// Retrieve the bounding box describing the canvas, will always have a minimum of 0, 0
-	Geometry::BoundingBox<double> bbox() noexcept 
+	Geometry::BoundingBox<double> bbox() const noexcept 
 	{ 
-		return Geometry::BoundingBox<double>(Geometry::Point2D<double>(0, 0), Geometry::Point2D<double>(width(), height()));
+		return Geometry::BoundingBox<double>(
+			Geometry::Point2D<double>(0, 0), 
+			Geometry::Point2D<double>(static_cast<double>(width()), static_cast<double>(height())));
 	}
 
 	/// \defgroup colormode The files' colormode
@@ -192,7 +188,7 @@ struct LayeredFile
 		m_DotsPerInch = _Impl::read_dpi(document.get());
 		if (document->m_LayerMaskInfo.m_AdditionalLayerInfo)
 		{
-			m_LinkedLayers = std::make_shared<LinkedLayers<T>>?(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
+			m_LinkedLayers = std::make_shared<LinkedLayers<T>>(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
 		}
 
 		m_Layers = _Impl::template build_layer_hierarchy<T>(*this, std::move(document));
@@ -442,7 +438,7 @@ struct LayeredFile
 	{
 		for (const auto& documentLayer : m_Layers)
 		{
-			documentLayer->set_compression(compCode);
+			documentLayer->set_write_compression(compCode);
 			_Impl::set_compression_recursive(documentLayer, compCode);
 		}
 	}
@@ -493,18 +489,13 @@ struct LayeredFile
 	/// \return The layer hierarchy as a flattened vector that can be iterated over.
 	std::vector<std::shared_ptr<Layer<T>>> flat_layers()
 	{
-		return generate_flattened_layers_impl(LayerOrder::forward, false);
+		return generate_flattened_layers_impl(LayerOrder::forward);
 	}
 
 	/// \brief Gets the total number of channels in the document.
 	///
-	/// Excludes mask channels unless ignoreMaskChannels is set to false. Same goes 
-	/// for ignoreAlphaChannel
-	///
-	/// \param ignoreMaskChannels Flag to exclude mask channels from the count.
-	/// \param ignoreAlphaChannel Flag to exclude the transparency alpha channel from the count.
 	/// \return The total number of channels in the document.
-	uint16_t num_channels(bool ignoreMaskChannels = true, bool ignoreAlphaChannel = true)
+	uint16_t num_channels()
 	{
 		bool hasAlpha = false;
 		for (auto& layer : m_Layers)
@@ -682,7 +673,7 @@ private:
 	std::shared_ptr<LinkedLayers<T>> m_LinkedLayers;
 
 
-	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers_impl(const LayerOrder order, bool generateSectionDividers)
+	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers_impl(const LayerOrder order)
 	{
 		if (order == LayerOrder::forward)
 		{
@@ -763,16 +754,11 @@ std::unique_ptr<PhotoshopFile> layered_to_photoshop(LayeredFile<T>&& layered_fil
 	FileHeader header = generate_header<T>(layered_file);
 	ColorModeData colorModeData = generate_colormodedata<T>(layered_file);
 	ImageResources imageResources = generate_imageresources<T>(layered_file);
-	LayerAndMaskInformation lrMaskInfo = generate_layermaskinfo<T>(layered_file, header, file_path);
-	ImageData imageData = ImageData(layered_file.num_channels(true, true));	// Ignore any mask or alpha channels
+	LayerAndMaskInformation lrMaskInfo = generate_layermaskinfo<T>(layered_file, file_path);
+	ImageData imageData = ImageData(layered_file.num_channels());
 
 	return std::make_unique<PhotoshopFile>(header, colorModeData, std::move(imageResources), std::move(lrMaskInfo), imageData);
 }
-
-
-extern template struct LayeredFile<bpp8_t>;
-extern template struct LayeredFile<bpp16_t>;
-extern template struct LayeredFile<bpp32_t>;
 
 
 PSAPI_NAMESPACE_END

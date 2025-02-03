@@ -1,3 +1,5 @@
+#pragma once
+
 #include "Macros.h"
 
 #include "PhotoshopFile/LayerAndMaskInformation.h"
@@ -6,14 +8,16 @@
 #include "Core/Struct/ImageChannel.h"
 #include "Core/Geometry/BoundingBox.h"
 
+#include "LayeredFile/fwd.h"
+
 #include <unordered_map>
 #include <vector>
 #include <span>
+#include <optional>
 
 #include <fmt/format.h>
 
 PSAPI_NAMESPACE_BEGIN
-
 
 /// \brief A mixin struct for handling mask information on layers
 /// 
@@ -110,14 +114,22 @@ struct MaskMixin
 			center_y = this->m_MaskData.value()->getCenterY();
 		}
 
-		if (buffer.size() != width_val * height_val)
+		if (buffer.size() != width * height)
 		{
 			throw std::invalid_argument(
-				fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>"),
-				width_val, height_val, width_val * height_val, buffer.size());
+				fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>",
+				width, height, width * height, buffer.size()));
 		}
 
-		auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, this->mask_index, width_val, height_val, center_x, center_y);
+		auto channel = std::make_unique<ImageChannel>(
+			Enum::Compression::ZipPrediction, 
+			buffer, 
+			this->s_mask_index, 
+			static_cast<int32_t>(width), 
+			static_cast<int32_t>(height), 
+			center_x, 
+			center_y
+		);
 		m_MaskData.emplace(std::move(channel));
 	}
 
@@ -137,7 +149,7 @@ struct MaskMixin
 	/// \throws std::runtime_error If no mask existed and no explicit dimensions were provided.
 	void set_mask(const LayeredFile<T>& document, std::span<const T> buffer, std::optional<size_t> width = std::nullopt, std::optional<size_t> height = std::nullopt)
 	{
-		if (width ^ height)
+		if (width.has_value() ^ height.has_value())
 		{
 			PSAPI_LOG_WARNING("Mask",
 				"Passed only width or height but not both to set_mask(). Will ignore this argument and instead try and deduce the dimensions from the previously held value."
@@ -145,7 +157,8 @@ struct MaskMixin
 		}
 
 		// Either center around the document or pick up the previous center
-		auto [center_x, center_y] = document.bbox().center();
+		float center_x = static_cast<float>(document.bbox().center().x);
+		float center_y = static_cast<float>(document.bbox().center().y);
 		if (this->has_mask())
 		{
 			center_x = this->m_MaskData.value()->getCenterX();
@@ -160,11 +173,19 @@ struct MaskMixin
 			if (buffer.size() != width_val * height_val)
 			{
 				throw std::invalid_argument(
-					fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>"),
-					width_val, height_val, width_val * height_val, buffer.size());
+					fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>",
+					width_val, height_val, width_val * height_val, buffer.size()));
 			}
 
-			auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, this->mask_index, width_val, height_val, center_x, center_y);
+			auto channel = std::make_unique<ImageChannel>(
+				Enum::Compression::ZipPrediction, 
+				buffer, 
+				this->s_mask_index, 
+				static_cast<int32_t>(width_val), 
+				static_cast<int32_t>(height_val), 
+				center_x, 
+				center_y
+			);
 			m_MaskData.emplace(std::move(channel));
 		}
 		// Deduce dimensions from previously held width and height
@@ -183,11 +204,19 @@ struct MaskMixin
 			if (buffer.size() != width_val * height_val)
 			{
 				throw std::invalid_argument(
-					fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>"),
-					width_val, height_val, width_val * height_val, buffer.size());
+					fmt::format("Invalid data size encountered while calling set_mask(), expected <{}x{} = {:L}> but instead got <{:L}>",
+					width_val, height_val, width_val * height_val, buffer.size()));
 			}
 
-			auto channel = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, this->mask_index, width_val, height_val, center_x, center_y);
+			auto channel = std::make_unique<ImageChannel>(
+				Enum::Compression::ZipPrediction, 
+				buffer, 
+				this->s_mask_index, 
+				static_cast<int32_t>(width_val), 
+				static_cast<int32_t>(height_val), 
+				center_x, 
+				center_y
+			);
 			m_MaskData.emplace(std::move(channel));
 		}
 	}
@@ -247,8 +276,8 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			m_MaskData.value()->setCenterX(position.x);
-			m_MaskData.value()->setCenterX(position.y);
+			m_MaskData.value()->setCenterX(static_cast<float>(position.x));
+			m_MaskData.value()->setCenterX(static_cast<float>(position.y));
 		}
 	}
 
@@ -331,8 +360,8 @@ protected:
 		{
 			LayerRecords::LayerMask lr_mask = LayerRecords::LayerMask{};
 
-			float center_x = this->mask_position().x;
-			float center_y = this->mask_position().y;
+			float center_x = static_cast<float>(this->mask_position().x);
+			float center_y = static_cast<float>(this->mask_position().y);
 			int32_t width = static_cast<int32_t>(this->mask_bbox().width());
 			int32_t height = static_cast<int32_t>(this->mask_bbox().height());
 			ChannelExtents extents = generate_extents(ChannelCoordinates(width, height, center_x, center_y));
@@ -345,19 +374,17 @@ protected:
 			lr_mask.addSize(1u);
 			// This is the size for the mask parameters
 			lr_mask.addSize(1u);
-			bool hasMaskDensity = m_LayerMask.value().density.has_value();
 			uint8_t maskDensity = 0u;
-			if (hasMaskDensity)
+			if (this->mask_density().has_value())
 			{
-				maskDensity = m_LayerMask.value().density.value();
+				maskDensity = this->mask_density().value();
 				lr_mask.addSize(1u);
 			}
 
-			bool hasMaskFeather = m_LayerMask.value().feather.has_value();
 			float64_t maskFeather = 0.0f;
-			if (hasMaskFeather)
+			if (this->mask_feather().has_value())
 			{
-				maskFeather = m_LayerMask.value().feather.value();
+				maskFeather = this->mask_feather().value();
 				lr_mask.addSize(8u);
 
 			}
@@ -408,7 +435,7 @@ protected:
 	}
 
 
-private:
+protected:
 	/// The optional mask data associated with this layer.
 	/// If no mask is present, this will be `std::nullopt`.
 	std::optional<channel_type> m_MaskData = std::nullopt;

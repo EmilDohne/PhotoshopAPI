@@ -16,8 +16,8 @@ template <typename T>
 void clear_unused_linked_layers(LayeredFile<T>& file)
 {
 	PSAPI_PROFILE_FUNCTION();
-	auto& linked_layers = file.linked_layers();
-	std::set<std::string> all_hashes = linked_layers.hashes();
+	auto linked_layers = file.linked_layers();
+	std::set<std::string> all_hashes = linked_layers->hashes();
 
 	std::set<std::string> hashes_in_file;
 	for (const auto& layer_ptr : file.flat_layers())
@@ -39,7 +39,7 @@ void clear_unused_linked_layers(LayeredFile<T>& file)
 	// Erase the no longer referenced hashes from the linked layers
 	for (const auto& hash : hashes_to_remove)
 	{
-		linked_layers.erase(hash);
+		linked_layers->erase(hash);
 	}
 }
 

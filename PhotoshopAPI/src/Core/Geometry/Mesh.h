@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Macros.h"
+#include "Util/Logger.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 #include <memory>
@@ -11,13 +13,7 @@
 
 #include <Eigen/Dense>
 
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -89,12 +85,6 @@ namespace Geometry
         size_t num_vertices() const noexcept
         {
             return m_VertexIndices.size();
-        }
-
-        constexpr size_t vertex_idx_checked(size_t in_face_idx) const
-        {
-            static_assert(in_face_idx > _Size - 1, "Index out of bounds");
-            return m_VertexIndices[in_face_idx];
         }
 
         void vertex_indices(std::array<size_t, _Size> vertex_indices)

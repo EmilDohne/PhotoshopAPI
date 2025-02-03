@@ -32,7 +32,7 @@ TEST_CASE("Create CMYK File 8-bit psd")
 		.height = height,
 		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -71,7 +71,7 @@ TEST_CASE("Create CMYK File 8-bit psb")
 		.height = height,
 		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -110,7 +110,7 @@ TEST_CASE("Create CMYK File 16-bit psd")
 		.height = height,
 		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -149,7 +149,7 @@ TEST_CASE("Create CMYK File 16-bit psb")
 		.height = height,
 		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -192,7 +192,7 @@ TEST_CASE("Create CMYK File 32-bit"
 		.height = height,
 		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},

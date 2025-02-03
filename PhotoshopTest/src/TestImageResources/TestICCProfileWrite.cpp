@@ -2,6 +2,8 @@
 
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
+#include "LayeredFile/LayerTypes/ImageLayer.h"
+#include "LayeredFile/LayerTypes/Layer.h"
 #include "Macros.h"
 
 #include <filesystem>

@@ -5,6 +5,7 @@
 #include "Util/Enum.h"
 #include "Util/Logger.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
+#include "LayeredFile/concepts.h"
 
 #include <vector>
 #include <tuple>
@@ -17,6 +18,7 @@ PSAPI_NAMESPACE_BEGIN
 /// These are only created on write and not actually stored in the layer hierarchy of the
 /// file as we use nested layers to denote hierarchies.
 template <typename T>
+	requires concepts::bit_depth<T>
 struct SectionDividerLayer : Layer<T>
 {
 protected:
@@ -34,7 +36,7 @@ public:
 
 	SectionDividerLayer() = default;
 
-	std::tuple<LayerRecord, ChannelImageData> to_photoshop(const Enum::ColorMode colorMode, [[maybe_unused]] const FileHeader& header) override
+	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
 		auto blockVec = this->generate_tagged_blocks();
 		std::optional<AdditionalLayerInfo> taggedBlocks = std::nullopt;
@@ -51,7 +53,7 @@ public:
 
 		// Applications such as krita expect empty channels to be in-place for the given colormode
 		// to actually parse the file. 
-		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, colorMode);
+		Layer<T>::generate_empty_channels(channelInfoVec, channelDataVec, Layer<T>::m_ColorMode);
 
 		LayerRecord lrRecord(
 			PascalString("", 4u),	// Photoshop does sometimes explicitly write out the name such as '</Group 1>' to indicate what it belongs to 

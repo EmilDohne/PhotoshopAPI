@@ -182,10 +182,10 @@ TEST_CASE("Read all supported warps and write image files")
 			auto offset_x = static_cast<int>(std::round(layer->center_x()));
 			auto offset_y = static_cast<int>(std::round(layer->center_y()));
 
-			auto channel_r = channels.at(Enum::toChannelIDInfo<int16_t>(0, Enum::ColorMode::RGB));
-			auto channel_g = channels.at(Enum::toChannelIDInfo<int16_t>(1, Enum::ColorMode::RGB));
-			auto channel_b = channels.at(Enum::toChannelIDInfo<int16_t>(2, Enum::ColorMode::RGB));
-			auto channel_a = channels.at(Enum::toChannelIDInfo<int16_t>(-1, Enum::ColorMode::RGB));
+			auto channel_r = channels.at(0);
+			auto channel_g = channels.at(1);
+			auto channel_b = channels.at(2);
+			auto channel_a = channels.at(-1);
 
 			auto channel_r_buffer = Render::ConstChannelBuffer<bpp_type>(channel_r, width, height, offset_x, offset_y);
 			auto channel_g_buffer = Render::ConstChannelBuffer<bpp_type>(channel_g, width, height, offset_x, offset_y);

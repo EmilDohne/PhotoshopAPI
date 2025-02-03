@@ -5,6 +5,7 @@
 #include "Macros.h"
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/ImageLayer.h"
+#include "LayeredFile/LayerTypes/GroupLayer.h"
 
 #include <string>
 #include <vector>
@@ -48,15 +49,15 @@ TEST_CASE("Retrieve all channels")
 
 	for (auto& [key, value] : channels)
 	{
-		if (key.id == Enum::ChannelID::Red)
+		if (key == 0)
 		{
 			CHECK(value == expected_r);
 		}
-		else if (key.id == Enum::ChannelID::Green)
+		else if (key == 1)
 		{
 			CHECK(value == expected_g);
 		}
-		else if (key.id == Enum::ChannelID::Blue)
+		else if (key == 2)
 		{
 			CHECK(value == expected_b);
 		}
@@ -81,15 +82,15 @@ TEST_CASE("Double extract data")
 		auto channels = imageLayerPtr->get_image_data();
 		for (auto& [key, value] : channels)
 		{
-			if (key.id == Enum::ChannelID::Red)
+			if (key == 0)
 			{
 				CHECK(value == expected_r);
 			}
-			else if (key.id == Enum::ChannelID::Green)
+			else if (key == 1)
 			{
 				CHECK(value == expected_g);
 			}
-			else if (key.id == Enum::ChannelID::Blue)
+			else if (key == 2)
 			{
 				CHECK(value == expected_b);
 			}
@@ -101,15 +102,15 @@ TEST_CASE("Double extract data")
 		auto channels = imageLayerPtr->get_image_data();
 		for (auto& [key, value] : channels)
 		{
-			if (key.id == Enum::ChannelID::Red)
+			if (key == 0)
 			{
 				CHECK(value == expected_r);
 			}
-			else if (key.id == Enum::ChannelID::Green)
+			else if (key == 1)
 			{
 				CHECK(value == expected_g);
 			}
-			else if (key.id == Enum::ChannelID::Blue)
+			else if (key == 2)
 			{
 				CHECK(value == expected_b);
 			}
@@ -135,41 +136,6 @@ TEST_CASE("Double extract channel")
 }
 
 
-#ifndef ARM_MAC_ARCH
-	TEST_CASE("Double extract channel without copy"
-		* doctest::no_breaks(true)
-		* doctest::no_output(true)
-		* doctest::should_fail(true))
-	{
-		using namespace NAMESPACE_PSAPI;
-
-		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
-		auto imageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
-
-		// This is expected to fail
-		std::vector<bpp8_t> channel_g = imageLayerPtr->get_channel(Enum::ChannelID::Green, false);
-		std::vector<bpp8_t> channel_g_2 = imageLayerPtr->get_channel(Enum::ChannelID::Green, false);
-	}
-#endif
-
-#ifndef ARM_MAC_ARCH
-	TEST_CASE("Double extract all channels without copy"
-		* doctest::no_breaks(true)
-		* doctest::no_output(true)
-		* doctest::should_fail(true))
-	{
-		using namespace NAMESPACE_PSAPI;
-
-		LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Compression/Compression_RLE_8bit.psb");
-		auto imageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("Layer_R255_G128_B0", layeredFile);
-
-		// This is expected to fail
-		auto channels = imageLayerPtr->get_image_data(false);
-		auto channels2 = imageLayerPtr->get_image_data(false);
-	}
-#endif
-
-
 
 TEST_CASE("Extract mask channel from group")
 {
@@ -179,8 +145,8 @@ TEST_CASE("Extract mask channel from group")
 	auto groupLayerPtr = find_layer_as<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 	auto imageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("MaskGroup/MaskLayer", layeredFile);
 
-	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask_data();
-	std::vector<bpp8_t> imageMaskChannel = imageLayerPtr->get_mask_data();
+	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask();
+	std::vector<bpp8_t> imageMaskChannel = imageLayerPtr->get_mask();
 	// Photoshop internally optimizes these mask channels which is why we have half the height 
 	std::vector<bpp8_t> expectedMask(layeredFile.width() * layeredFile.height() / 2, 0u);
 
@@ -196,8 +162,8 @@ TEST_CASE("Double extract mask channel from group")
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("documents/Masks/SingleMask_White.psb");
 	auto groupLayerPtr = find_layer_as<bpp8_t, GroupLayer>("MaskGroup", layeredFile);
 
-	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask_data();
-	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->get_mask_data();
+	std::vector<bpp8_t> groupMaskChannel = groupLayerPtr->get_mask();
+	std::vector<bpp8_t> groupMaskChannel2 = groupLayerPtr->get_mask();
 
 	CHECK(groupMaskChannel == groupMaskChannel2);
 }
