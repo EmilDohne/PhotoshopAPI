@@ -33,7 +33,7 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -66,7 +66,7 @@ TEST_CASE("Construct ImageLayer with mask as part of image data")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -99,7 +99,7 @@ TEST_CASE("Construct ImageLayer with explicit mask")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -137,7 +137,7 @@ TEST_CASE("Construct ImageLayer with both mask as part of imagedata and through 
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -175,7 +175,7 @@ TEST_CASE("Construct ImageLayer with invalid channels"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -212,7 +212,7 @@ TEST_CASE("Construct ImageLayer with too little channels"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -246,7 +246,7 @@ TEST_CASE("Set layer channel with Enum::ChannelID")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -283,7 +283,7 @@ TEST_CASE("Set layer channel with int16_t")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -319,7 +319,7 @@ TEST_CASE("Set layer channel mask channel with int16_t")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -361,7 +361,7 @@ TEST_CASE("Set layer invalid channel"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -402,7 +402,7 @@ TEST_CASE("Set layer invalid size channel"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -440,7 +440,7 @@ TEST_CASE("Set layer data with Enum::ChannelID")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -486,7 +486,7 @@ TEST_CASE("Set layer data with int")
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -536,7 +536,7 @@ TEST_CASE("Set layer invalid channel"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);
@@ -585,7 +585,7 @@ TEST_CASE("Set layer invalid size channel"
 		.height = height,
 	};
 
-	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+	auto layer = std::make_shared<ImageLayer<type>>(data, params);
 
 	CHECK(layer->width() == width);
 	CHECK(layer->height() == height);

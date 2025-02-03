@@ -19,6 +19,7 @@
 
 #include <fstream>
 #include <string>
+#include <cassert>
 
 #include "fmt/core.h"
 #include <Eigen/Dense>
@@ -122,7 +123,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void set_write_compression(Enum::Compression _compcode)
+	void set_write_compression(Enum::Compression _compcode) override
 	{
 		for (const auto& [_, channel_ptr] : ImageDataMixin<T>::m_ImageData)
 		{
@@ -964,14 +965,16 @@ private:
 		{
 			throw std::runtime_error(fmt::format("SmartObjectLayer '{}': Unexpected failure while evaluating the mesh: m_LinkedLayers is a nullptr", Layer<T>::m_LayerName));
 		}
-
 		if (!is_mesh_cache_valid())
 		{
+			auto linked_layer = m_LinkedLayers->at(m_Hash);
+			assert(linked_layer != nullptr);
+
 			// Get the warp mesh at a resolution of 20 pixels per subdiv. Ideally we'd lower this as we improve our algorithms
 			auto warp_surface = m_SmartObjectWarp.surface();
 			m_MeshCache = warp_surface.mesh(
-				m_LinkedLayers->at(m_Hash)->width() / 20,
-				m_LinkedLayers->at(m_Hash)->height() / 20,
+				linked_layer->width() / 20,
+				linked_layer->height() / 20,
 				true	// move_to_zero, that way we don't have to deal with bbox stuff
 			);
 			store_mesh_was_cached();
@@ -1004,7 +1007,7 @@ protected:
 	/// we recompute the image data and assign the warp to m_Warp.
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	data_type evaluate_image_data()
+	data_type evaluate_image_data() override
 	{
 		PSAPI_PROFILE_FUNCTION();
 		if (!m_LinkedLayers)
@@ -1086,7 +1089,12 @@ protected:
 			}
 			else if (idinfo == s_alpha_idinfo)
 			{
-				image_data = std::vector<T>(linked_layer->width() * linked_layer->height());
+				T value = std::numeric_limits<T>::max();
+				if constexpr (std::is_same_v<T, float32_t>)
+				{
+					value = 1.0f;
+				}
+				image_data = std::vector<T>(linked_layer->width() * linked_layer->height(), value);
 			}
 			else
 			{
@@ -1099,8 +1107,8 @@ protected:
 			Render::ConstChannelBuffer<T> orig_buffer(image_data, linked_layer->width(), linked_layer->height());
 
 			// Generate the warped result
-			std::vector<T> channel_warp(Layer<T>::width() * Layer<T>::height());
-			Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, Layer<T>::width(), Layer<T>::height());
+			std::vector<T> channel_warp(this->width() * this->height());
+			Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, this->width(), this->height());
 
 			auto& warp_mesh = this->evaluate_mesh_or_get_cached();
 
@@ -1123,7 +1131,7 @@ protected:
 				Layer<T>::m_CenterY
 			);
 			this->store_was_cached(idinfo);
-			return std::move(channel_warp);
+			return channel_warp;
 		}
 	};
 

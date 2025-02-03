@@ -92,16 +92,11 @@ namespace Render
         }
 
         /// Compute the bounding box of the channel based on the document.
-        Geometry::BoundingBox<int> bbox(size_t document_width, size_t document_height) const
+        Geometry::BoundingBox<int> bbox() const
         {
-            // Get the canvas center as Point2D so we can offset the bbox by the positions
-            auto center = Geometry::Point2D<int>(
-                static_cast<int>(std::round(static_cast<double>(document_width) / 2)),
-                static_cast<int>(std::round(static_cast<double>(document_height) / 2))
-            );
-
-            auto absolute_position = center + this->position;
+            auto absolute_position = this->position;
             auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));
+            _bbox.offset(-_bbox.center());
             _bbox.offset(absolute_position);
 
             return _bbox;
@@ -841,8 +836,8 @@ namespace Render
             if (this->mask)
             {
                 const auto _mask = this->mask.value();
-                auto _alpha_bbox = this->bbox(document_width, document_height);
-                auto _mask_bbox = this->mask.value().bbox(document_width, document_height);
+                auto _alpha_bbox = this->bbox();
+                auto _mask_bbox = this->mask.value().bbox();
 
                 // create the intersection bbox and compute the min and max values
                 auto _roi_bbox = Geometry::BoundingBox<int>::intersect(_alpha_bbox, _mask_bbox);
@@ -933,14 +928,8 @@ namespace Render
         constexpr int mask_index() { return -2; }
 
         /// Compute the bounding box of the layer taking into account the mask (if present)
-        Geometry::BoundingBox<int> bbox(size_t document_width, size_t document_height) const
+        Geometry::BoundingBox<int> bbox() const
         {
-            // Get the canvas center as Point2D so we can offset the bbox by the positions
-            auto center = Geometry::Point2D<int>(
-                static_cast<int>(std::round(static_cast<double>(document_width) / 2)),
-                static_cast<int>(std::round(static_cast<double>(document_height) / 2))
-            );
-
             uint8_t mask_default = this->metadata.mask_default_value.value_or(0);
             std::optional<Geometry::BoundingBox<int>> mask_bbox;
 
@@ -949,14 +938,14 @@ namespace Render
                 auto mask_width = this->mask.value().width;
                 auto mask_height = this->mask.value().height;
 
-                auto absolute_mask_position = center + this->mask.value().position;
+                auto absolute_mask_position = this->mask.value().position;
 
                 auto _bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(mask_width, mask_height));
                 _bbox.offset(absolute_mask_position);
                 mask_bbox.emplace(std::move(_bbox));
             }
 
-            auto absolute_position = center + this->metadata.position;
+            auto absolute_position = this->metadata.position;
 
             // construct the bbox and center it about 0 so we can then offset it in place
             auto image_bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(this->width, this->height));

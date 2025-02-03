@@ -670,7 +670,7 @@ private:
 	/// Linked layers are external files associated with the layered file. In the context of 
 	/// e.g. SmartObjects these will hold the raw file bytes so that multiple smart objects
 	/// can access the same layers without data duplication
-	std::shared_ptr<LinkedLayers<T>> m_LinkedLayers;
+	std::shared_ptr<LinkedLayers<T>> m_LinkedLayers = std::make_shared<LinkedLayers<T>>();
 
 
 	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers_impl(const LayerOrder order)

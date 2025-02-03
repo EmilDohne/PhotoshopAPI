@@ -61,8 +61,8 @@ inline ChannelExtents generate_extents(const ChannelCoordinates coordinates)
 {
 	ChannelExtents extents = {};
 
-	extents.top = static_cast<int32_t>(coordinates.centerY - .5 * coordinates.width);
-	extents.left = static_cast<int32_t>(coordinates.centerX - .5 * coordinates.width);
+	extents.top = static_cast<int32_t>(std::round(coordinates.centerY - .5f * coordinates.height));
+	extents.left = static_cast<int32_t>(std::round(coordinates.centerX - .5f * coordinates.width));
 	extents.bottom = extents.top + coordinates.height;
 	extents.right = extents.left + coordinates.width;
 	

@@ -63,7 +63,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void set_write_compression(Enum::Compression _compcode)
+	void set_write_compression(Enum::Compression _compcode) override
 	{
 		for (const auto& [_, channel_ptr] : WritableImageDataMixin<T>::m_ImageData)
 		{
@@ -145,7 +145,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void set_image_data(const data_type& data, int32_t width, int32_t height)
+	void set_image_data(const data_type& data, int32_t width, int32_t height) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
 			data,
@@ -245,7 +245,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void set_channel(Enum::ChannelIDInfo _id, const std::vector<T>& channel)
+	void set_channel(Enum::ChannelIDInfo _id, const std::vector<T>& channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
 			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
@@ -371,7 +371,7 @@ protected:
 				auto& [key, channel_buffer] = pair;
 				auto idinfo = Enum::toChannelIDInfo(key, Layer<T>::m_ColorMode);
 				auto buffer_span = std::span<T>(channel_buffer.begin(), channel_buffer.end());
-				WritableImageDataMixin<T>::m_ImageData[idinfo]->getData<T>(buffer_span, num_threads);
+				WritableImageDataMixin<T>::m_ImageData[idinfo]->template getData<T>(buffer_span, num_threads);
 			});
 
 		if (Layer<T>::has_mask())

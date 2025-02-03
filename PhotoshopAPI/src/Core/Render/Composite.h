@@ -183,7 +183,7 @@ namespace Composite
 
 				// Compute the intersection of the canvas and the layer as the layer may go outside of the canvas' bbox.
 				auto canvas_bbox = Geometry::BoundingBox<int>(Geometry::Point2D<int>(0, 0), Geometry::Point2D<int>(canvas.width, canvas.height));
-				auto layer_bbox = layer.bbox(canvas.width, canvas.height);
+				auto layer_bbox = layer.bbox();
 				auto _intersected_bbox = Geometry::BoundingBox<int>::intersect(canvas_bbox, layer_bbox);
 				if (!_intersected_bbox)
 				{

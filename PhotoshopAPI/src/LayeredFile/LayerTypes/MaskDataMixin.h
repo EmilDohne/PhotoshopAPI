@@ -36,7 +36,7 @@ struct MaskMixin
 	using channel_type = std::unique_ptr<ImageChannel>;
 
 	/// Colormode independent mask index as Enum::ChannelIDInfo that may be used 
-	static constexpr auto s_mask_index = Enum::ChannelIDInfo{ Enum::ChannelID::RealUserSuppliedLayerMask, -2 };
+	static constexpr auto s_mask_index = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
 
 	MaskMixin() = default;
 	MaskMixin(

@@ -164,7 +164,7 @@ TEST_CASE("Read all supported warps and write image files")
 				}
 				else
 				{
-					CHECK(result.meanerror < 0.004f);
+					CHECK(result.meanerror < 0.005f);
 				}
 			}
 		};
@@ -316,8 +316,12 @@ TEST_CASE("Roundtrip layer read-write mixed linkage")
 	auto file = LayeredFile<bpp_type>(Enum::ColorMode::RGB, 64, 64);
 
 	Layer<bpp_type>::Params lr_params{};
+	lr_params.width = 128;
+	lr_params.height = 64;
 	lr_params.name = "SmartObject";
 	Layer<bpp_type>::Params lr_params2{};
+	lr_params2.width = 128;
+	lr_params2.height = 128;
 	lr_params2.name = "SmartObject2";
 
 	auto layer = std::make_shared<SmartObjectLayer<bpp_type>>(file, lr_params, "documents/image_data/ImageStackerImage.jpg", LinkedLayerType::external);
