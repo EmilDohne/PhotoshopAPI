@@ -4,7 +4,8 @@
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "Util/Enum.h"
 #include "PyUtil/ImageConversion.h"
-#include "Implementation/ImageDataLayerType.h"
+#include "Mixins/DeclareImageDataMixin.h"
+#include "Mixins/DeclareWritableImageDataMixin.h"
 #include "Implementation/ImageLayer.h"
 #include "Macros.h"
 
@@ -19,14 +20,8 @@
 #include <unordered_map>
 #include <iostream>
 #include <vector>
-
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
+
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
@@ -37,8 +32,13 @@ using namespace NAMESPACE_PSAPI;
 template <typename T>
 void declare_image_layer(py::module& m, const std::string& extension) {
     using Class = ImageLayer<T>;
+    using PyClass = py::class_<Class, Layer<T>, std::shared_ptr<Class>>;
     std::string className = "ImageLayer" + extension;
-    py::class_<Class, _ImageDataLayerType<T>, std::shared_ptr<Class>> image_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    PyClass image_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+
+    // Bind the mixins directly to the methods of this class
+    bind_image_data_mixin<T, Class, PyClass>(image_layer);
+    bind_writable_image_data_mixin<T, Class, PyClass>(image_layer);
 
     image_layer.doc() = R"pbdoc(
         
@@ -55,17 +55,8 @@ void declare_image_layer(py::module& m, const std::string& extension) {
             to get a list of all the channels use the `num_channels` or `channels` properties instead.
 
             All channels are the same size except for the mask channel (-2) which may have any size.
-        num_channels: int
-            Read-only property: The number of channels held by image_data
-
-        channels: list[int]
-            Read-only property: The channel indices held by this image layer. 
-            Unlike accessing image_data this does not extract the image data and is therefore
-            near-zero cost.
         name : str
             The name of the layer, cannot be longer than 255
-        layer_mask : LayerMask_*bit
-            The pixel mask applied to the layer
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
         opacity : int
@@ -86,6 +77,20 @@ void declare_image_layer(py::module& m, const std::string& extension) {
             The locked state of the layer, this locks all pixel channels
         is_visible: bool
             Whether the layer is visible
+        mask: np.ndarray
+            The layers' mask channel, may be empty
+        mask_disabled: bool
+            Whether the mask is disabled. Ignored if no mask is present
+        mask_relative_to_layer: bool
+            Whether the masks position is relative to the layer. Ignored if no mask is present
+        mask_default_color: int
+            The masks' default color outside of the masks bounding box from 0-255. Ignored if no mask is present
+        mask_density: int
+            Optional mask density from 0-255, this is equivalent to layers' opacity. Ignored if no mask is present
+        mask_feather: float
+            Optional mask feather. Ignored if no mask is present
+        mask_position: psapi.geometry.Point2D
+            The masks' canvas coordinates, these represent the center of the mask in terms of the canvas (file). Ignored if no mask is present
         
     )pbdoc";
 
@@ -369,5 +374,7 @@ void declare_image_layer(py::module& m, const std::string& extension) {
             ValueError: if the channel size is not the same as width * height
 
 	)pbdoc");
+
+    
 
 }

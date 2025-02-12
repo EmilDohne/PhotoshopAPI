@@ -166,7 +166,7 @@ namespace LayerRecords
 struct LayerRecord : public FileSection
 {
 	/// The name of the Layer as pascal string, has a maximum length of 255
-	PascalString m_LayerName;
+	PascalString m_LayerName{};
 
 	/// The top edge of the layer bounding box
 	int32_t m_Top{};
@@ -184,23 +184,23 @@ struct LayerRecord : public FileSection
 	uint16_t m_ChannelCount{};
 	/// The channel information telling us the channel ID as well as the 
 	/// size of the channel for when we read the ChannelImageData
-	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation;
-	Enum::BlendMode m_BlendMode;
+	std::vector<LayerRecords::ChannelInformation> m_ChannelInformation{};
+	Enum::BlendMode m_BlendMode = Enum::BlendMode::Normal;
 	/// 0 - 255
-	uint8_t m_Opacity;
+	uint8_t m_Opacity = 255;
 	/// 0 or 1
-	uint8_t m_Clipping;	
+	uint8_t m_Clipping = 0;	
 	/// Bit flags which control certain information such as visibility
-	LayerRecords::BitFlags m_BitFlags;
+	LayerRecords::BitFlags m_BitFlags{};
 
 	/// If one or both of the layer masks has some special data on it (feather or blur) it will be stored in this structure
 	std::optional<LayerRecords::LayerMaskData> m_LayerMaskData = std::nullopt;
 
 	/// The channel blending ranges for all the default channels (r, g and b in rgb color mode). Photoshop appears
 	/// to always write out the maximum possible channels (5) as the section size is trivial. We match this behaviour
-	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges;
+	LayerRecords::LayerBlendingRanges m_LayerBlendingRanges{};
 	/// An optional series of TaggedBlocks. This is where, e.g. SmartObjects or Adjustment layers would store their data
-	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo;
+	std::optional<AdditionalLayerInfo> m_AdditionalLayerInfo = std::nullopt;
 
 	// Explicitly delete any copy operators as we cannot copy AdditionalLayerInfo
 	LayerRecord(const LayerRecord&) = delete;

@@ -64,7 +64,7 @@ class TestSmartObjectLayer(unittest.TestCase):
         warp = psapi.SmartObjectWarp.generate_default(200, 108, 4, 4)
         file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data, warp)
         
-        previous_image_data = layer.image_data
+        previous_image_data = layer.get_image_data()
 
         self.assertIn(0, previous_image_data)
         self.assertIn(1, previous_image_data)
@@ -80,7 +80,7 @@ class TestSmartObjectLayer(unittest.TestCase):
         warp.points = points
         layer.warp = warp
 
-        current_image_data = layer.image_data
+        current_image_data = layer.get_image_data()
         
         self.assertIn(0, current_image_data)
         self.assertIn(1, current_image_data)
@@ -93,23 +93,6 @@ class TestSmartObjectLayer(unittest.TestCase):
         self.assertTrue(len(previous_image_data) == len(previous_image_data))
         for key in previous_image_data:
             self.assertTrue(np.any(np.not_equal(previous_image_data[key], current_image_data[key])))
-            
-    @nose.tools.raises(RuntimeError)
-    def test_set_image_data(self):
-        """
-        SmartObjectLayer: (ExpectedFailure) Test setting image data
-        """
-        file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
-        img_data: dict = {0: np.ndarray((108, 200), np.uint8)}
-        layer.set_image_data(img_data)
-        
-    @nose.tools.raises(AttributeError)
-    def test_set_channel(self):
-        """
-        SmartObjectLayer: (ExpectedFailure) Test setting channel
-        """
-        file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
-        layer.set_channel(0, np.ndarray((108, 200), np.uint8))
         
     def test_get_original_image_data(self):
         """
@@ -175,12 +158,12 @@ class TestSmartObjectLayer(unittest.TestCase):
         """
         file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
 
-        image_data = layer.image_data
+        image_data = layer.get_image_data()
         previous_hash = layer.hash()
         
         layer.replace(self._get_image_file_path("uv_grid.jpg"))
         
-        replaced_image_data = layer.image_data
+        replaced_image_data = layer.get_image_data()
         current_hash = layer.hash()
         
         self.assertNotEqual(previous_hash, current_hash)
@@ -204,7 +187,7 @@ class TestSmartObjectLayer(unittest.TestCase):
         """
         file, layer_1 = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
         
-        layer_1_image_data = layer_1.image_data
+        layer_1_image_data = layer_1.get_image_data()
         layer_2 = psapi.SmartObjectLayer_8bit(
             file,
             self._get_image_file_path("uv_grid.jpg"),
@@ -214,27 +197,27 @@ class TestSmartObjectLayer(unittest.TestCase):
         layer_2.width = 128
         layer_2.height = 128
         file.add_layer(layer_2)
-        layer_2_image_data = layer_2.image_data
+        layer_2_image_data = layer_2.get_image_data()
         
         file.write(self._get_image_file_path("out.psb"))
         
         read_file = psapi.LayeredFile.read(self._get_image_file_path("out.psb"))
 
         read_layer_1 = read_file["SmartObjectLayer"]
-        read_layer_1_image_data = read_layer_1.image_data
+        read_layer_1_image_data = read_layer_1.get_image_data()
         read_layer_2 = read_file["SmartObjectLayer_external"]
-        read_layer_2_image_data = read_layer_2.image_data
+        read_layer_2_image_data = read_layer_2.get_image_data()
         
-        # for key in layer_1_image_data:
-        #      self.assertTrue(
-        #         np.array_equal(layer_1_image_data[key], read_layer_1_image_data[key]),
-        #         f"Arrays for key {key} are not equal: {layer_1_image_data[key]} != {read_layer_1_image_data[key]}"
-        #     )
-        # for key in layer_2_image_data:
-        #      self.assertTrue(
-        #         np.array_equal(layer_2_image_data[key], read_layer_2_image_data[key]),
-        #         f"Arrays for key {key} are not equal: {layer_2_image_data[key]} != {read_layer_2_image_data[key]}"
-        #     )
+        for key in layer_1_image_data:
+             self.assertTrue(
+                np.array_equal(layer_1_image_data[key], read_layer_1_image_data[key]),
+                f"Arrays for key {key} are not equal: {layer_1_image_data[key]} != {read_layer_1_image_data[key]}"
+            )
+        for key in layer_2_image_data:
+             self.assertTrue(
+                np.array_equal(layer_2_image_data[key], read_layer_2_image_data[key]),
+                f"Arrays for key {key} are not equal: {layer_2_image_data[key]} != {read_layer_2_image_data[key]}"
+            )
         
     def test_move(self):
         """

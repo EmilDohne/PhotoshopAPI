@@ -3,7 +3,7 @@
 #include "Util/Enum.h"
 #include "PyUtil/ImageConversion.h"
 #include "PyUtil/Transformation.h"
-#include "Implementation/ImageDataLayerType.h"
+#include "Mixins/DeclareImageDataMixin.h"
 #include "Macros.h"
 
 #include <pybind11/pybind11.h>
@@ -17,16 +17,10 @@
 #include <unordered_map>
 #include <iostream>
 #include <vector>
+#include <span>
 
 #include <fmt/format.h>
 
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
-#include <span>
-#endif
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
@@ -39,8 +33,13 @@ template <typename T>
 void declare_smart_object_layer(py::module& m, const std::string& extension) 
 {
     using Class = SmartObjectLayer<T>;
+    using PyClass = py::class_<Class, Layer<T>, std::shared_ptr<Class>>;
     std::string className = "SmartObjectLayer" + extension;
-    py::class_<Class, _ImageDataLayerType<T>, std::shared_ptr<Class>> smart_object_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    PyClass smart_object_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+
+    // Bind the mixins directly to the methods of this class
+    bind_image_data_mixin<T, Class, PyClass>(smart_object_layer);
+
 
     smart_object_layer.doc() = R"pbdoc(
 
@@ -112,20 +111,8 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             The linkage of the backing image file, if this is set to `psapi.enum.LinkedLayerType.data` 
             the image is stored in the file while if it is set to `psapi.enum.LinkedLayerType.external`
             it links to the file on disk and only stores the transformed image on file.
-        image_data : dict[int, numpy.ndarray]
-            Read-only property: A dictionary of the image data mapped by int.
-            Accessing this will load all the image data into memory so use it sparingly and 
-            instead try using the num_channels or channels properties.
-        num_channels: int
-            Read-only property: The number of channels held by image_data
-        channels: list[int]
-            Read-only property: The channel indices held by this image layer. 
-            Unlike accessing image_data this does not extract the image data and is therefore
-            near-zero cost.
         name : str
             The name of the layer, cannot be longer than 255
-        layer_mask : LayerMask_*bit
-            The pixel mask applied to the layer
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
         opacity : int
@@ -146,6 +133,20 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             The locked state of the layer, this locks all pixel channels
         is_visible: bool
             Whether the layer is visible
+        mask: np.ndarray
+            The layers' mask channel, may be empty
+        mask_disabled: bool
+            Whether the mask is disabled. Ignored if no mask is present
+        mask_relative_to_layer: bool
+            Whether the masks position is relative to the layer. Ignored if no mask is present
+        mask_default_color: int
+            The masks' default color outside of the masks bounding box from 0-255. Ignored if no mask is present
+        mask_density: int
+            Optional mask density from 0-255, this is equivalent to layers' opacity. Ignored if no mask is present
+        mask_feather: float
+            Optional mask feather. Ignored if no mask is present
+        mask_position: psapi.geometry.Point2D
+            The masks' canvas coordinates, these represent the center of the mask in terms of the canvas (file). Ignored if no mask is present
         
     )pbdoc";
 
@@ -343,11 +344,11 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
 
     smart_object_layer.def("original_image_data", [](Class& self)
         {
-            auto data = self.original_image_data();
+            auto data = self.get_original_image_data();
             std::unordered_map<int, py::array_t<T>> out_data;
             for (auto& [key, value] : data)
             {
-                out_data[key.index] = to_py_array(std::move(value), self.original_width(), self.original_height());
+                out_data[key] = to_py_array(std::move(value), self.original_width(), self.original_height());
             }
             return out_data;
         }, R"pbdoc(

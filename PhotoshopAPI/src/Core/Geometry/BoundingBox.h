@@ -27,10 +27,10 @@ namespace Geometry
     struct BoundingBox
     {
         /// The minimum (bottom-left) corner of the bounding box.
-        Point2D<T> minimum{};
+        Point2D<T> minimum = { static_cast<T>(0), static_cast<T>(0) };
 
         /// The maximum (top-right) corner of the bounding box.
-        Point2D<T> maximum{};
+        Point2D<T> maximum = { static_cast<T>(0), static_cast<T>(0) };
 
         /// Default constructor.
         /// Initializes the bounding box with default `Point2D` values.

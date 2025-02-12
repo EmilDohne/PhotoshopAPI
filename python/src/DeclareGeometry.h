@@ -154,12 +154,6 @@ void declare_point2d(py::module& m)
 		});
 }
 
-
-void declare_boundingbox2d(py::module& m)
-{
-	static_assert(false, "implement me");
-}
-
 void declare_geometry_operations(py::module& m)
 {
 	m.def("create_normalized_quad", &Geometry::create_normalized_quad<double>, R"pbdoc(

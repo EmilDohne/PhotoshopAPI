@@ -36,7 +36,7 @@ public:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	std::vector<int> channel_indices(bool include_mask) const
+	std::vector<int> channel_indices(bool include_mask) const override
 	{
 		std::vector<int> indices{};
 		for (const auto& [key, _] : WritableImageDataMixin<T>::m_ImageData)
@@ -258,6 +258,50 @@ public:
 		);
 	}
 
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(int _id, const std::span<const T> channel) override
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			channel,
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(Enum::ChannelID _id, const std::span<const T> channel) override
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			channel,
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	void set_channel(Enum::ChannelIDInfo _id, const std::span<const T> channel) override
+	{
+		WritableImageDataMixin<T>::impl_set_channel(
+			WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode),
+			channel,
+			Layer<T>::m_Width,
+			Layer<T>::m_Height,
+			Layer<T>::m_CenterX,
+			Layer<T>::m_CenterY,
+			Layer<T>::m_ColorMode
+		);
+	}
 
 	/// \brief Converts the image layer to Photoshop layerRecords and imageData.
 	/// 
@@ -402,7 +446,7 @@ protected:
 
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height, float center_x, float center_y)
+	void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height, float center_x, float center_y) override
 	{
 		Layer<T>::set_mask(data, width, height);
 		Layer<T>::mask_position(Geometry::Point2D<double>(center_x, center_y));
@@ -452,6 +496,7 @@ private:
 
 
 		// Apply the image data and mask channel.
+		Layer<T>::parse_mask(parameters);
 		WritableImageDataMixin<T>::impl_set_image_data(
 			data, 
 			Layer<T>::m_Width, 
@@ -460,7 +505,6 @@ private:
 			Layer<T>::m_CenterY, 
 			Layer<T>::m_ColorMode
 		);
-		Layer<T>::parse_mask(parameters);
 
 		// Do a check if the channels contain the minimum required for the given colormode.
 		if (!WritableImageDataMixin<T>::validate_channels(Layer<T>::m_ColorMode))

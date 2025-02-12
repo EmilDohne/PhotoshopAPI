@@ -499,6 +499,24 @@ public:
 	/// \param channel The channel data to be set.
 	virtual void set_channel(Enum::ChannelIDInfo _id, const std::vector<T>& channel) = 0;
 
+	/// \brief Sets the data for a specific channel.
+	///
+	/// \param _id The channel ID to set the data for.
+	/// \param channel The channel data to be set.
+	virtual void set_channel(int _id, const std::span<const T> channel) = 0;
+
+	/// \brief Sets the data for a specific channel.
+	///
+	/// \param _id The channel ID to set the data for.
+	/// \param channel The channel data to be set.
+	virtual void set_channel(Enum::ChannelID _id, const std::span<const T> channel) = 0;
+
+	/// \brief Sets the data for a specific channel, using a ChannelIDInfo.
+	///
+	/// \param _id The channel ID to set the data for.
+	/// \param channel The channel data to be set.
+	virtual void set_channel(Enum::ChannelIDInfo _id, const std::span<const T> channel) = 0;
+
 	virtual ~WritableImageDataMixin() = default;
 
 protected:

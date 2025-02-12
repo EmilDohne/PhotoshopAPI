@@ -37,8 +37,6 @@ void declare_group_layer(py::module& m, const std::string& extension)
             Whether or not the group is collapsed or not
         name : str
             The name of the layer, cannot be longer than 255
-        layer_mask : psapi.LayerMask_*
-            The pixel mask applied to the layer
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
         opacity : int
@@ -59,6 +57,20 @@ void declare_group_layer(py::module& m, const std::string& extension)
             The locked state of the layer, this locks all pixel channels
         is_visible: bool
             Whether the layer is visible
+        mask: np.ndarray
+            The layers' mask channel, may be empty
+        mask_disabled: bool
+            Whether the mask is disabled. Ignored if no mask is present
+        mask_relative_to_layer: bool
+            Whether the masks position is relative to the layer. Ignored if no mask is present
+        mask_default_color: int
+            The masks' default color outside of the masks bounding box from 0-255. Ignored if no mask is present
+        mask_density: int
+            Optional mask density from 0-255, this is equivalent to layers' opacity. Ignored if no mask is present
+        mask_feather: float
+            Optional mask feather. Ignored if no mask is present
+        mask_position: psapi.geometry.Point2D
+            The masks' canvas coordinates, these represent the center of the mask in terms of the canvas (file). Ignored if no mask is present
 
 	)pbdoc";
 

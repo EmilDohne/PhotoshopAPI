@@ -218,11 +218,11 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 	{
 		throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
 	}
-	std::unordered_map<int16_t, std::vector<T>> img_data_cpp;
+	std::unordered_map<int, std::vector<T>> img_data_cpp;
 	// Convert our image data to c++ vector data, the constructor checks for the right amount of channels
 	for (auto& [key, value] : image_data)
 	{
-		img_data_cpp[static_cast<int16_t>(key)] = from_py_array(tag::vector{}, value, width, height);
+		img_data_cpp[key] = from_py_array(tag::vector{}, value, width, height);
 	}
 
 	params.name = layer_name;

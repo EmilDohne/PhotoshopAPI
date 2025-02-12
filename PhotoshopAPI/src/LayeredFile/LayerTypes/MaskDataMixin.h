@@ -253,6 +253,31 @@ struct MaskMixin
 		return Geometry::BoundingBox<double>{};
 	}
 
+	/// Retrieves the width of the mask, if present.
+	/// 
+	/// If no mask exists, this function returns zero
+	/// 
+	/// \returns The mask's width or zero if no mask exists
+	size_t mask_width() const
+	{
+		auto bbox = this->mask_bbox();
+		auto width = std::round(bbox.width());
+		return static_cast<size_t>(width);
+	}
+
+	/// Retrieves the height of the mask, if present.
+	/// 
+	/// If no mask exists, this function returns zero
+	/// 
+	/// \returns The mask's height or zero if no mask exists
+	size_t mask_height() const
+	{
+		auto bbox = this->mask_bbox();
+		auto height = std::round(bbox.height());
+		return static_cast<size_t>(height);
+	}
+
+
 	/// Retrieves the position of the mask, defined as its center.
 	/// 
 	/// If no mask is present, this function returns `{-1.0, -1.0}`.
