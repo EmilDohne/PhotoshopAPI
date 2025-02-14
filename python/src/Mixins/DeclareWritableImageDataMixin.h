@@ -115,7 +115,7 @@ void bind_writable_image_data_mixin(PyClass& bound_class)
 			if (idinfo == MaskMixin<T>::s_mask_index)
 			{
 				auto shape = Util::Impl::shape_from_py_array(data, { 2 }, data.size());
-				auto view = from_py_array(tag::view{}, data, shape[0], shape[1]);
+				auto view = from_py_array(tag::view{}, data, shape[1], shape[0]);
 				self.set_mask(view, shape[1], shape[0]);
 			}
 			else
@@ -145,7 +145,7 @@ void bind_writable_image_data_mixin(PyClass& bound_class)
 			if (idinfo == MaskMixin<T>::s_mask_index)
 			{
 				auto shape = Util::Impl::shape_from_py_array(data, {2}, data.size());
-				auto view = from_py_array(tag::view{}, data, shape[0], shape[1]);
+				auto view = from_py_array(tag::view{}, data, shape[1], shape[0]);
 				self.set_mask(view, shape[1], shape[0]);
 			}
 			else
@@ -175,7 +175,7 @@ void bind_writable_image_data_mixin(PyClass& bound_class)
 			if (idinfo == MaskMixin<T>::s_mask_index)
 			{
 				auto shape = Util::Impl::shape_from_py_array(data, { 2 }, data.size());
-				auto view = from_py_array(tag::view{}, data, shape[0], shape[1]);
+				auto view = from_py_array(tag::view{}, data, shape[1], shape[0]);
 				self.set_mask(view, shape[1], shape[0]);
 			}
 			else

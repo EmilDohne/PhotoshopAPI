@@ -53,7 +53,7 @@ void bind_mask_mixin(PyClass& bound_class)
             // always pass in a 2D array allowing us to get the width and height from it. This gives us a better
             // user interface for setting the new mask dimensions
             auto shape = Util::Impl::shape_from_py_array(data, { 2 }, data.size());
-            auto view = from_py_array(tag::view{}, data, shape[0], shape[1]);
+            auto view = from_py_array(tag::view{}, data, shape[1], shape[0]);
             self.set_mask(view, shape[1], shape[0]);
 
         }, R"pbdoc(
