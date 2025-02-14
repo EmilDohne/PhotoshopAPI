@@ -11,13 +11,7 @@
 #include <algorithm>
 #include <execution>
 #include <vector>
-
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
-
 #include <array>
 #include <bit>
 

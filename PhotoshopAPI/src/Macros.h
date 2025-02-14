@@ -21,6 +21,14 @@ static_assert(sizeof(double) == 8 && CHAR_BIT == 8 && std::numeric_limits<double
 typedef double float64_t;
 typedef float float32_t;
 
+#if defined(_MSC_VER)
+#define PSAPI_FUNCSIG __FUNCSIG__
+#elif defined(__GNUC__)
+#define PSAPI_FUNCSIG __PRETTY_FUNCTION__
+#else
+#define PSAPI_FUNCSIG "Unknown"
+#endif
+
 // Alias bitDepth types which can be used for template initialization
 PSAPI_NAMESPACE_BEGIN
 

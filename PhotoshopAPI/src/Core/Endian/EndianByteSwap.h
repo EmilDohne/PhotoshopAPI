@@ -15,7 +15,6 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-
 // Decode Big Endian Data
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -27,7 +26,7 @@ PSAPI_NAMESPACE_BEGIN
 template<typename T>
 T endianDecodeBE(const uint8_t* src)
 {
-    PSAPI_LOG_ERROR("endianByteSwap", "No Byte Swap defined for the given type");
+    static_assert(false, PSAPI_FUNCSIG " No Byte Swap defined for the given type");
     return T{};
 };
 
@@ -172,7 +171,7 @@ inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
 template<typename T>
 T endianEncodeBE([[maybe_unused]] const T src)
 {
-    PSAPI_LOG_ERROR("endianByteSwap", "No Byte Swap defined for the given type");
+    static_assert(false, PSAPI_FUNCSIG " No Byte Swap defined for the given type");
     return T{};
 }
 
