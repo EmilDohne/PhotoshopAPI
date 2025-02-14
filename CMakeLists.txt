@@ -14,7 +14,7 @@ option(PSAPI_USE_VCPKG "Build the extra dependencies using vckpg instead of syst
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
+option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
 option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" ON)
 
 

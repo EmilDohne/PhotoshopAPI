@@ -86,10 +86,10 @@ namespace LayerRecords
 		bool m_HasVectorMaskFeather = false;	// Bit 3 of the maskParams
 
 		// Only exists on one of the two masks
-		std::optional<uint8_t> m_UserMaskDensity;
-		std::optional<float64_t> m_UserMaskFeather;
-		std::optional<uint8_t> m_VectorMaskDensity;
-		std::optional<float64_t> m_VectorMaskFeather;
+		std::optional<uint8_t> m_UserMaskDensity{};
+		std::optional<float64_t> m_UserMaskFeather{};
+		std::optional<uint8_t> m_VectorMaskDensity{};
+		std::optional<float64_t> m_VectorMaskFeather{};
 
 		// Set the boolean flags according to the data read from disk
 		void setFlags(const uint8_t bitFlag);
@@ -109,23 +109,23 @@ namespace LayerRecords
 	private:
 		// Masks to perform bitwise & operations with to check if certain flags exist
 		// Note: we skip bit 2 here as its marked obsolete and there is only 5 total options
-		const uint8_t m_PositionRelativeToLayerMask = 1u << 0;
-		const uint8_t m_DisabledMask = 1u << 1;
-		const uint8_t m_IsVectorMask = 1u << 3;
-		const uint8_t m_HasMaskParamsMask = 1u << 4;
+		constexpr uint8_t m_PositionRelativeToLayerMask = 1u << 0;
+		constexpr uint8_t m_DisabledMask = 1u << 1;
+		constexpr uint8_t m_IsVectorMask = 1u << 3;
+		constexpr uint8_t m_HasMaskParamsMask = 1u << 4;
 
 		// Unknown bits of the flags which do sometimes get written and affect the look of the document
 		// mostly for roundtripping
-		const static uint8_t m_unknownBit2Mask = 1u << 5;
-		const static uint8_t m_unknownBit5Mask = 1u << 5;
-		const static uint8_t m_unknownBit6Mask = 1u << 6;
-		const static uint8_t m_unknownBit7Mask = 1u << 7;	
+		constexpr uint8_t m_unknownBit2Mask = 1u << 5;
+		constexpr uint8_t m_unknownBit5Mask = 1u << 5;
+		constexpr uint8_t m_unknownBit6Mask = 1u << 6;
+		constexpr uint8_t m_unknownBit7Mask = 1u << 7;	
 
 		// Mask parameter bitmasks to bitwise & with
-		const uint8_t m_UserMaskDensityMask = 1u << 0;
-		const uint8_t m_UserMaskFeatherMask = 1u << 1;
-		const uint8_t m_VectorMaskDensityMask = 1u << 2;
-		const uint8_t m_VectorMaskFeatherMask = 1u << 3;
+		constexpr uint8_t m_UserMaskDensityMask = 1u << 0;
+		constexpr uint8_t m_UserMaskFeatherMask = 1u << 1;
+		constexpr uint8_t m_VectorMaskDensityMask = 1u << 2;
+		constexpr uint8_t m_VectorMaskFeatherMask = 1u << 3;
 	};
 
 
