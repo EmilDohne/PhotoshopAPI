@@ -26,7 +26,7 @@ PSAPI_NAMESPACE_BEGIN
 template<typename T>
 T endianDecodeBE(const uint8_t* src)
 {
-    static_assert(false, "No Byte Swap defined for the given type: " PSAPI_FUNCSIG);
+    PSAPI_LOG_ERROR("Endian", "No Byte Swap defined for the given type: %s", PSAPI_FUNCSIG);
     return T{};
 };
 
@@ -171,7 +171,7 @@ inline float64_t endianDecodeBE<float64_t>(const uint8_t* src)
 template<typename T>
 T endianEncodeBE([[maybe_unused]] const T src)
 {
-    static_assert(false, "No Byte Swap defined for the given type: " PSAPI_FUNCSIG);
+    PSAPI_LOG_ERROR("Endian", "No Byte Swap defined for the given type: %s", PSAPI_FUNCSIG);
     return T{};
 }
 
