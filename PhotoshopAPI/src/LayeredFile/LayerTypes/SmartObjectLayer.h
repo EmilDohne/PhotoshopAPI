@@ -704,7 +704,7 @@ public:
 
 		PascalString lrName = Layer<T>::generate_name();
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
-		size_t channelCount = ImageDataMixin<T>::m_ImageData.size() + static_cast<uint16_t>(Layer<T>::has_mask());
+		size_t channelCount = this->num_channels(true);
 
 		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);

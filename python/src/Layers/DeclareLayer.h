@@ -45,8 +45,8 @@ void declare_layer(py::module& m, const std::string& extension) {
             The pixel mask applied to the layer
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
-        opacity : int
-            The layers opacity from 0-255 with 255 being 100%
+        opacity : float
+            The layers opacity from 0.0 - 1.0
         width : int
             The width of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
             this does not have to match the files width

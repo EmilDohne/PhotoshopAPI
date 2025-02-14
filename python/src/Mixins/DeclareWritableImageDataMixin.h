@@ -50,8 +50,6 @@ void bind_writable_image_data_mixin(PyClass& bound_class)
 
 			size_t _width = self.width();
 			size_t _height = self.height();
-			
-			std::cout << _width * _height << std::endl;
 
 			if (std::holds_alternative<py::array_t<T>>(data))
 			{
@@ -76,7 +74,7 @@ void bind_writable_image_data_mixin(PyClass& bound_class)
 				// Convert our image data to c++ vector data, the constructor checks for the right amount of channels
 				for (auto& [key, value] : map_data)
 				{
-					img_data_cpp[key] = from_py_array(tag::vector{}, value, _height, _height);
+					img_data_cpp[key] = from_py_array(tag::vector{}, value, _width, _height);
 				}
 				self.set_image_data(std::move(img_data_cpp));
 			}

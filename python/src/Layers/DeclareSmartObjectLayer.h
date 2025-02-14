@@ -115,8 +115,8 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             The name of the layer, cannot be longer than 255
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
-        opacity : int
-            The layers opacity from 0-255 with 255 being 100%
+        opacity : float
+            The layers opacity from 0.0 - 1.0
         width : int
             The width of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
             this does not have to match the files width
@@ -162,21 +162,16 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
         std::optional<SmartObject::Warp> warp,
         std::optional<py::array_t<T>> layer_mask,
         Enum::BlendMode blend_mode,
-        int opacity,
+        float opacity,
         Enum::Compression compression,
         Enum::ColorMode color_mode,
         bool is_visible,
         bool is_locked
         ) {
             typename Layer<T>::Params params;
-
-			if (layer_name.size() > 255)
-			{
-				throw py::value_error("layer_name parameter cannot exceed a length of 255");
-			}
-            if (opacity < 0 || opacity > 255)
+            if (opacity < 0.0f || opacity > 1.0f)
             {
-                throw py::value_error(fmt::format("opacity parameter must be between 0 and 255, instead got {}", opacity));
+                throw py::value_error(fmt::format("opacity parameter must be between 0 and 1, instead got {}", opacity));
             }
 
             // Decode the layer mask.
@@ -203,7 +198,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
 			}
 			params.name = layer_name;
 			params.blendmode = blend_mode;
-			params.opacity = opacity;
+			params.opacity= static_cast<uint8_t>(opacity * 255);
 			params.compression = compression;
 			params.colormode = color_mode;
 			params.visible = is_visible;
@@ -222,7 +217,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
     py::arg("warp") = py::none(),
     py::arg("layer_mask") = py::none(),
     py::arg("blend_mode") = Enum::BlendMode::Normal,
-    py::arg("opacity") = 255,
+    py::arg("opacity") = 1.0f,
     py::arg("compression") = Enum::Compression::ZipPrediction,
     py::arg("color_mode") = Enum::ColorMode::RGB,
     py::arg("is_visible") = true,

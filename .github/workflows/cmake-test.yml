@@ -83,7 +83,7 @@ jobs:
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(nproc || echo $NUMBER_OF_PROCESSORS)
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
 
     # On windows we need to copy the test files differently as it generates sub-folders
     # for the copied test files

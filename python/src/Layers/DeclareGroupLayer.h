@@ -39,8 +39,8 @@ void declare_group_layer(py::module& m, const std::string& extension)
             The name of the layer, cannot be longer than 255
         blend_mode : enum.BlendMode
             The blend mode of the layer, 'Passthrough' is reserved for group layers
-        opacity : int
-            The layers opacity from 0-255 with 255 being 100%
+        opacity : float
+            The layers opacity from 0.0 - 1.0
         width : int
             The width of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
             this does not have to match the files width
@@ -82,7 +82,7 @@ void declare_group_layer(py::module& m, const std::string& extension)
         py::arg("blend_mode") = Enum::BlendMode::Passthrough,
         py::arg("pos_x") = 0,
         py::arg("pos_y") = 0,
-        py::arg("opacity") = 255,
+        py::arg("opacity") = 1.0f,
         py::arg("compression") = Enum::Compression::ZipPrediction,
         py::arg("color_mode") = Enum::ColorMode::RGB,
         py::arg("is_collapsed") = false,

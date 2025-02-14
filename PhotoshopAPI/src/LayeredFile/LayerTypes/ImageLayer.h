@@ -333,6 +333,8 @@ public:
 		// Initialize the channel information as well as the channel image data, the size held in the channelInfo might change depending on
 		// the compression mode chosen on export and must therefore be updated later. This step is done last as generateChannelImageData() invalidates
 		// all image data which we might need for operations above
+		auto num_channels = this->num_channels(true);
+
 		auto channel_data = this->generate_channel_image_data();
 		auto& channel_info = std::get<0>(channel_data);
 		ChannelImageData channel_img_data = std::move(std::get<1>(channel_data));
@@ -343,7 +345,7 @@ public:
 			extents.left,
 			extents.bottom,
 			extents.right,
-			static_cast<uint16_t>(this->num_channels(true)),
+			static_cast<uint16_t>(num_channels),
 			channel_info,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,

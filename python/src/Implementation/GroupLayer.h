@@ -26,7 +26,7 @@ std::shared_ptr<GroupLayer<T>> createGroupLayer(
 	const Enum::BlendMode blend_mode,
 	int pos_x, // This is only relevant if a layer mask is set
 	int pos_y, // This is only relevant if a layer mask is set
-	int opacity,
+	float opacity,
 	const Enum::Compression compression,
 	const Enum::ColorMode color_mode,
 	bool is_collapsed,
@@ -57,9 +57,9 @@ std::shared_ptr<GroupLayer<T>> createGroupLayer(
 	{
 		throw py::value_error("height cannot be a negative value");
 	}
-	if (opacity < 0 || opacity > 255)
+	if (opacity < 0.0f || opacity > 1.0f)
 	{
-		throw py::value_error("opacity must be between 0-255 where 255 is 100%, got " + std::to_string(opacity));
+		throw py::value_error("opacity must be between 0-1, got " + std::to_string(opacity));
 	}
 
 	params.name = layer_name;
@@ -68,7 +68,7 @@ std::shared_ptr<GroupLayer<T>> createGroupLayer(
 	params.center_y = pos_y;
 	params.width = width;
 	params.height = height;
-	params.opacity = opacity;
+	params.opacity = static_cast<uint8_t>(opacity * 255);
 	params.compression = compression;
 	params.colormode = color_mode;
 	params.visible = is_visible;
