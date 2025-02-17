@@ -416,13 +416,13 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
                     PSAPI_LOG_ERROR("CompressRLE", "Scanline sizes cannot exceed the numeric limits of 16-bit values when writing a PSD file");
                 }
                 uint16_t scanlineSizeu16 = static_cast<uint16_t>(scanlineSize);
-                scanlineSizeu16 = endianEncodeBE(scanlineSizeu16);
+                scanlineSizeu16 = endian_encode_be(scanlineSizeu16);
                 // Set the data at the correct index
                 std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSizeu16, sizeof(uint16_t));
         }
         else
         {
-            scanlineSize = endianEncodeBE(scanlineSize);
+            scanlineSize = endian_encode_be(scanlineSize);
             std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSize, sizeof(uint32_t));
         }
 

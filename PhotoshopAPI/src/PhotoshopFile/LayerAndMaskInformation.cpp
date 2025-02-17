@@ -930,7 +930,7 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			uint16_t compressionNum = 0;
 			auto compressionNumSpan = Util::toWritableBytes(compressionNum);
 			stream.read(compressionNumSpan, channelOffset);
-			compressionNum = endianDecodeBE<uint16_t>(compressionNumSpan.data());
+			compressionNum = endian_decode_be<uint16_t>(reinterpret_cast<std::byte*>(compressionNumSpan.data()));
 			channelCompression = Enum::compressionMap.at(compressionNum);
 		}
 		m_ChannelCompression[index] = channelCompression;

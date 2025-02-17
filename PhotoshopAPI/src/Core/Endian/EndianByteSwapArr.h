@@ -93,10 +93,10 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 			uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 			for (uint32_t i = 0; i < remainderTotal; i += sizeof(T))
 			{
-				const uint8_t* memAddress = data.data() + remainderIndex + i;
+				const std::byte* memAddress = reinterpret_cast<const std::byte*>(data.data() + remainderIndex + i);
 				// remainderIndex as well as i are both for uint8_t and we need half of that
 				const uint64_t decodedDataIndex = (remainderIndex + i) / sizeof(T);
-				decodedData[decodedDataIndex] = endianDecodeBE<T>(memAddress);
+				decodedData[decodedDataIndex] = endian_decode_be<T>(memAddress);
 			}
 		}
 
@@ -114,7 +114,7 @@ constexpr bool is_little_endian = (std::endian::native == std::endian::little);
 		std::vector<T> decodedData(data.size() / sizeof(T));
 		for (uint64_t i = 0; i < decodedData.size(); ++i)
 		{
-			decodedData[i] = endianDecodeBE<T>(&data[i * sizeof(T)]);
+			decodedData[i] = endian_decode_be<T>(reinterpret_cast<std::byte*>(&data[i * sizeof(T)]));
 		}
 		return decodedData;
 	}
@@ -187,7 +187,7 @@ inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data
 		uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 		for (uint64_t i = 0; i < remainderTotal; ++i)
 		{
-			data[remainderIndex + i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[remainderIndex + i]));
+			data[remainderIndex + i] = endian_decode_be<T>(reinterpret_cast<std::byte*>(&data[remainderIndex + i]));
 		}
 	}
 #else
@@ -197,7 +197,7 @@ inline std::vector<uint8_t> endianDecodeBEBinaryArray(std::vector<uint8_t>& data
 		PSAPI_PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
 		{
-			data[i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i]));
+			data[i] = endian_decode_be<T>(reinterpret_cast<std::byte*>(&data[i]));
 		}
 	}
 #endif
@@ -268,7 +268,7 @@ void endianDecodeBEArray(std::span<T> data)
 	uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 	for (uint64_t i = 0; i < remainderTotal; ++i)
 	{
-		data[remainderIndex + i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[remainderIndex + i]));
+		data[remainderIndex + i] = endian_decode_be<T>(reinterpret_cast<std::byte*>(&data[remainderIndex + i]));
 	}
 }
 #else
@@ -278,7 +278,7 @@ void endianDecodeBEArray(std::span<T> data)
 	PSAPI_PROFILE_FUNCTION();
 	for (uint64_t i = 0; i < data.size(); ++i)
 	{
-		data[i] = endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&data[i]));
+		data[i] = endian_decode_be<T>(reinterpret_cast<std::byte*>(&data[i]));
 	}
 }
 #endif
@@ -350,7 +350,7 @@ inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::span<uint8_t> dat
 		uint64_t remainderIndex = static_cast<uint64_t>(numBlocks) * cacheSize;
 		for (uint64_t i = 0; i < remainderTotal; ++i)
 		{
-			data[remainderIndex + i] = endianEncodeBE<T>(data[remainderIndex + i]);
+			data[remainderIndex + i] = endian_encode_be<T>(data[remainderIndex + i]);
 		}
 	}
 #else
@@ -360,7 +360,7 @@ inline void endianDecodeBEArray<uint8_t>([[maybe_unused]] std::span<uint8_t> dat
 		PSAPI_PROFILE_FUNCTION();
 		for (uint64_t i = 0; i < data.size(); ++i)
 		{
-			data[i] = endianEncodeBE<T>(data[i]);
+			data[i] = endian_encode_be<T>(data[i]);
 		}
 	}
 #endif
