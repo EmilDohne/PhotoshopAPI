@@ -18,7 +18,7 @@ class TestMaskMixin(unittest.TestCase):
 
         self.assertEqual(layer.mask_width(), npy_load[0].shape[1])
         self.assertEqual(layer.mask_height(), npy_load[0].shape[0])
-        self.assertEqual(layer.mask_position, psapi.geometry.Point2D(0, 0))
+        self.assertEqual(layer.mask_position, psapi.geometry.Point2D(layer.mask_width() / 2, layer.mask_height() / 2))
 
     def test_has_mask(self):
         npy_load = np.load(self.bin_data_path)
@@ -67,10 +67,10 @@ class TestMaskMixin(unittest.TestCase):
         layer.mask_relative_to_layer = 0
         self.assertEqual(layer.mask_relative_to_layer, 0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             layer.mask_default_color = 256
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             layer.mask_default_color = -1
 
     def test_mask_density(self):
@@ -83,10 +83,10 @@ class TestMaskMixin(unittest.TestCase):
         layer.mask_density = 0
         self.assertEqual(layer.mask_density, 0)
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             layer.mask_density = 256
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             layer.mask_density = -1
 
     def test_mask_feather(self):

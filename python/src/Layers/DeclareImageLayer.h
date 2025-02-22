@@ -160,12 +160,12 @@ void declare_image_layer(py::module& m, const std::string& extension) {
         :param pos_x: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_x: int
+        :type pos_x: float
 
         :param pos_y: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_y: int
+        :type pos_y: float
 
         :param opacity: The opacity of the layer from 0-1. Defaults to 1.0
         :type opacity: float
@@ -251,12 +251,12 @@ void declare_image_layer(py::module& m, const std::string& extension) {
         :param pos_x: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_x: int
+        :type pos_x: float
 
         :param pos_y: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_y: int
+        :type pos_y: float
 
         :param opacity: The opacity of the layer from 0-1. Defaults to 1.0
         :type opacity: float
@@ -342,12 +342,12 @@ void declare_image_layer(py::module& m, const std::string& extension) {
         :param pos_x: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_x: int
+        :type pos_x: float
 
         :param pos_y: 
             Optional, the relative offset of the layer to the center of the document, 0 indicates the layer is centered.
             For group layers this is only relevant for the layer mask and can be left out otherwise
-        :type pos_y: int
+        :type pos_y: float
 
         :param opacity: The opacity of the layer from 0-1. Defaults to 1.0
         :type opacity: float

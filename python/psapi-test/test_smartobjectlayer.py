@@ -100,7 +100,7 @@ class TestSmartObjectLayer(unittest.TestCase):
         """
         file, layer = self._construct_layer_and_file("ImageStackerImage_lowres.png", psapi.enum.LinkedLayerType.data)
         
-        original_data = layer.original_image_data()
+        original_data = layer.get_original_image_data()
         self.assertIn(0, original_data)
         self.assertIn(1, original_data)
         self.assertIn(2, original_data)

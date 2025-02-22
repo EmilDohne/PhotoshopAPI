@@ -302,7 +302,7 @@ struct MaskMixin
 		if (this->has_mask())
 		{
 			m_MaskData.value()->setCenterX(static_cast<float>(position.x));
-			m_MaskData.value()->setCenterX(static_cast<float>(position.y));
+			m_MaskData.value()->setCenterY(static_cast<float>(position.y));
 		}
 	}
 

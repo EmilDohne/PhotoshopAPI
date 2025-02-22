@@ -36,8 +36,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
 	int width,
 	int height,
 	const Enum::BlendMode blend_mode,
-	int pos_x,
-	int pos_y,
+	float pos_x,
+	float pos_y,
 	float opacity,
 	const Enum::Compression compression,
 	const Enum::ColorMode color_mode,
@@ -48,10 +48,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
 	typename Layer<T>::Params params;
 	// Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
 	// so we must ensure the range ourselves
-	if (layer_name.size() > 255)
-	{
-		throw py::value_error("layer_name parameter cannot exceed a length of 255");
-	}
 	if (layer_mask.has_value())
 	{
 		if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
@@ -79,8 +75,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromNpArray(
 
 	params.name = layer_name;
 	params.blendmode = blend_mode;
-	params.center_x = pos_x;
-	params.center_y = pos_y;
+	params.center_x = static_cast<int32_t>(pos_x);
+	params.center_y = static_cast<int32_t>(pos_y);
 	params.width = width;
 	params.height = height;
 	params.opacity = static_cast<uint8_t>(opacity * 255);
@@ -104,8 +100,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
 	int width,
 	int height,
 	const Enum::BlendMode blend_mode,
-	int pos_x,
-	int pos_y,
+	float pos_x,
+	float pos_y,
 	float opacity,
 	const Enum::Compression compression,
 	const Enum::ColorMode color_mode,
@@ -116,10 +112,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
 	typename Layer<T>::Params params;
 	// Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
 	// so we must ensure the range ourselves
-	if (layer_name.size() > 255)
-	{
-		throw py::value_error("layer_name parameter cannot exceed a length of 255");
-	}
 	if (layer_mask.has_value())
 	{
 		if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
@@ -150,8 +142,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIDMapping(
 
 	params.name = layer_name;
 	params.blendmode = blend_mode;
-	params.center_x = pos_x;
-	params.center_y = pos_y;
+	params.center_x = static_cast<int32_t>(pos_x);
+	params.center_y = static_cast<int32_t>(pos_y);
 	params.width = width;
 	params.height = height;
 	params.opacity = static_cast<uint8_t>(opacity * 255);
@@ -175,8 +167,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 	int width,
 	int height,
 	const Enum::BlendMode blend_mode,
-	int pos_x,
-	int pos_y,
+	float pos_x,
+	float pos_y,
 	float opacity,
 	const Enum::Compression compression,
 	const Enum::ColorMode color_mode,
@@ -187,10 +179,6 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 	typename Layer<T>::Params params;
 	// Do some preliminary checks since python has no concept of e.g. unsigned integers (without ctypes) 
 	// so we must ensure the range ourselves
-	if (layer_name.size() > 255)
-	{
-		throw py::value_error("layer_name parameter cannot exceed a length of 255");
-	}
 	if (layer_mask.has_value())
 	{
 		if (static_cast<uint64_t>(width) * height != layer_mask.value().size())
@@ -220,8 +208,8 @@ std::shared_ptr<ImageLayer<T>> createImageLayerFromIntMapping(
 
 	params.name = layer_name;
 	params.blendmode = blend_mode;
-	params.center_x = pos_x;
-	params.center_y = pos_y;
+	params.center_x = static_cast<int32_t>(pos_x);
+	params.center_y = static_cast<int32_t>(pos_y);
 	params.width = width;
 	params.height = height;
 	params.opacity = static_cast<uint8_t>(opacity * 255);
