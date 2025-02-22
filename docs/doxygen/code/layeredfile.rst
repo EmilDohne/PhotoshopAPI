@@ -76,12 +76,7 @@ Below you can find a list of layers that one is able to add to the LayeredFile i
    layers/group.rst
    layers/image.rst
    layers/sectiondivider.rst
-
-
-   layers/adjustment.rst
-   layers/artboard.rst
    layers/smartobject.rst
-   layers/textlayer.rst
 
 
 

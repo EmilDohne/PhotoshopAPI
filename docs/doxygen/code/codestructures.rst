@@ -1,5 +1,5 @@
-Code Reference
-===============
+Code Reference (C++)
+===========================
 
 Below you can find a view of the main structs you will be interacting with when using the PhotoshopAPI.
 

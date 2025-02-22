@@ -29,7 +29,7 @@ void bind_mask_mixin(PyClass& bound_class)
 {
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
-    bound_class.def("has_mask", &Class::has_mask, R"pbdoc(
+    bound_class.def("has_mask", [](Class& self) { return self.has_mask(); }, R"pbdoc(
 
         Check whether the layer has an associated mask component (pixel mask)
 
@@ -64,13 +64,6 @@ void bind_mask_mixin(PyClass& bound_class)
 
 	)pbdoc");
 
-    // ---------------------------------------------------------------------------------------------------------------------
-    // ---------------------------------------------------------------------------------------------------------------------
-    bound_class.def("has_mask", &Class::has_mask, R"pbdoc(
-
-        Whether a mask is present on the layer.
-
-	)pbdoc");
 
     // ---------------------------------------------------------------------------------------------------------------------
     // ---------------------------------------------------------------------------------------------------------------------
@@ -92,7 +85,8 @@ void bind_mask_mixin(PyClass& bound_class)
     // ---------------------------------------------------------------------------------------------------------------------
     bound_class.def_property("mask_default_color", [](Class& self) { return self.mask_default_color(); }, [](Class& self, uint8_t value) { self.mask_default_color(value); }, R"pbdoc(
 
-        The masks' default color outside of the masks bounding box. Ignored if no mask is present
+        The masks' default color outside of the masks bounding box. Ignored if no mask is present.
+        From 0-255 regardless of bit depth
 
 	)pbdoc");
 

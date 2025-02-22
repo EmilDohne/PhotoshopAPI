@@ -39,19 +39,19 @@ Features
 Supported:
 	- Read and write of \*.psd and \*.psb files
 	- Creating and modifying simple and complex nested layer structures
+	- Smart Objects (replacing, warping, extracting)
 	- Pixel Masks
 	- Modifying layer attributes (name, blend mode etc.)
 	- Setting the Display ICC Profile
 	- 8-, 16- and 32-bit files
-	- RGB Color Mode
+	- RGB, CMYK and Grayscale color modes
 	- All compression modes known to Photoshop
 
 Planned:
 	- Support for Adjustment Layers
 	- Support for Vector Masks
 	- Support for Text Layers
-	- Support for Smart Object Layers
-	- CMYK, Indexed, Duotone and Greyscale Color Modes
+	- Indexed, Duotone Color Modes
 
 Not Supported:
 	- Files written by the PhotoshopAPI do not contain a valid merged image in order to save size meaning they will not behave properly when opened in
@@ -169,6 +169,7 @@ Contents
    code/codestructures.rst
    python/bindings.rst
    concepts/index.rst
+   examples/index.rst
    benchmarks.rst
    building.rst
   

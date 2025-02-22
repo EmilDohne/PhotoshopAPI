@@ -319,8 +319,6 @@ struct Layer : public MaskMixin<T>
 	/// this function is provided. It generates a tuple containing LayerRecord and ChannelImageData
 	/// based on the specified ColorMode, and using the provided FileHeader.
 	///
-	/// \param colorMode The desired ColorMode for the PhotoshopFile.
-	/// \param header The FileHeader providing overall file information.
 	/// \return A tuple containing LayerRecord and ChannelImageData representing the layer in the PhotoshopFile.
 	virtual std::tuple<LayerRecord, ChannelImageData> to_photoshop()
 	{

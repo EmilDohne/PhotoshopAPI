@@ -43,7 +43,7 @@ int main()
 	auto mask_img_layer_ptr = find_layer_as<bpp8_t, ImageLayer>("Group/EmptyLayerWithMask", layered_file);
 
 	// If this doesnt have a mask channel we will simply get an empty channel. In this case though, even though
-	// we have a mask it will be empty as well as Photoshop fills in the gaps in the layer with the defaultColor
+	// we have a mask it will be empty as well as Photoshop fills in the gaps in the layer with the mask_default_color
 	// parameter.
 	std::vector<bpp8_t> channel_mask = mask_img_layer_ptr->get_mask();
 

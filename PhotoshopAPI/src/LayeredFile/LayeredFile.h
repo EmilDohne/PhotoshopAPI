@@ -164,7 +164,6 @@ struct LayeredFile
 
 	LayeredFile() = default;
 
-	/// \ingroup Constructors
 	/// \brief Constructs a LayeredFile instance from a Photoshop file.
 	///
 	/// Takes ownership of the provided Photoshop file, transferring from a flat layer hierarchy
@@ -198,7 +197,6 @@ struct LayeredFile
 		}
 	}
 
-	/// \ingroup Constructors
 	/// \brief Constructs an empty LayeredFile object.
 	///
 	/// Creates a LayeredFile with the specified color mode, width, and height.
@@ -290,7 +288,7 @@ struct LayeredFile
 
 	/// \brief Inserts a layer into the root of the layered file.
 	///
-	/// If you wish to add a layer to a group, use GroupLayer::addLayer() on a group node retrieved by \ref findLayer().
+	/// If you wish to add a layer to a group, use GroupLayer::addLayer() on a group node retrieved by \ref find_layer().
 	///
 	/// \param layer The layer to be added.
 	void add_layer(std::shared_ptr<Layer<T>> layer)
@@ -444,7 +442,7 @@ struct LayeredFile
 	}
 
 	/// Generate a flat layer stack from either the current root or (if supplied) from the given layer.
-	/// It should be preferred to use \ref flatLayers() instead of this function.
+	/// It should be preferred to use \ref flat_layers() (no arguments) instead of this function.
 	///
 	/// \param layer Optional layer to start the generation from (default is root). If you provide e.g. a group this will only build the below layer tree
 	/// \param order The order in which layers should be stacked.

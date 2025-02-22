@@ -319,7 +319,7 @@ namespace Geometry
         /// Compute a 3x3 homography transformation matrix based on the given source and destination quad
         ///
         /// \param source_points      The points from which we want to compute the homography
-        /// \param destination points The points to which we want to transform.
+        /// \param destination_points The points to which we want to transform.
         template<typename T>
         Eigen::Matrix3d create_homography_matrix(const std::array<Point2D<T>, 4>& source_points, const std::array<Point2D<T>, 4>& destination_points)
         {

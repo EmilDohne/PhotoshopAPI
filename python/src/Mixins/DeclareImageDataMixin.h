@@ -96,7 +96,7 @@ void bind_image_data_mixin(PyClass& bound_class)
 			return to_py_array(std::move(data), self.width(), self.height());
 		}, py::arg("key"), R"pbdoc(
 
-        Get the specified channel from the image data, this may also be the mask channel at index -2.
+		Get the specified channel from the image data, this may also be the mask channel at index -2.
 		If -2 is passed this function is identical to get_mask(). The mask channel will have the shape
 		{ mask_height(), mask_width() } while any other channel will have the shape { height(), width() }.
 
@@ -126,11 +126,11 @@ void bind_image_data_mixin(PyClass& bound_class)
         Get the specified channel from the image data, this may also be the mask channel at index -2.
 		If -2 is passed this function is identical to get_mask(). The mask channel will have the shape
 		{ mask_height(), mask_width() } while any other channel will have the shape { height(), width() }.
-
+		
 		Generally accessing each channel individually is slower than accessing all of them with get_image_data()
 		as that function is better parallelized. So if you wish to extract more than a couple channels it is recommended
 		to get all of them.
-
+		
 		:param int: The key to access.
 
 		:raises ValueError: if the specified index does not exist on the layer 

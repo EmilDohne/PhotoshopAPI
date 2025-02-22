@@ -66,7 +66,7 @@ struct ResolutionInfoBlock : public ResourceBlock
 /// Edit -> Assign Profile which just visually adjusts the colours but does not convert the colours
 struct ICCProfileBlock : public ResourceBlock
 {
-	/// Stores the raw bytes of an ICC profile such as the ones found on C:\Windows\System32\spool\drivers\color for Windows.
+	/// Stores the raw bytes of an ICC profile such as the ones found on C:/Windows/System32/spool/drivers/color for Windows.
 	/// This does not include the padding bytes which are explicitly written on write
 	std::vector<uint8_t> m_RawICCProfile;
 

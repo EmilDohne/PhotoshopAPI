@@ -156,8 +156,6 @@ protected:
 	/// 
 	/// Each Layer type that implement ImageDataMixin must provide an implementation for evaluate_image_data().
 	/// 
-	/// \param document The document the layer is a part of, may be unused during evaluation.
-	/// 
 	/// \returns The evaluated image data for each channel 
 	virtual data_type evaluate_image_data() = 0;
 
@@ -167,7 +165,7 @@ protected:
 	/// so a layer must take care to access these channels together. Similarly, a smart object must apply the warp first
 	/// before getting the image data. 
 	/// 
-	/// \param document The document the layer is a part of, may be unused during evaluation.
+	/// \param _id The channel to evaluate
 	/// 
 	/// \returns The evaluated image data for each channel 
 	virtual std::vector<T> evaluate_channel(std::variant<int, Enum::ChannelID, Enum::ChannelIDInfo> _id) = 0;

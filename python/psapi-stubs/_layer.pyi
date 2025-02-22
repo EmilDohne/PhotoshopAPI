@@ -2,6 +2,7 @@ import numpy
 
 import psapi.enum
 import psapi.util
+import psapi.geometry
 
 
 class Layer_8bit:
@@ -12,6 +13,9 @@ class Layer_8bit:
 
     @name.setter
     def name(self: Layer_8bit, name: str) -> None:
+        ...
+
+    def has_mask(self: Layer_8bit, name: str) -> bool:
         ...
 
     @property
@@ -86,10 +90,61 @@ class Layer_8bit:
     def is_locked(self: Layer_8bit, value: bool) -> None:
         ...
 
-    def has_mask(self: Layer_8bit) -> bool:
+    @property
+    def mask_disabled(self: Layer_8bit) -> bool:
         ...
 
-    def get_mask_data(self: Layer_8bit, do_copy: bool = ...) -> numpy.ndarray:
+    @mask_disabled.setter
+    def mask_disabled(self: Layer_8bit, value: bool) -> None:
+        ...
+
+    @property
+    def mask_relative_to_layer(self: Layer_8bit) -> bool:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_relative_to_layer(self: Layer_8bit, value: bool) -> None:
+        ...
+
+    @property
+    def mask_default_color(self: Layer_8bit) -> int:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_default_color(self: Layer_8bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_density(self: Layer_8bit) -> int:
+        ...
+
+    @mask_density.setter
+    def mask_density(self: Layer_8bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_feather(self: Layer_8bit) -> float:
+        ...
+
+    @mask_feather.setter
+    def mask_feather(self: Layer_8bit, value: float) -> None:
+        ...
+
+    @property
+    def mask_position(self: Layer_8bit) -> psapi.geometry.Point2D:
+        ...
+
+    @mask_position.setter
+    def mask_position(self: Layer_8bit, value: psapi.geometry.Point2D) -> None:
+        ...
+
+    def mask_width(self: Layer_8bit) -> int:
+        ...
+
+    def mask_height(self: Layer_8bit) -> int:
+        ...
+
+    def set_mask_compression(self: Layer_8bit, compcode: psapi.enum.Compression) -> None:
         ...
 
 
@@ -101,6 +156,9 @@ class Layer_16bit:
 
     @name.setter
     def name(self: Layer_16bit, name: str) -> None:
+        ...
+
+    def has_mask(self: Layer_16bit, name: str) -> bool:
         ...
 
     @property
@@ -175,10 +233,61 @@ class Layer_16bit:
     def is_locked(self: Layer_16bit, value: bool) -> None:
         ...
 
-    def has_mask(self: Layer_16bit) -> bool:
+    @property
+    def mask_disabled(self: Layer_16bit) -> bool:
         ...
 
-    def get_mask_data(self: Layer_16bit, do_copy: bool = ...) -> numpy.ndarray:
+    @mask_disabled.setter
+    def mask_disabled(self: Layer_16bit, value: bool) -> None:
+        ...
+
+    @property
+    def mask_relative_to_layer(self: Layer_16bit) -> bool:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_relative_to_layer(self: Layer_16bit, value: bool) -> None:
+        ...
+
+    @property
+    def mask_default_color(self: Layer_16bit) -> int:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_default_color(self: Layer_16bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_density(self: Layer_16bit) -> int:
+        ...
+
+    @mask_density.setter
+    def mask_density(self: Layer_16bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_feather(self: Layer_16bit) -> float:
+        ...
+
+    @mask_feather.setter
+    def mask_feather(self: Layer_16bit, value: float) -> None:
+        ...
+
+    @property
+    def mask_position(self: Layer_16bit) -> psapi.geometry.Point2D:
+        ...
+
+    @mask_position.setter
+    def mask_position(self: Layer_16bit, value: psapi.geometry.Point2D) -> None:
+        ...
+
+    def mask_width(self: Layer_16bit) -> int:
+        ...
+
+    def mask_height(self: Layer_16bit) -> int:
+        ...
+
+    def set_mask_compression(self: Layer_16bit, compcode: psapi.enum.Compression) -> None:
         ...
 
 
@@ -191,6 +300,9 @@ class Layer_32bit:
 
     @name.setter
     def name(self: Layer_32bit, name: str) -> None:
+        ...
+
+    def has_mask(self: Layer_32bit, name: str) -> bool:
         ...
 
     @property
@@ -248,7 +360,7 @@ class Layer_32bit:
     @center_y.setter
     def center_y(self: Layer_32bit, value: float) -> None:
         ...
-    
+
     @property
     def is_visible(self: Layer_32bit) -> bool:
         ...
@@ -265,9 +377,59 @@ class Layer_32bit:
     def is_locked(self: Layer_32bit, value: bool) -> None:
         ...
 
-    def has_mask(self: Layer_32bit) -> bool:
+    @property
+    def mask_disabled(self: Layer_32bit) -> bool:
         ...
 
-    def get_mask_data(self: Layer_32bit, do_copy: bool = ...) -> numpy.ndarray:
+    @mask_disabled.setter
+    def mask_disabled(self: Layer_32bit, value: bool) -> None:
         ...
-        
+
+    @property
+    def mask_relative_to_layer(self: Layer_32bit) -> bool:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_relative_to_layer(self: Layer_32bit, value: bool) -> None:
+        ...
+
+    @property
+    def mask_default_color(self: Layer_32bit) -> int:
+        ...
+
+    @mask_relative_to_layer.setter
+    def mask_default_color(self: Layer_32bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_density(self: Layer_32bit) -> int:
+        ...
+
+    @mask_density.setter
+    def mask_density(self: Layer_32bit, value: int) -> None:
+        ...
+
+    @property
+    def mask_feather(self: Layer_32bit) -> float:
+        ...
+
+    @mask_feather.setter
+    def mask_feather(self: Layer_32bit, value: float) -> None:
+        ...
+
+    @property
+    def mask_position(self: Layer_32bit) -> psapi.geometry.Point2D:
+        ...
+
+    @mask_position.setter
+    def mask_position(self: Layer_32bit, value: psapi.geometry.Point2D) -> None:
+        ...
+
+    def mask_width(self: Layer_32bit) -> int:
+        ...
+
+    def mask_height(self: Layer_32bit) -> int:
+        ...
+
+    def set_mask_compression(self: Layer_32bit, compcode: psapi.enum.Compression) -> None:
+        ...

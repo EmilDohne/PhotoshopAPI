@@ -40,7 +40,7 @@ struct GroupLayer final: public Layer<T>
 	/// @} 
 
 	/// \brief Constructs a GroupLayer with the given layer parameters and collapse state.
-	/// \param layerParameters The parameters for the group layer.
+	/// \param parameters The parameters for the group layer.
 	/// \param isCollapsed Specifies whether the group layer is initially collapsed.
 	GroupLayer(Layer<T>::Params& parameters, bool isCollapsed = false)
 	{
@@ -139,8 +139,6 @@ struct GroupLayer final: public Layer<T>
 	/// This is part of the internal API and as a user you will likely never have to use 
 	/// this function
 	/// 
-	/// \param colorMode The color mode for the conversion.
-	/// \param header The file header for the conversion.
 	/// \return A tuple containing layerRecords and imageData.
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{

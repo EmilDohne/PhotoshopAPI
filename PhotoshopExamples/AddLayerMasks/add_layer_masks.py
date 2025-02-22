@@ -18,8 +18,7 @@ def main() -> None:
     img_data[0] = 255
     mask = np.full((height, width), 128, np.uint8)
 
-    # When creating an image layer the width and height parameter are required if its not a zero sized layer
-    img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask, width=width, height=height)
+    img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask)
 
     # Add the layer and write to disk
     document.add_layer(img_layer)

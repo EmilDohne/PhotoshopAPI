@@ -157,7 +157,18 @@ namespace Geometry
             return { u, v };
         }
 
-        // Evaluate any patch at (u, v) based on subdivisions across x and y
+        /// Evaluate any patch at (u, v) based on the subdivisions across x and y.
+        /// This will return the screen-space coordinate from the given mesh. 
+        /// 
+        /// If the bezier surface is made up of non-uniform slices (i.e. the bezier isn't
+        /// split at .33, .66 etc for a 4x4 bezier) one should use `bias_uv()` to account 
+        /// for this. In fact because it evaluates to a no-op if that isn't the case the UV
+        /// should always first be biased before calling this function.
+        /// 
+        /// \param u The u value to sample the bezier at. This should be from 0-1
+        /// \param v The v value to sample the bezier at. This should be from 0-1
+        /// 
+        /// \returns The screen-space coordinate for the mesh at the given uv coordinate.
         Point2D<double> evaluate(double u, double v) const
         {
             double patch_size_u = 1.0 / m_NumPatchesX;

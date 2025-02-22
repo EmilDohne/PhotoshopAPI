@@ -54,51 +54,50 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
         the layer itself. We provide multiple methods to get both the scaled and warped image data as well as the full size image 
         data.
         
-        Image Data:
-        ------------
+        <b>Image Data:</b>
         
-            Due to how SmartObjects work, image data is read-only and all write methods will raise an exception if you try to access them.
-            In order to modify the underlying image data you should use the `replace()` method which will actually replace the underlying 
-            file the smart object is linked to.
+        Due to how SmartObjects work, image data is read-only.
+        In order to modify the underlying image data you should use the `replace()` method which will actually replace the underlying 
+        file the smart object is linked to.
         
-            Getting the image data can be done via the `get_image_data()`, `get_channel()` and `original_image_data()` functions. 
-            These will retrieve the transformed and warped image data. If you modify these you can requery these functions and 
-            get up to date image data.
+        Getting the image data can be done via the `get_image_data()`, `get_channel_by_id()`, `get_channel_by_index()` and 
+        `get_original_image_data()` functions. 
+        These will retrieve the transformed and warped image data. If you modify the transformations or the warp the warp is only
+        redrawn on access to these functions.
         
-        Transformations:
-        -----------------
+        <b>Transformations:</b>
         
-            Unlike normal layers, SmartObjects have slightly different transformation rules. As they link back to a file in memory or on disk
-            the transformations are stored 'live' and can be modified without negatively impacting the quality of the image. We expose a variety
-            of transformation options to allow you to express this freedom. 
+        Unlike normal layers, SmartObjects have slightly different transformation rules. As they link back to a file in memory or on disk
+        the transformations are stored 'live' and can be modified without negatively impacting the quality of the image. We expose a variety
+        of transformation options to allow you to express this freedom. 
         
-            Since we have both the original image data, and the rescaled image data to worry about there is two different widths and heights available:
+        Since we have both the original image data, and the rescaled image data to worry about there is two different widths and heights available:
         
-            - `original_width()` / `original_height()`
-        	    These represent the resolution of the original file image data, irrespective of what transforms are applied to it.
-        	    If you are e.g. loading a 4000x2000 jpeg these will return 4000 and 2000 respectively. These values may not be written to
+        - `original_width()` / `original_height()`
+        	These represent the resolution of the original file image data, irrespective of what transforms are applied to it.
+        	If you are e.g. loading a 4000x2000 jpeg these will return 4000 and 2000 respectively. These values may not be written to
         
-            - `width()` / `height()`
-        	    These represent the final dimensions of the SmartObject with the warp and any transformations applied to it. 
+        - `width()` / `height()`
+        	These represent the final dimensions of the SmartObject with the warp and any transformations applied to it. 
         
-            For actually transforming the layer we expose the following methods:
+        For actually transforming the layer we expose the following methods:
         
-            - `move()`
-            - `rotate()`
-            - `scale()`
-            - `transform()`
+        - `move()`
+        - `rotate()`
+        - `scale()`
+        - `transform()`
         
-            These are all individually documented and abstract away the underlying implementation of these operations. 
-            You likely will not have to dive deeper than these.
+        These are all individually documented and abstract away the underlying implementation of these operations. 
+        You likely will not have to dive deeper than these.
         
-        Warp:
-        -----------
+        <b>Warp:</b>
         
-            Smart objects can also store warps which we implement using the `SmartObjectWarp` structure. These warps are stored as bezier surfaces with transformations applied on top of them.
-            The transformations should be disregarded by the user as we provide easier functions on the SmartObjectLayer directly (see above). The warp itself is stored as a bezier
-            surface. You may transfer these warps from one layer to another, modify them (although this requires knowledge of how bezier surfaces work), or clear them entirely.
+        Smart objects can also store warps which we implement using the `SmartObjectWarp` structure. 
+        These warps are stored as bezier surfaces with transformations applied on top of them.
+        The transformations should be disregarded by the user as we provide easier functions on the SmartObjectLayer directly (see above).
+        You may transfer these warps from one layer to another, modify them (although this requires knowledge of how bezier surfaces work), or clear them entirely.
         
-            For the latter we provide the reset_transform()` and `reset_warp()` functions.
+        For the latter we provide the reset_transform()` and `reset_warp()` functions.
     
         Attributes
         -----------
@@ -147,7 +146,11 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             Optional mask feather. Ignored if no mask is present
         mask_position: psapi.geometry.Point2D
             The masks' canvas coordinates, these represent the center of the mask in terms of the canvas (file). Ignored if no mask is present
-        
+        mask_width: int
+            The masks' width, this does not have to correspond with the layers' width
+        mask_height: int
+            The masks' height, this does not have to correspond with the layers' height        
+
     )pbdoc";
 
     // Constructors
@@ -337,7 +340,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 
-    smart_object_layer.def("original_image_data", [](Class& self)
+    smart_object_layer.def("get_original_image_data", [](Class& self)
         {
             auto data = self.get_original_image_data();
             std::unordered_map<int, py::array_t<T>> out_data;

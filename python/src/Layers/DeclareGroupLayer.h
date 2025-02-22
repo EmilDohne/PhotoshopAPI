@@ -71,6 +71,10 @@ void declare_group_layer(py::module& m, const std::string& extension)
             Optional mask feather. Ignored if no mask is present
         mask_position: psapi.geometry.Point2D
             The masks' canvas coordinates, these represent the center of the mask in terms of the canvas (file). Ignored if no mask is present
+        mask_width: int
+            The masks' width, this does not have to correspond with the layers' width
+        mask_height: int
+            The masks' height, this does not have to correspond with the layers' height
 
 	)pbdoc";
 

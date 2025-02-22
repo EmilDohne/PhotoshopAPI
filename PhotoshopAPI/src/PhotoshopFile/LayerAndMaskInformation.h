@@ -398,6 +398,10 @@ struct LayerInfo : public FileSection
 
 	/// Read and Initialize the struct from disk using the given offset
 	///
+	/// \param document The file handle
+	/// \param header The file header (preparsed)
+	/// \param callback Read callback
+	/// \param offset The offset in the file handle this section starts at
 	/// \param isFromAdditionalLayerInfo If true the section is parsed without a size marker as it is already stored on the tagged block
 	/// \param sectionSize This parameter must be present when isFromAdditionalLayerInfo = true
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const bool isFromAdditionalLayerInfo = false, std::optional<uint64_t> sectionSize = std::nullopt);

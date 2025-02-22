@@ -27,16 +27,16 @@ int main()
 	layer_new->scale(.65f);	// Scale by a factor of .65
 	layer_new->move(Geometry::Point2D<double>(50.0f, 0.0f));	// Move to the right by 50
 
-	//// We can additionally also apply a perspective transformation using a 3x3 projective matrix.
-	//// This could also be used to skew or to directly apply all the above operations. This matrix e.g.
-	//// applies a perspective transform where the vanishing point is at 2048, 0 (keeping in mind that 0 
-	//// in this case is at the top of the canvas). 
-	//// If you wish to know more about how these 3x3 transformation matrices work this is a great video/channel:
-	//// https://www.youtube.com/watch?v=B8kMB6Hv2eI.
+	// We can additionally also apply a perspective transformation using a 3x3 projective matrix.
+	// This could also be used to skew or to directly apply all the above operations. This matrix e.g.
+	// applies a perspective transform where the vanishing point is at 2048, 0 (keeping in mind that 0 
+	// in this case is at the top of the canvas). 
+	// If you wish to know more about how these 3x3 transformation matrices work this is a great video/channel:
+	// https://www.youtube.com/watch?v=B8kMB6Hv2eI.
 	Eigen::Matrix3d transformation;
 	transformation << 1, 0, 0,
-					  0, 1, 0,
-					  1.0f / 2048, 0, 1;
+		0, 1, 0,
+		1.0f / 2048, 0, 1;
 	layer_new->transform(transformation);
 
 	// If you want to be a bit more descriptive of how these matrices are to be built you can create one using a source

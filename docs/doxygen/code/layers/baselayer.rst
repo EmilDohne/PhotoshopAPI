@@ -6,12 +6,6 @@ Base Layer Structure
 	``Layer<T>::Params`` struct which is expected to be passed into layer initialization for its subclassed types
 
 
-Layer Mask Type
-=======================
-
-.. doxygenstruct:: LayerMask
-	:members:
-
 Base Layer Type
 =======================
 
@@ -20,6 +14,7 @@ This class is not supposed to be used directly but instead through any of its su
 doesn't exist in Photoshop itself. There is a further specialization `_ImageDataLayerType<T>` which acts as a generic 
 interface for ImageData types such as `SmartObjectLayer<T>` and `ImageLayer<T>`
 
+.. _layer:
 .. doxygenstruct:: Layer
 	:members: 
 	:undoc-members:

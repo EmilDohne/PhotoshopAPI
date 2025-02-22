@@ -42,9 +42,9 @@ namespace Util
 	inline py::array_t<double> matrix_to_py_array(Eigen::Matrix3d _mat)
 	{
 		std::vector<double> vec{
-			_mat(0, 0), _mat(0, 1), _mat(0, 2),
-			_mat(1, 0), _mat(1, 1), _mat(1, 2),
-			_mat(2, 0), _mat(2, 1), _mat(2, 2),
+			_mat(0, 0), _mat(1, 0), _mat(2, 0),
+			_mat(0, 1), _mat(1, 1), _mat(2, 1),
+			_mat(0, 2), _mat(1, 2), _mat(2, 2),
 		};
 
 		auto _array = to_py_array(std::move(vec), 3, 3);

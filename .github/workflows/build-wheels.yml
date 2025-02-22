@@ -101,6 +101,7 @@ jobs:
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py &&
             python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py &&
             python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py &&
+            python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py &&
             nosetests {project}/python/psapi-test --verbose
 
     - name: Verify clean directory

@@ -31,7 +31,9 @@ def main() -> None:
     mask_data = mask_layer[-2]  # -2 is the index for mask channels
     mask_data = mask_layer.get_channel_by_id(psapi.enum.ChannelID.mask) # If we want to be more explicit
     mask_data = mask_layer.mask 
-    # Dont worry if the mask data shows up as empty since photoshop has optimized this mask channel away due to it being full white
+    # Dont worry if the mask data shows up as empty since photoshop has optimized this mask channel 
+    # away due to it being full white. The `mask_default_color` property will hold the pixel value applied
+    # outside of the masks bounding box
 
     # There is also no reason to actually store the mask layer, we can simply chain indexing calls
     mask_data = layered_file["Group"]["EmptyLayerWithMask"][-2]

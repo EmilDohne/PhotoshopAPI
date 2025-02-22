@@ -342,7 +342,7 @@ private:
 	/// Parse the imageinput from the given filepath into our m_ImageData populating it
 	/// 
 	/// \param input The imageinput to read from, either as a file-backed image or as a memory-backed image.
-	/// \filepath The path to the file we are reading, this is just for logging.
+	/// \param filepath The path to the file we are reading, this is just for logging.
 	void parse_oiio_input(std::unique_ptr<OIIO::ImageInput> input, std::string filepath)
 	{
 		PSAPI_PROFILE_FUNCTION();

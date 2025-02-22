@@ -34,8 +34,6 @@ struct ImageLayer final : public Layer<T>, public WritableImageDataMixin<T>
 
 public:
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	std::vector<int> channel_indices(bool include_mask) const override
 	{
 		std::vector<int> indices{};
@@ -50,8 +48,6 @@ public:
 		return indices;
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	size_t num_channels(bool include_mask) const override
 	{
 		if (Layer<T>::has_mask() && include_mask)
@@ -61,8 +57,6 @@ public:
 		return WritableImageDataMixin<T>::m_ImageData.size();
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_write_compression(Enum::Compression _compcode) override
 	{
 		for (const auto& [_, channel_ptr] : WritableImageDataMixin<T>::m_ImageData)
@@ -76,8 +70,6 @@ public:
 	/// 
 	/// \param data the ImageData to associate with the layer
 	/// \param parameters The parameters dictating layer name, width, height, mask etc.
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	ImageLayer(std::unordered_map<Enum::ChannelID, std::vector<T>> data, Layer<T>::Params& parameters)
 	{
 		data_type remapped{};
@@ -91,10 +83,8 @@ public:
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
 	/// 
-	/// \param imageData the ImageData to associate with the channel
-	/// \param layerParameters The parameters dictating layer name, width, height, mask etc.
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
+	/// \param data the ImageData to associate with the channel
+	/// \param parameters The parameters dictating layer name, width, height, mask etc.
 	ImageLayer(std::unordered_map<int, std::vector<T>> data, Layer<T>::Params& parameters) 
 	{
 		this->construct(std::move(data), parameters);
@@ -104,9 +94,6 @@ public:
 	///
 	/// This is part of the internal API and as a user you will likely never have to use 
 	/// this function
-	//
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	ImageLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header)
 		: Layer<T>(layer_record, channel_image_data, header)
 	{
@@ -128,9 +115,6 @@ public:
 		}
 	}
 
-
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const data_type& data) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -143,8 +127,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const data_type& data, int32_t width, int32_t height) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -157,8 +139,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -171,8 +151,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const std::unordered_map<Enum::ChannelID, std::vector<T>>& data, int32_t width, int32_t height) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -185,8 +163,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -199,8 +175,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_image_data(const std::unordered_map<Enum::ChannelIDInfo, std::vector<T>>& data, int32_t width, int32_t height) override
 	{
 		WritableImageDataMixin<T>::impl_set_image_data(
@@ -213,8 +187,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(int _id, const std::vector<T>& channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -228,8 +200,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(Enum::ChannelID _id, const std::vector<T>& channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -243,8 +213,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(Enum::ChannelIDInfo _id, const std::vector<T>& channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -258,8 +226,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(int _id, const std::span<const T> channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -273,8 +239,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(Enum::ChannelID _id, const std::span<const T> channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -288,8 +252,6 @@ public:
 		);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void set_channel(Enum::ChannelIDInfo _id, const std::span<const T> channel) override
 	{
 		WritableImageDataMixin<T>::impl_set_channel(
@@ -309,8 +271,6 @@ public:
 	/// this function
 	/// 
 	/// \return A tuple containing LayerRecord and ChannelImageData.
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
 		PascalString name = Layer<T>::generate_name();
@@ -362,8 +322,6 @@ protected:
 
 	/// Extracts the m_ImageData as well as the layer mask into two vectors holding channel information as well as the image data 
 	/// itself. This also takes care of generating our layer mask channel if it is present. Invalidates any data held by the ImageLayer
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{
 		std::vector<LayerRecords::ChannelInformation> channel_info;
@@ -390,8 +348,6 @@ protected:
 		return std::make_tuple(channel_info, std::move(channel_image_data));
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	data_type evaluate_image_data() override
 	{
 		size_t num_channels_no_mask = this->num_channels(false);
@@ -428,8 +384,6 @@ protected:
 		return std::move(data);
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	std::vector<T> evaluate_channel(std::variant<int, Enum::ChannelID, Enum::ChannelIDInfo> _id) override
 	{
 		auto idinfo = WritableImageDataMixin<T>::idinfo_from_variant(_id, Layer<T>::m_ColorMode);
@@ -446,8 +400,6 @@ protected:
 		return WritableImageDataMixin<T>::m_ImageData.at(idinfo)->template getData<T>();
 	}
 
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height, float center_x, float center_y) override
 	{
 		Layer<T>::set_mask(data, width, height);
@@ -457,8 +409,6 @@ protected:
 private:
 
 	/// Construct and initialize the layer from memory.
-	// ---------------------------------------------------------------------------------------------------------------------
-	// ---------------------------------------------------------------------------------------------------------------------
 	void construct(data_type data, Layer<T>::Params& parameters)
 	{
 		PSAPI_PROFILE_FUNCTION();

@@ -155,7 +155,7 @@ namespace Composite
 			///		The canvas onto which to draw the layer with the given kernel.
 			/// \param layer
 			///		The layer to compose on top of the canvas
-			/// \param kernel
+			/// \param kernel_func
 			///		The kernel to apply to the color channels of the image (alpha is handled separately)
 			/// 
 			/// \throws std::invalid_argument If the canvas has a mask channel.

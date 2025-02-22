@@ -7,13 +7,13 @@
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <span>
 
 #include "BoundingBox.h"
 #include "MeshOperations.h"
 
 #include <Eigen/Dense>
-
-#include <span>
+#include <fmt/format.h>
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -387,7 +387,7 @@ namespace Geometry
             for (size_t face_index : face_indices)
             {
                 Face<T, 4> face = m_Faces[face_index];
-                
+
                 // Check if the position is within this face, we first check based on bbox as that is as faster operation
                 // for rejecting false positives
                 const auto& face_bbox = face.bbox();
@@ -417,9 +417,9 @@ namespace Geometry
             return Point2D<double>(-1.0, -1.0); // No valid UV coordinate found
         }
 
-        BoundingBox<T> bbox() const noexcept 
-        { 
-            return m_BoundingBox; 
+        BoundingBox<T> bbox() const noexcept
+        {
+            return m_BoundingBox;
         }
 
     private:
@@ -432,13 +432,26 @@ namespace Geometry
         /// Initialize the mesh for a given number of vertices
         void initialize_mesh(
             const std::vector<Vertex<T>>& vertices,
-            size_t x_divisions, 
+            size_t x_divisions,
             size_t y_divisions
         )
         {
             PSAPI_PROFILE_FUNCTION();
             m_Vertices = vertices;
             m_BoundingBox = BoundingBox<T>::compute(m_Vertices);
+
+            // Our octree would fail due to floating point precision issues as the mesh approaches closer to .01 in size
+            // hence the failure condition. 
+            if (m_BoundingBox.size().x < 1e-2 || m_BoundingBox.size().y < 1e-2)
+            {
+                throw std::runtime_error(
+                    fmt::format(
+                        "Tried to construct the mesh with vertices that are less than 1e-2 (0.01) across one of the axis. " \
+                        "Trying to construct this mesh would cause the Octree calculation to fail. If called from the context " \
+                        "of a layer this is likely a mistake in the transformation. The bounding box of the vertices is [{}, {}]",
+                        m_BoundingBox.size().x, m_BoundingBox.size().y
+                    ));
+            }
 
             m_Faces.reserve((x_divisions - 1) * (y_divisions - 1));
 

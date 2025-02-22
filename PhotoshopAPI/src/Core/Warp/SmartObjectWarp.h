@@ -128,40 +128,60 @@ namespace SmartObject
 						// We then bilinearly sample the source image to avoid artifacts from nearest 
 						// neighbour sampling.
 
-						bool sampled = false;
-						float accumulated_color = 0;
-
-						for (size_t sy = 0; sy < supersample_resolution; ++sy)
+						// Simplify the code at compile time already if not supersampling
+						if constexpr (supersample_resolution == 1)
 						{
-							double subpixel_y = y + static_cast<double>(sy) / supersample_resolution;
+							auto position = Geometry::Point2D<double>(static_cast<double>(x), static_cast<double>(y));
+							auto uv = warp_mesh.uv_coordinate(position);
 
-							for (size_t sx = 0; sx < supersample_resolution; ++sx)
+							// If the uv coordinate is outside of the image we dont bother with it.
+							// We can check against the exact -1.0f here as that is what we return
+							if (uv != failure_condition)
 							{
-								double subpixel_x = x + static_cast<double>(sx) / supersample_resolution;
-
-								auto position = Geometry::Point2D<double>(subpixel_x, subpixel_y);
-								auto uv = warp_mesh.uv_coordinate(position);
-
-								// If the uv coordinate is outside of the image we dont bother with it.
-								// We can check against the exact -1.0f here as that is what we return
-								if (uv != failure_condition)
-								{
-									sampled = true;
-									accumulated_color += image.template sample_bilinear_uv<double>(uv);
-								}
+								size_t idx = y * buffer.width + x;
+								buffer.buffer[idx] = image.template sample_bilinear_uv<double>(uv);
 							}
 						}
-
-						if (sampled)
+						else
 						{
-							T final_value = static_cast<T>(std::clamp<double>(accumulated_color / total_supersamples, 0.0, static_cast<double>(max_t)));
+							bool sampled = false;
+							float accumulated_color = 0;
 
-							size_t idx = y * buffer.width + x;
-							buffer.buffer[idx] = final_value;
+							// Perform the supersampling steps
+							for (size_t sy = 0; sy < supersample_resolution; ++sy)
+							{
+								double subpixel_y = y + static_cast<double>(sy) / supersample_resolution;
+
+								for (size_t sx = 0; sx < supersample_resolution; ++sx)
+								{
+									double subpixel_x = x + static_cast<double>(sx) / supersample_resolution;
+
+									auto position = Geometry::Point2D<double>(subpixel_x, subpixel_y);
+									auto uv = warp_mesh.uv_coordinate(position);
+
+									// If the uv coordinate is outside of the image we dont bother with it.
+									// We can check against the exact -1.0f here as that is what we return
+									if (uv != failure_condition)
+									{
+										sampled = true;
+										accumulated_color += image.template sample_bilinear_uv<double>(uv);
+									}
+								}
+							}
+
+							if (sampled)
+							{
+								T final_value = static_cast<T>(std::clamp<double>(accumulated_color / total_supersamples, 0.0, static_cast<double>(max_t)));
+
+								size_t idx = y * buffer.width + x;
+								buffer.buffer[idx] = final_value;
+							}
 						}
 					}
 				});
 		}
+
+
 
 
 		/// Apply the warp by warping the `image` into the `buffer` using the locally stored warp description. 

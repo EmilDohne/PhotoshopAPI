@@ -1,13 +1,13 @@
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import numpy 
 
 import psapi.enum
 import psapi.util
-from ._imagedata_layertype import _ImageDataLayerType_8bit, _ImageDataLayerType_16bit, _ImageDataLayerType_32bit
 from ._smart_object_warp import SmartObjectWarp
+from ._layer import Layer_8bit, Layer_16bit, Layer_32bit
 from ._layered_file import LayeredFile_8bit, LayeredFile_16bit, LayeredFile_32bit
 
-class SmartObjectLayer_8bit(_ImageDataLayerType_8bit):
+class SmartObjectLayer_8bit(Layer_8bit):
 
     @property
     def warp(self: SmartObjectLayer_8bit) -> SmartObjectWarp:
@@ -54,7 +54,7 @@ class SmartObjectLayer_8bit(_ImageDataLayerType_8bit):
     def filepath(self: SmartObjectLayer_8bit) -> str:
         ...
         
-    def original_image_data(self: SmartObjectLayer_8bit) -> Dict[int, numpy.ndarray]:
+    def get_original_image_data(self: SmartObjectLayer_8bit) -> Dict[int, numpy.ndarray]:
         ...
         
     def original_width(self: SmartObjectLayer_8bit) -> int:
@@ -80,9 +80,27 @@ class SmartObjectLayer_8bit(_ImageDataLayerType_8bit):
         
     def reset_transform(self: SmartObjectLayer_8bit) -> None:
         ...
+
+    def channel_indices(self: SmartObjectLayer_8bit) -> List[int]:
+        ...
+
+    def num_channels(self: SmartObjectLayer_8bit) -> int:
+        ...
+
+    def get_image_data(self: SmartObjectLayer_8bit) -> Dict[int, numpy.ndarray]:
+        ...
+
+    def __getitem__(self: SmartObjectLayer_8bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_index(self: SmartObjectLayer_8bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_id(self: SmartObjectLayer_8bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
+        ...
         
 
-class SmartObjectLayer_16bit(_ImageDataLayerType_16bit):
+class SmartObjectLayer_16bit(Layer_16bit):
 
     @property
     def warp(self: SmartObjectLayer_16bit) -> SmartObjectWarp:
@@ -102,7 +120,7 @@ class SmartObjectLayer_16bit(_ImageDataLayerType_16bit):
         
     def __init__(
         self: SmartObjectLayer_16bit,
-        layered_file: LayeredFile_16bit,
+        layered_file: LayeredFile_8bit,
         path: str,
         layer_name: str,
         link_type: psapi.enum.LinkedLayerType = ...,
@@ -129,7 +147,7 @@ class SmartObjectLayer_16bit(_ImageDataLayerType_16bit):
     def filepath(self: SmartObjectLayer_16bit) -> str:
         ...
         
-    def original_image_data(self: SmartObjectLayer_16bit) -> Dict[int, numpy.ndarray]:
+    def get_original_image_data(self: SmartObjectLayer_16bit) -> Dict[int, numpy.ndarray]:
         ...
         
     def original_width(self: SmartObjectLayer_16bit) -> int:
@@ -155,9 +173,27 @@ class SmartObjectLayer_16bit(_ImageDataLayerType_16bit):
         
     def reset_transform(self: SmartObjectLayer_16bit) -> None:
         ...
+
+    def channel_indices(self: SmartObjectLayer_16bit) -> List[int]:
+        ...
+
+    def num_channels(self: SmartObjectLayer_16bit) -> int:
+        ...
+
+    def get_image_data(self: SmartObjectLayer_16bit) -> Dict[int, numpy.ndarray]:
+        ...
+
+    def __getitem__(self: SmartObjectLayer_16bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_index(self: SmartObjectLayer_16bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_id(self: SmartObjectLayer_16bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
+        ...
         
 
-class SmartObjectLayer_32bit(_ImageDataLayerType_32bit):
+class SmartObjectLayer_32bit(Layer_32bit):
 
     @property
     def warp(self: SmartObjectLayer_32bit) -> SmartObjectWarp:
@@ -177,7 +213,7 @@ class SmartObjectLayer_32bit(_ImageDataLayerType_32bit):
         
     def __init__(
         self: SmartObjectLayer_32bit,
-        layered_file: LayeredFile_32bit,
+        layered_file: LayeredFile_8bit,
         path: str,
         layer_name: str,
         link_type: psapi.enum.LinkedLayerType = ...,
@@ -204,7 +240,7 @@ class SmartObjectLayer_32bit(_ImageDataLayerType_32bit):
     def filepath(self: SmartObjectLayer_32bit) -> str:
         ...
         
-    def original_image_data(self: SmartObjectLayer_32bit) -> Dict[int, numpy.ndarray]:
+    def get_original_image_data(self: SmartObjectLayer_32bit) -> Dict[int, numpy.ndarray]:
         ...
         
     def original_width(self: SmartObjectLayer_32bit) -> int:
@@ -229,4 +265,22 @@ class SmartObjectLayer_32bit(_ImageDataLayerType_32bit):
         ...
         
     def reset_transform(self: SmartObjectLayer_32bit) -> None:
+        ...
+
+    def channel_indices(self: SmartObjectLayer_32bit) -> List[int]:
+        ...
+
+    def num_channels(self: SmartObjectLayer_32bit) -> int:
+        ...
+
+    def get_image_data(self: SmartObjectLayer_32bit) -> Dict[int, numpy.ndarray]:
+        ...
+
+    def __getitem__(self: SmartObjectLayer_32bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_index(self: SmartObjectLayer_32bit, key: int) -> numpy.ndarray:
+        ...
+
+    def get_channel_by_id(self: SmartObjectLayer_32bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
         ...

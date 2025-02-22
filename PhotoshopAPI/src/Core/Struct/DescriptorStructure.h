@@ -328,7 +328,7 @@ namespace Descriptors
 		/// \param document The File object to write to.
 		/// \param key		The key to write to disk, will be ignored if writeKey is set to false
 		/// \param value	The value you intend to write to disk, will write the child items as well if present
-		/// \param readKey	Whether to write the key to disk or discard it (such as with lists), this does not propagate to any child 
+		/// \param writeKey	Whether to write the key to disk or discard it (such as with lists), this does not propagate to any child 
 		///					nodes and only applies to the given node
 		inline void WriteDescriptor(File& document, const std::string& key, const std::unique_ptr<DescriptorBase>& value, bool writeKey = true)
 		{
