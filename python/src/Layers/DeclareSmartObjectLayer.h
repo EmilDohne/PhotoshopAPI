@@ -100,7 +100,7 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
         For the latter we provide the reset_transform()` and `reset_warp()` functions.
     
         Attributes
-        -----------
+        ----------
 
         warp : SmartObjectWarp
             Property holding the warp (and transformation) information. May be modified,

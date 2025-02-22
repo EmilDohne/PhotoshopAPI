@@ -29,7 +29,10 @@ PSAPI_NAMESPACE_BEGIN
 
 enum class LinkedLayerType
 {
+	/// Links the data internlly, meaning the raw file bytes will be stored in-file
 	data,
+	/// Links the data externally, meaning only the transformed image is stored in-file 
+	/// with the original data residing on disk
 	external
 };
 

@@ -20,7 +20,7 @@ def main() -> None:
 
     # Similar to the C++ version we can adjust parameters of the layer after it has been added to the document
     # as long as it happens before we write to disk
-    img_layer.opacity = 128
+    img_layer.opacity = .5
 
     document.write(os.path.join(os.path.dirname(__file__), "WriteSimpleFile.psd"))
 

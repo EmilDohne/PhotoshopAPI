@@ -28,7 +28,7 @@ void declare_group_layer(py::module& m, const std::string& extension)
     groupLayer.doc() = R"pbdoc(
 
 	    Attributes
-        -----------
+        ----------
 
         layers : list[psapi.Layer_*bit]
             The layers under the group, may be empty. These are polymorphic so it may be a group layer, an image layer etc.

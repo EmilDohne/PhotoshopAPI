@@ -77,15 +77,12 @@ struct LayeredFile
 	ICCProfile icc_profile() const noexcept { return m_ICCProfile; }
 	void icc_profile(ICCProfile profile) noexcept { m_ICCProfile = std::move(profile); }
 
-	/// \defgroup dpi The files' dots per inch (dpi) resolution
-	/// @{
+	/// The files' dots per inch (dpi) resolution
 	float& dpi() noexcept { return m_DotsPerInch; }
 	float dpi() const noexcept { return m_DotsPerInch; }
 	void dpi(float resolution) { m_DotsPerInch = resolution; }
-	/// @} 
 
-	/// \defgroup width The files' width from 1 - 300,000
-	/// @{
+	/// The files' width from 1 - 300,000
 	uint64_t& width() noexcept { return m_Width; }
 	uint64_t width() const noexcept { return m_Width; }
 	void width(uint64_t file_width)
@@ -100,10 +97,8 @@ struct LayeredFile
 		}
 		m_Width = file_width;
 	}
-	/// @} 
 
-	/// \defgroup height The files' height from 1 - 300,000
-	/// @{
+	/// The files' height from 1 - 300,000
 	uint64_t& height() noexcept { return m_Height; }
 	uint64_t height() const noexcept { return m_Height; }
 	void height(uint64_t file_height)
@@ -118,7 +113,6 @@ struct LayeredFile
 		}
 		m_Height = file_height;
 	}
-	/// @} 
 
 	/// Retrieve the bounding box describing the canvas, will always have a minimum of 0, 0
 	Geometry::BoundingBox<double> bbox() const noexcept 
@@ -128,38 +122,27 @@ struct LayeredFile
 			Geometry::Point2D<double>(static_cast<double>(width()), static_cast<double>(height())));
 	}
 
-	/// \defgroup colormode The files' colormode
+	/// \brief The files' colormode
 	/// 
 	/// Currently we only fully support RGB, CMYK and Greyscale.
-	/// 
-	/// @{
 	Enum::ColorMode& colormode() noexcept { return m_ColorMode; }
 	Enum::ColorMode colormode() const noexcept { return m_ColorMode; }
 	void colormode(Enum::ColorMode color_mode) noexcept { m_ColorMode = color_mode; }
-	/// @} 
 
-	/// \defgroup bitdepth The files' bitdepth
+	/// \brief The files' bitdepth
 	/// 
 	/// As this is managed by the template type T we do not actually allow users
 	/// to set this.
-	/// 
-	/// @{
 	Enum::BitDepth bitdepth() const noexcept { return m_BitDepth; }
-	/// @} 
 
-	/// \defgroup linked_layer 
-	/// 
-	/// Primarily for internal user or advanced users. Users should usually not have to 
+	/// Primarily for internal use or advanced users. Users should usually not have to 
 	/// touch this as it's handled for them by SmartObjects themselves
 	/// 
 	/// LinkedLayers describe a global state of linked files. Their purpose is to store
 	/// the raw image data of smart objects such that any layer can have different resolution
 	/// than the smart object and for deduplication.
-	/// 
-	/// @{
 	std::shared_ptr<LinkedLayers<T>> linked_layers() noexcept { return m_LinkedLayers; }
 	const std::shared_ptr<LinkedLayers<T>> linked_layers() const noexcept { return m_LinkedLayers; }
-	/// @} 
 
 
 	LayeredFile() = default;

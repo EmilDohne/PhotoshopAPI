@@ -18,7 +18,7 @@ def main() -> None:
     img_data[0] = 255
     mask = np.full((height, width), 128, np.uint8)
 
-    img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask)
+    img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", layer_mask=mask, width=width, height=height)
 
     # Add the layer and write to disk
     document.add_layer(img_layer)

@@ -35,7 +35,7 @@ int main()
 
 	// It is perfectly legal to modify a layers properties even after it was added to the document as attributes
 	// are only finalized on export
-	layer->opacity(128u);
+	layer->opacity(.5);
 
 	// Convert to PhotoshopFile and write to disk. Note that from this point onwards 
 	// our LayeredFile instance is no longer usable

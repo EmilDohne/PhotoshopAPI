@@ -21,7 +21,7 @@ Most examples are for both C++ and Python unless there is a valid reason not to 
    create_simple_document.rst
    extended_signature.rst
    extract_image_data.rst
-   graft_layers.rst
+   graft_layer.rst
    modify_layer_structure.rst
    progress_callbacks.rst
    replace_image_data.rst

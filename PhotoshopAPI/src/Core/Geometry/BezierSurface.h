@@ -15,7 +15,8 @@ PSAPI_NAMESPACE_BEGIN
 namespace Geometry
 {
 
-    /// A generic Bezier surface struct with 
+    /// A generic implementation of a cubic bezier surface. In the context of the PhotoshopAPI we use this to evaluate 
+    /// warps stored as cubic bezier surfaces. This struct is specialized for use within Photoshop.
     struct BezierSurface 
     {
 

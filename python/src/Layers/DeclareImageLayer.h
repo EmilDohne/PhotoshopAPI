@@ -46,7 +46,7 @@ void declare_image_layer(py::module& m, const std::string& extension) {
         in any given file for it to be valid
     
         Attributes
-        -----------
+        ----------
 
          image_data : dict[int, numpy.ndarray]
             Property: A dictionary of the image data mapped by an int where the channel mapping

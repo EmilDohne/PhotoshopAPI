@@ -37,7 +37,7 @@ void declare_layer(py::module& m, const std::string& extension) {
         should be used (with the appropriate bit depth).
 
         Attributes
-        -----------
+        ----------
 
         name : str
             The name of the layer, cannot be longer than 255

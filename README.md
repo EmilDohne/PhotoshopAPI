@@ -45,33 +45,31 @@ Features
 =========
 
 Supported:
-- Read and write of \*.psd and \*.psb files
-- Creating and modifying simple and complex nested layer structures
-- Pixel Masks
-- Modifying layer attributes (name, blend mode, image data etc.)
-- Setting the Display ICC Profile
-- Setting the DPI of the document
-- 8-, 16- and 32-bit files
-- RGB, CMYK and Grayscale color modes
-- All compression modes known to Photoshop
+	- Read and write of \*.psd and \*.psb files
+	- Creating and modifying simple and complex nested layer structures
+	- Smart Objects (replacing, warping, extracting)
+	- Pixel Masks
+	- Modifying layer attributes (name, blend mode etc.)
+	- Setting the Display ICC Profile
+	- 8-, 16- and 32-bit files
+	- RGB, CMYK and Grayscale color modes
+	- All compression modes known to Photoshop
 
 Planned:
-- Support for Adjustment Layers (planned `v0.6.0`)
-- Support for Vector Masks
-- Support for Text Layers
-- Support for Smart Object Layers (planned `v0.6.0`)
-- Indexed and Duotone Color Modes
+	- Support for Adjustment Layers
+	- Support for Vector Masks
+	- Support for Text Layers
+	- Indexed, Duotone Color Modes
 
 Not Supported:
-- Files written by the PhotoshopAPI do not contain a valid merged image in order to save size meaning they will not behave properly when opened in
-    third party apps requiring these (such as Lightroom)
-- Lab and Multichannel Color Modes 
-
+	- Files written by the PhotoshopAPI do not contain a valid merged image in order to save size meaning they will not behave properly when opened in
+	  third party apps requiring these (such as Lightroom)
+	- Lab and Multichannel Color Modes 
 
 Python
 ==============
 
-The PhotoshopAPI comes with fully fledged Python bindings which can be simply installed using
+The PhotoshopAPI comes with Python bindings which can be installed using
 ```
 $ py -m pip install PhotoshopAPI
 ```
@@ -134,77 +132,65 @@ Below is a minimal example to get started with opening a PhotoshopFile, removing
 ### C++ 
 
 ```cpp	
-using namespace PhotoshopAPI;
+using namespace NAMESPACE_PSAPI;
 
-// Initialize an 8-bit layeredFile. This must match the bit depth of the PhotoshopFile.
-// To initialize this programmatically please refer to the ExtendedSignature example
-LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("InputFile.psd");
+// Initialize some constants that we will need throughout the program
+const static uint32_t width = 64u;
+const static uint32_t height = 64u;
 
-// Do some operation, in this case delete
-layeredFile.removeLayer("SomeGroup/SomeNestedLayer");	
+// Create an 8-bit LayeredFile as our starting point, 8- 16- and 32-bit are fully supported
+LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
+// Create our individual channels to add to our image layer. Keep in mind that all these 3 channels need to 
+// be specified for RGB mode
+std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
+channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 255u);
+channelMap[Enum::ChannelID::Green] = std::vector<bpp8_t>(width * height, 0u);
+channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 0u);
 
-// One could write out to .psb instead if wanted and the PhotoshopAPI will take 
-// care of any conversion internally
-LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutputFile.psd");
+ImageLayer<bpp8_t>::Params layerParams = {};
+layerParams.name = "Layer Red";
+layerParams.width = width;
+layerParams.height = height;
+
+auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channelMap), layerParams);
+document.add_layer(layer);
+
+// It is perfectly legal to modify a layers properties even after it was added to the document as attributes
+// are only finalized on export
+layer->opacity(.5f);
+
+// Convert to PhotoshopFile and write to disk. Note that from this point onwards 
+// our LayeredFile instance is no longer usable
+LayeredFile<bpp8_t>::write(std::move(document), "WriteSimpleFile.psd");
 ```
 
 
-The same code for reading and writing can also be used to for example `LayeredFile::moveLayer` or `LayeredFile::addLayer` as well as extracting any image data
+The same code for reading and writing can also be used to for example `LayeredFile::move_layer_` or `LayeredFile::add_layer` as well as extracting any image data
 
 ### Python
 
 ```py
-import psapi
-
-# Read the layered_file using the LayeredFile helper class, this returns a 
-# psapi.LayeredFile_*bit object with the appropriate bit-depth
-layered_file = psapi.LayeredFile.read("InputFile.psd")
-
-# Do some operation, in this case delete
-layered_file.remove_layer()
-
-# Write back out to disk
-layered_file.write("OutFile.psd")
-```
-
-We can also do much more advanced things such as taking image data from one file and transferring 
-it to another file, this can be across file sizes, psd/psb and even bit-depth!
-
-```py
-import psapi
-import numpy as np
 import os
+import numpy as np
+import psapi
 
+# Initialize some constants that we will need throughout the program
+width = 64
+height = 64
+color_mode = psapi.enum.ColorMode.rgb
 
-def main() -> None:
-    # Read both our files, they can be open at the same time or we can also read one file,
-    # extract the layer and return just that layer if we want to save on RAM.
-    file_src = psapi.LayeredFile.read("GraftSource_16.psb")
-    file_dest = psapi.LayeredFile.read("GraftDestination_8.psd")
+# Generate our LayeredFile instance
+document = psapi.LayeredFile_8bit(color_mode, width, height)
 
-    # Extract the image data and convert to 8-bit.
-    lr_src: psapi.ImageLayer_16bit = file_src["GraftSource"]
-    img_data_src = lr_src.get_image_data()
-    img_data_8bit = {}
-    for key, value in img_data_src.items():
-        value = value / 256 # Convert from 0-65535 -> 0-255
-        img_data_8bit[key] = value.astype(np.uint8)
+img_data = np.zeros((3, height, width), np.uint8)
+img_data[0] = 255
+# When creating an image layer the width and height parameter are required if its not a zero sized layer
+img_layer = psapi.ImageLayer_8bit(img_data, "Layer Red", width=width, height=height)
+document.add_layer(img_layer)
 
-    # Reconstruct an 8bit converted layer
-    img_layer_8bit = psapi.ImageLayer_8bit(
-        img_data_8bit, 
-        layer_name=lr_src.name, 
-        width=lr_src.width, 
-        height=lr_src.height, 
-        blend_mode=lr_src.blend_mode, 
-        opacity=lr_src.opacity
-        )
+# Similar to the C++ version we can adjust parameters of the layer after it has been added to the document
+# as long as it happens before we write to disk
+img_layer.opacity = .5
 
-    # add the layer and write out to file!
-    file_dest.add_layer(img_layer_8bit)
-    file_dest.write("GraftDestination_8_Edited.psd")
-
-
-if __name__ == "__main__":
-    main()
+document.write(os.path.join(os.path.dirname(__file__), "WriteSimpleFile.psd"))
 ```

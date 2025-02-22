@@ -107,7 +107,16 @@ struct Layer : public MaskMixin<T>
 	/// 
 	/// In photoshop this is stored as a `uint8_t` from 0-255 but access and write is 
 	/// in terms of a float for better consistency.
-	void opacity(float value) noexcept { m_Opacity = static_cast<uint8_t>(value * 255.0f); }
+	void opacity(float value) noexcept 
+	{
+		if (value < 0.0f || value > 1.0f)
+		{
+			PSAPI_LOG_WARNING("Layer", "Encountered opacity value not between 0-1. Clamping this to fit into that range");
+		}
+		value = std::clamp<float>(value, 0.0f, 1.0f);
+
+		m_Opacity = static_cast<uint8_t>(value * 255.0f); 
+	}
 
 	/// The layers' width from 0 - 300,000
 	virtual uint32_t width() const noexcept { return m_Width; }

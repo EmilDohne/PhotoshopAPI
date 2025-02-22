@@ -1,7 +1,7 @@
 .. _extended_signature:
 
 Example: `Extended Signature (C++ only)`
-====================================
+==========================================
 
 This example covers creation of a LayeredFile (A Photoshop file) using the 'extended' signature, do note that this is almost never necessary 
 and :ref:`create_simple_document` is the preferred (and encouraged) way to create files.
