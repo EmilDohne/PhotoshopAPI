@@ -33,7 +33,7 @@ class TestImageLayer(unittest.TestCase):
         file = psapi.LayeredFile.read(self.mask_path)
         layer: psapi.ImageLayer_16bit = file["MonzaSP1_DawnShot_V1_v002_ED.BaseAOV"]
         
-        image_data = layer.image_data
+        image_data = layer.get_image_data()
         image_data_2 = layer.get_image_data()
 
         self.assertTrue(-2 in image_data and -2 in image_data_2)
