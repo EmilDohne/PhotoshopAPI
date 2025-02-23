@@ -5,7 +5,6 @@ on:
   push:
     branches:
      - dev
-     - 57-add-support-for-adjustment-layers
   pull_request:
     branches:
      - master
