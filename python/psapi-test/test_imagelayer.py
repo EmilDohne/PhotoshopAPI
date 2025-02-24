@@ -41,8 +41,8 @@ class TestImageLayer(unittest.TestCase):
         self.assertTrue(0 in image_data and 0 in image_data_2)
         self.assertTrue(1 in image_data and 1 in image_data_2)
         self.assertTrue(2 in image_data and 2 in image_data_2)
-        self.assertTrue(len(layer.channels) == 5)
-        self.assertTrue(layer.num_channels == 5)
+        self.assertTrue(len(layer.channel_indices()) == 5)
+        self.assertTrue(layer.num_channels() == 5)
 
     def test_channel_setting_roundtrip(self):
         file = psapi.LayeredFile.read(self.path)
