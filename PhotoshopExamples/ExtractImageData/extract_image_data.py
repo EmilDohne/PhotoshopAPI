@@ -23,7 +23,7 @@ def main() -> None:
     print(f"Extracted image data: {channel_r}, {channel_g}, {channel_b}")
 
     # or if we just want all the data as dict 
-    img_data: dict[int, np.ndarray] = img_layer.image_data
+    img_data: dict[int, np.ndarray] = img_layer.get_image_data()
     print(f"Image data retrieved as dict: {img_data}")
 
     # Similarly we can also extract masks in many different ways
@@ -31,7 +31,9 @@ def main() -> None:
     mask_data = mask_layer[-2]  # -2 is the index for mask channels
     mask_data = mask_layer.get_channel_by_id(psapi.enum.ChannelID.mask) # If we want to be more explicit
     mask_data = mask_layer.mask 
-    # Dont worry if the mask data shows up as empty since photoshop has optimized this mask channel away due to it being full white
+    # Dont worry if the mask data shows up as empty since photoshop has optimized this mask channel 
+    # away due to it being full white. The `mask_default_color` property will hold the pixel value applied
+    # outside of the masks bounding box
 
     # There is also no reason to actually store the mask layer, we can simply chain indexing calls
     mask_data = layered_file["Group"]["EmptyLayerWithMask"][-2]
@@ -42,21 +44,6 @@ def main() -> None:
             # We could now recurse down to get all the levels 
             print(f"Found group layer: {layer.name}")
             print(f"And its sub-layers: {layer.layers}")
-
-    # Throughout the example so far we omitted a parameter on channel extraction which is
-    # the 'do_copy' parameter. Setting it to false means image data isnt copied out but rather
-    # extracted which means it is no longer accessible. For an example:
-    red_channel = img_layer.get_channel_by_index(0, do_copy=False)
-    
-    # This would usually raise an error which we can catch but when running on ARM-Based mac systems 
-    # this actually segmentation faults and we cannot catch the exception due to the problems mentioned in
-    # this issue: https://github.com/EmilDohne/PhotoshopAPI/issues/61
-    # try:
-    #     # We use another way of indexing for simplicity here to show that all the methods
-    #     # are compatible with one another
-    #     red_channel_again = img_layer[0]    # This implicitly enables do_copy
-    # except RuntimeError:
-    #     pass    # The PhotoshopAPI will already complain here
 
 
 if __name__ == "__main__":

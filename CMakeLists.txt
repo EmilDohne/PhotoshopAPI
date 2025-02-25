@@ -1,26 +1,28 @@
 ﻿cmake_minimum_required (VERSION 3.20)
+set(VCPKG_LIBRARY_LINKAGE "static")
 project ("PhotoshopAPIBuild" VERSION 0.5.2 LANGUAGES CXX)
 
 if (MSVC)
-    # MSVC is stupid
     add_compile_definitions(NOMINMAX)
 endif()
 
 # --------------------------------------------------------------------------
 # Configurable options
 
-option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI" ON)
+option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI, currently must be on as we dont create a dynamic library target" ON)
+option(PSAPI_USE_VCPKG "Build the extra dependencies using vckpg instead of system installed libraries" ON)
 option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
 option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
-option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" OFF)
+option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
+option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" ON)
 
 
 if (PSAPI_BUILD_PYTHON)
     # Link in the msvc runtime so that users dont need vcredist when using the python bindings
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
+
 
 
 # Build setup
@@ -32,14 +34,33 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-# Add thirdparty libraries
+# Set up our toolchain using the local vcpkg, gets the 
 # --------------------------------------------------------------------------
 
+# Include the local vcpkg toolchain, if specified
+if (PSAPI_USE_VCPKG)
+    include("${PROJECT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
+endif()
 
-# Add libdeflate
-add_subdirectory (thirdparty/libdeflate)
-add_library(libdeflate_include INTERFACE)
-target_include_directories(libdeflate_include SYSTEM INTERFACE thirdparty/libdeflate)
+# Here we add support for OpenImageIO which is used for smart object image data extraction.
+find_package(OpenImageIO CONFIG REQUIRED)
+
+# Add libdeflate for zip compression and decompression
+find_package(libdeflate CONFIG REQUIRED)
+
+# Eigen is used to construct e.g. homographies for applying non-affine transforms
+find_package(Eigen3 CONFIG REQUIRED)
+
+# fmt library for formatting and logging.
+find_package(fmt CONFIG REQUIRED)
+
+# UUID for storing e.g. uuids of smart objects
+find_package(stduuid CONFIG REQUIRED)
+
+
+
+# Add thirdparty libraries
+# --------------------------------------------------------------------------
 
 # Add mio for memory-mapped IO files
 add_subdirectory (thirdparty/mio)
@@ -57,7 +78,6 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 add_library(blosc2_include INTERFACE)
 target_include_directories(blosc2_include SYSTEM INTERFACE thirdparty/c-blosc2/include)
 
-
 # Add doctest
 add_library(doctest INTERFACE)
 target_include_directories(doctest SYSTEM INTERFACE thirdparty/doctest/doctest)
@@ -67,6 +87,9 @@ set (SIMDUTF_TESTS OFF)
 set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
+
+# JSON module for parsing of Descriptors
+add_subdirectory(thirdparty/json)
 
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
@@ -92,6 +115,7 @@ if(PSAPI_BUILD_EXAMPLES)
     add_subdirectory (PhotoshopExamples/ModifyLayerStructure)
     add_subdirectory (PhotoshopExamples/ProgressCallbacks)
     add_subdirectory (PhotoshopExamples/ReplaceImageData)
+    add_subdirectory (PhotoshopExamples/SmartObjects)
 endif()
 if(PSAPI_BUILD_DOCS)
     if(NOT PSAPI_BUILD_PYTHON)

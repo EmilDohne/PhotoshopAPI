@@ -8,6 +8,14 @@ Logging Enums
 .. doxygenenum:: Enum::Severity
 
 
+Layered File Enums
+--------------------
+
+The LinkedLayerType dictates how a smart object is to be linked.
+
+.. doxygenenum:: LinkedLayerType
+
+
 Photoshop File Header Enums
 ---------------------------
 

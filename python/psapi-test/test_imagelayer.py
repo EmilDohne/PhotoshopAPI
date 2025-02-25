@@ -1,5 +1,4 @@
 import unittest
-import nose
 import nose.tools
 import os
 
@@ -18,14 +17,14 @@ class TestImageLayer(unittest.TestCase):
         file = psapi.LayeredFile.read(self.path)
         layer: psapi.ImageLayer_16bit = file["Render"]["AOV"]["Beauties"]["MonzaSP1_DawnShot_V1_v002_ED.BaseAOV"]
         
-        image_data = layer.image_data
+        image_data = layer.get_image_data()
 
         self.assertTrue(-1 in image_data)
         self.assertTrue(0 in image_data)
         self.assertTrue(1 in image_data)
         self.assertTrue(2 in image_data)
-        self.assertTrue(len(layer.channels) == 4)
-        self.assertTrue(layer.num_channels == 4)
+        self.assertTrue(len(layer.channel_indices()) == 4)
+        self.assertTrue(layer.num_channels() == 4)
 
     def test_get_image_data_mismatched_mask(self):
         """
@@ -34,7 +33,7 @@ class TestImageLayer(unittest.TestCase):
         file = psapi.LayeredFile.read(self.mask_path)
         layer: psapi.ImageLayer_16bit = file["MonzaSP1_DawnShot_V1_v002_ED.BaseAOV"]
         
-        image_data = layer.image_data
+        image_data = layer.get_image_data()
         image_data_2 = layer.get_image_data()
 
         self.assertTrue(-2 in image_data and -2 in image_data_2)
@@ -42,16 +41,16 @@ class TestImageLayer(unittest.TestCase):
         self.assertTrue(0 in image_data and 0 in image_data_2)
         self.assertTrue(1 in image_data and 1 in image_data_2)
         self.assertTrue(2 in image_data and 2 in image_data_2)
-        self.assertTrue(len(layer.channels) == 5)
-        self.assertTrue(layer.num_channels == 5)
+        self.assertTrue(len(layer.channel_indices()) == 5)
+        self.assertTrue(layer.num_channels() == 5)
 
     def test_channel_setting_roundtrip(self):
         file = psapi.LayeredFile.read(self.path)
         layer: psapi.ImageLayer_16bit = file["Render"]["AOV"]["Beauties"]["MonzaSP1_DawnShot_V1_v002_ED.BaseAOV"]
         
-        image_data_prev = layer.image_data
+        image_data_prev = layer.get_image_data()
         layer.set_image_data(image_data_prev)
-        image_data = layer.image_data
+        image_data = layer.get_image_data()
 
         for index, channel in image_data_prev.items():
             self.assertTrue(np.array_equal(channel, image_data[index]))
@@ -59,7 +58,7 @@ class TestImageLayer(unittest.TestCase):
     def test_set_image_data_with_npy_array(self):
         data = np.load(self.bin_data_path)
         layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 188)
-        for index, channel in layer.image_data.items():
+        for index, channel in layer.get_image_data().items():
             if index == -1:
                 self.assertTrue(np.array_equal(channel, data[3]))
             else:
@@ -85,7 +84,7 @@ class TestImageLayer(unittest.TestCase):
         }
 
         layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 188)
-        for index, channel in layer.image_data.items():
+        for index, channel in layer.get_image_data().items():
             self.assertTrue(np.array_equal(channel, data[index]))
         
         self.assertTrue(np.array_equal(layer.get_channel_by_id(psapi.enum.ChannelID.red), data[0]))
@@ -215,4 +214,4 @@ class TestImageLayer(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    nose.main()
+    unittest.main()

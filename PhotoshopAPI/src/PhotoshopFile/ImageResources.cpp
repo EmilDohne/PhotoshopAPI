@@ -5,6 +5,7 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
+#include "Core/FileIO/LengthMarkers.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 #include "Core/Struct/ResourceBlock.h"
@@ -20,27 +21,11 @@ PSAPI_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
-uint64_t ImageResources::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
-{
-	uint64_t size = 0u;
-	size += 4u;	// Size marker
-
-	for (const auto& resourcePtr : m_ResourceBlocks)
-	{
-		size += resourcePtr->calculateSize();
-	}
-	return size;
-}
-
-
-// --------------------------------------------------------------------------------
-// --------------------------------------------------------------------------------
 ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& resourceBlocks)
 {
 	// Resource blocks are usually trivially copyable so we dont really need to worry
 	// about moving here
 	m_ResourceBlocks = std::move(resourceBlocks);
-	FileSection::size(this->calculateSize());
 }
 
 
@@ -48,7 +33,7 @@ ImageResources::ImageResources(std::vector<std::unique_ptr<ResourceBlock>>&& res
 // --------------------------------------------------------------------------------
 void ImageResources::read(File& document, const uint64_t offset)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	FileSection::initialize(offset, 0u);
 	document.setOffset(offset);
 	FileSection::size(RoundUpToMultiple<uint32_t>(ReadBinaryData<uint32_t>(document), 2u) + 4u);
@@ -67,8 +52,7 @@ void ImageResources::read(File& document, const uint64_t offset)
 // --------------------------------------------------------------------------------
 void ImageResources::write(File& document)
 {
-	FileSection::initialize(document.getOffset(), RoundUpToMultiple<uint32_t>(FileSection::size<uint32_t>(), 2u));
-	WriteBinaryData<uint32_t>(document, FileSection::size<uint32_t>() - 4u);
+	Impl::ScopedLengthBlock<uint32_t> len_block(document, 2u);
 
 	for (auto& blockPtr : m_ResourceBlocks)
 	{

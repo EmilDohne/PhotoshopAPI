@@ -63,22 +63,31 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: true
+        submodules: 'recursive'
+        fetch-depth: 0
 
-    # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.3
-      if: matrix.os == 'macos-latest'
-      uses: maxim-lobanov/setup-xcode@v1
+    # Further brew packages needed to run/install vcpkg dependencies
+    - name: Setup macos dependencies
+      if: matrix.os_dist.os == 'macos-latest'
+      run: |
+          brew install ninja
+          brew install autoconf
+          brew install libtool
+          brew install automake
+          
+    - name: Initialize vcpkg
+      uses: lukka/run-vcpkg@v11
       with:
-        xcode-version: '15.3'
+        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
-    - uses: pypa/cibuildwheel@v2.16
+    - uses: pypa/cibuildwheel@v2.22.0
       env:
         CC: gcc-13
         CXX: g++-13
         CIBW_ARCHS: auto64
-        CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+        MACOSX_DEPLOYMENT_TARGET: 14.0
+        CIBW_BEFORE_BUILD: pip install cmake
+        CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
         # Test not only by running the test suite but also by executing every example we provide. This is to ensure
         # our examples are working and users can rely on them for starting off points
@@ -91,6 +100,7 @@ jobs:
             python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py &&
             python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py &&
             python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py &&
+            python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py &&
             nosetests {project}/python/psapi-test --verbose
 
     - name: Verify clean directory
@@ -102,7 +112,7 @@ jobs:
       with:
         name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
-
+        
   mock-publish:
     name: Mock Upload release to PyPI
     permissions:

@@ -162,7 +162,7 @@ setup(
     cmdclass={"build_ext": CMakeBuild},
     package_dir = {"": "python"},
     packages=["psapi-stubs"],
-    package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi"]},
+    package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi", "geometry/*.pyi"]},
     zip_safe=False,
     install_requires= [
         "numpy>=1.21.6"

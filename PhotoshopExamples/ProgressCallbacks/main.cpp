@@ -53,12 +53,12 @@ int main()
 		channelMap[Enum::ChannelID::Green] = imgData;
 		channelMap[Enum::ChannelID::Blue] = imgData;
 		ImageLayer<bpp32_t>::Params layerParams = {};
-		layerParams.layerName = "Layer_" + std::to_string(i);
+		layerParams.name = "Layer_" + std::to_string(i);
 		layerParams.width = width;
 		layerParams.height = height;
 
 		auto layer = std::make_shared<ImageLayer<bpp32_t>>(std::move(channelMap), layerParams);
-		document.addLayer(layer);
+		document.add_layer(layer);
 	}
 
 	// Launch the file read asynchronously while attaching a callback which we pass by reference

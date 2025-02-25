@@ -25,7 +25,7 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 void WriteBinaryData(File& document, T data)
 {
-	data = endianEncodeBE<T>(data);
+	data = endian_encode_be<T>(data);
 	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&data), sizeof(T));
 	document.write(dataSpan);
 }
@@ -42,13 +42,13 @@ void WriteBinaryDataVariadic(File& document, TPsb data, Enum::Version version)
 	{
 		if (data > (std::numeric_limits<TPsd>::max)()) [[unlikely]]
 			PSAPI_LOG_ERROR("WriteBinaryDataVariadic", "Value of data exceeds the numeric limits of the max value for type TPsd");
-		TPsd psdData = endianEncodeBE<TPsd>(static_cast<TPsd>(data));
+		TPsd psdData = endian_encode_be<TPsd>(static_cast<TPsd>(data));
 		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&psdData), sizeof(TPsd));
 		document.write(dataSpan);
 	}
 	else
 	{
-		TPsb psbData = endianEncodeBE<TPsb>(data);
+		TPsb psbData = endian_encode_be<TPsb>(data);
 		std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(&psbData), sizeof(TPsb));
 		document.write(dataSpan);
 	}
@@ -68,6 +68,19 @@ void WriteBinaryArray(File& document, std::vector<T>&& data)
 }
 
 
+// Write an array of data while endian encoding the values, this will modify the incoming data
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+template <typename T>
+void WriteBinaryArray(File& document, std::vector<T>& data)
+{
+	// Endian encode in-place
+	endianEncodeBEArray<T>(data);
+	std::span<uint8_t> dataSpan(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(T));
+	document.write(dataSpan);
+}
+
+
 // Write a given amount of padding bytes with explicit zeroes
 // --------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------
@@ -75,7 +88,7 @@ inline void WritePadddingBytes(File& document, uint64_t numBytes)
 {
 	if (numBytes == 0) return;
 	std::vector<uint8_t> padding(numBytes, 0);
-	WriteBinaryArray<uint8_t>(document,std::move(padding));
+	WriteBinaryArray<uint8_t>(document, std::move(padding));
 }
 
 

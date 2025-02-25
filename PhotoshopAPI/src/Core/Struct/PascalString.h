@@ -328,7 +328,7 @@ inline static std::string convertCharToUTF8(EncodingType encoding, const char ch
 // ---------------------------------------------------------------------------------------------------------------------
 inline static std::string convertStrToUTF8(EncodingType encoding, const std::string str)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     std::string res = "";
     for (const auto& character : str)
     {
@@ -358,15 +358,14 @@ struct PascalString : public FileSection
 	// Initialize a padded PascalString based on its size
 	PascalString(std::string name, const uint8_t padding);
 
-	// While we return a uint64_t here we actually make sure that the size does not exceed the size of uint8_t as that would be illegal
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Return the string held by this struct, the string is ASCII and therefore 
 	/// UTF8 compliant
 	std::string getString() const noexcept;
 
 	/// Return a view over the string held by this struct
 	const std::string_view getStringView() const noexcept;
+
+    static std::string readString(File& document, const uint8_t padding) noexcept;
 
 	void read(File& document, const uint8_t padding) noexcept;
 	void write(File& document) const;

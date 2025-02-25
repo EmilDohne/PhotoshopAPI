@@ -16,11 +16,11 @@ ReadBinaryArray<T>						// Read a large amount of binary data into a std::vector
 
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
-#include "Enum.h"
-#include "Logger.h"
+#include "Util/Enum.h"
+#include "Util/Logger.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
-#include "FileUtil.h"
+#include "Util/FileUtil.h"
 
 #include <fstream>
 #include <variant>
@@ -39,7 +39,7 @@ T ReadBinaryData(File& document)
 	T val{};
 	auto valSpan = Util::toWritableBytes(val);
 	document.read(valSpan);
-	return endianDecodeBE<T>(valSpan.data());
+	return endian_decode_be<T>(reinterpret_cast<std::byte*>(valSpan.data()));
 }
 
 
@@ -52,7 +52,7 @@ T ReadBinaryData(ByteStream& stream)
 	T val{};
 	auto valSpan = Util::toWritableBytes(val);
 	stream.read(valSpan);
-	return endianDecodeBE<T>(valSpan.data());
+	return endian_decode_be<T>(reinterpret_cast<std::byte*>(valSpan.data()));
 }
 
 
@@ -70,14 +70,14 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(File& document, const Enum::Vers
 		TPsd valPsd{};
 		auto dataSpanPsd = Util::toWritableBytes(valPsd);
 		document.read(dataSpanPsd);
-		return endianDecodeBE<TPsd>(dataSpanPsd.data());
+		return endian_decode_be<TPsd>(reinterpret_cast<std::byte*>(dataSpanPsd.data()));
 	}
 	case Enum::Version::Psb:
 	{
 		TPsb valPsb{};
 		auto dataSpanPsb = Util::toWritableBytes(valPsb);
 		document.read(dataSpanPsb);
-		return endianDecodeBE<TPsb>(dataSpanPsb.data());
+		return endian_decode_be<TPsb>(reinterpret_cast<std::byte*>(dataSpanPsb.data()));
 	}
 	default:
 		return static_cast<TPsb>(0);
@@ -99,14 +99,14 @@ std::variant<TPsd, TPsb> ReadBinaryDataVariadic(ByteStream& stream, const Enum::
 		TPsd valPsd{};
 		auto dataSpanPsd = Util::toWritableBytes(valPsd);
 		stream.read(dataSpanPsd);
-		return endianDecodeBE<TPsd>(dataSpanPsd.data());
+		return endian_decode_be<TPsd>(reinterpret_cast<std::byte*>(dataSpanPsd.data()));
 	}
 	case Enum::Version::Psb:
 	{
 		TPsb valPsb{};
 		auto dataSpanPsb = Util::toWritableBytes(valPsb);
 		stream.read(dataSpanPsb);
-		return endianDecodeBE<TPsb>(dataSpanPsb.data());
+		return endian_decode_be<TPsb>(reinterpret_cast<std::byte*>(dataSpanPsb.data()));
 	}
 	default:
 		return static_cast<TPsb>(0);
@@ -214,7 +214,7 @@ std::vector<T> ReadBinaryArray(ByteStream& stream, uint64_t size)
 	stream.read(Util::toWritableBytes(data));
 	for (T item : data)
 	{
-		endianDecodeBE<T>(reinterpret_cast<uint8_t*>(&item));
+		endian_decode_be<T>(reinterpret_cast<std::byte*>(&item));
 	}
 
 	return data;

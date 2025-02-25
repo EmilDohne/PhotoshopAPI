@@ -1,12 +1,12 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "CompressionUtil.h"
 #include "Core/Struct/ByteStream.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include "libdeflate.h"
 
@@ -38,7 +38,7 @@ namespace ZIP_Impl
 	template <typename T>
 	void Decompress(const std::span<uint8_t> compressedData, std::span<T> buffer, const uint64_t decompressedSize)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		libdeflate_decompressor* decompressor = libdeflate_alloc_decompressor();
 		if (!decompressor) {
@@ -77,7 +77,7 @@ namespace ZIP_Impl
 	template <typename T>
 	void RemovePredictionEncoding(std::span<T> decompressedData, const uint32_t width, const uint32_t height)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		// Convert decompressed data to native endianness in-place
 		endianDecodeBEArray<T>(decompressedData);
 
@@ -103,7 +103,7 @@ namespace ZIP_Impl
 	template <>
 	inline void RemovePredictionEncoding(std::span<float32_t> decompressedData, const uint32_t width, const uint32_t height)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		// We simply alias the vector to a span of uint8_t to perform our bytewise operations which modify decompressedData in place
 		const uint64_t dataSize = static_cast<uint64_t>(width) * height * sizeof(float32_t);
@@ -155,7 +155,7 @@ namespace ZIP_Impl
 template <typename T>
 void DecompressZIP(ByteStream& stream, std::span<T> buffer, uint64_t offset, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
 	std::span<uint8_t> compressedData = stream.read(offset, compressedSize);
 
@@ -174,7 +174,7 @@ void DecompressZIP(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
 template <typename T>
 std::vector<T> DecompressZIP(std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// Decompress using Inflate ZIP
 	std::vector<T> decompressedData(static_cast<uint64_t>(width) * static_cast<uint64_t>(height));
 	ZIP_Impl::Decompress<T>(compressedData, std::span<T>(decompressedData), decompressedData.size());
@@ -192,7 +192,7 @@ std::vector<T> DecompressZIP(std::vector<uint8_t>& compressedData, const uint32_
 template <typename T>
 void DecompressZIPPrediction(ByteStream& stream, std::span<T> buffer, uint64_t offset, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// Read the data without converting from BE to native as we need to decompress first
 	std::span<uint8_t> compressedData = stream.read(offset, compressedSize);
 
@@ -211,7 +211,7 @@ void DecompressZIPPrediction(ByteStream& stream, std::span<T> buffer, uint64_t o
 template <typename T>
 std::vector<T> DecompressZIPPrediction(std::vector<uint8_t>& compressedData, const uint32_t width, const uint32_t height)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	// Decompress using Inflate ZIP
 	std::vector<T> decompressedData(static_cast<uint64_t>(width) * height);

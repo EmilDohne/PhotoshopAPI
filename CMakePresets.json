@@ -30,6 +30,20 @@
           }
       },
       {
+            "name": "x64-debug-asan",
+            "displayName": "x64 Debug with ASan",
+            "inherits": "windows-base",
+            "architecture": {
+                "value": "x64",
+                "strategy": "external"
+            },
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_C_FLAGS": "/fsanitize=address",
+                "CMAKE_CXX_FLAGS": "/fsanitize=address",
+            }
+      },
+      {
         "name": "x64-release",
         "displayName": "x64 Release",
         "inherits": "x64-debug",

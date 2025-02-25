@@ -12,7 +12,7 @@ namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
 
-void declarePhotoshopFile(py::module& m)
+void declare_photoshop_file(py::module& m)
 {
 	py::class_<PhotoshopFile> photoshopFile(m, "PhotoshopFile");
 
@@ -69,9 +69,7 @@ void declarePhotoshopFile(py::module& m)
 		Find the bit depth of a Photoshop file from the given filepath.
         This function has basically no runtime cost as it simply reads the first 26 bytes of the document
         and uses that to extract the bit depth. The intention of this function is to provide an interface
-        to quickly check which psapi.LayeredFile instance to construct. For example
-
-        .. code-block:: python
+        to quickly check which psapi.LayeredFile instance to construct. For example::
 
             depth = psapi.PhotoshopFile.find_bitdepth("SomeFile.psb")
             if (depth == psapi.enum.BitDepth.bd_8):

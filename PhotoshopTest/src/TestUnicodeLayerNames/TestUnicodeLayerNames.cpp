@@ -22,17 +22,17 @@ TEST_CASE("Read Unicode layer name from psd file")
 	// Find the three layers by their names and check if the result is not null
 	SUBCASE("Find chinese simplified layer")
 	{
-		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		auto ptr = layeredFile.find_layer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
 		CHECK(ptr);
 	}
 	SUBCASE("Find overflow layer")
 	{
-		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
+		auto ptr = layeredFile.find_layer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
 		CHECK(ptr);
 	}
 	SUBCASE("Find unicode layer")
 	{
-		auto ptr = layeredFile.findLayer("UnicodeNameäää");
+		auto ptr = layeredFile.find_layer("UnicodeNameäää");
 		CHECK(ptr);
 	}
 }
@@ -52,17 +52,17 @@ TEST_CASE("Read Unicode layer name from psb file")
 	// Find the three layers by their names and check if the result is not null
 	SUBCASE("Find chinese simplified layer")
 	{
-		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		auto ptr = layeredFile.find_layer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
 		CHECK(ptr);
 	}
 	SUBCASE("Find overflow layer")
 	{
-		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
+		auto ptr = layeredFile.find_layer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
 		CHECK(ptr);
 	}
 	SUBCASE("Find unicode layer")
 	{
-		auto ptr = layeredFile.findLayer("UnicodeNameäää");
+		auto ptr = layeredFile.find_layer("UnicodeNameäää");
 		CHECK(ptr);
 	}
 }
@@ -87,17 +87,17 @@ TEST_CASE("Read write unicode layer name from psd file")
 	// Find the three layers by their names and check if the result is not null
 	SUBCASE("Find chinese simplified layer")
 	{
-		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		auto ptr = layeredFile.find_layer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
 		CHECK(ptr);
 	}
 	SUBCASE("Find overflow layer")
 	{
-		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
+		auto ptr = layeredFile.find_layer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
 		CHECK(ptr);
 	}
 	SUBCASE("Find unicode layer")
 	{
-		auto ptr = layeredFile.findLayer("UnicodeNameäää");
+		auto ptr = layeredFile.find_layer("UnicodeNameäää");
 		CHECK(ptr);
 	}
 }
@@ -122,17 +122,17 @@ TEST_CASE("Read write unicode layer name from psb file")
 	// Find the three layers by their names and check if the result is not null
 	SUBCASE("Find chinese simplified layer")
 	{
-		auto ptr = layeredFile.findLayer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
+		auto ptr = layeredFile.find_layer("Chinese_Simplified/请问可以修改psd 的画板尺寸吗");
 		CHECK(ptr);
 	}
 	SUBCASE("Find overflow layer")
 	{
-		auto ptr = layeredFile.findLayer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
+		auto ptr = layeredFile.find_layer("äüöUnicodeNameOverflowPascalString--------------------------------------------------------------------------------------------------------------------");
 		CHECK(ptr);
 	}
 	SUBCASE("Find unicode layer")
 	{
-		auto ptr = layeredFile.findLayer("UnicodeNameäää");
+		auto ptr = layeredFile.find_layer("UnicodeNameäää");
 		CHECK(ptr);
 	}
 }

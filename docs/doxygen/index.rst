@@ -39,19 +39,19 @@ Features
 Supported:
 	- Read and write of \*.psd and \*.psb files
 	- Creating and modifying simple and complex nested layer structures
+	- Smart Objects (replacing, warping, extracting)
 	- Pixel Masks
 	- Modifying layer attributes (name, blend mode etc.)
 	- Setting the Display ICC Profile
 	- 8-, 16- and 32-bit files
-	- RGB Color Mode
+	- RGB, CMYK and Grayscale color modes
 	- All compression modes known to Photoshop
 
 Planned:
 	- Support for Adjustment Layers
 	- Support for Vector Masks
 	- Support for Text Layers
-	- Support for Smart Object Layers
-	- CMYK, Indexed, Duotone and Greyscale Color Modes
+	- Indexed, Duotone Color Modes
 
 Not Supported:
 	- Files written by the PhotoshopAPI do not contain a valid merged image in order to save size meaning they will not behave properly when opened in
@@ -91,14 +91,14 @@ For detailed benchmarks running on a variety of different configurations please 
 Python Wrapper
 ==============
 
-The PhotoshopAPI comes with fully fledged Python bindings which can be simply installed using
+The PhotoshopAPI comes with Python bindings which can be installed using
 
 .. code-block:: none
 
 	$ py -m pip install PhotoshopAPI
 
-alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to the Python Bindings section or check out the PhotoshopExamples/ directory on
-the github page which includes fully fledged python examples.
+alternatively the wheels can be downloaded from the Releases page. For examples on how to use the python bindings please refer to :ref:`examples`
+or :ref:`bindings`
 
 Quickstart
 ==========
@@ -106,59 +106,25 @@ Quickstart
 The primary struct to familiarize yourself with when using the PhotoshopAPI is the :cpp:struct:`LayeredFile` as well as all its Layer derivatives (such as :cpp:struct:`ImageLayer` and 
 :cpp:struct:`GroupLayer`), all of these are template structs for each of the available bit depths. 
 
-To get a feel of what is possible with the API as well as how to use it please refer to ``PhotoshopExample/`` directory in the root directory of the github page. To familiarize
+To get a feel of what is possible with the API as well as how to use it please refer to :ref:`examples`. To familiarize
 yourself with the main concepts, as well as recommended workflows check out :ref:`concepts`
 
 If more fine grained control over the binary structure is necessary, one can modify the :cpp:struct:`PhotoshopFile` which is what is parsed by the API internally.
-Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. 
+Do keep in mind that this requires a deep understanding of how the Photoshop File Format works. An example of this can be found under :ref:`extended_signature`
 
 Below is a minimal example to get started with opening a PhotoshopFile, removing some layer, and writing the file back out to disk:
 
-C++
---------
+.. tab:: C++
 
-.. code-block:: cpp
-	
-	using namespace PhotoshopAPI;
+	.. literalinclude:: ../../PhotoshopExamples/CreateSimpleDocument/main.cpp
+	   :language: cpp
 
-	auto inputFile = File("./InputFile.psd");
-	auto psDocumentPtr = std::make_unique<PhotoshopFile>();
-	psDocumentPtr->read(inputFile);
+.. tab:: Python
 
-	// Initialize an 8-bit layeredFile. This must match the bit depth of the PhotoshopFile.
-	// To find the bit depth programatically one can use the psDocumentPtr->m_Header.m_Depth
-	// variable
-	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
-	layeredFile.removeLayer("SomeGroup/SomeNestedLayer");	// This will also delete any child layers
+	.. literalinclude:: ../../PhotoshopExamples/CreateSimpleDocument/create_simple_document.py
+	   :language: python
 
-	// We can now convert back to a PhotoshopFile and write out to disk
-	File::FileParams params = { .doRead = false};
-	// One could write out to .psb instead if wanted and the PhotoshopAPI will take 
-	// care of any conversion internally
-	auto outputFile = File("./OutputFile.psd", params);
-	auto psOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
-
-	psOutDocumentPtr->write(outputFile);
-
-
-Python
----------
-
-.. code-block:: python
-
-	import psapi
-
-	# Read the layered_file using the LayeredFile helper class, this returns a 
-	# psapi.LayeredFile_*bit object with the appropriate bit-depth
-	layered_file = psapi.LayeredFile.read("InputFile.psd")
-
-	# Do some operation, in this case delete
-	layered_file.remove_layer()
-
-	# Write back out to disk
-	layered_file.write("OutFile.psd")
-
-The same code for reading and writing can also be used to for example :cpp:func:`LayeredFile::moveLayer` or :cpp:func:`LayeredFile::addLayer`.
+The same code for reading and writing can also be used to for example :cpp:func:`LayeredFile::move_layer` or :cpp:func:`LayeredFile::add_layer`.
 
 Contents
 ========
@@ -169,6 +135,7 @@ Contents
    code/codestructures.rst
    python/bindings.rst
    concepts/index.rst
+   examples/index.rst
    benchmarks.rst
    building.rst
   
@@ -182,7 +149,7 @@ License
 	
 	BSD 3-Clause License
 
-	Copyright (c) 2024, Emil Dohne
+	Copyright (c) 2025, Emil Dohne
 
 	Redistribution and use in source and binary forms, with or without
 	modification, are permitted provided that the following conditions are met:

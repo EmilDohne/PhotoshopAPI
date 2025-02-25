@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/PascalString.h"
 #include "Core/Struct/Section.h"
 #include "Core/Struct/File.h"
@@ -25,11 +25,8 @@ struct ResourceBlock : public FileSection
 	/// Size of the data, padded to 2-bytes
 	uint32_t m_DataSize = 0;
 
-	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {FileSection::size(this->calculateSize()); };
+	ResourceBlock() : m_UniqueId(Enum::ImageResource::NotImplemented), m_Name("", 2u), m_DataSize(0) {}
 	
-	// This calculates the size of m_Size only, not m_DataSize!
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Force an override for the write function as we do not store
 	/// ResourceBlocks when roundtripping so we only have what we want here
 	virtual void write(File& document) = 0;
@@ -69,7 +66,7 @@ struct ResolutionInfoBlock : public ResourceBlock
 /// Edit -> Assign Profile which just visually adjusts the colours but does not convert the colours
 struct ICCProfileBlock : public ResourceBlock
 {
-	/// Stores the raw bytes of an ICC profile such as the ones found on C:\Windows\System32\spool\drivers\color for Windows.
+	/// Stores the raw bytes of an ICC profile such as the ones found on C:/Windows/System32/spool/drivers/color for Windows.
 	/// This does not include the padding bytes which are explicitly written on write
 	std::vector<uint8_t> m_RawICCProfile;
 

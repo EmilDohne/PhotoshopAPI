@@ -1,10 +1,10 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
-#include "Core/Struct/TaggedBlockStorage.h"
+#include "Core/TaggedBlocks/TaggedBlockStorage.h"
 #include "FileHeader.h"
 #include "Util/ProgressCallback.h"
 
@@ -32,8 +32,6 @@ struct AdditionalLayerInfo : public FileSection
 	// Note that we do not initialize any variables for FileSection here as that will be handled once we write the file
 	AdditionalLayerInfo(TaggedBlockStorage& taggedBlocks) : m_TaggedBlocks(std::move(taggedBlocks)) {};
 
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
-
 	/// Read and Initialize this section. Unlike many other sections we do not usually know the exact size but only a max size. 
 	/// Therefore we continuously read and verify that we can read another TaggedBlock with the right signature
 	void read(File& document, const FileHeader& header, ProgressCallback& callback, const uint64_t offset, const uint64_t maxLength, const uint16_t padding = 1u);
@@ -53,6 +51,27 @@ struct AdditionalLayerInfo : public FileSection
 			return taggedBlockPtr;
 		}
 		return std::nullopt;
+	}
+
+	template <typename T>
+		requires std::is_base_of_v<TaggedBlock, T>
+	std::shared_ptr<T> getTaggedBlock() const
+	{
+		return this->m_TaggedBlocks.getTaggedBlockView<T>();
+	}
+
+	template <typename T>
+		requires std::is_base_of_v<TaggedBlock, T>
+	std::shared_ptr<T> get_tagged_block() const
+	{
+		return this->getTaggedBlock<T>();
+	}
+
+	template <typename T>
+		requires std::is_base_of_v<TaggedBlock, T>
+	std::vector<std::shared_ptr<T>> get_tagged_blocks() const
+	{
+		return this->m_TaggedBlocks.get_tagged_blocks<T>();
 	}
 };
 

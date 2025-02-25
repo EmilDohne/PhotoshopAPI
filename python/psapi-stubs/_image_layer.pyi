@@ -1,4 +1,4 @@
-from typing import overload, Optional
+from typing import overload, Optional, List, Dict, Union
 import numpy
 
 import psapi.enum
@@ -7,18 +7,6 @@ from ._layer import Layer_8bit, Layer_16bit, Layer_32bit
 
 
 class ImageLayer_8bit(Layer_8bit):
-
-    @property
-    def image_data(self: ImageLayer_8bit) -> dict[int, numpy.ndarray]:
-        ...
-
-    @property
-    def num_channels(self: ImageLayer_8bit) -> int:
-        ...
-
-    @property
-    def channels(self: ImageLayer_8bit) -> list[int]:
-        ...
     
     @overload
     def __init__(
@@ -33,14 +21,35 @@ class ImageLayer_8bit(Layer_8bit):
         pos_y: int = ...,
         opacity: int = ...,
         compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
     ) -> None:
         ...
 
     @overload
     def __init__(
         self: ImageLayer_8bit,
-        image_data: dict[int, numpy.ndarray],
+        image_data: Dict[int, numpy.ndarray],
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+    ) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self: ImageLayer_8bit,
+        image_data: Dict[psapi.enum.ChannelID, numpy.ndarray],
         layer_name: str,
         layer_mask: Optional[numpy.ndarray] = ...,
         width: int = ...,
@@ -54,296 +63,220 @@ class ImageLayer_8bit(Layer_8bit):
     ) -> None:
         ...
 
-    @overload
-    def __init__(
-        self: ImageLayer_8bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
+    def channel_indices(self: ImageLayer_8bit) -> List[int]:
         ...
 
-    def get_channel_by_id(self: ImageLayer_8bit, id: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
+    def num_channels(self: ImageLayer_8bit) -> int:
         ...
 
-    def get_channel_by_index(self: ImageLayer_8bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
+    def get_image_data(self: ImageLayer_8bit) -> Dict[int, numpy.ndarray]:
         ...
 
-    def set_channel_by_id(self: ImageLayer_8bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
-        ...
-
-    def set_channel_by_index(self: ImageLayer_8bit, key: int, value: numpy.ndarray) -> None:
-        ...
-
-    def get_image_data(self: ImageLayer_8bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
-        ...
-        
-    @overload
     def set_image_data(
-        self: ImageLayer_8bit,
-        image_data: numpy.ndarray,
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+        self: ImageLayer_8bit, 
+        data: Union[numpy.ndarray, Dict[int, numpy.ndarray]],
+        width: Optional[int] = ...,
+        height: Optional[int] = ...) -> None:
         ...
 
-    @overload
-    def set_image_data(
-        self: ImageLayer_8bit,
-        image_data: dict[int, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+    def __getitem__(self: ImageLayer_8bit, key: int) -> numpy.ndarray:
         ...
 
-    @overload
-    def set_image_data(
-        self: ImageLayer_8bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+    def __setitem__(self: ImageLayer_8bit, key: int, data: numpy.ndarray) -> None:
         ...
 
-    def set_compression(self: ImageLayer_8bit, compression: psapi.enum.Compression) -> None:
+    def get_channel_by_index(self: ImageLayer_8bit, key: int) -> numpy.ndarray:
         ...
 
-    def __getitem__(self: ImageLayer_8bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
-        ...
-        
-    def __setitem__(self: ImageLayer_8bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
+    def set_channel_by_index(self: ImageLayer_8bit, key: int, data: numpy.ndarray) -> None:
         ...
 
+    def get_channel_by_id(self: ImageLayer_8bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
+        ...
+
+    def set_channel_by_index(self: ImageLayer_8bit, key: psapi.enum.ChannelID, data: numpy.ndarray) -> None:
+        ...
 
 
 class ImageLayer_16bit(Layer_16bit):
     
-    @property
-    def image_data(self: ImageLayer_16bit) -> dict[int, numpy.ndarray]:
+    @overload
+    def __init__(
+        self: ImageLayer_16bit,
+        image_data: numpy.ndarray,
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+    ) -> None:
         ...
 
-    @property
+    @overload
+    def __init__(
+        self: ImageLayer_16bit,
+        image_data: Dict[int, numpy.ndarray],
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+    ) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self: ImageLayer_16bit,
+        image_data: Dict[psapi.enum.ChannelID, numpy.ndarray],
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...
+    ) -> None:
+        ...
+
+    def channel_indices(self: ImageLayer_16bit) -> List[int]:
+        ...
+
     def num_channels(self: ImageLayer_16bit) -> int:
         ...
 
-    @property
-    def channels(self: ImageLayer_16bit) -> list[int]:
+    def get_image_data(self: ImageLayer_16bit) -> Dict[int, numpy.ndarray]:
         ...
 
-    @overload
-    def __init__(
-        self: ImageLayer_16bit,
-        image_data: numpy.ndarray,
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
+    def set_image_data(
+        self: ImageLayer_16bit, 
+        data: Union[numpy.ndarray, Dict[int, numpy.ndarray]],
+        width: Optional[int] = ...,
+        height: Optional[int] = ...) -> None:
         ...
 
-    @overload
-    def __init__(
-        self: ImageLayer_16bit,
-        image_data: dict[int, numpy.ndarray],
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
+    def __getitem__(self: ImageLayer_16bit, key: int) -> numpy.ndarray:
         ...
 
-    @overload
-    def __init__(
-        self: ImageLayer_16bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
+    def __setitem__(self: ImageLayer_16bit, key: int, data: numpy.ndarray) -> None:
         ...
 
-    def get_channel_by_id(self: ImageLayer_16bit, id: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
+    def get_channel_by_index(self: ImageLayer_16bit, key: int) -> numpy.ndarray:
         ...
 
-    def get_channel_by_index(self: ImageLayer_16bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
+    def set_channel_by_index(self: ImageLayer_16bit, key: int, data: numpy.ndarray) -> None:
         ...
 
-    def set_channel_by_id(self: ImageLayer_16bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
+    def get_channel_by_id(self: ImageLayer_16bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
         ...
 
-    def set_channel_by_index(self: ImageLayer_16bit, key: int, value: numpy.ndarray) -> None:
-        ...
-
-    def get_image_data(self: ImageLayer_16bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
-        ...
+    def set_channel_by_index(self: ImageLayer_16bit, key: psapi.enum.ChannelID, data: numpy.ndarray) -> None:
+        ...    
         
-    @overload
-    def set_image_data(
-        self: ImageLayer_16bit,
-        image_data: numpy.ndarray,
-        compression: psapi.enum.Compression = ...
-    ) -> None:
-        ...
-
-    @overload
-    def set_image_data(
-        self: ImageLayer_16bit,
-        image_data: dict[int, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
-        ...
-
-    @overload
-    def set_image_data(
-        self: ImageLayer_16bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
-        ...
-
-    def set_compression(self: ImageLayer_16bit, compression: psapi.enum.Compression) -> None:
-        ...
-
-    def __getitem__(self: ImageLayer_16bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
-        ...
-        
-    def __setitem__(self: ImageLayer_16bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
-        ...
-
 
 class ImageLayer_32bit(Layer_32bit):
-
-    @property
-    def image_data(self: ImageLayer_32bit) -> dict[int, numpy.ndarray]:
-        ...
     
-    @property
+    @overload
+    def __init__(
+        self: ImageLayer_32bit,
+        image_data: numpy.ndarray,
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+    ) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self: ImageLayer_32bit,
+        image_data: Dict[int, numpy.ndarray],
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+    ) -> None:
+        ...
+
+    @overload
+    def __init__(
+        self: ImageLayer_32bit,
+        image_data: Dict[psapi.enum.ChannelID, numpy.ndarray],
+        layer_name: str,
+        layer_mask: Optional[numpy.ndarray] = ...,
+        width: int = ...,
+        height: int = ...,
+        blend_mode: psapi.enum.BlendMode = ...,
+        pos_x: int = ...,
+        pos_y: int = ...,
+        opacity: int = ...,
+        compression: psapi.enum.Compression = ...,
+        color_mode: psapi.enum.ColorMode = ...
+    ) -> None:
+        ...
+
+    def channel_indices(self: ImageLayer_32bit) -> List[int]:
+        ...
+
     def num_channels(self: ImageLayer_32bit) -> int:
         ...
 
-    @property
-    def channels(self: ImageLayer_32bit) -> list[int]:
+    def get_image_data(self: ImageLayer_32bit) -> Dict[int, numpy.ndarray]:
         ...
 
-    @overload
-    def __init__(
-        self: ImageLayer_32bit,
-        image_data: numpy.ndarray,
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
-        ...
-
-    @overload
-    def __init__(
-        self: ImageLayer_32bit,
-        image_data: dict[int, numpy.ndarray],
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
-        ...
-
-    @overload
-    def __init__(
-        self: ImageLayer_32bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        layer_name: str,
-        layer_mask: Optional[numpy.ndarray] = ...,
-        width: int = ...,
-        height: int = ...,
-        blend_mode: psapi.enum.BlendMode = ...,
-        pos_x: int = ...,
-        pos_y: int = ...,
-        opacity: int = ...,
-        compression: psapi.enum.Compression = ...,
-        color_mode: psapi.enum.ColorMode = ...
-    ) -> None:
-        ...
-
-    def get_channel_by_id(self: ImageLayer_32bit, id: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
-        ...
-
-    def get_channel_by_index(self: ImageLayer_32bit, index: psapi.enum.ChannelID, do_copy: bool = ...) -> numpy.ndarray:
-        ...
-        
-    def set_channel_by_id(self: ImageLayer_32bit, key: psapi.enum.ChannelID, value: numpy.ndarray) -> None:
-        ...
-
-    def set_channel_by_index(self: ImageLayer_32bit, key: int, value: numpy.ndarray) -> None:
-        ...
-
-    def get_image_data(self: ImageLayer_32bit, do_copy: bool = ...) -> dict[int, numpy.ndarray]:
-        ...
-        
-    @overload
     def set_image_data(
-        self: ImageLayer_32bit,
-        image_data: numpy.ndarray,
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+        self: ImageLayer_32bit, 
+        data: Union[numpy.ndarray, Dict[int, numpy.ndarray]],
+        width: Optional[int] = ...,
+        height: Optional[int] = ...) -> None:
         ...
 
-    @overload
-    def set_image_data(
-        self: ImageLayer_32bit,
-        image_data: dict[int, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+    def __getitem__(self: ImageLayer_32bit, key: int) -> numpy.ndarray:
         ...
 
-    @overload
-    def set_image_data(
-        self: ImageLayer_32bit,
-        image_data: dict[psapi.enum.ChannelID, numpy.ndarray],
-        compression: psapi.enum.Compression = ...
-    ) -> None:
+    def __setitem__(self: ImageLayer_32bit, key: int, data: numpy.ndarray) -> None:
         ...
 
-    def set_compression(self: ImageLayer_32bit, compression: psapi.enum.Compression) -> None:
+    def get_channel_by_index(self: ImageLayer_32bit, key: int) -> numpy.ndarray:
         ...
 
-    def __getitem__(self: ImageLayer_32bit, key: psapi.enum.ChannelID | int) -> numpy.ndarray:
+    def set_channel_by_index(self: ImageLayer_32bit, key: int, data: numpy.ndarray) -> None:
         ...
 
-    def __setitem__(self: ImageLayer_32bit, key: psapi.enum.ChannelID | int, value: numpy.ndarray) -> None:
+    def get_channel_by_id(self: ImageLayer_32bit, key: psapi.enum.ChannelID) -> numpy.ndarray:
+        ...
+
+    def set_channel_by_index(self: ImageLayer_32bit, key: psapi.enum.ChannelID, data: numpy.ndarray) -> None:
         ...

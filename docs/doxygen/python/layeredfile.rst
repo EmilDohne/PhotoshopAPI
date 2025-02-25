@@ -84,6 +84,7 @@ Below you can find a list of layers that one is able to add to the LayeredFile i
    layers/layer.rst
    layers/image.rst
    layers/group.rst
+   layers/smart_object.rst
 
 
 Class Reference LayeredFile

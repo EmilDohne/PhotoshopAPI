@@ -25,7 +25,7 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 	{
 		LayeredFile<type> file(Enum::ColorMode::RGB, width, height);
 		{
-			std::unordered_map<int16_t, std::vector<type>> data =
+			std::unordered_map<int, std::vector<type>> data =
 			{
 				{0, std::vector<type>(size)},
 				{1, std::vector<type>(size)},
@@ -33,30 +33,30 @@ TEST_CASE("Create File with locked layers and then check if we can read them aga
 			};
 			auto params = typename Layer<type>::Params
 			{
-				.layerName = "Layer",
+				.name = "Layer",
 				.width = width,
 				.height = height,
-				.isLocked = true,
+				.locked = true,
 			};
 			auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
-			file.addLayer(layer);
+			file.add_layer(layer);
 		}
 		{
 			auto params = typename Layer<type>::Params
 			{
-				.layerName = "Group",
-				.isLocked = true
+				.name = "Group",
+				.locked = true
 			};
 			auto layer = std::make_shared<GroupLayer<type>>(params);
-			file.addLayer(layer);
+			file.add_layer(layer);
 		}
 		LayeredFile<type>::write(std::move(file), "LockedLayerFile.psb");
 	}
 	{
 		auto file = LayeredFile<type>::read("LockedLayerFile.psb");
-		for (const auto& layer : file.flatLayers())
+		for (const auto& layer : file.flat_layers())
 		{
-			CHECK(layer->m_IsLocked);
+			CHECK(layer->locked());
 		}
 	}
 }

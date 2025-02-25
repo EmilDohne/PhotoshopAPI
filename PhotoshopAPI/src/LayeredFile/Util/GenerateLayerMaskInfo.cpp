@@ -2,7 +2,7 @@
 #include "GenerateLayerMaskInfo.h"
 
 #include "Macros.h"
-#include "Core/Struct/TaggedBlock.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
 #include "LayeredFile/LayerTypes/Layer.h"
 
 #include <variant>
@@ -17,7 +17,7 @@ PSAPI_NAMESPACE_BEGIN
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<T>& layeredFile, std::filesystem::path file_path)
 {
 	PSAPI_LOG_ERROR("LayeredFile", "Cannot construct layer and mask information section if type is not uint8_t, uint16_t or float32_t");
 	return LayerAndMaskInformation();
@@ -26,30 +26,55 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<T>& layeredFile, const
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint8_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile,std::filesystem::path file_path)
 {
-	LayerInfo lrInfo = generateLayerInfo<uint8_t>(layeredFile, header);
+	LayerInfo lrInfo = generate_layerinfo<uint8_t>(layeredFile);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
-	return LayerAndMaskInformation(lrInfo, maskInfo, std::nullopt);
+	std::optional<AdditionalLayerInfo> additional_layer_info = std::nullopt;
+	if (!layeredFile.linked_layers()->empty())
+	{
+		std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+		auto linked_layer_blocks = layeredFile.linked_layers()->to_photoshop(true, file_path);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+
+		AdditionalLayerInfo _additional_info;
+		_additional_info.m_TaggedBlocks = TaggedBlockStorage{ block_ptrs };
+		additional_layer_info.emplace(std::move(_additional_info));
+	}
+
+	return LayerAndMaskInformation(lrInfo, maskInfo, std::move(additional_layer_info));
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFile, std::filesystem::path file_path)
 {
 	LayerInfo emptyLrInfo{};
-	LayerInfo lrInfo = generateLayerInfo<uint16_t>(layeredFile, header);
+	LayerInfo lrInfo = generate_layerinfo<uint16_t>(layeredFile);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
-	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
-	TaggedBlockStorage blockStorage(blockPtrs);
+	std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+	block_ptrs.push_back(std::make_shared<Lr16TaggedBlock>(lrInfo));
+
+	if (!layeredFile.linked_layers()->empty())
+	{
+		auto linked_layer_blocks = layeredFile.linked_layers()->to_photoshop(true, file_path);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+	}
+
+	TaggedBlockStorage blockStorage(block_ptrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
 	
@@ -58,17 +83,27 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<uint16_t>& layeredFile
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <>
-LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFile, const FileHeader& header)
+LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFile, std::filesystem::path file_path)
 {
 	LayerInfo emptyLrInfo{};
-	LayerInfo lrInfo = generateLayerInfo<float32_t>(layeredFile, header);
+	LayerInfo lrInfo = generate_layerinfo<float32_t>(layeredFile);
 	// This section is mainly there for backwards compatibility it seems and from initial testing
 	// does not appear to really be relevant for documents
 	GlobalLayerMaskInfo maskInfo{};
 
-	std::vector<std::shared_ptr<TaggedBlock>> blockPtrs{};
-	blockPtrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
-	TaggedBlockStorage blockStorage(blockPtrs);
+	std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+	block_ptrs.push_back(std::make_shared<Lr32TaggedBlock>(lrInfo));
+
+	if (!layeredFile.linked_layers()->empty())
+	{
+		auto linked_layer_blocks = layeredFile.linked_layers()->to_photoshop(true, file_path);
+		for (const auto& block : linked_layer_blocks)
+		{
+			block_ptrs.push_back(block);
+		}
+	}
+
+	TaggedBlockStorage blockStorage(block_ptrs);
 
 	return LayerAndMaskInformation(emptyLrInfo, maskInfo, std::make_optional<AdditionalLayerInfo>(blockStorage));
 }
@@ -77,10 +112,10 @@ LayerAndMaskInformation generateLayerMaskInfo(LayeredFile<float32_t>& layeredFil
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& header)
+LayerInfo generate_layerinfo(LayeredFile<T>& layeredFile)
 {
 	// We must first for each layer generate a layer records as well as channelImageData using the reversed flat layers
-	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.generateFlatLayers(std::nullopt, LayerOrder::reverse);
+	std::vector<std::shared_ptr<Layer<T>>> flatLayers = layeredFile.flat_layers(std::nullopt, LayerOrder::reverse);
 
 
 	std::vector<LayerRecord> layerRecords;
@@ -90,7 +125,7 @@ LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& heade
 
 	for (const auto& layer : flatLayers)
 	{
-		std::tuple<LayerRecord, ChannelImageData> lrData = generateLayerData<T>(layeredFile, layer, header);
+		std::tuple<LayerRecord, ChannelImageData> lrData = generate_layerdata<T>(layer);
 		LayerRecord lrRecord = std::move(std::get<0>(lrData));
 		ChannelImageData lrImageData = std::move(std::get<1>(lrData));
 
@@ -105,10 +140,9 @@ LayerInfo generateLayerInfo(LayeredFile<T>& layeredFile, const FileHeader& heade
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::tuple<LayerRecord, ChannelImageData> generateLayerData(LayeredFile<T>& layeredFile, std::shared_ptr<Layer<T>> layer, const FileHeader& header)
+std::tuple<LayerRecord, ChannelImageData> generate_layerdata(std::shared_ptr<Layer<T>> layer)
 {
-	// We default to not copying here
-	auto lrData = layer->toPhotoshop(layeredFile.m_ColorMode, header);
+	auto lrData = layer->to_photoshop();
 	return lrData;
 }
 

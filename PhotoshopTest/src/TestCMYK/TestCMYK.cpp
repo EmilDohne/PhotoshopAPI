@@ -27,12 +27,12 @@ TEST_CASE("Create CMYK File 8-bit psd")
 
 	auto file = LayeredFile<type>(colormode, width, height);
 	auto params = Layer<type>::Params{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -40,13 +40,13 @@ TEST_CASE("Create CMYK File 8-bit psd")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
-		.layerName = "Group",
-		.colorMode = colormode,
+		.name = "Group",
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "CMYK.psd");
 }
 
@@ -66,12 +66,12 @@ TEST_CASE("Create CMYK File 8-bit psb")
 
 	auto file = LayeredFile<type>(colormode, width, height);
 	auto params = Layer<type>::Params{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -79,13 +79,13 @@ TEST_CASE("Create CMYK File 8-bit psb")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
-		.layerName = "Group",
-		.colorMode = colormode,
+		.name = "Group",
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "CMYK.psb");
 }
 
@@ -105,12 +105,12 @@ TEST_CASE("Create CMYK File 16-bit psd")
 
 	auto file = LayeredFile<type>(colormode, width, height);
 	auto params = Layer<type>::Params{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -118,13 +118,13 @@ TEST_CASE("Create CMYK File 16-bit psd")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
-		.layerName = "Group",
-		.colorMode = colormode,
+		.name = "Group",
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "CMYK.psd");
 }
 
@@ -144,12 +144,12 @@ TEST_CASE("Create CMYK File 16-bit psb")
 
 	auto file = LayeredFile<type>(colormode, width, height);
 	auto params = Layer<type>::Params{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -157,13 +157,13 @@ TEST_CASE("Create CMYK File 16-bit psb")
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
-		.layerName = "Group",
-		.colorMode = colormode,
+		.name = "Group",
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "CMYK.psd");
 }
 
@@ -187,12 +187,12 @@ TEST_CASE("Create CMYK File 32-bit"
 
 	auto file = LayeredFile<type>(colormode, width, height);
 	auto params = Layer<type>::Params{
-		.layerName = "Layer",
+		.name = "Layer",
 		.width = width,
 		.height = height,
-		.colorMode = colormode,
+		.colormode = colormode,
 	};
-	std::unordered_map<int16_t, std::vector<type>> img_data = {
+	std::unordered_map<int, std::vector<type>> img_data = {
 		{0, std::vector<type>(width * height, value)},
 		{1, std::vector<type>(width * height, value)},
 		{2, std::vector<type>(width * height, value)},
@@ -200,13 +200,13 @@ TEST_CASE("Create CMYK File 32-bit"
 		{-1, std::vector<type>(width * height, value)},
 	};
 	auto img_layer = std::make_shared<ImageLayer<type>>(std::move(img_data), params);
-	file.addLayer(img_layer);
+	file.add_layer(img_layer);
 	params = Layer<type>::Params{
-		.layerName = "Group",
-		.colorMode = colormode,
+		.name = "Group",
+		.colormode = colormode,
 	};
 	auto grp_layer = std::make_shared<GroupLayer<type>>(params);
-	file.addLayer(grp_layer);
+	file.add_layer(grp_layer);
 	LayeredFile<type>::write(std::move(file), "CMYK.psd");
 }
 #endif

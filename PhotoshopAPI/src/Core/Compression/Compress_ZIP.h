@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "CompressionUtil.h"
 #include "InterleavedToPlanar.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "Core/Struct/ByteStream.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include "libdeflate.h"
 
@@ -41,7 +41,7 @@ namespace ZIP_Impl
 	{
 		if (data.size() > buffer.size() * sizeof(T))
 			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(T), buffer.size());
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		for (uint32_t y = 0; y < height; ++y)
 		{
 			// Initialize the prediction encoding for the current scanline
@@ -70,12 +70,12 @@ namespace ZIP_Impl
 	{
 		if (data.size() > buffer.size() * sizeof(float32_t))
 			PSAPI_LOG_ERROR("PredictionEncode", "Buffer size does not match data size, expected at least %zu bytes but got %zu instead", data.size() * sizeof(float32_t), buffer.size());
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		std::span<uint8_t> byteDataView(reinterpret_cast<uint8_t*>(data.data()), data.size() * sizeof(float32_t));
 		std::vector<uint32_t> verticalIter = createVerticalImageIterator(height);
 		{
-			PROFILE_SCOPE("32-bit binary de-interleave");
+			PSAPI_PROFILE_SCOPE("32-bit binary de-interleave");
 			// First de-interleave the data to planar byte order, i.e. going from 1234 1234 1234 1234 to 1111 2222 3333 4444
 			// We essentially split each scanline into 4 equal parts each holding the first, second, third and fourth of the original bytes
 			// We also convert to big endian order which is what is stored on disk
@@ -91,7 +91,7 @@ namespace ZIP_Impl
 		}
 
 		{
-			PROFILE_SCOPE("32-bit binary prediction encode");
+			PSAPI_PROFILE_SCOPE("32-bit binary prediction encode");
 			// Perform the prediction encoding of the data, keep in mind that this is done byte by byte
 			std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(),
 				[&](uint32_t y)
@@ -120,7 +120,7 @@ namespace ZIP_Impl
 	template <typename T>
 	std::vector<uint8_t> Compress(const std::span<T> uncompressedData, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		std::vector<uint8_t> compressedData;
 		// These represent the header bytes of the zlib stream
 		const uint8_t compressionType = 0x78;
@@ -157,7 +157,7 @@ namespace ZIP_Impl
 
 		// Adjust the size of the output buffer to the actual size of compressed data
 		{
-			PROFILE_SCOPE("Zip Insert buffer");
+			PSAPI_PROFILE_SCOPE("Zip Insert buffer");
 			compressedData.insert(compressedData.end(), buffer.begin(), buffer.begin() + bytesUsed);
 		}
 
@@ -191,7 +191,7 @@ namespace ZIP_Impl
 template <typename T>
 std::vector<uint8_t> CompressZIP(std::span<T> uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// Convert uncompressed data to native endianness in-place
 	endianEncodeBEArray<T>(uncompressedIn);
 
@@ -209,7 +209,7 @@ std::vector<uint8_t> CompressZIP(std::span<T> uncompressedIn, std::span<uint8_t>
 template <typename T>
 std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	// Convert uncompressed data to native endianness in-place
 	endianEncodeBEArray<T>(uncompressedIn);
 
@@ -233,7 +233,7 @@ std::vector<uint8_t> CompressZIP(std::vector<T>& uncompressedIn)
 template <typename T>
 std::vector<uint8_t> CompressZIPPrediction(std::span<T> uncompressedIn, std::span<uint8_t> buffer, libdeflate_compressor* compressor, const uint32_t width, const uint32_t height)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	// Prediction encode as well as byteswapping in-place
 	ZIP_Impl::PredictionEncode<T>(uncompressedIn, buffer, width, height);
@@ -252,7 +252,7 @@ std::vector<uint8_t> CompressZIPPrediction(std::span<T> uncompressedIn, std::spa
 template <typename T>
 std::vector<uint8_t> CompressZIPPrediction(std::vector<T>& uncompressedIn, const uint32_t width, const uint32_t height)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 
 	// Allocate the compressor as well as a sufficiently large swap buffer
 	libdeflate_compressor* compressor = libdeflate_alloc_compressor(ZIP_COMPRESSION_LVL);

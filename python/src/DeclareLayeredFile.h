@@ -27,18 +27,18 @@ struct LayeredFileWrapper
 		psDocumentPtr->read(inputFile, callback);
 		if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_8)
 		{
-			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
-			return layeredFile;
+			LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), filePath };
+			return std::move(layeredFile);
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_16)
 		{
-			LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr) };
-			return layeredFile;
+			LayeredFile<bpp16_t> layeredFile = { std::move(psDocumentPtr), filePath };
+			return std::move(layeredFile);
 		}
 		else if (psDocumentPtr->m_Header.m_Depth == Enum::BitDepth::BD_32)
 		{
-			LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr) };
-			return layeredFile;
+			LayeredFile<bpp32_t> layeredFile = { std::move(psDocumentPtr), filePath };
+			return std::move(layeredFile);
 		}
 		else
 		{
@@ -50,7 +50,7 @@ struct LayeredFileWrapper
 
 
 // Declare the wrapper class for the LayeredFile instance
-void declareLayeredFileWrapper(py::module& m)
+void declare_layered_file_wrapper(py::module& m)
 {
 	py::class_<LayeredFileWrapper> layeredFileWrapper(m, "LayeredFile");
 
@@ -81,7 +81,7 @@ void declareLayeredFileWrapper(py::module& m)
 // Generate a LayeredFile python class from our struct adjusting some
 // of the methods 
 template <typename T>
-void declareLayeredFile(py::module& m, const std::string& extension) {
+void declare_layered_file(py::module& m, const std::string& extension) {
 	using Class = LayeredFile<T>;
 	std::string className = "LayeredFile" + extension;
 	py::class_<Class> layeredFile(m, className.c_str(), py::dynamic_attr());
@@ -135,7 +135,7 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	// We must wrap this as it otherwise returns a nullptr which we cannot have
 	layeredFile.def("find_layer",[](const Class& self, const std::string& path)
 		{
-			auto layer = self.findLayer(path);
+			auto layer = self.find_layer(path);
 			if (layer)
 			{
 				return layer;
@@ -157,10 +157,10 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 
 	layeredFile.def("__getitem__", [](Class& self, const std::string name)
 		{
-			for (auto& layer : self.m_Layers)
+			for (auto& layer : self.layers())
 			{
 				// Get the layer name and recursively check the path
-				if (layer->m_LayerName == name)
+				if (layer->name() == name)
 				{
 					return layer;
 				}
@@ -187,54 +187,54 @@ void declareLayeredFile(py::module& m, const std::string& extension) {
 	)pbdoc");
 
 
-	layeredFile.def("add_layer", &Class::addLayer, py::arg("layer"));
-	layeredFile.def("move_layer", py::overload_cast<std::shared_ptr<Layer<T>>, std::shared_ptr<Layer<T>>>(&Class::moveLayer), 
+	layeredFile.def("add_layer", &Class::add_layer, py::arg("layer"));
+	layeredFile.def("move_layer", py::overload_cast<std::shared_ptr<Layer<T>>, std::shared_ptr<Layer<T>>>(&Class::move_layer), 
 		py::arg("child"), 
 		py::arg("parent") = py::none().cast<std::shared_ptr<Layer<T>>>(), R"pbdoc(
 		
 		Move the child layer to the provided parent layer, if none is provided we move to scene root instead
 	)pbdoc");
-	layeredFile.def("move_layer", py::overload_cast<const std::string, const std::string>(&Class::moveLayer), 
+	layeredFile.def("move_layer", py::overload_cast<const std::string, const std::string>(&Class::move_layer),
 		py::arg("child"), 
 		py::arg("parent") = "");
-	layeredFile.def("remove_layer", py::overload_cast<std::shared_ptr<Layer<T>>>(&Class::removeLayer), py::arg("layer"), R"pbdoc(
+	layeredFile.def("remove_layer", py::overload_cast<std::shared_ptr<Layer<T>>>(&Class::remove_layer), py::arg("layer"), R"pbdoc(
 		
 		Remove the specified layer from root of the layered_file, if you instead wish to remove from a group call remove_layer on a GroupLayer_*bit instance instead
 
 	)pbdoc");
-	layeredFile.def("remove_layer", py::overload_cast<const std::string>(&Class::removeLayer), py::arg("layer"));
+	layeredFile.def("remove_layer", py::overload_cast<const std::string>(&Class::remove_layer), py::arg("layer"));
 	
 	// Properties
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc", [](const Class& self)
 		{
-			auto data = self.m_ICCProfile.getData();
+			auto data = self.icc_profile().data();
 			uint8_t* ptr = data.data();
-			std::vector<size_t> shape = { self.m_ICCProfile.getDataSize() };
+			std::vector<size_t> shape = { self.icc_profile().data_size() };
 			return py::array_t<uint8_t>(shape, ptr);
 		}, [](Class& self, const std::filesystem::path& path)
 		{
-			self.m_ICCProfile = ICCProfile(path);
+			self.icc_profile() = ICCProfile(path);
 		});
-	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, & Class::setCompression);
-	layeredFile.def_property_readonly("num_channels", &Class::getNumChannels);
-	layeredFile.def_property_readonly("layers", [](const Class& self) {return self.m_Layers; });
-	layeredFile.def_property_readonly("flat_layers", &Class::flatLayers);
-	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.m_BitDepth; });
+	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, &Class::set_compression);
+	layeredFile.def_property_readonly("num_channels", &Class::num_channels);
+	layeredFile.def_property_readonly("layers", [](Class& self) { return self.layers(); });
+	layeredFile.def_property_readonly("flat_layers", [](Class& self) { return self.flat_layers(); });
+	layeredFile.def_property_readonly("bit_depth", [](const Class& self) { return self.bitdepth(); });
 	layeredFile.def_property("dpi",
-			[](const Class& self) { return self.m_DotsPerInch; },
-			[](Class& self, float dpi) { self.m_DotsPerInch = dpi; }
+			[](const Class& self) { return self.dpi(); },
+			[](Class& self, float dpi) { self.dpi(dpi); }
 	);
 	layeredFile.def_property("width",
-			[](const Class& self) { return self.m_Width; },
-			[](Class& self, uint64_t width) { self.m_Width = width; }
+			[](const Class& self) { return self.width(); },
+			[](Class& self, uint64_t width) { self.width(width); }
 	);
 	layeredFile.def_property("height",
-			[](const Class& self) { return self.m_Height; },
-			[](Class& self, uint64_t  height) { self.m_Height = height; }
+			[](const Class& self) { return self.height(); },
+			[](Class& self, uint64_t height) { self.height(height); }
 	);
-	layeredFile.def("is_layer_in_document", &Class::isLayerInDocument, py::arg("layer"), R"pbdoc(
+	layeredFile.def("is_layer_in_document", &Class::is_layer_in_file, py::arg("layer"), R"pbdoc(
 
 		Check if the layer already exists in the LayeredFile at any level of nesting, this check is done internally on add_layer().
 

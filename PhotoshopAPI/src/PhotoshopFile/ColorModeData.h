@@ -2,7 +2,7 @@
 
 #include "FileHeader.h"
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 
@@ -22,8 +22,6 @@ struct ColorModeData : public FileSection
 
 	ColorModeData() : m_Data({}) { FileSection::initialize(26u, 4u); };
 	ColorModeData(std::vector<uint8_t>& data) : m_Data(std::move(data)) {};
-
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read the ColorModeData section as is without interpreting anything
 	void read(File& document);

@@ -2,6 +2,7 @@
 
 #include "LayeredFile/LayeredFile.h"
 #include "LayeredFile/LayerTypes/GroupLayer.h"
+#include "LayeredFile/LayerTypes/ImageLayer.h"
 
 #include <variant>
 
@@ -15,7 +16,7 @@ TEST_CASE("Find Image layer in hierarchy 8bit")
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile = NAMESPACE_PSAPI::LayeredFile<uint8_t>::read(combined_path);
 
 	// Find a specific layer, check that it can be found and that it is of type GroupLayer
-	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.findLayer("GroupTopLevel/CollapsedGroup/BlackLayer");
+	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.find_layer("GroupTopLevel/CollapsedGroup/BlackLayer");
 	REQUIRE(layerPtr);
 	REQUIRE(std::dynamic_pointer_cast<NAMESPACE_PSAPI::ImageLayer<uint8_t>>(layerPtr));
 }
@@ -30,7 +31,7 @@ TEST_CASE("Find Image layer in hierarchy 8bit PSB")
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile = NAMESPACE_PSAPI::LayeredFile<uint8_t>::read(combined_path);
 
 	// Find a specific layer, check that it can be found and that it is of type GroupLayer
-	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.findLayer("GroupTopLevel/CollapsedGroup/BlackLayer");
+	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.find_layer("GroupTopLevel/CollapsedGroup/BlackLayer");
 	REQUIRE(layerPtr);
 	REQUIRE(std::dynamic_pointer_cast<NAMESPACE_PSAPI::ImageLayer<uint8_t>>(layerPtr));
 }
@@ -45,7 +46,7 @@ TEST_CASE("Find Image layer in hierarchy 16bit")
 	NAMESPACE_PSAPI::LayeredFile<uint16_t> layeredFile = NAMESPACE_PSAPI::LayeredFile<uint16_t>::read(combined_path);
 
 	// Find a specific layer, check that it can be found and that it is of type GroupLayer
-	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint16_t>> layerPtr = layeredFile.findLayer("GroupTopLevel/CollapsedGroup/BlackLayer");
+	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint16_t>> layerPtr = layeredFile.find_layer("GroupTopLevel/CollapsedGroup/BlackLayer");
 	REQUIRE(layerPtr);
 	REQUIRE(std::dynamic_pointer_cast<NAMESPACE_PSAPI::ImageLayer<uint16_t>>(layerPtr));
 }
@@ -61,7 +62,7 @@ TEST_CASE("Find Image layer in hierarchy 32bit")
 	NAMESPACE_PSAPI::LayeredFile<float32_t> layeredFile = NAMESPACE_PSAPI::LayeredFile<float32_t>::read(combined_path);
 
 	// Find a specific layer, check that it can be found and that it is of type GroupLayer
-	const std::shared_ptr<NAMESPACE_PSAPI::Layer<float32_t>> layerPtr = layeredFile.findLayer("GroupTopLevel/CollapsedGroup/BlackLayer");
+	const std::shared_ptr<NAMESPACE_PSAPI::Layer<float32_t>> layerPtr = layeredFile.find_layer("GroupTopLevel/CollapsedGroup/BlackLayer");
 	REQUIRE(layerPtr);
 	REQUIRE(std::dynamic_pointer_cast<NAMESPACE_PSAPI::ImageLayer<float32_t>>(layerPtr));
 }
@@ -76,7 +77,7 @@ TEST_CASE("Find Group layer in hierarchy")
 	NAMESPACE_PSAPI::LayeredFile<uint8_t> layeredFile = NAMESPACE_PSAPI::LayeredFile<uint8_t>::read(combined_path);
 
 	// Find a specific layer, check that it can be found and that it is of type GroupLayer
-	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.findLayer("GroupTopLevel/CollapsedGroup");
+	const std::shared_ptr<NAMESPACE_PSAPI::Layer<uint8_t>> layerPtr = layeredFile.find_layer("GroupTopLevel/CollapsedGroup");
 	REQUIRE(layerPtr);
 	REQUIRE(std::dynamic_pointer_cast<NAMESPACE_PSAPI::GroupLayer<uint8_t>>(layerPtr));
 }

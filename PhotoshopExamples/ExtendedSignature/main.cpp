@@ -27,7 +27,7 @@ int main()
 
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
 	// variable on the PhotoshopFile to figure it out programmatically
-	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
+	LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), "./LayeredFile.psd" };
 
 	// The Structure of the photoshop file we just opened is 
 	// 'Group'
@@ -39,10 +39,10 @@ int main()
 	// as well as delete 'ImageLayer'. It is advised to do the restructuring in steps 
 	// as shown below to avoid trying to access a layer which no longer exists
 
-	// By not specifying a second parameter to moveLayer() we tell the function to move it to the scene root
+	// By not specifying a second parameter to move_layer() we tell the function to move it to the scene root
 	// we could however also move it under another group by passing that group as a second parameter
-	layeredFile.moveLayer("Group/NestedGroup");
-	layeredFile.removeLayer("Group/ImageLayer");
+	layeredFile.move_layer("Group/NestedGroup");
+	layeredFile.remove_layer("Group/ImageLayer");
 
 	// This is the alternative signature which expects a layer ptr instead of a path.
 	// It is useful if we already have the layer ptr from another operation like extracting data and then want to move
@@ -66,7 +66,7 @@ int main()
 	params.doRead = false;
 	params.forceOverwrite = true;
 	auto outputFile = File("./RearrangedFile.psd", params);
-	auto psOutDocumentPtr = LayeredToPhotoshopFile(std::move(layeredFile));
+	auto psOutDocumentPtr = layered_to_photoshop(std::move(layeredFile), "./RearrangedFile.psd");
 
 	// We pass the same callback into the write function, clearing of data will 
 	// be handled internally

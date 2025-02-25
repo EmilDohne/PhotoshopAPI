@@ -7,12 +7,6 @@ Contributions to the PhotoshopAPI are more than welcome, below you can find a qu
 building the docs if required.
 
 
-Using the pre-built binaries
-----------------------------
-
-The easiest way to get started with the PhotoshopAPI is with the pre-built binaries for each of the releases on the `github <https://github.com/EmilDohne/PhotoshopAPI/releases>`_ 
-page. Simply make sure you have the ``include/`` directory in your header include paths and the ``PhotoshopAPI.lib`` (or ``libPhotoshopAPI.o`` for linux/macos) on your linker path
-
 Building the PhotoshopAPI
 ---------------------------
 
@@ -30,6 +24,9 @@ CMake Flags
 
 ``PSAPI_BUILD_STATIC``: default ``ON``
 Build a static library version of the PhotoshopAPI
+
+``PSAPI_USE_VCPKG``: default ``ON``
+Build the extra dependencies using vckpg instead of system installed libraries (e.g. OpenImageIO, OpenEXR, fmt etc.)
 
 ``PSAPI_BUILD_TESTS``: default ``ON``
 Build the tests associated with the PhotoshopAPI

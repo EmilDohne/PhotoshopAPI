@@ -1,5 +1,6 @@
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Macros.h"
+#include "LayeredFile/LinkedData/LinkedLayerData.h"
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -12,7 +13,32 @@ namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
 
-void declareBitDepthEnum(py::module& m)
+void declare_linkedlayertype_enums(py::module& m)
+{
+	py::enum_<LinkedLayerType> linked_layer_type(m, "LinkedLayerType", R"pbdoc(
+
+		Enum representing the bit depth of an image.
+
+		Attributes
+		-------------
+
+		data : int
+			The original image data is stored directly on the photoshop file
+			and is therefore packaged and contained.
+		external : int
+			The original image data is stored in a file on disk, for packaging
+			the file therefore has to be shipped alongside the photoshop file.
+
+	)pbdoc");
+
+	linked_layer_type.value("data", LinkedLayerType::data);
+	linked_layer_type.value("external", LinkedLayerType::external);
+
+	linked_layer_type.export_values();
+}
+
+
+void declare_bitdepth_enums(py::module& m)
 {
 	py::enum_<Enum::BitDepth> bitDepth(m, "BitDepth", R"pbdoc(
 
@@ -41,7 +67,7 @@ void declareBitDepthEnum(py::module& m)
 }
 
 
-void declareColorModeEnum(py::module& m)
+void declare_colormode_enums(py::module& m)
 {
 	py::enum_<Enum::ColorMode> colorMode(m, "ColorMode", R"pbdoc(
 		Enum representing the color mode of an file.
@@ -67,7 +93,7 @@ void declareColorModeEnum(py::module& m)
 }
 
 
-void declareChannelIDEnum(py::module& m)
+void declare_channelid_enums(py::module& m)
 {
 	py::enum_<Enum::ChannelID> channelID(m, "ChannelID", R"pbdoc(
 		Enum representation of all the different channel ids found in a file.
@@ -116,7 +142,7 @@ void declareChannelIDEnum(py::module& m)
 }
 
 
-void declareCompressionEnums(py::module& m)
+void declare_compression_enums(py::module& m)
 {
 	py::enum_<Enum::Compression> compression(m, "Compression", R"pbdoc(
 		Enum representation of all the different Compression codecs supported by Photoshop (and PSAPI).
@@ -146,7 +172,7 @@ void declareCompressionEnums(py::module& m)
 }
 
 
-void declareBlendModeEnum(py::module& m)
+void declare_blendmode_enums(py::module& m)
 {
 	py::enum_<Enum::BlendMode> blendMode(m, "BlendMode", R"pbdoc(
 		Enum representation of all the different blendmodes found in a file.

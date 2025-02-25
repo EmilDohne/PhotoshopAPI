@@ -1,4 +1,4 @@
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Macros.h"
 #include "Core/Struct/File.h"
 
@@ -13,7 +13,7 @@ namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
 
-void declareFileStruct(py::module& m)
+void declare_file_struct(py::module& m)
 {
 	py::class_<File> fileStruct(m, "File");
 
@@ -26,7 +26,7 @@ void declareFileStruct(py::module& m)
 }
 
 
-void declareChannelIDInfo(py::module& m)
+void declare_channelidinfo(py::module& m)
 {
 	py::class_<Enum::ChannelIDInfo> channelIDInfo(m, "ChannelIDInfo", py::dynamic_attr());
 

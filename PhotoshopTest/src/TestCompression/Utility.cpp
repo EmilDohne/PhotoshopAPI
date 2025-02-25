@@ -4,8 +4,10 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "PhotoshopFile/PhotoshopFile.h"
-#include "Core/Struct/TaggedBlock.h"
-#include "Enum.h"
+#include "Core/TaggedBlocks/TaggedBlock.h"
+#include "Core/TaggedBlocks/Lr16TaggedBlock.h"
+#include "Core/TaggedBlocks/Lr32TaggedBlock.h"
+#include "Util/Enum.h"
 
 #include <vector>
 #include <tuple>

@@ -3,46 +3,59 @@
 
 #include "DeclareLayeredFile.h"
 #include "DeclarePhotoshopFile.h"
-#include "DeclareLayer.h"
-#include "DeclareImageLayer.h"
-#include "DeclareGroupLayer.h"
+#include "Layers/DeclareLayer.h"
+#include "Layers/DeclareImageLayer.h"
+#include "Layers/DeclareGroupLayer.h"
+#include "Layers/DeclareSmartObjectLayer.h"
+#include "Mixins/DeclareMaskMixin.h"
+#include "DeclareSmartObjectWarp.h"
 #include "DeclareEnums.h"
+#include "DeclareGeometry.h"
 #include "DeclareUtil.h"
 
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
-PYBIND11_MODULE(psapi, m) {
-	/*py::options options;
-	options.disable_function_signatures();*/
-
+PYBIND11_MODULE(psapi, m) 
+{
 	auto enum_module = m.def_submodule("enum", "A collection of enumerators used throughout the project.");
-	declareBitDepthEnum(enum_module);
-	declareColorModeEnum(enum_module);
-	declareChannelIDEnum(enum_module);
-	declareCompressionEnums(enum_module);
-	declareBlendModeEnum(enum_module);
+	declare_linkedlayertype_enums(enum_module);
+	declare_bitdepth_enums(enum_module);
+	declare_colormode_enums(enum_module);
+	declare_channelid_enums(enum_module);
+	declare_compression_enums(enum_module);
+	declare_blendmode_enums(enum_module);
 
 	auto util_module = m.def_submodule("util", "Utility functions and structures to support the creation/interaction with LayeredFile or PhotoshopFile");
-	declareFileStruct(util_module);
-	declareChannelIDInfo(util_module);
+	declare_file_struct(util_module);
+	declare_channelidinfo(util_module);
 
-	declareLayer<bpp8_t>(m, "_8bit");
-	declareLayer<bpp16_t>(m, "_16bit");
-	declareLayer<bpp32_t>(m, "_32bit");
+	auto geometry_module = m.def_submodule("geometry");
+	declare_point2d(geometry_module);
+	declare_geometry_operations(geometry_module);
 
-	declareLayeredFile<bpp8_t>(m, "_8bit");
-	declareLayeredFile<bpp16_t>(m, "_16bit");
-	declareLayeredFile<bpp32_t>(m, "_32bit");
-	declareLayeredFileWrapper(m);
+	declare_layer<bpp8_t>(m, "_8bit");
+	declare_layer<bpp16_t>(m, "_16bit");
+	declare_layer<bpp32_t>(m, "_32bit");
 
-	declareImageLayer<bpp8_t>(m, "_8bit");
-	declareImageLayer<bpp16_t>(m, "_16bit");
-	declareImageLayer<bpp32_t>(m, "_32bit");
+	declare_layered_file<bpp8_t>(m, "_8bit");
+	declare_layered_file<bpp16_t>(m, "_16bit");
+	declare_layered_file<bpp32_t>(m, "_32bit");
+	declare_layered_file_wrapper(m);
 
-	declareGroupLayer<bpp8_t>(m, "_8bit");
-	declareGroupLayer<bpp16_t>(m, "_16bit");
-	declareGroupLayer<bpp32_t>(m, "_32bit");
+	declare_image_layer<bpp8_t>(m, "_8bit");
+	declare_image_layer<bpp16_t>(m, "_16bit");
+	declare_image_layer<bpp32_t>(m, "_32bit");
 
-	declarePhotoshopFile(m);
+	declare_group_layer<bpp8_t>(m, "_8bit");
+	declare_group_layer<bpp16_t>(m, "_16bit");
+	declare_group_layer<bpp32_t>(m, "_32bit");
+
+	declare_smart_object_layer<bpp8_t>(m, "_8bit");
+	declare_smart_object_layer<bpp16_t>(m, "_16bit");
+	declare_smart_object_layer<bpp32_t>(m, "_32bit");
+
+	declare_smart_object_warp(m);
+	
+	declare_photoshop_file(m);
 }

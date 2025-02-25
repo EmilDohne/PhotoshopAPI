@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 
 #include <limits>
 #include <tuple>
@@ -44,7 +44,7 @@ struct FixedFloat4
 	/// Get the FixedFloat4 as a floating point number which we can use
 	inline float getFloat() const noexcept
 	{
-		float output = static_cast<float>(m_Number);
+		auto output = static_cast<float>(m_Number);
 		output += (static_cast<float>(m_Fraction) / static_cast<float>((std::numeric_limits<uint16_t>::max)()));
 		return output;
 	}

@@ -7,12 +7,15 @@
 [submodule "thirdparty/pybind11"]
 	path = thirdparty/pybind11
 	url = https://github.com/pybind/pybind11
-[submodule "thirdparty/libdeflate"]
-	path = thirdparty/libdeflate
-	url = https://github.com/ebiggers/libdeflate
 [submodule "thirdparty/mio"]
 	path = thirdparty/mio
 	url = https://github.com/vimpunk/mio
 [submodule "thirdparty/simdutf"]
 	path = thirdparty/simdutf
 	url = https://github.com/simdutf/simdutf
+[submodule "thirdparty/vcpkg"]
+	path = thirdparty/vcpkg
+	url = https://github.com/microsoft/vcpkg
+[submodule "thirdparty/json"]
+	path = thirdparty/json
+	url = https://github.com/nlohmann/json

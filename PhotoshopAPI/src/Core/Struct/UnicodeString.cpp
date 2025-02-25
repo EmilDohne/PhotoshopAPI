@@ -24,7 +24,7 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	// would cause us to mistakenly assume its a broken input string
 	if (str.size() == 0)
 	{
-		FileSection::size(RoundUpToMultiple<uint32_t>(0 + sizeof(uint32_t), padding));
+		FileSection::size(RoundUpToMultiple<uint32_t>(sizeof(uint32_t), padding));
 		m_String = {};
 		m_UTF16String = {};
 		return;
@@ -38,22 +38,23 @@ UnicodeString::UnicodeString(std::string str, const uint8_t padding)
 	}
 
 	m_UTF16String.resize(expectedUtf16Len);	// The null character termination is implicit
-	if (!simdutf::convert_utf8_to_utf16le(str.data(), str.size(), m_UTF16String.data()))
+	std::size_t str_size = simdutf::convert_utf8_to_utf16le(str.data(), str.size(), m_UTF16String.data());
+	if (!str_size)
+	{
 		PSAPI_LOG_ERROR("UnicodeString", "Invalid UTF8 source string '%s' provided, unable to initialize UnicodeString", str.c_str());
-
-	FileSection::size(RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(expectedUtf16Len) * sizeof(char16_t) + sizeof(uint32_t), padding));
+	}
+	FileSection::size(RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(str_size) * sizeof(char16_t) + sizeof(uint32_t), padding));
 	m_String = str;
+	m_Padding = padding;
 }
 
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
-uint64_t UnicodeString::calculateSize(std::shared_ptr<FileHeader> header /*= nullptr*/) const
+const std::string UnicodeString::string() const noexcept
 {
-	// We actually already take care of initializing the size in the constructor therefore it is valid
-	return FileSection::size();
+	return m_String;
 }
-
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
@@ -155,15 +156,19 @@ std::string UnicodeString::convertUTF16BEtoUTF8(const std::u16string& str)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::read(File& document, const uint8_t padding)
 {
+	auto start_offset = document.get_offset();
+
+	m_Padding = padding;
 	// The number of code units does not appear to include the two-byte null
 	// termination
 	uint32_t numCodeUnits = ReadBinaryData<uint32_t>(document);
 	uint32_t numBytes = numCodeUnits * 2;
 
-	FileSection::size(RoundUpToMultiple<uint32_t>(numBytes + sizeof(uint32_t), padding));
 	// This UTF16 data is now in UTF16LE format (rather than the UTF16BE stored on disk)
 	std::vector<char16_t> utf16Data = ReadBinaryArray<char16_t>(document, numBytes);
+
 	m_UTF16String = std::u16string(utf16Data.begin(), utf16Data.end());
+	auto padded_size = RoundUpToMultiple<uint32_t>(numBytes + sizeof(uint32_t), padding);
 
 	// We check for empty strings here as simdutf would return 0 on the convert_utf8_to_utf16le which
 	// would cause us to mistakenly assume its a broken input string
@@ -171,20 +176,24 @@ void UnicodeString::read(File& document, const uint8_t padding)
 	{
 		m_String = {};
 		// Skip the padding bytes (if any)
-		document.skip(FileSection::size() - sizeof(uint32_t) - numBytes);
+		document.skip(padded_size - sizeof(uint32_t));
 		return;
 	}
 
 	// Calculate the required UTF8 size and perform the conversion
 	size_t expectedUtf8Len = simdutf::utf8_length_from_utf16le(utf16Data.data(), utf16Data.size());
-	m_String.resize(expectedUtf8Len);
-	if (!simdutf::convert_utf16le_to_utf8(utf16Data.data(), utf16Data.size(), m_String.data()))
+	std::vector<char> bytes(expectedUtf8Len);
+	if (!simdutf::convert_utf16le_to_utf8(utf16Data.data(), utf16Data.size(), bytes.data()))
 	{
 		PSAPI_LOG_ERROR("UnicodeString", "Invalid UnicodeString encountered at file position %zu, unable to parse it", document.getOffset() - numBytes);
 	}
+	// Remove any null characters from the vector as the string isnt expected to hold 
+	// it explicitly
+	bytes.erase(std::remove(bytes.begin(), bytes.end(), '\0'), bytes.end());
+	m_String = std::string(bytes.begin(), bytes.end());
 
 	// Skip the padding bytes (if any)
-	document.skip(FileSection::size() - sizeof(uint32_t) - numBytes);
+	document.set_offset(start_offset + padded_size);
 }
 
 
@@ -192,18 +201,37 @@ void UnicodeString::read(File& document, const uint8_t padding)
 // ---------------------------------------------------------------------------------------------------------------------
 void UnicodeString::write(File& document) const
 {
+	// Add a null termination char if it doesn't exist, photoshop gets angry otherwise.
+	// We also make any zero length strings explictly " ".
+	// Additionally, we check if the section will have a null byte inserted as part of padding in which case we will 
+	// not insert it as padding will do that
+	std::vector<uint16_t> string_data(m_UTF16String.begin(), m_UTF16String.end());
+	auto utf16strlen = string_data.size();
+	if ((string_data.empty() || (string_data.back() != static_cast<uint16_t>(0))))
+	{
+		string_data.push_back(static_cast<uint16_t>(0));
+		++utf16strlen;
+	}
+
 	// The length marker only denotes the actual number of code units not counting any padding
-	auto utf16strlen = m_UTF16String.size();
 	assert(utf16strlen < std::numeric_limits<uint32_t>::max());
 	WriteBinaryData<uint32_t>(document, static_cast<uint32_t>(utf16strlen));
 
 	// Write the string data
-	std::vector<uint16_t> stringData(m_UTF16String.begin(), m_UTF16String.end());
-	WriteBinaryArray<uint16_t>(document, std::move(stringData));
+	WriteBinaryArray<uint16_t>(document, std::move(string_data));
 
-	// Finally, write the padding bytes, excluding the size marker 
-	WritePadddingBytes(document, FileSection::size() - m_UTF16String.size() * sizeof(char16_t) - sizeof(uint32_t));
+	// Finally, write the padding bytes, excluding the size marker
+	auto byte_size = utf16strlen * 2 + sizeof(uint32_t);
+	auto pad_size = RoundUpToMultiple<uint64_t>(byte_size, m_Padding) - byte_size;
+	WritePadddingBytes(document, pad_size);
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+bool UnicodeString::operator==(const UnicodeString& other) const
+{
+	return m_UTF16String == other.getUTF16String() && m_String == other.getString();
+}
 
 PSAPI_NAMESPACE_END

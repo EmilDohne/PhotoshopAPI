@@ -28,10 +28,10 @@ int main()
 	// as well as delete 'ImageLayer'. It is advised to do the restructuring in steps 
 	// as shown below to avoid trying to access a layer which no longer exists
 
-	// By not specifying a second parameter to moveLayer() we tell the function to move it to the scene root
+	// By not specifying a second parameter to move_layer() we tell the function to move it to the scene root
 	// we could however also move it under another group by passing that group as a second parameter
-	layeredFile.moveLayer("Group/NestedGroup");
-	layeredFile.removeLayer("Group/ImageLayer");
+	layeredFile.move_layer("Group/NestedGroup");
+	layeredFile.remove_layer("Group/ImageLayer");
 
 	// One could also export as *.psb and PhotoshopAPI would take care of all the conversions internally
 	LayeredFile<bpp8_t>::write(std::move(layeredFile), "RearrangedFile.psd");

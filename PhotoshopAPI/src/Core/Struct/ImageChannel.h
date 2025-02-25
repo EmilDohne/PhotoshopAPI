@@ -1,11 +1,11 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
-#include "Profiling/Perf/Instrumentor.h"
-#include "Profiling/Memory/CompressionTracker.h"
+#include "Util/Enum.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Memory/CompressionTracker.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "CoordinateUtil.h"
+#include "Util/CoordinateUtil.h"
 #include "ThreadPool.h"
 
 #include "blosc2.h"
@@ -16,14 +16,8 @@
 #include <random>
 #include <execution>
 #include <cassert>
-
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
+
 
 
 #define __STDC_FORMAT_MACROS 1
@@ -41,10 +35,10 @@ struct ImageChannel
 {
 	/// The size of each sub-chunk in the super-chunk. For more information about what a chunk and super-chunk is
 	/// please refer to the c-blosc2 documentation. Defaults to 8MB
-	static const uint64_t m_ChunkSize = 1024 * 1024 * 8;
+	static constexpr uint64_t m_ChunkSize = 1024 * 1024 * 8;
 	/// This does not indicate the compression method of the channel in memory 
 	/// but rather the compression method it writes the PhotoshopFile with
-	Enum::Compression m_Compression = Enum::Compression::Raw;
+	Enum::Compression m_Compression = Enum::Compression::ZipPrediction;
 	/// Information about what channel this actually is
 	Enum::ChannelIDInfo m_ChannelID = { Enum::ChannelID::Red, 1 };
 	/// The size of the original (uncompressed) data in bytes
@@ -57,8 +51,10 @@ struct ImageChannel
 	int32_t getHeight() const { return m_Height; };
 	/// Get the x-coordinate of the uncompressed ImageChannel
 	float getCenterX() const { return m_XCoord; };
+	void setCenterX(float value) { m_XCoord = value; }
 	/// Get the y-coordinate of the uncompressed ImageChannel
 	float getCenterY() const { return m_YCoord; };
+	void setCenterY(float value) { m_YCoord = value; }
 	/// Get the total number of chunks held in the ImageChannel
 	uint64_t getNumChunks() const { return m_NumChunks; };
 
@@ -73,7 +69,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	std::vector<T> extractData(size_t numThreads = 0) {
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		auto buffer = getData<T>(numThreads);
 		if (buffer.size() > 0)
 		{
@@ -95,7 +91,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
 	void extractData(std::span<T> buffer, size_t numThreads = 0) {
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		if (!m_Data)
 		{
@@ -117,9 +113,9 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	void getData(std::span<T> buffer, size_t numThreads = 0)
+	void getData(std::span<T> buffer, size_t numThreads = 0) const
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 
 		if (!m_Data)
 		{
@@ -203,7 +199,7 @@ struct ImageChannel
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	template <typename T>
-	std::vector<T> getData(size_t numThreads = 0)
+	std::vector<T> getData(size_t numThreads = 0) const
 	{
 		std::vector<T> buffer(m_OrigByteSize / sizeof(T));
 		getData(std::span<T>(buffer), numThreads);
@@ -318,7 +314,9 @@ struct ImageChannel
 	~ImageChannel() 
 	{
 		if (!m_wasFreed)
+		{
 			blosc2_schunk_free(m_Data);
+		}
 		m_wasFreed = true;
 	}
 	ImageChannel() = default;
@@ -345,7 +343,7 @@ private:
 	template <typename T> 
 	void initializeBlosc2Schunk(const std::span<const T> imageData, const int32_t width, const int32_t height)
 	{
-		PROFILE_FUNCTION();
+		PSAPI_PROFILE_FUNCTION();
 		m_OrigByteSize = static_cast<uint64_t>(width) * height * sizeof(T);
 
 		blosc2_cparams cparams = BLOSC2_CPARAMS_DEFAULTS;

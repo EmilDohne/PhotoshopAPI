@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 #include "Core/Struct/ResourceBlock.h"
@@ -29,8 +29,6 @@ struct ImageResources : public FileSection
 	ImageResources(ImageResources&&) = default;
 	ImageResources& operator=(const ImageResources&) = delete;
 	ImageResources& operator=(ImageResources&&) = default;
-
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
 
 	/// Read the ImageResources from disk, any ImageResources without an implementation 
 	/// are not parsed and skipped

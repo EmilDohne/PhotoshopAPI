@@ -43,6 +43,7 @@ struct PhotoshopFile
 	/// \brief Read and Initialize this struct from a File
 	///
 	/// \param document the file object to read the data from
+	/// \param callback a callback which will report back the current progress of the read operation
 	void read(File& document, ProgressCallback& callback);
 
 	/// \brief Write the PhotoshopFile struct to disk with an explicit progress callback

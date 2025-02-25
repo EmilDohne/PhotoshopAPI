@@ -26,28 +26,42 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
+             cflags: ""
+             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
+        fetch-depth: 0
+
+    - name: Load or restore vcpkg libraries
+      uses: lukka/run-vcpkg@v11
+      with:
+        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
       
     - name: Run Valgrind
       if: matrix.os == 'ubuntu-24.04'
@@ -55,5 +69,5 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y valgrind
-        valgrind --leak-check=full ./PhotoshopTest
+        valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./PhotoshopTest
       continue-on-error: false

@@ -26,38 +26,55 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
+             cflags: ""
+             cxxflags: ""
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+             cflags: ""
+             cxxflags: ""
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
-             compilercxx: g++-13      
+             compilercxx: g++-13
+             cflags: ""
+             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-
-    # We need to specify Xcode15.3 here as the default for macos-14 runners is 15.01 which has a bug 
-    # causing linking to fail.
-    - name: Setup Xcode 15.3
+        fetch-depth: 0
+        
+    # Further brew packages needed to run/install vcpkg dependencies
+    - name: Setup MacOS dependencies
       if: matrix.os == 'macos-latest'
-      uses: maxim-lobanov/setup-xcode@v1
+      run: |
+          brew install ninja
+          brew install autoconf
+          brew install libtool
+          brew install automake
+
+    - name: Initialize vcpkg
+      uses: lukka/run-vcpkg@v11
       with:
-        xcode-version: '15.3'
+        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
 
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
@@ -65,21 +82,7 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
-
-
-    # Call our python script to generate the relevant release artifacts after which we upload
-    # them for each platform
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    
-    - name: Generate artifacts for ${{ matrix.os }}-${{ matrix.compilercxx }}
-      run: python scripts/generate_release.py --build-dir ${{github.workspace}}/build
-
-    - name: Upload Release Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: PhotoshopAPI-${{ matrix.os }}-${{ matrix.compilercxx }}
-        path: ${{github.workspace}}/release
+        CFLAGS: ${{ matrix.cflags }}
+        CXXFLAGS: ${{ matrix.cxxflags }}
+      run:  cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
+      

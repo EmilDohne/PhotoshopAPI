@@ -1,0 +1,34 @@
+{
+  "name": "photoshopapi",
+  "version-string": "v0.5.1",
+  "builtin-baseline": "6f29f12e82a8293156836ad81cc9bf5af41fe836",
+  "dependencies": [
+    "openimageio",
+    "fmt",
+    "libdeflate",
+    "stduuid",
+    "eigen3"
+  ],
+  "overrides": [
+    {
+      "name": "openimageio",
+      "version": "2.5.16.0"
+    },
+    {
+      "name": "fmt",
+      "version": "11.0.2#1"
+    },
+    {
+      "name": "libdeflate",
+      "version": "1.22#0"
+    },
+    {
+      "name": "stduuid",
+      "version": "1.2.3#0"
+    },
+    {
+      "name": "eigen3",
+      "version": "3.4.0#4"
+    }
+  ]
+}

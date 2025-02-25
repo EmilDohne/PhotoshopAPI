@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 
 #include <filesystem>
 #include <fstream>
@@ -58,18 +58,31 @@ struct File
 
 
 	/// Skip n bytes in the file and increment our position marker, checks if the offset 
-	/// is possible or if it would exceed the file size. Note: this is a uint64_t
+	/// is possible or if it would exceed the file size. Note: this is an int64_t
 	/// so skipping backwards is legal
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	void skip(int64_t size);
 
+	/// Skip sizeof(T) bytes in the file incrementing the position marker. Performs checks
+	/// if the skip is valid.
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	template <typename T>
+	void skip()
+	{
+		skip(sizeof(T));
+	}
 
 	/// Return the current offset from the file start
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	inline uint64_t getOffset() const { return m_Offset; }
 
+	/// Return the current offset from the file start
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	inline uint64_t get_offset() const { return m_Offset; }
 
 	/// Set the current offset to the specified value, checks if the offset is possible
 	/// or if it would exceed the file size
@@ -77,6 +90,11 @@ struct File
 	// --------------------------------------------------------------------------------
 	void setOffset(const uint64_t offset);
 
+	/// Set the current offset to the specified value, checks if the offset is possible
+	/// or if it would exceed the file size
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	void set_offset(const uint64_t offset);
 
 	/// Set the offset and read into a buffer using a singular lock. 
 	/// Use this if you need to skip to a section and read it in a multithreaded environment
@@ -96,6 +114,11 @@ struct File
 	// --------------------------------------------------------------------------------
 	inline std::filesystem::path getPath() const noexcept { return m_FilePath; };
 
+
+	/// Return whether we can read the given file from the document or if it would exceed the file size
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	bool can_read(const uint64_t size) const noexcept;
 
 	/// Initialize our File object from a path on disk. If doRead is true the file is only
 	/// open for reading while if we set it to false it is only open for writing

@@ -37,11 +37,8 @@ def main() -> None:
         img_data[channel] = srgb_to_linear(data)
         
     # Now we set the image data again and can write out the file!
-    # Note that if we had rescaled the image data using opencv or similar we would now first 
-    # have to modify the layers width and height like so:
-    # img_layer.width = new_width
-    # img_layer.height = new_height
-    # otherwise an error will be raised    
+    # Note that if we had rescaled the image data using opencv or similar we would have to 
+    # pass the new width and height as the second and third argument!
     img_layer.set_image_data(img_data)
     layered_file.write(os.path.join(os.path.dirname(__file__), "ModifiedImageData.psb"))
 

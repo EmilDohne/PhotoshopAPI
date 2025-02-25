@@ -3,13 +3,13 @@
 #include "Macros.h"
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Util.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 #include <vector>
 #include <limits>
@@ -298,7 +298,7 @@ namespace RLE_Impl
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_t> buffer, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(uncompressedData);
 
     // Generate spans for uncompressed as well as compressed data such that each thread
@@ -386,7 +386,7 @@ std::vector<uint8_t> CompressRLE(std::span<T> uncompressedData, std::span<uint8_
 template<typename T>
 std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHeader& header, const uint32_t width, const uint32_t height)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -416,13 +416,13 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
                     PSAPI_LOG_ERROR("CompressRLE", "Scanline sizes cannot exceed the numeric limits of 16-bit values when writing a PSD file");
                 }
                 uint16_t scanlineSizeu16 = static_cast<uint16_t>(scanlineSize);
-                scanlineSizeu16 = endianEncodeBE(scanlineSizeu16);
+                scanlineSizeu16 = endian_encode_be(scanlineSizeu16);
                 // Set the data at the correct index
                 std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSizeu16, sizeof(uint16_t));
         }
         else
         {
-            scanlineSize = endianEncodeBE(scanlineSize);
+            scanlineSize = endian_encode_be(scanlineSize);
             std::memcpy(reinterpret_cast<void*>(compressedData.data() + scanlineIndex), &scanlineSize, sizeof(uint32_t));
         }
 
@@ -442,7 +442,7 @@ std::vector<uint8_t> CompressRLE(std::vector<T>& uncompressedData, const FileHea
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint16_t>& scanlineSizes)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;
@@ -482,7 +482,7 @@ std::vector<uint8_t> CompressRLEImageDataPsd(std::vector<T>& uncompressedData, c
 template<typename T>
 std::vector<uint8_t> CompressRLEImageDataPsb(std::vector<T>& uncompressedData, const uint32_t width, const uint32_t height, std::vector<uint32_t>& scanlineSizes)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
     endianEncodeBEArray(std::span<T>(uncompressedData));
 
     std::vector<std::span<uint8_t>> uncompressedDataViews;

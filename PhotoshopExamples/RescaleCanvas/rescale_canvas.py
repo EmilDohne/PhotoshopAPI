@@ -42,7 +42,7 @@ def main() -> None:
     for layer in layered_file.flat_layers:
         new_shape = (layer.width * scaling_factor, layer.height * scaling_factor)
         if is_image_layer(layer):
-            image_data = layer.image_data
+            image_data = layer.get_image_data()
             scale_dimensions(layer, scaling_factor)
             for index, channel in image_data.items():
 

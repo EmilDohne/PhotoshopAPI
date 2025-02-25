@@ -338,10 +338,14 @@ namespace Enum
 	// --------------------------------------------------------------------------------
 	struct ChannelIDInfo
 	{
-		ChannelID id;
-		int16_t index;
+		ChannelID id{};
+		int16_t index{};
 
-		inline bool operator==(const ChannelIDInfo& other) const
+		constexpr inline ChannelIDInfo() noexcept = default;
+		constexpr inline ChannelIDInfo(ChannelID id, int16_t index) noexcept
+			: id(id), index(index) {}
+
+		constexpr inline bool operator==(const ChannelIDInfo& other) const
 		{
 			return (this->id == other.id && this->index == other.index);
 		}
@@ -508,6 +512,27 @@ namespace Enum
 	}
 	
 
+	// Specialization for int
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	template<>
+	inline ChannelIDInfo toChannelIDInfo<int>(const int value, const Enum::ColorMode colorMode)
+	{
+		switch (colorMode)
+		{
+		case Enum::ColorMode::RGB:
+			return Impl::rgbIntToChannelID(static_cast<int16_t>(value));
+		case Enum::ColorMode::CMYK:
+			return Impl::cmykIntToChannelID(static_cast<int16_t>(value));
+		case Enum::ColorMode::Grayscale:
+			return Impl::grayscaleIntToChannelID(static_cast<int16_t>(value));
+		default:
+			PSAPI_LOG_ERROR("ChannelID", "No suitable conversion found for the given index %d and colormode %s", value, Enum::colorModeToString(colorMode).c_str());
+			return ChannelIDInfo{};
+		}
+	}
+
+
 	/// Checks whether the channelid is valid for the given colormode, valid template instantiations are with
 	/// T: Enum::ChannelID
 	/// T: int16_t
@@ -585,7 +610,7 @@ namespace Enum
 	}
 
 
-	inline std::string channelIDToString(const Enum::ChannelID value)
+	inline std::string channelIDToString(const Enum::ChannelID value) noexcept
 	{
 		switch (value)
 		{
@@ -745,7 +770,8 @@ namespace Enum
 		lrPatternData,
 		lrLinked,
 		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide length field
-		lrSmartObject,	// Represents the keys 'SoLd' and 'SoLE', there is also 'PlLd' and 'plLd' which were phased out in CS3 which is why we wont support them
+		lrPlaced,	// Represents the keys 'SoLd'
+		lrPlacedData,	// Represents the keys 'PlLd' and 'plLd'
 		// Additional layer specific data
 		lrCompositorUsed,
 		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
@@ -810,10 +836,13 @@ namespace Enum
 			{"TySh", TaggedBlockKey::lrTypeTool},
 			{"shpa", TaggedBlockKey::lrPatternData},
 			{"lnkD", TaggedBlockKey::lrLinked},
+			{"lnkE", TaggedBlockKey::lrLinked},
 			{"lnk3", TaggedBlockKey::lrLinked},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
-			{"SoLd", TaggedBlockKey::lrSmartObject},
-			{"SoLE", TaggedBlockKey::lrSmartObject},
+			{"SoLd", TaggedBlockKey::lrPlacedData},
+			{"SoLE", TaggedBlockKey::lrPlacedData},
+			{"PlLd", TaggedBlockKey::lrPlaced},
+			{"plLd", TaggedBlockKey::lrPlaced},
 			{"lnk2", TaggedBlockKey::lrLinked_8Byte},
 			{"cinf", TaggedBlockKey::lrCompositorUsed},
 			{"Mtrn", TaggedBlockKey::lrSavingMergedTransparency},

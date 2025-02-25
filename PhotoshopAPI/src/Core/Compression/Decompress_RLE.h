@@ -1,15 +1,15 @@
 #pragma once
 
 #include "Macros.h"
-#include "Logger.h"
+#include "Util/Logger.h"
 #include "Core/FileIO/Util.h"
 #include "Core/Endian/EndianByteSwap.h"
 #include "Core/Endian/EndianByteSwapArr.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/ByteStream.h"
 #include "PhotoshopFile/FileHeader.h"
-#include "Profiling/Perf/Instrumentor.h"
-#include "FileUtil.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
+#include "Util/FileUtil.h"
 
 #include <vector>
 #include <limits>
@@ -42,7 +42,7 @@ namespace RLE_Impl
     template<typename T>
     std::vector<uint8_t> DecompressPackBits(std::span<const uint8_t> compressedData, const uint32_t width, const uint32_t height)
     {
-        PROFILE_FUNCTION();
+        PSAPI_PROFILE_FUNCTION();
         std::vector<uint8_t> decompressedData(sizeof(T) * static_cast<uint64_t>(width) * static_cast<uint64_t>(height), 0u);
 
         uint64_t i = 0;
@@ -91,7 +91,7 @@ namespace RLE_Impl
     template<typename T>
     void DecompressPackBits(std::span<const uint8_t> compressedData, std::span<uint8_t> decompressedData)
     {
-        PROFILE_FUNCTION();
+        PSAPI_PROFILE_FUNCTION();
 
         uint64_t i = 0;
         uint64_t idx = 0;   // Index into decompressedData
@@ -139,7 +139,7 @@ namespace RLE_Impl
 template<typename T>
 void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
-    PROFILE_FUNCTION();
+    PSAPI_PROFILE_FUNCTION();
 
     if (buffer.size() < static_cast<uint64_t>(width) * static_cast<uint64_t>(height))
     {
@@ -207,7 +207,7 @@ void DecompressRLE(ByteStream& stream, std::span<T> buffer, uint64_t offset, con
         }
     }
     {
-        PROFILE_SCOPE("DecompressPackBits");
+        PSAPI_PROFILE_SCOPE("DecompressPackBits");
         // Decompress using the PackBits algorithm
         std::for_each(std::execution::par, verticalIter.begin(), verticalIter.end(), [&](auto index)
             {

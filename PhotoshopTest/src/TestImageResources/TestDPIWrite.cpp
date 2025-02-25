@@ -2,6 +2,7 @@
 
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "LayeredFile/LayeredFile.h"
+#include "LayeredFile/LayerTypes/ImageLayer.h"
 #include "Macros.h"
 
 #include <filesystem>
@@ -25,7 +26,7 @@ TEST_CASE("Write DPI")
 		const uint32_t width = 64u;
 		const uint32_t height = 64u;
 		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
-		document.m_DotsPerInch = 300.0f;
+		document.dpi() = 300.0f;
 
 		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
 		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 36u);
@@ -33,7 +34,7 @@ TEST_CASE("Write DPI")
 		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 36u);
 
 		ImageLayer<bpp8_t>::Params layerParams = {};
-		layerParams.layerName = "Layer";
+		layerParams.name = "Layer";
 		layerParams.width = width;
 		layerParams.height = height;
 
@@ -41,13 +42,13 @@ TEST_CASE("Write DPI")
 			std::move(channelMap),
 			layerParams
 		);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		File::FileParams params = File::FileParams();
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
-		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psd_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -56,8 +57,8 @@ TEST_CASE("Write DPI")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
-		dpi = layeredFile.m_DotsPerInch;
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psd_path };
+		dpi = layeredFile.dpi();
 	}
 
 	CHECK(dpi == 300.0f);
@@ -81,7 +82,7 @@ TEST_CASE("Write DPI fractional")
 		const uint32_t width = 64u;
 		const uint32_t height = 64u;
 		LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
-		document.m_DotsPerInch = 700.25f;
+		document.dpi() = 700.25f;
 
 		std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
 		channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 36u);
@@ -89,7 +90,7 @@ TEST_CASE("Write DPI fractional")
 		channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 36u);
 
 		ImageLayer<bpp8_t>::Params layerParams = {};
-		layerParams.layerName = "Layer";
+		layerParams.name = "Layer";
 		layerParams.width = width;
 		layerParams.height = height;
 
@@ -97,13 +98,13 @@ TEST_CASE("Write DPI fractional")
 			std::move(channelMap),
 			layerParams
 		);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		File::FileParams params = File::FileParams();
 		params.doRead = false;
 		params.forceOverwrite = true;
 		auto outputFile = File(psd_path, params);
-		auto psdDocumentPtr = LayeredToPhotoshopFile(std::move(document));
+		auto psdDocumentPtr = layered_to_photoshop(std::move(document), psd_path);
 		ProgressCallback callback{};
 		psdDocumentPtr->write(outputFile, callback);
 	}
@@ -112,8 +113,8 @@ TEST_CASE("Write DPI fractional")
 		auto psDocumentPtr = std::make_unique<PhotoshopFile>();
 		ProgressCallback callback{};
 		psDocumentPtr->read(inputFile, callback);
-		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr) };
-		dpi = layeredFile.m_DotsPerInch;
+		LayeredFile<bpp8_t> layeredFile = { std::move(psDocumentPtr), psd_path };
+		dpi = layeredFile.dpi();
 	}
 
 	CHECK(dpi == 700.25f);

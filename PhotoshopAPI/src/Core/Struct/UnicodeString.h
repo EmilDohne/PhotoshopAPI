@@ -28,10 +28,10 @@ struct UnicodeString : public FileSection
 	/// the section to the given padding.
 	UnicodeString(std::string str, const uint8_t padding);
 
-	/// This method returns the absolute size of the UnicodeString in bytes including the 4-byte size
-	uint64_t calculateSize(std::shared_ptr<FileHeader> header = nullptr) const override;
+	bool operator==(const UnicodeString& other) const;
 
 	/// Retrieve the UTF8 representation of the struct
+	const std::string string() const noexcept;
 	const std::string getString() const noexcept;
 	const std::string_view getStringView() const noexcept;
 	/// Retrieve the UTF16LE representation of the struct
@@ -50,14 +50,16 @@ struct UnicodeString : public FileSection
 	/// representation
 	void read(File& document, const uint8_t padding);
 
-	/// Write the stored UTF16 string to disk with a 4-byte length aligned to the 
-	/// given padding
+	/// Write the stored UTF16 string to disk with a 4-byte length with the padding
+	/// defined in the constructor
 	void write(File& document) const;
 private:
 	// UTF-8 representation of the string
 	std::string m_String;
 	// UTF-16 LE representation of the string
 	std::u16string m_UTF16String;
+
+	uint8_t m_Padding = 1u;
 };
 
 

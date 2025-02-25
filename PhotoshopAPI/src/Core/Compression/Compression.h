@@ -8,9 +8,9 @@
 
 #include "Macros.h"
 #include "Core/FileIO/Read.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/ByteStream.h"
-#include "Profiling/Perf/Instrumentor.h"
+#include "Util/Profiling/Perf/Instrumentor.h"
 
 
 #include <type_traits>
@@ -34,7 +34,7 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 inline void DecompressData(ByteStream& stream, std::span<T> buffer, uint64_t offset, const Enum::Compression& compression, const FileHeader& header, const uint32_t width, const uint32_t height, const uint64_t compressedSize)
 {
-	PROFILE_FUNCTION();
+	PSAPI_PROFILE_FUNCTION();
 	switch (compression)
 	{
 	case Enum::Compression::Raw:

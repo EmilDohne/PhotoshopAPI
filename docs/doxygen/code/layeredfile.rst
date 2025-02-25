@@ -9,8 +9,8 @@ around internally also very efficient
 Usage
 -----
 
-The code snippets below show some examples of how one would generally use a LayeredFile. For more detailed examples please visit the PhotoshopExamples/ directory
-on the github page
+The code snippets below show some examples of how one would generally use a LayeredFile. 
+For more detailed examples please visit :ref:`examples`
 
 .. tab:: Read and Modify
 
@@ -22,10 +22,10 @@ on the github page
 		LayeredFile<bpp16_t> layeredFile = LayeredFile<bpp16_t>::read("InFile.psd");
 
 		// Move a layer one level up in the hierarchy
-		layeredFile.moveLayer("Group/NestedGroup/Image", "Group");
+		layeredFile.move_layer("Group/NestedGroup/Image", "Group");
 
 		// Delete the now empty group from the document
-		layeredFile.removeLayer("Group/NestedGroup");
+		layeredFile.remove_layer("Group/NestedGroup");
 
 		// We can now convert the LayeredFile to a PhotoshopFile and write it out (this is done internally
 		// but can be exposed, see the ExtendedSignature example for more information)
@@ -57,7 +57,7 @@ on the github page
 		layerParams.height = height;
 
 		auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channelMap), layerParams);
-		document.addLayer(layer);
+		document.add_layer(layer);
 
 		LayeredFile<bpp8_t>::write(std::move(layeredFile), "OutFile.psd");
 
@@ -66,7 +66,7 @@ on the github page
 Layer Type Derivatives
 ----------------------
 
-Below you can find a list of layers that one is able to add to the LayeredFile instance. Keep in mind that some of these are not fully implemented yet
+Below you can find a list of layers that one is able to add to the LayeredFile instance.
 
 .. toctree::
    :maxdepth: 2
@@ -76,26 +76,27 @@ Below you can find a list of layers that one is able to add to the LayeredFile i
    layers/group.rst
    layers/image.rst
    layers/sectiondivider.rst
-
-
-   layers/adjustment.rst
-   layers/artboard.rst
    layers/smartobject.rst
-   layers/textlayer.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Global Data:
+
+   util/linked_layer_data.rst
 
 
 
 Conversion Functions
 ---------------------
 
-.. doxygenfunction:: LayeredToPhotoshopFile
+.. doxygenfunction:: layered_to_photoshop
 
 |
 
 Find Layer as specific type
 ----------------------------
 
-.. doxygenfunction:: findLayerAs
+.. doxygenfunction:: find_layer_as
 
 |
 
@@ -112,6 +113,7 @@ LayeredFile Struct
 
 .. doxygenstruct:: LayeredFile
 	:members:
+	:undoc-members:
 
 |
 

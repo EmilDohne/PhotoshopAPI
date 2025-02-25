@@ -27,6 +27,8 @@ def main() -> None:
         layer_name=lr_src.name, 
         width=lr_src.width, 
         height=lr_src.height, 
+        pos_x=lr_src.center_x,
+        pos_y=lr_src.center_y,
         blend_mode=lr_src.blend_mode, 
         opacity=lr_src.opacity
         )

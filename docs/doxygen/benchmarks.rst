@@ -140,7 +140,7 @@ data.
     :width: 49%
 .. image:: /images/benchmarks/FileSizes/Deep_Nested_Layers_(8-bit)_combined_plot.png
     :width: 49%
-.. image:: /images/benchmarks/FileSizes/Glacius_Hyundai_Sample_(8-bit)_combined_plot.png
+.. image:: /images/benchmarks/FileSizes/Glacious_Hyundai_Sample_(8-bit)_combined_plot.png
     :width: 98.6%
 
 

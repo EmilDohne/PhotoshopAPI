@@ -1,5 +1,5 @@
 Structure Description: `ProgressCallback`
-======================================
+==========================================
 
 
 .. doxygenstruct:: ProgressCallback

@@ -37,7 +37,10 @@ class GroupLayer_8bit(Layer_8bit):
         opacity: int = ...,
         compression: psapi.enum.Compression = ...,
         color_mode: psapi.enum.ColorMode = ...,
-        is_collapsed: bool = ...) -> None:
+        is_collapsed: bool = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+        ) -> None:
         ...
 
     def add_layer(self: GroupLayer_8bit, layered_file: LayeredFile_8bit, layer: Layer_8bit) -> None:
@@ -89,7 +92,10 @@ class GroupLayer_16bit(Layer_16bit):
         opacity: int = ...,
         compression: psapi.enum.Compression = ...,
         color_mode: psapi.enum.ColorMode = ...,
-        is_collapsed: bool = ...) -> None: 
+        is_collapsed: bool = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+        ) -> None: 
         ...
 
     def add_layer(self: GroupLayer_16bit, layered_file: LayeredFile_16bit, layer: Layer_16bit) -> None:
@@ -141,7 +147,10 @@ class GroupLayer_32bit(Layer_32bit):
         opacity: int = ...,
         compression: psapi.enum.Compression = ...,
         color_mode: psapi.enum.ColorMode = ...,
-        is_collapsed: bool = ...) -> None: 
+        is_collapsed: bool = ...,
+        is_visible: bool = ...,
+        is_locked: bool = ...
+        ) -> None: 
         ...
 
     def add_layer(self: GroupLayer_32bit, layered_file: LayeredFile_32bit, layer: Layer_32bit) -> None:

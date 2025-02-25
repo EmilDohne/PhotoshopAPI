@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Macros.h"
-#include "Enum.h"
+#include "Util/Enum.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 #include "Core/FileIO/Write.h"
@@ -70,8 +70,6 @@ namespace ImageDataImpl
 /// it to be present. Due to this compression step we can usually save lots of data over what Photoshop writes out
 struct ImageData : public FileSection
 {
-
-	inline uint64_t calculateSize(std::shared_ptr<FileHeader> header /* = nullptr */) const override { return 0; };
 
 	/// Write out an empty image data section from the number of channels. This section is unfortunately required
 	inline void write(File& document, const FileHeader& header)

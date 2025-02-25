@@ -31,12 +31,12 @@ int main()
 	// "extended" read signature shown in the ExtendedSignature example.
 	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("ImageData.psb");
 
-	// We could also use findLayer() on the LayeredFile but this way we directly get the appropriate type.
+	// We could also use find_layer() on the LayeredFile but this way we directly get the appropriate type.
 	// Keep in mind this can return nullptr!
-	auto imageLayerPtr = findLayerAs<bpp8_t, ImageLayer>("Blue_Lagoon/Blue_Lagoon.exr", layeredFile);
+	auto imageLayerPtr = find_layer_as<bpp8_t, ImageLayer>("Blue_Lagoon/Blue_Lagoon.exr", layeredFile);
 
 	// Now we can grab all channels (we could also use just grab a single channel)
-	auto channels = imageLayerPtr->getImageData();
+	auto channels = imageLayerPtr->get_image_data();
 
 	// Now we do our modifications. In this example we apply a sRGB -> linear operation
 	for (auto& [_, value] : channels)
@@ -48,6 +48,6 @@ int main()
 	}
 
 	// Finally we can set the image data to the channel again and save out our file
-	imageLayerPtr->setImageData(std::move(channels));
+	imageLayerPtr->set_image_data(std::move(channels));
 	LayeredFile<bpp8_t>::write(std::move(layeredFile), "ModifiedImageData.psb");
 }
