@@ -76,7 +76,8 @@ add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
 # In our CI we use unity builds to speed up compilation but due to c-blosc2's build
 # setup this doesn't work and will result in undefined references
 if (CMAKE_UNITY_BUILD)
-    set_target_properties(Blosc2::blosc2_static PROPERTIES UNITY_BUILD OFF)
+    set_target_properties(blosc2_static PROPERTIES UNITY_BUILD OFF)
+    set_target_properties(blosc2_shared PROPERTIES UNITY_BUILD OFF)
 endif()
 
 # Add target for blosc2 headers
