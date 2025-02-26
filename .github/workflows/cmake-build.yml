@@ -81,7 +81,6 @@ jobs:
       env:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
-      run:  cmake --build ${{github.workspace}}/build \
-                  --config ${{env.BUILD_TYPE}} \
-                  --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
+      run:  |
+          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
       
