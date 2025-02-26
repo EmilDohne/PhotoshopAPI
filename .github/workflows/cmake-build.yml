@@ -74,7 +74,7 @@ jobs:
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build -DCMAKE_UNITY_BUILD=ON -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_TESTS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
 
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
