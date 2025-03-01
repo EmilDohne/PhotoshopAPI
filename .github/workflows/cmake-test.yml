@@ -42,7 +42,7 @@ jobs:
              compilercxx: msvc
              cflags: ""
              cxxflags: ""
-             multiline-separator: ^
+             multiline-separator: "`"
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
