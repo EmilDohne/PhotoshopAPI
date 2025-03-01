@@ -3,7 +3,7 @@
 project(PhotoshopAPI)
 file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
-add_library(PhotoshopAPI STATIC ${MY_SOURCES})
+add_library(PhotoshopAPI STATIC ${MY_SOURCES} "src/Core/TaggedBlocks/AdjustmentLayers/AdjustmentLayersTaggedBlocks.cpp")
 
 set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)

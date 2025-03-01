@@ -1,0 +1,2 @@
+add_executable(AdjustmentLayers main.cpp)
+target_link_libraries(AdjustmentLayers PRIVATE PhotoshopAPI)

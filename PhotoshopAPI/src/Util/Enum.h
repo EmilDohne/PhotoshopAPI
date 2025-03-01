@@ -738,6 +738,7 @@ namespace Enum
 		adjGradient,
 		adjPattern,
 		adjBrightnessContrast,
+		adjBrightnessContrastNew, // "CgEd", seems to be preferred in newer photoshop versions
 		adjLevels,
 		adjCurves,
 		adjExposure,
@@ -807,6 +808,7 @@ namespace Enum
 			{"GdFl", TaggedBlockKey::adjGradient},
 			{"PtFl", TaggedBlockKey::adjPattern},
 			{"brit", TaggedBlockKey::adjBrightnessContrast},
+			{"CgEd", TaggedBlockKey::adjBrightnessContrastNew},
 			{"levl", TaggedBlockKey::adjLevels},
 			{"curv", TaggedBlockKey::adjCurves},
 			{"expA", TaggedBlockKey::adjExposure},
