@@ -26,18 +26,22 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             multiline-separator: \
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
+             multiline-separator: \
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
+             multiline-separator: ^
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
+             multiline-separator: \
 
     steps:
     - uses: actions/checkout@v4
@@ -64,15 +68,15 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run: |
-        cmake -B ${{github.workspace}}/build \
-            -DCMAKE_UNITY_BUILD=ON \
-            -DCMAKE_UNITY_BUILD_BATCH_SIZE=32 \
-            -DCMAKE_OSX_ARCHITECTURES="arm64" \
-            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
-            -DPSAPI_BUILD_DOCS=OFF \
-            -DPSAPI_BUILD_BENCHMARKS=OFF \
-            -DPSAPI_BUILD_TESTS=OFF \
-            -DPSAPI_BUILD_EXAMPLES=ON \
+        cmake -B ${{github.workspace}}/build        ${{ matrix.multiline-separator}}
+            -DCMAKE_UNITY_BUILD=ON                  ${{ matrix.multiline-separator}}
+            -DCMAKE_UNITY_BUILD_BATCH_SIZE=32       ${{ matrix.multiline-separator}}
+            -DCMAKE_OSX_ARCHITECTURES="arm64"       ${{ matrix.multiline-separator}}
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}  ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_DOCS=OFF                  ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_BENCHMARKS=OFF            ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_TESTS=OFF                 ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_EXAMPLES=ON               ${{ matrix.multiline-separator}}
             -DPSAPI_BUILD_PYTHON=OFF
 
 
@@ -82,5 +86,7 @@ jobs:
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
       run:  |
-          cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
+          cmake --build ${{github.workspace}}/build ${{ matrix.multiline-separator}}
+            --config ${{env.BUILD_TYPE}}            ${{ matrix.multiline-separator}}
+            --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
       
