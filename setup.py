@@ -84,6 +84,10 @@ class CMakeBuild(build_ext):
         # In this example, we pass in the version to C++. You might not need to.
         cmake_args += [f"-DEXAMPLE_VERSION_INFO={self.distribution.get_version()}"]
 
+        # Enable unity builds for speed ups
+        cmake_args += ["-DCMAKE_UNITY_BUILD=ON"]
+        cmake_args += ["-DCMAKE_UNITY_BUILD_BATCH_SIZE=16"]
+
         if self.compiler.compiler_type != "msvc":
             # Using Ninja-build since it a) is available as a wheel and b)
             # multithreads automatically. MSVC would require all variables be
@@ -142,7 +146,16 @@ class CMakeBuild(build_ext):
             build_temp.mkdir(parents=True)
 
         subprocess.run(
-            ["cmake", ext.sourcedir, *cmake_args, "-DPSAPI_BUILD_PYTHON=ON","-DPSAPI_BUILD_DOCS=OFF", "-DPSAPI_BUILD_BENCHMARKS=OFF", "-DPSAPI_BUILD_EXAMPLES=OFF", "-DPSAPI_BUILD_TESTS=OFF"], cwd=build_temp, check=True
+            [
+                "cmake", 
+                ext.sourcedir, 
+                *cmake_args, 
+                "-DPSAPI_BUILD_PYTHON=ON",
+                "-DPSAPI_BUILD_DOCS=OFF", 
+                "-DPSAPI_BUILD_BENCHMARKS=OFF", 
+                "-DPSAPI_BUILD_EXAMPLES=OFF", 
+                "-DPSAPI_BUILD_TESTS=OFF"
+            ], cwd=build_temp, check=True
         )
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
