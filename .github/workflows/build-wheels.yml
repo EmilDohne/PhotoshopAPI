@@ -47,6 +47,7 @@ jobs:
           {os: ubuntu-latest, dist: cp310-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp311-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp312-manylinux_x86_64},
+          {os: ubuntu-latest, dist: cp313-manylinux_x86_64},
 
           {os: windows-latest, dist: cp37-win_amd64},
           {os: windows-latest, dist: cp38-win_amd64},
@@ -54,10 +55,12 @@ jobs:
           {os: windows-latest, dist: cp310-win_amd64},
           {os: windows-latest, dist: cp311-win_amd64},
           {os: windows-latest, dist: cp312-win_amd64},
+          {os: windows-latest, dist: cp313-win_amd64},
 
           {os: macos-latest, dist: cp310-macosx_arm64},
           {os: macos-latest, dist: cp311-macosx_arm64},
-          {os: macos-latest, dist: cp312-macosx_arm64}
+          {os: macos-latest, dist: cp312-macosx_arm64},
+          {os: macos-latest, dist: cp313-macosx_arm64}
           ]
 
     steps:
@@ -113,6 +116,8 @@ jobs:
         name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
         
+  # Step to check if we can fetch the artifacts and they all come as expected, primarily a debugging
+  # sanity step
   mock-publish:
     name: Mock Upload release to PyPI
     permissions:

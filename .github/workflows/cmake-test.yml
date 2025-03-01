@@ -28,24 +28,28 @@ jobs:
              compilercxx: g++-13
              cflags: "-fsanitize=address,leak,undefined"
              cxxflags: "-fsanitize=address,leak,undefined"
+             multiline-separator: \
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
              cflags: "-fsanitize=address,leak,undefined"
              cxxflags: "-fsanitize=address,leak,undefined"
+             multiline-separator: \
            - name: Windows MSVC
              os: windows-latest
              compiler: msvc
              compilercxx: msvc
              cflags: ""
              cxxflags: ""
+             multiline-separator: "`"
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-13
              compilercxx: g++-13
              cflags: ""
              cxxflags: ""
+             multiline-separator: \
 
     steps:
     - uses: actions/checkout@v4
@@ -74,7 +78,14 @@ jobs:
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=OFF -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build        ${{ matrix.multiline-separator}}
+            -DCMAKE_UNITY_BUILD=ON                  ${{ matrix.multiline-separator}}
+            -DCMAKE_OSX_ARCHITECTURES="arm64"       ${{ matrix.multiline-separator}}
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}  ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_DOCS=OFF                  ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_BENCHMARKS=OFF            ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_EXAMPLES=OFF              ${{ matrix.multiline-separator}}
+            -DPSAPI_BUILD_PYTHON=OFF                ${{ matrix.multiline-separator}}
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
@@ -82,7 +93,10 @@ jobs:
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
+      run: |
+          cmake --build ${{github.workspace}}/build ${{ matrix.multiline-separator}}
+            --config ${{env.BUILD_TYPE}}            ${{ matrix.multiline-separator}}
+            --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
 
     # On windows we need to copy the test files differently as it generates sub-folders
     # for the copied test files

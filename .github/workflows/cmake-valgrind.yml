@@ -26,14 +26,10 @@ jobs:
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
-             cflags: ""
-             cxxflags: ""
            - name: Ubuntu Clang
              os: ubuntu-24.04
              compiler: clang
              compilercxx: clang++
-             cflags: ""
-             cxxflags: ""
 
     steps:
     - uses: actions/checkout@v4
@@ -53,7 +49,13 @@ jobs:
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
-        cmake -B ${{github.workspace}}/build -DCMAKE_OSX_ARCHITECTURES="arm64" -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DPSAPI_BUILD_DOCS=OFF -DPSAPI_BUILD_BENCHMARKS=OFF -DPSAPI_BUILD_EXAMPLES=ON -DPSAPI_BUILD_PYTHON=OFF
+        cmake -B ${{github.workspace}}/build \
+            -DCMAKE_UNITY_BUILD=ON \
+            -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
+            -DPSAPI_BUILD_DOCS=OFF \
+            -DPSAPI_BUILD_BENCHMARKS=OFF \
+            -DPSAPI_BUILD_EXAMPLES=ON \
+            -DPSAPI_BUILD_PYTHON=OFF
 
     - name: Build ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
@@ -61,7 +63,10 @@ jobs:
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
         CXXFLAGS: ${{ matrix.cxxflags }}
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
+      run: |
+          cmake --build ${{github.workspace}}/build \
+            --config ${{env.BUILD_TYPE}} \
+            --parallel $(getconf _NPROCESSORS_ONLN || sysctl -n hw.ncpu || echo %NUMBER_OF_PROCESSORS%)
       
     - name: Run Valgrind
       if: matrix.os == 'ubuntu-24.04'
