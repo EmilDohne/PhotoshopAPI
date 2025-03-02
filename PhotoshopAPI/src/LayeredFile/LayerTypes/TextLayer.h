@@ -12,6 +12,13 @@ template <typename T>
 struct TextLayer : Layer<T>
 {
 	TextLayer() = default;
+
+	TextLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header)
+		: Layer<T>(layer_record, channel_image_data, header)
+	{
+		PSAPI_LOG("Foo", "Foo");
+	}
+
 };
 
 

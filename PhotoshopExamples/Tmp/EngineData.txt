@@ -1,0 +1,580 @@
+
+
+<<
+        /EngineDict
+        <<
+                /Editor
+                <<
+)ryutiful I could       /Text (■ This text is so
+                >>
+                /ParagraphRun
+                <<
+                        /DefaultRunData
+                        <<
+                                /ParagraphSheet
+                                <<
+                                        /DefaultStyleSheet 0
+                                        /Properties
+                                        <<
+                                        >>
+                                >>
+                                /Adjustments
+                                <<
+                                        /Axis [ 1.0 0.0 1.0 ]
+                                        /XY [ 0.0 0.0 ]
+                                >>
+                        >>
+                        /RunArray [
+                        <<
+                                /ParagraphSheet
+                                <<
+                                        /DefaultStyleSheet 0
+                                        /Properties
+                                        <<
+                                                /Justification 0
+                                                /FirstLineIndent 0.0
+                                                /StartIndent 0.0
+                                                /EndIndent 0.0
+                                                /SpaceBefore 0.0
+                                                /SpaceAfter 0.0
+                                                /AutoHyphenate false
+                                                /HyphenatedWordSize 6
+                                                /PreHyphen 2
+                                                /PostHyphen 2
+                                                /ConsecutiveHyphens 8
+                                                /Zone 36.0
+                                                /WordSpacing [ .8 1.0 1.33 ]
+                                                /LetterSpacing [ 0.0 0.0 0.0 ]
+                                                /GlyphSpacing [ 1.0 1.0 1.0 ]
+                                                /AutoLeading 1.2
+                                                /LeadingType 0
+                                                /Hanging false
+                                                /Burasagari false
+                                                /KinsokuOrder 0
+                                                /EveryLineComposer false
+                                        >>
+                                >>
+                                /Adjustments
+                                <<
+                                        /Axis [ 1.0 0.0 1.0 ]
+                                        /XY [ 0.0 0.0 ]
+                                >>
+                        >>
+                        <<
+                                /ParagraphSheet
+                                <<
+                                        /DefaultStyleSheet 0
+                                        /Properties
+                                        <<
+                                                /Justification 0
+                                                /FirstLineIndent 0.0
+                                                /StartIndent 0.0
+                                                /EndIndent 0.0
+                                                /SpaceBefore 0.0
+                                                /SpaceAfter 0.0
+                                                /AutoHyphenate false
+                                                /HyphenatedWordSize 6
+                                                /PreHyphen 2
+                                                /PostHyphen 2
+                                                /ConsecutiveHyphens 8
+                                                /Zone 36.0
+                                                /WordSpacing [ .8 1.0 1.33 ]
+                                                /LetterSpacing [ 0.0 0.0 0.0 ]
+                                                /GlyphSpacing [ 1.0 1.0 1.0 ]
+                                                /AutoLeading 1.2
+                                                /LeadingType 0
+                                                /Hanging false
+                                                /Burasagari false
+                                                /KinsokuOrder 0
+                                                /EveryLineComposer false
+                                        >>
+                                >>
+                                /Adjustments
+                                <<
+                                        /Axis [ 1.0 0.0 1.0 ]
+                                        /XY [ 0.0 0.0 ]
+                                >>
+                        >>
+                        <<
+                                /ParagraphSheet
+                                <<
+                                        /DefaultStyleSheet 0
+                                        /Properties
+                                        <<
+                                                /Justification 0
+                                                /FirstLineIndent 0.0
+                                                /StartIndent 0.0
+                                                /EndIndent 0.0
+                                                /SpaceBefore 0.0
+                                                /SpaceAfter 0.0
+                                                /AutoHyphenate false
+                                                /HyphenatedWordSize 6
+                                                /PreHyphen 2
+                                                /PostHyphen 2
+                                                /ConsecutiveHyphens 8
+                                                /Zone 36.0
+                                                /WordSpacing [ .8 1.0 1.33 ]
+                                                /LetterSpacing [ 0.0 0.0 0.0 ]
+                                                /GlyphSpacing [ 1.0 1.0 1.0 ]
+                                                /AutoLeading 1.2
+                                                /LeadingType 0
+                                                /Hanging false
+                                                /Burasagari false
+                                                /KinsokuOrder 0
+                                                /EveryLineComposer false
+                                        >>
+                                >>
+                                /Adjustments
+                                <<
+                                        /Axis [ 1.0 0.0 1.0 ]
+                                        /XY [ 0.0 0.0 ]
+                                >>
+                        >>
+                        ]
+                        /RunLengthArray [ 16 18 4 ]
+                        /IsJoinable 1
+                >>
+                /StyleRun
+                <<
+                        /DefaultRunData
+                        <<
+                                /StyleSheet
+                                <<
+                                        /StyleSheetData
+                                        <<
+                                        >>
+                                >>
+                        >>
+                        /RunArray [
+                        <<
+                                /StyleSheet
+                                <<
+                                        /StyleSheetData
+                                        <<
+                                                /Font 0
+                                                /FontSize 60.0
+                                                /FauxBold false
+                                                /FauxItalic false
+                                                /AutoLeading true
+                                                /Leading 72.0
+                                                /HorizontalScale 1.0
+                                                /VerticalScale 1.0
+                                                /Tracking 0
+                                                /AutoKerning false
+                                                /Kerning 0
+                                                /BaselineShift 0.0
+                                                /FontCaps 0
+                                                /FontBaseline 0
+                                                /Underline false
+                                                /Strikethrough false
+                                                /Ligatures true
+                                                /DLigatures false
+                                                /BaselineDirection 1
+                                                /Tsume 0.0
+                                                /StyleRunAlignment 2
+                                                /Language 14
+                                                /NoBreak false
+                                                /FillColor
+                                                <<
+                                                        /Type 1
+                                                        /Values [ 1.0 .00002 .69998 1.0 ]
+                                                >>
+                                                /StrokeColor
+                                                <<
+                                                        /Type 1
+                                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                                >>
+                                                /YUnderline 1
+                                                /HindiNumbers false
+                                                /Kashida 1
+                                        >>
+                                >>
+                        >>
+                        <<
+                                /StyleSheet
+                                <<
+                                        /StyleSheetData
+                                        <<
+                                                /Font 0
+                                                /FontSize 60.0
+                                                /FauxBold false
+                                                /FauxItalic false
+                                                /AutoLeading true
+                                                /Leading 72.0
+                                                /HorizontalScale 1.0
+                                                /VerticalScale 1.0
+                                                /Tracking 0
+                                                /AutoKerning true
+                                                /Kerning 0
+                                                /BaselineShift 0.0
+                                                /FontCaps 0
+                                                /FontBaseline 0
+                                                /Underline false
+                                                /Strikethrough false
+                                                /Ligatures true
+                                                /DLigatures false
+                                                /BaselineDirection 1
+                                                /Tsume 0.0
+                                                /StyleRunAlignment 2
+                                                /Language 14
+                                                /NoBreak false
+                                                /FillColor
+                                                <<
+                                                        /Type 1
+                                                        /Values [ 1.0 .00002 .69998 1.0 ]
+                                                >>
+                                                /StrokeColor
+                                                <<
+                                                        /Type 1
+                                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                                >>
+                                                /YUnderline 1
+                                                /HindiNumbers false
+                                                /Kashida 1
+                                        >>
+                                >>
+                        >>
+                        ]
+                        /RunLengthArray [ 1 37 ]
+                        /IsJoinable 2
+                >>
+                /GridInfo
+                <<
+                        /GridIsOn false
+                        /ShowGrid false
+                        /GridSize 18.0
+                        /GridLeading 22.0
+                        /GridColor
+                        <<
+                                /Type 1
+                                /Values [ 0.0 0.0 0.0 1.0 ]
+                        >>
+                        /GridLeadingFillColor
+                        <<
+                                /Type 1
+                                /Values [ 0.0 0.0 0.0 1.0 ]
+                        >>
+                        /AlignLineHeightToGridFlags false
+                >>
+                /AntiAlias 4
+                /UseFractionalGlyphWidths true
+                /Rendered
+                <<
+                        /Version 1
+                        /Shapes
+                        <<
+                                /WritingDirection 0
+                                /Children [
+                                <<
+                                        /ShapeType 0
+                                        /Procession 0
+                                        /Lines
+                                        <<
+                                                /WritingDirection 0
+                                                /Children [ ]
+                                        >>
+                                        /Cookie
+                                        <<
+                                                /Photoshop
+                                                <<
+                                                        /ShapeType 0
+                                                        /PointBase [ 0.0 0.0 ]
+                                                        /Base
+                                                        <<
+                                                                /ShapeType 0
+                                                                /TransformPoint0 [ 1.0 0.0 ]
+                                                                /TransformPoint1 [ 0.0 1.0 ]
+                                                                /TransformPoint2 [ 0.0 0.0 ]
+                                                        >>
+                                                >>
+                                        >>
+                                >>
+                                ]
+                        >>
+                >>
+        >>
+        /ResourceDict
+        <<
+                /KinsokuSet [
+                <<
+                        /Name (■ PhotoshopKinsokuHard)
+0☼0◄0²0■0Ø0×0♣0A0C0E0G0I0c0â0à0ç0Ä0í0ú0Ñ0º0®0├0Ò0Õ0þ0¯0§0÷0ø0£?!\)]},.:;!♥!     ó ♣ 0)
+                        /NoEnd (■  ↑ ∟0¶ ; [0
+0♀0♫0►\([{ Õ ♦ú  º0↕ ♥)
+                        /Keep (■  § %)
+                        /Hanging (■ 0☺0☻.,)
+                >>
+                <<
+                        /Name (■ PhotoshopKinsokuSoft)
+0☼0◄0²0■0Ø0×0♣)         /NoStart (■ 0☺0☻ ♀ ♫0¹ → ▼ ☺ ↓ ↔        0§ = ]0 0♂0
+                        /NoEnd (■  ↑ ∟0¶ ; [0
+0♀0♫0►)
+                        /Keep (■  § %)
+                        /Hanging (■ 0☺0☻.,)
+                >>
+                ]
+                /MojiKumiSet [
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet1)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet2)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet3)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet4)
+                >>
+                ]
+                /TheNormalStyleSheet 0
+                /TheNormalParagraphSheet 0
+                /ParagraphSheetSet [
+                <<
+                        /Name (■ Normal RGB)
+                        /DefaultStyleSheet 0
+                        /Properties
+                        <<
+                                /Justification 0
+                                /FirstLineIndent 0.0
+                                /StartIndent 0.0
+                                /EndIndent 0.0
+                                /SpaceBefore 0.0
+                                /SpaceAfter 0.0
+                                /AutoHyphenate true
+                                /HyphenatedWordSize 6
+                                /PreHyphen 2
+                                /PostHyphen 2
+                                /ConsecutiveHyphens 8
+                                /Zone 36.0
+                                /WordSpacing [ .8 1.0 1.33 ]
+                                /LetterSpacing [ 0.0 0.0 0.0 ]
+                                /GlyphSpacing [ 1.0 1.0 1.0 ]
+                                /AutoLeading 1.2
+                                /LeadingType 0
+                                /Hanging false
+                                /Burasagari false
+                                /KinsokuOrder 0
+                                /EveryLineComposer false
+                        >>
+                >>
+                ]
+                /StyleSheetSet [
+                <<
+                        /Name (■ Normal RGB)
+                        /StyleSheetData
+                        <<
+                                /Font 2
+                                /FontSize 12.0
+                                /FauxBold false
+                                /FauxItalic false
+                                /AutoLeading true
+                                /Leading 0.0
+                                /HorizontalScale 1.0
+                                /VerticalScale 1.0
+                                /Tracking 0
+                                /AutoKerning true
+                                /Kerning 0
+                                /BaselineShift 0.0
+                                /FontCaps 0
+                                /FontBaseline 0
+                                /Underline false
+                                /Strikethrough false
+                                /Ligatures true
+                                /DLigatures false
+                                /BaselineDirection 2
+                                /Tsume 0.0
+                                /StyleRunAlignment 2
+                                /Language 0
+                                /NoBreak false
+                                /FillColor
+                                <<
+                                        /Type 1
+                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                >>
+                                /StrokeColor
+                                <<
+                                        /Type 1
+                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                >>
+                                /FillFlag true
+                                /StrokeFlag false
+                                /FillFirst true
+                                /YUnderline 1
+                                /OutlineWidth 1.0
+                                /CharacterDirection 0
+                                /HindiNumbers false
+                                /Kashida 1
+                                /DiacriticPos 2
+                        >>
+                >>
+                ]
+                /FontSet [
+                <<
+                        /Name (■ Inter-Regular)
+                        /Script 0
+                        /FontType 1
+                        /Synthetic 0
+                >>
+                <<
+                        /Name (■ AdobeInvisFont)
+                        /Script 0
+                        /FontType 0
+                        /Synthetic 0
+                >>
+                <<
+                        /Name (■ MyriadPro-Regular)
+                        /Script 0
+                        /FontType 0
+                        /Synthetic 0
+                >>
+                ]
+                /SuperscriptSize .583
+                /SuperscriptPosition .333
+                /SubscriptSize .583
+                /SubscriptPosition .333
+                /SmallCapSize .7
+        >>
+        /DocumentResources
+        <<
+                /KinsokuSet [
+                <<
+                        /Name (■ PhotoshopKinsokuHard)
+0☼0◄0²0■0Ø0×0♣0A0C0E0G0I0c0â0à0ç0Ä0í0ú0Ñ0º0®0├0Ò0Õ0þ0¯0§0÷0ø0£?!\)]},.:;!♥!     ó ♣ 0)
+                        /NoEnd (■  ↑ ∟0¶ ; [0
+0♀0♫0►\([{ Õ ♦ú  º0↕ ♥)
+                        /Keep (■  § %)
+                        /Hanging (■ 0☺0☻.,)
+                >>
+                <<
+                        /Name (■ PhotoshopKinsokuSoft)
+0☼0◄0²0■0Ø0×0♣)         /NoStart (■ 0☺0☻ ♀ ♫0¹ → ▼ ☺ ↓ ↔        0§ = ]0 0♂0
+                        /NoEnd (■  ↑ ∟0¶ ; [0
+0♀0♫0►)
+                        /Keep (■  § %)
+                        /Hanging (■ 0☺0☻.,)
+                >>
+                ]
+                /MojiKumiSet [
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet1)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet2)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet3)
+                >>
+                <<
+                        /InternalName (■ Photoshop6MojiKumiSet4)
+                >>
+                ]
+                /TheNormalStyleSheet 0
+                /TheNormalParagraphSheet 0
+                /ParagraphSheetSet [
+                <<
+                        /Name (■ Normal RGB)
+                        /DefaultStyleSheet 0
+                        /Properties
+                        <<
+                                /Justification 0
+                                /FirstLineIndent 0.0
+                                /StartIndent 0.0
+                                /EndIndent 0.0
+                                /SpaceBefore 0.0
+                                /SpaceAfter 0.0
+                                /AutoHyphenate true
+                                /HyphenatedWordSize 6
+                                /PreHyphen 2
+                                /PostHyphen 2
+                                /ConsecutiveHyphens 8
+                                /Zone 36.0
+                                /WordSpacing [ .8 1.0 1.33 ]
+                                /LetterSpacing [ 0.0 0.0 0.0 ]
+                                /GlyphSpacing [ 1.0 1.0 1.0 ]
+                                /AutoLeading 1.2
+                                /LeadingType 0
+                                /Hanging false
+                                /Burasagari false
+                                /KinsokuOrder 0
+                                /EveryLineComposer false
+                        >>
+                >>
+                ]
+                /StyleSheetSet [
+                <<
+                        /Name (■ Normal RGB)
+                        /StyleSheetData
+                        <<
+                                /Font 2
+                                /FontSize 12.0
+                                /FauxBold false
+                                /FauxItalic false
+                                /AutoLeading true
+                                /Leading 0.0
+                                /HorizontalScale 1.0
+                                /VerticalScale 1.0
+                                /Tracking 0
+                                /AutoKerning true
+                                /Kerning 0
+                                /BaselineShift 0.0
+                                /FontCaps 0
+                                /FontBaseline 0
+                                /Underline false
+                                /Strikethrough false
+                                /Ligatures true
+                                /DLigatures false
+                                /BaselineDirection 2
+                                /Tsume 0.0
+                                /StyleRunAlignment 2
+                                /Language 0
+                                /NoBreak false
+                                /FillColor
+                                <<
+                                        /Type 1
+                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                >>
+                                /StrokeColor
+                                <<
+                                        /Type 1
+                                        /Values [ 1.0 0.0 0.0 0.0 ]
+                                >>
+                                /FillFlag true
+                                /StrokeFlag false
+                                /FillFirst true
+                                /YUnderline 1
+                                /OutlineWidth 1.0
+                                /CharacterDirection 0
+                                /HindiNumbers false
+                                /Kashida 1
+                                /DiacriticPos 2
+                        >>
+                >>
+                ]
+                /FontSet [
+                <<
+                        /Name (■ Inter-Regular)
+                        /Script 0
+                        /FontType 1
+                        /Synthetic 0
+                >>
+                <<
+                        /Name (■ AdobeInvisFont)
+                        /Script 0
+                        /FontType 0
+                        /Synthetic 0
+                >>
+                <<
+                        /Name (■ MyriadPro-Regular)
+                        /Script 0
+                        /FontType 0
+                        /Synthetic 0
+                >>
+                ]
+                /SuperscriptSize .583
+                /SuperscriptPosition .333
+                /SubscriptSize .583
+                /SubscriptPosition .333
+                /SmallCapSize .7
+        >>
+>>

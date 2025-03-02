@@ -659,9 +659,11 @@ namespace Descriptors
 
 		data["implementation"] = DescriptorBase::get_json_repr("RawData");
 		
+		std::cout << std::string(m_Data.begin(), m_Data.end()) << std::endl;
+
 		// If the data is larger than a threshold we actually want to truncate it.
-		// We set this to an arbitrary limit of 512 for now
-		if (m_Data.size() > 512)
+		// We set this to an arbitrary limit of 2048 for now
+		if (m_Data.size() > 2048)
 		{
 			const auto first = m_Data.front();
 			const auto last = m_Data.back();

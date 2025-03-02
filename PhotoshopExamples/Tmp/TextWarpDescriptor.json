@@ -1,0 +1,47 @@
+
+{
+    "implementation": {
+        "_data_type": "Descriptor",
+        "_key": "warp",
+        "_os_key": "Objc"
+    },
+    "name": "",
+    "values": {
+        "warpStyle": {
+            "implementation": {
+                "_data_type": "Enumerated",
+                "_key": "warpStyle",
+                "_os_key": "enum"
+            },
+            "type_id": "warpStyle",
+            "enum": "warpNone"
+        },
+        "warpValue": {
+            "implementation": {
+                "_data_type": "double"
+            },
+            "value": 0.0
+        },
+        "warpPerspective": {
+            "implementation": {
+                "_data_type": "double"
+            },
+            "value": 0.0
+        },
+        "warpPerspectiveOther": {
+            "implementation": {
+                "_data_type": "double"
+            },
+            "value": 0.0
+        },
+        "warpRotate": {
+            "implementation": {
+                "_data_type": "Enumerated",
+                "_key": "warpRotate",
+                "_os_key": "enum"
+            },
+            "type_id": "Ornt",
+            "enum": "Hrzn"
+        }
+    }
+}

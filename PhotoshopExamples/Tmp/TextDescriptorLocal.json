@@ -1,0 +1,150 @@
+{
+    "implementation": {
+        "_data_type": "Descriptor",
+        "_key": "TxLr",
+        "_os_key": "Objc"
+    },
+    "name": "",
+    "values": {
+        "Txt ": {
+            "implementation": {
+                "_data_type": "UnicodeString"
+            },
+            "value": "This text is so\rbeautiful I could\rcry"
+        },
+        "textGridding": {
+            "implementation": {
+                "_data_type": "Enumerated",
+                "_key": "textGridding",
+                "_os_key": "enum"
+            },
+            "type_id": "textGridding",
+            "enum": "None"
+        },
+        "Ornt": {
+            "implementation": {
+                "_data_type": "Enumerated",
+                "_key": "Ornt",
+                "_os_key": "enum"
+            },
+            "type_id": "Ornt",
+            "enum": "Hrzn"
+        },
+        "AntA": {
+            "implementation": {
+                "_data_type": "Enumerated",
+                "_key": "AntA",
+                "_os_key": "enum"
+            },
+            "type_id": "Annt",
+            "enum": "antiAliasSharp"
+        },
+        "bounds": {
+            "implementation": {
+                "_data_type": "Descriptor",
+                "_key": "bounds",
+                "_os_key": "Objc"
+            },
+            "name": "",
+            "values": {
+                "Left": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Left",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 0.0
+                },
+                "Top ": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Top ",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": -51.81793212890625
+                },
+                "Rght": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Rght",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 452.8977355957031
+                },
+                "Btom": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Btom",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 163.17572021484375
+                }
+            }
+        },
+        "boundingBox": {
+            "implementation": {
+                "_data_type": "Descriptor",
+                "_key": "boundingBox",
+                "_os_key": "Objc"
+            },
+            "name": "",
+            "values": {
+                "Left": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Left",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 2.890625
+                },
+                "Top ": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Top ",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": -45.0
+                },
+                "Rght": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Rght",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 447.6065368652344
+                },
+                "Btom": {
+                    "implementation": {
+                        "_data_type": "UnitFloat",
+                        "_key": "Btom",
+                        "_os_key": "UntF"
+                    },
+                    "unit_type": "#Pnt",
+                    "value": 156.265625
+                }
+            }
+        },
+        "TextIndex": {
+            "implementation": {
+                "_data_type": "int32_t"
+            },
+            "value": 0
+        },
+        "EngineData": {
+            "implementation": {
+                "_data_type": "RawData",
+                "_key": "EngineData",
+                "_os_key": "tdta"
+            },
+            "data": "10...62"
+        }
+    }
+}
+
