@@ -7,13 +7,7 @@
 #include <algorithm>
 #include <execution>
 
-// If we compile with C++<20 we replace the stdlib implementation with the compatibility
-// library
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
 
 PSAPI_NAMESPACE_BEGIN
 
