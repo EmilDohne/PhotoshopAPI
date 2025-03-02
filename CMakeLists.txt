@@ -12,11 +12,11 @@ endif()
 option(PSAPI_BUILD_STATIC "Build a static library version of the PhotoshopAPI, currently must be on as we dont create a dynamic library target" ON)
 option(PSAPI_USE_VCPKG "Build the extra dependencies using vckpg instead of system installed libraries" ON)
 option(PSAPI_ENABLE_VULKAN "Enables vulkan compute support for the rendering pipeline" ON)
-option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_TESTS "Build the tests associated with the PhotoshopAPI" OFF)
 option(PSAPI_BUILD_EXAMPLES "Build the examples associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" ON)
-option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" ON)
-option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" ON)
+option(PSAPI_BUILD_BENCHMARKS "Build the benchmarks associated with the PhotoshopAPI" OFF)
+option(PSAPI_BUILD_DOCS "Builds the documentation, requires some external installs which are documented in the README.md" OFF)
+option(PSAPI_BUILD_PYTHON "Build the python bindings associated with the PhotoshopAPI" OFF)
 
 
 if (PSAPI_BUILD_PYTHON)
@@ -61,6 +61,8 @@ find_package(stduuid CONFIG REQUIRED)
 # Vulkan for our compute and rendering pipeline
 if (PSAPI_ENABLE_VULKAN)
     find_package(Vulkan REQUIRED)
+    find_program(glslc_executable NAMES glslc HINTS Vulkan::glslc)
+
     add_subdirectory(thirdparty/vk-bootstrap)
     add_subdirectory(thirdparty/VulkanMemoryAllocator)
 

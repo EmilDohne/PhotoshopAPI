@@ -18,16 +18,15 @@ namespace Enum
 		/// backend does not support it.
 		GenericCPU,
 		/// Vulkan GPU backend
-		VulkanGPU
+		Vulkan
 	};
 }
 
 
 template <typename T>
 	requires std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t> || std::is_same_v<T, float32_t>
-class RendererBackend
+struct RendererBackend
 {
-public:
 
 	/// Backend initialization and setup, this is backend dependent
 	virtual void init() = 0;
@@ -36,9 +35,11 @@ public:
 	virtual void render_quad_mesh(Render::ChannelBuffer<T> buffer, Render::ConstChannelBuffer<T> image, const Geometry::QuadMesh<double>& warp_mesh) const = 0;
 
 	/// Create a backend for the given type
-	static std::shared_ptr<RendererBackend> create(Enum::RendererBackendType type);
+	static std::shared_ptr<RendererBackend<T>> create(Enum::RendererBackendType type);
 
 	virtual ~RendererBackend() = default;
 };
+
+
 
 PSAPI_NAMESPACE_END

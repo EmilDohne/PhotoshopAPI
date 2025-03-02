@@ -11,11 +11,8 @@
 
 #include <mio/mmap.hpp>
 
-#if (__cplusplus < 202002L)
-#include "tcb_span.hpp"
-#else
 #include <span>
-#endif
+
 
 
 #define __STDC_FORMAT_MACROS 1
@@ -29,9 +26,8 @@ struct File
 {
 	struct FileParams
 	{
-		bool doRead;
-		bool forceOverwrite;
-		FileParams() : doRead(true), forceOverwrite(false) {};
+		bool doRead = true;
+		bool forceOverwrite = false;
 	};
 
 	// Use this mutex as well for locking throughout the application when IO functions
@@ -107,6 +103,12 @@ struct File
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
 	inline uint64_t getSize() const noexcept { return m_Size; }
+
+
+	/// Return the total size of the document
+	// --------------------------------------------------------------------------------
+	// --------------------------------------------------------------------------------
+	inline uint64_t size() const noexcept { return m_Size; }
 
 
 	/// Return the path of the file associated with the File object

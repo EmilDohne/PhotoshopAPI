@@ -7,25 +7,28 @@ file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/*.cpp"
 # --------------------------------------------------------------------------
 
 # Remove any files under src/Renderer/
-list(FILTER MY_SOURCES EXCLUDE REGEX "${PROJECT_SOURCE_DIR}/src/Renderer/.*")
+list(FILTER MY_SOURCES EXCLUDE REGEX "${PROJECT_SOURCE_DIR}/src/Compute/Backends/.*")
 
 # Always include GenericCPU backend
-file(GLOB_RECURSE GENERIC_CPU_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/Renderer/Backends/GenericCPU/*.cpp")
+file(GLOB_RECURSE GENERIC_CPU_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/Compute/Backends/GenericCPU/*.cpp")
 list(APPEND MY_SOURCES ${GENERIC_CPU_SOURCES})
 
 # If Vulkan is enabled, compile both backends so the user can select at runtime
 if (PSAPI_ENABLE_VULKAN)
-    file(GLOB_RECURSE VULKAN_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/Renderer/Backends/Vulkan/*.cpp")
+    file(GLOB_RECURSE VULKAN_SOURCES CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/Compute/Backends/Vulkan/*.cpp")
     list(APPEND MY_SOURCES ${VULKAN_SOURCES})
 
     # Define a preprocessor flag so the code knows Vulkan is available
     add_compile_definitions(PSAPI_HAS_VULKAN)
+
+    # Include the vulkan shader building cmake
+    add_subdirectory(${PROJECT_SOURCE_DIR}/src/Compute/Backends/Vulkan)
 endif()
 
 # Define the library
 # --------------------------------------------------------------------------
 
-add_library(PhotoshopAPI STATIC ${MY_SOURCES} "src/Renderer/Backends/Vulkan/VulkanRenderer.cpp" "src/Renderer/Backends/Vulkan/VkInitializers.cpp")
+add_library(PhotoshopAPI STATIC ${MY_SOURCES})
 
 set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
