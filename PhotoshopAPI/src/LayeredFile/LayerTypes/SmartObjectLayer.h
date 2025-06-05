@@ -864,7 +864,7 @@ private:
 	}
 
 	/// Evaluate the mesh from the smartobject warp or retrieve it from the cache (if it is valid).
-	const Geometry::QuadMesh<double>& evaluate_mesh_or_get_cached()
+	Geometry::QuadMesh<double>& evaluate_mesh_or_get_cached()
 	{
 		PSAPI_PROFILE_FUNCTION();
 		if (!m_LinkedLayers)
@@ -881,7 +881,7 @@ private:
 			m_MeshCache = warp_surface.mesh(
 				linked_layer->width() / 20,
 				linked_layer->height() / 20,
-				true	// move_to_zero, that way we don't have to deal with bbox stuff
+				false
 			);
 			store_mesh_was_cached();
 		}
@@ -1011,6 +1011,9 @@ protected:
 			Render::ChannelBuffer<T> channel_warp_buffer(channel_warp, this->width(), this->height());
 
 			auto& warp_mesh = this->evaluate_mesh_or_get_cached();
+			auto bbox = warp_mesh.bbox();
+			// Push the transform to zero
+			warp_mesh.move(-bbox.minimum);
 
 			// Restore the saved compression codec of the channel (if previously evaluated).
 			auto compression_codec = Enum::Compression::ZipPrediction;
@@ -1031,6 +1034,10 @@ protected:
 				Layer<T>::m_CenterY
 			);
 			this->store_was_cached(idinfo);
+
+			// Pop back the transform to make sure we don't have the object at zero for other evaluation
+			warp_mesh.move(bbox.minimum);
+
 			return channel_warp;
 		}
 	};
