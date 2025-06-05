@@ -5,8 +5,6 @@
 #include "Core/Struct/File.h"
 #include "Core/FileIO/Read.h"
 
-#define VMA_STATIC_VULKAN_FUNCTION 0
-#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vk_mem_alloc.h>
 
 #include <VkBootstrap.h>
@@ -124,10 +122,12 @@ void Vulkan::BaseData::create_and_submit()
 	VkCommandBufferBeginInfo begin_info{};
 	begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
+	const auto workgroups = this->compute_workgroup_sizes();
+
 	this->vk_instance->dispatch.beginCommandBuffer(this->command_buffer, &begin_info);
 	this->vk_instance->dispatch.cmdBindPipeline(this->command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, this->compute_pipeline);
 	this->vk_instance->dispatch.cmdBindDescriptorSets(this->command_buffer, VK_PIPELINE_BIND_POINT_COMPUTE, this->pipeline_layout, 0, 1, &this->descriptor_set, 0, nullptr);
-	this->vk_instance->dispatch.cmdDispatch(this->command_buffer, this->workgroup_sizes[0], this->workgroup_sizes[1], this->workgroup_sizes[2]);
+	this->vk_instance->dispatch.cmdDispatch(this->command_buffer, workgroups[0], workgroups[1], workgroups[2]);
 	this->vk_instance->dispatch.endCommandBuffer(this->command_buffer);
 
 	VkSubmitInfo submit_info{};
@@ -265,7 +265,7 @@ Vulkan::BaseData::~BaseData()
 	this->vk_instance->dispatch.destroyDescriptorPool(this->descriptor_pool, nullptr);
 	this->vk_instance->dispatch.destroyDescriptorSetLayout(this->descriptor_set_layout, nullptr);
 
-	// Since we hold this->instance the destructor would be called here destroying the instance and 
+	// Since we hold this->vk_instance the destructor would be called here destroying the instance and 
 	// device.
 }
 

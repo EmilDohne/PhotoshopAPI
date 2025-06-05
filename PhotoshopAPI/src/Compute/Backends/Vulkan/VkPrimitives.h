@@ -8,6 +8,9 @@ Basic vulkan primitives and their initialization
 
 #include <vulkan/vulkan.h>
 #include <VkBootstrap.h>
+
+#define VMA_STATIC_VULKAN_FUNCTION 0
+#define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
 #include <vk_mem_alloc.h>
 
 #include <memory>
@@ -20,11 +23,11 @@ Basic vulkan primitives and their initialization
 
 PSAPI_NAMESPACE_BEGIN
 
-
 namespace Vulkan
 {
 
-    /// Vulkan initialization structure holding the instance, device and all the dispatch tables.
+    /// Vulkan initialization structure holding the instance, device and all the dispatch tables
+    /// as well as the allocator
     struct InitInstance
     {
         vkb::Instance instance{};
@@ -66,8 +69,9 @@ namespace Vulkan
     struct BaseData
     {
         /// X, Y and Z workgroup sizes respectively, this should be set according to the shader
-        /// that we are initializing the primitive with.
-        std::array<uint32_t, 3> workgroup_sizes = { 1, 1, 1 };
+        /// that we are initializing the primitive with. Should stay fixed and a multiple of both
+        /// 32 and 64 to maximize gpu occupancy.
+        constexpr static std::array<uint32_t, 3> ce_workgroup_sizes = { 16, 16, 1 };
 
         VkQueue queue = nullptr;
 
@@ -99,14 +103,19 @@ namespace Vulkan
         /// After initialization all of the member variables will point to valid items.
         BaseData(std::unique_ptr<Vulkan::InitInstance> instance, std::filesystem::path spv_path, uint32_t num_descriptors);
 
-        /// Submit the work to the GPU once all the needed buffers have been uploaded to the GPU after which this will block
-        /// until the GPU operation is done.
-        void create_and_submit();
+        virtual void execute() = 0;
 
         // Perform cleanup of all the vulkan instances and primitives.
         virtual ~BaseData();
 
     protected:
+
+        /// Submit the work to the GPU once all the needed buffers have been uploaded to the GPU after which this will block
+        /// until the GPU operation is done.
+        void create_and_submit();
+
+        /// Pure virtual function to compute the work group sizes to pass along to the GPU, subclasses must implement this
+        virtual std::array<uint32_t, 3> compute_workgroup_sizes() const = 0;
 
         /// Push and upload a given buffer to the GPU as SSBO. This memory is automatically mapped back to the cpu using
         /// VMA
@@ -160,14 +169,6 @@ namespace Vulkan
 
             // Finally memcpy into the given buffer.
             std::memcpy(reinterpret_cast<void*>(buffer.data()), gpu_info->allocation_info.pMappedData, byte_size);
-        }
-
-        /// Retrieve the modified GPU memory and copy it back into the provided buffer. It is up to the caller to ensure
-        /// that they are retrieving the correct buffer.
-        template <typename T>
-        std::vector<T> retrieve_buffer(std::string name)
-        {
-
         }
 
     private:
