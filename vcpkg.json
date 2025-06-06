@@ -1,7 +1,7 @@
 {
   "name": "photoshopapi",
-  "version-string": "v0.5.1",
-  "builtin-baseline": "6f29f12e82a8293156836ad81cc9bf5af41fe836",
+  "version-string": "v0.6.1",
+  "builtin-baseline": "5a2324f6667233aeb903d3117f6fd259a2be6f8b",
   "dependencies": [
     "openimageio",
     "fmt",

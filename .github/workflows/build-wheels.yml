@@ -41,15 +41,13 @@ jobs:
       fail-fast: false
       matrix:
          os_dist: [
-          {os: ubuntu-latest, dist: cp37-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp38-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp39-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp310-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp311-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp312-manylinux_x86_64},
           {os: ubuntu-latest, dist: cp313-manylinux_x86_64},
-
-          {os: windows-latest, dist: cp37-win_amd64},
+          
           {os: windows-latest, dist: cp38-win_amd64},
           {os: windows-latest, dist: cp39-win_amd64},
           {os: windows-latest, dist: cp310-win_amd64},
@@ -77,13 +75,14 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
-          
+      
+
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
-    - uses: pypa/cibuildwheel@v2.22.0
+    - uses: pypa/cibuildwheel@v2.23.1
       env:
         CC: gcc-13
         CXX: g++-13
