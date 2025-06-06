@@ -40,7 +40,7 @@ jobs:
            - name: MacOS ARM GCC
              os: macos-latest
              compiler: gcc-14
-             compilercxx: gcc-14
+             compilercxx: g++-14
              multiline-separator: \
 
     steps:
