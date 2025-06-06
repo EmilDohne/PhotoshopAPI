@@ -75,13 +75,23 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
+          # Since we compile macos on gcc we get build failures with minizip-ng as it uses some apple clang specific
+          # includes.
+          brew install minizip-ng
           
+    # This really should be available on the images but as of 6/6/25 this doesn't seem to exist
+    # on the runners/the image provided by CIBW
+    - name: Setup ubuntu dependencies
+      if: matrix.os_dist.os == 'ubuntu-latest'
+      run: sudo apt install zip 
+      
+
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
       with:
         vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
 
-    - uses: pypa/cibuildwheel@v2.22.0
+    - uses: pypa/cibuildwheel@v2.23.1
       env:
         CC: gcc-13
         CXX: g++-13

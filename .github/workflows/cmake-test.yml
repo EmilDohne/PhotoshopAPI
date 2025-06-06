@@ -65,6 +65,9 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
+          # Since we compile macos on gcc we get build failures with minizip-ng as it uses some apple clang specific
+          # includes.
+          brew install minizip-ng
 
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
