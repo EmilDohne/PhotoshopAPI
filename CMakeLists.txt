@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required (VERSION 3.20)
 set(VCPKG_LIBRARY_LINKAGE "static")
-project ("PhotoshopAPIBuild" VERSION 0.6.0 LANGUAGES CXX)
+project ("PhotoshopAPIBuild" VERSION 0.6.1 LANGUAGES CXX)
 
 if (MSVC)
     add_compile_definitions(NOMINMAX)
