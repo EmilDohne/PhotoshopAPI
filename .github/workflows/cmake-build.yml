@@ -39,8 +39,8 @@ jobs:
              multiline-separator: "`"
            - name: MacOS ARM GCC
              os: macos-latest
-             compiler: gcc-14
-             compilercxx: g++-14
+             compiler: gcc-13
+             compilercxx: g++-13
              multiline-separator: \
 
     steps:

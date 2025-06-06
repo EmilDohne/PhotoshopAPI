@@ -90,8 +90,8 @@ jobs:
 
     - uses: pypa/cibuildwheel@v2.23.1
       env:
-        CC: gcc-14
-        CXX: g++-14
+        CC: gcc-13
+        CXX: g++-13
         CIBW_ARCHS: auto64
         MACOSX_DEPLOYMENT_TARGET: 14.0
         CIBW_BEFORE_BUILD: pip install cmake
