@@ -39,8 +39,8 @@ jobs:
              multiline-separator: "`"
            - name: MacOS ARM GCC
              os: macos-latest
-             compiler: gcc-13
-             compilercxx: g++-13
+             compiler: gcc-14
+             compilercxx: g++-14
              multiline-separator: \
 
     steps:
@@ -49,6 +49,12 @@ jobs:
         submodules: 'recursive'
         fetch-depth: 0
         
+    - name: Setup Xcode 16.2
+      if: matrix.os == 'macos-latest'
+      uses: maxim-lobanov/setup-xcode@v1.6.0
+      with:
+        xcode-version: '16.2'
+
     # Further brew packages needed to run/install vcpkg dependencies
     - name: Setup MacOS dependencies
       if: matrix.os == 'macos-latest'
@@ -57,9 +63,6 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
-          # Since we compile macos on gcc we get build failures with minizip-ng as it uses some apple clang specific
-          # includes.
-          brew install minizip-ng
 
     - name: Initialize vcpkg
       uses: lukka/run-vcpkg@v11
