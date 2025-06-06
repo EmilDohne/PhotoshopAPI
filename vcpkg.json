@@ -12,7 +12,7 @@
   "overrides": [
     {
       "name": "openimageio",
-      "version": "3.0.1.0#2"
+      "version": "2.5.16.0"
     },
     {
       "name": "fmt",
