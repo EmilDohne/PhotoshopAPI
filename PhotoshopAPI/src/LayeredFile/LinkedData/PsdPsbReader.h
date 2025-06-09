@@ -120,7 +120,11 @@ namespace detail
 
 				// Copy the data here as endianDecodeBEBinaryArray modifies in-place and requires non-const objects
 				std::vector<T> data_vec(subspan_t.begin(), subspan_t.end());
-				endianDecodeBEArray<T>(std::span<T>(data_vec.begin(), data_vec.end()));
+				// RLE decompression will have already taken care of byteswapping the data.
+				if (compression == 0)
+				{
+					endianDecodeBEArray<T>(std::span<T>(data_vec.begin(), data_vec.end()));
+				}
 
 				// Now we can compress and insert
 				m_Storage[id] = std::make_unique<ImageChannel>(
