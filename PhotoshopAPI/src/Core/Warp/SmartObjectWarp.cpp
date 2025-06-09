@@ -123,32 +123,35 @@ namespace SmartObject
 		_serialize_common(warp_descriptor);
 		
 		// This is where the actual warp information gets stored.
-		auto custom_envelope_warp = std::make_unique<Descriptors::Descriptor>("customEnvelopeWarp");
+		if (m_WarpPoints.size() > 0)
 		{
-			auto mesh_points = std::make_unique<Descriptors::ObjectArray>("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
-			// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
-			// instead stores the number of items in the sub-descriptors
-			mesh_points->m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
-			mesh_points->m_ClassID = "rationalPoint";
-
-			auto horizontal_values = std::make_unique<Descriptors::UnitFloats>("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
-			auto vertical_values = std::make_unique<Descriptors::UnitFloats>("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
-
-			horizontal_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
-			vertical_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
-
-			for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
+			auto custom_envelope_warp = std::make_unique<Descriptors::Descriptor>("customEnvelopeWarp");
 			{
-				horizontal_values->m_Values.push_back(warp_point.x);
-				vertical_values->m_Values.push_back(warp_point.y);
+				auto mesh_points = std::make_unique<Descriptors::ObjectArray>("meshPoints", _os_key(Descriptors::Impl::OSTypes::ObjectArray));
+				// This isn't a mistake, even though there's only 2 UnitFloats descriptors in here the m_ItemsCount
+				// instead stores the number of items in the sub-descriptors
+				mesh_points->m_ItemsCount = static_cast<int32_t>(m_WarpPoints.size());
+				mesh_points->m_ClassID = "rationalPoint";
+
+				auto horizontal_values = std::make_unique<Descriptors::UnitFloats>("Hrzn", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+				auto vertical_values = std::make_unique<Descriptors::UnitFloats>("Vrtc", _os_key(Descriptors::Impl::OSTypes::UnitFloats));
+
+				horizontal_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+				vertical_values->m_UnitType = Descriptors::Impl::UnitFloatType::Pixel;
+
+				for (const Geometry::Point2D<double> warp_point : m_WarpPoints)
+				{
+					horizontal_values->m_Values.push_back(warp_point.x);
+					vertical_values->m_Values.push_back(warp_point.y);
+				}
+
+				mesh_points->insert("Hrzn", std::move(horizontal_values));
+				mesh_points->insert("Vrtc", std::move(vertical_values));
+
+				custom_envelope_warp->insert("meshPoints", std::move(mesh_points));
 			}
-
-			mesh_points->insert("Hrzn", std::move(horizontal_values));
-			mesh_points->insert("Vrtc", std::move(vertical_values));
-
-			custom_envelope_warp->insert("meshPoints", std::move(mesh_points));
+			warp_descriptor->insert("customEnvelopeWarp", std::move(custom_envelope_warp));
 		}
-		warp_descriptor->insert("customEnvelopeWarp", std::move(custom_envelope_warp));
 
 		return warp_descriptor;
 	}
@@ -296,30 +299,33 @@ namespace SmartObject
 			warp.m_Bounds[3] = boundsDescriptor->at<double>("Rght");
 
 			// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
-			auto customEnvelopeWarp = warp_descriptor->at<Descriptors::Descriptor>("customEnvelopeWarp");
-			const auto meshPoints = customEnvelopeWarp->at<Descriptors::ObjectArray>("meshPoints");
-
-			// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
-			const auto hrznValues = meshPoints->at<Descriptors::UnitFloats>("Hrzn")->m_Values;
-			const auto vrtcValues = meshPoints->at<Descriptors::UnitFloats>("Vrtc")->m_Values;
-
-			if (hrznValues.size() != vrtcValues.size())
+			if (warp_descriptor->contains("customEnvelopeWarp"))
 			{
-				PSAPI_LOG_ERROR("SmartObjectWarp",
-					"Expected horizontal and vertical points to have the same size, instead got {%zu, %zu}",
-					hrznValues.size(), vrtcValues.size());
-			}
-			if (hrznValues.size() != 16)
-			{
-				PSAPI_LOG_ERROR("SmartObjectWarp",
-					"Expected horizontal and vertical points to have 16 elements, instead got %zu",
-					hrznValues.size());
-			}
+				auto customEnvelopeWarp = warp_descriptor->at<Descriptors::Descriptor>("customEnvelopeWarp");
+				const auto meshPoints = customEnvelopeWarp->at<Descriptors::ObjectArray>("meshPoints");
 
-			warp.m_WarpPoints.reserve(hrznValues.size());
-			for (size_t i = 0; i < hrznValues.size(); ++i)
-			{
-				warp.m_WarpPoints.push_back(Geometry::Point2D<double>(hrznValues[i], vrtcValues[i]));
+				// Retrieve Hrzn and Vrtc within meshPoints (UnitFloats)
+				const auto hrznValues = meshPoints->at<Descriptors::UnitFloats>("Hrzn")->m_Values;
+				const auto vrtcValues = meshPoints->at<Descriptors::UnitFloats>("Vrtc")->m_Values;
+
+				if (hrznValues.size() != vrtcValues.size())
+				{
+					PSAPI_LOG_ERROR("SmartObjectWarp",
+						"Expected horizontal and vertical points to have the same size, instead got {%zu, %zu}",
+						hrznValues.size(), vrtcValues.size());
+				}
+				if (hrznValues.size() != 16)
+				{
+					PSAPI_LOG_ERROR("SmartObjectWarp",
+						"Expected horizontal and vertical points to have 16 elements, instead got %zu",
+						hrznValues.size());
+				}
+
+				warp.m_WarpPoints.reserve(hrznValues.size());
+				for (size_t i = 0; i < hrznValues.size(); ++i)
+				{
+					warp.m_WarpPoints.push_back(Geometry::Point2D<double>(hrznValues[i], vrtcValues[i]));
+				}
 			}
 		}
 		catch (const std::runtime_error& e)
@@ -976,6 +982,26 @@ namespace SmartObject
 	std::vector<Geometry::Point2D<double>> Warp::get_transformed_source_points() const
 	{
 		std::vector<Geometry::Point2D<double>> points = m_WarpPoints;
+		// If there is no points we use the transform as the points and generate a bezier surface from that.
+		if (points.empty())
+		{
+			auto bbox = Geometry::BoundingBox<double>(m_Transform[0], m_Transform[3]);
+
+			// Generate the points for warp in the coordinate space [0 - width] and [0 - height].
+			// These can be around 0 since we will translate them after.
+			points = std::vector<Geometry::Point2D<double>>(m_uDims * m_vDims);
+			for (size_t v = 0; v < m_vDims; ++v)
+			{
+				double v_coord = (static_cast<double>(bbox.height()) / (m_vDims - 1)) * v;
+				for (size_t u = 0; u < m_uDims; ++u)
+				{
+					size_t idx = v * m_uDims + u;
+					double u_coord = (static_cast<double>(bbox.width()) / (m_uDims - 1)) * u;
+
+					points[idx] = Geometry::Point2D<double>(u_coord, v_coord);
+				}
+			}
+		}
 
 		// Create and apply the affine transform homography
 		{

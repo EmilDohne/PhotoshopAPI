@@ -3,6 +3,7 @@
 
 #include "Macros.h"
 
+#include "PsdPsbReader.h"
 #include "Core/Render/Render.h"
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Render/Deinterleave.h"
@@ -248,7 +249,6 @@ struct LinkedLayerData
 	/// As we only apply this on write this can be changed as many times as wanted.
 	void type(LinkedLayerType type_) noexcept{ m_Type = type_; }
 
-
 	/// Generate LinkedLayer::Data from the data, this is for internal API usage.
 	///
 	/// \param dealloc_raw_data 
@@ -296,49 +296,71 @@ private:
 		auto extension_string = m_FilePath.extension().string();
 		extension_string.erase(extension_string.begin());	// Remove the '.' so OIIO doesn't freak out
 
-		auto _in = OIIO::ImageInput::create(extension_string);
-		if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
+		// Use our own psd psb reader for internally embedded photoshop files.
+		if ((extension_string == "psd" || extension_string == "psb") && m_RawData.size() > 0)
 		{
-			OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
-
-			_in->set_ioproxy(&memreader);
-			auto spec_copy = _in->spec();
-
-			bool ok = _in->open("", spec_copy);
-			if (ok)
+			auto bd = detail::psd_psb_reader<T>::bit_depth(m_RawData);
+			if (Enum::bit_depth_from_t<T>() != bd)
 			{
-				parse_oiio_input(std::move(_in), m_FilePath.string());
+				PSAPI_LOG_ERROR(
+					"LinkedLayerData", "Unable to read photoshop file '%' using our internal mini-reader as the bit-depth"
+					" of the smart object file does not match that of the containing file. This is as of yet unimplemented.",
+					m_FilePath.string().c_str()
+				);
+			}
+
+			auto reader = detail::psd_psb_reader<T>(m_RawData);
+			m_Width = reader.header().m_Width;
+			m_Height = reader.header().m_Height;
+			m_ImageData = detail::psd_psb_reader<T>::extract_storage_type(std::move(reader));
+		}
+		// else: use OIIO
+		else
+		{
+			auto _in = OIIO::ImageInput::create(extension_string);
+			if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
+			{
+				OIIO::Filesystem::IOMemReader memreader(m_RawData.data(), m_RawData.size());
+
+				_in->set_ioproxy(&memreader);
+				auto spec_copy = _in->spec();
+
+				bool ok = _in->open("", spec_copy);
+				if (ok)
+				{
+					parse_oiio_input(std::move(_in), m_FilePath.string());
+				}
+				else
+				{
+					auto error = _in->geterror();
+					PSAPI_LOG_ERROR("LinkedLayerData", "Unable to read image '%s' from memory, OIIO error: %s", m_FilePath.c_str(), error.c_str());
+				}
 			}
 			else
 			{
-				auto error = _in->geterror();
-				PSAPI_LOG_ERROR("LinkedLayerData", "Unable to read image from memory, OIIO error: %s", error.c_str());
-			}
-		}
-		else
-		{
-			// Try to source the file although this will only succeed if the file is relative to the photoshop file or if this
-			// is a linked file where we have the full path.
-			auto base_dir = m_FilePath.parent_path();
-			if (!m_RawData.empty())
-			{
-				PSAPI_LOG_WARNING("LinkedLayerData",
-					"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
-					m_Filename.c_str(), base_dir.string().c_str());
-			}
+				// Try to source the file although this will only succeed if the file is relative to the photoshop file or if this
+				// is a linked file where we have the full path.
+				auto base_dir = m_FilePath.parent_path();
+				if (!m_RawData.empty())
+				{
+					PSAPI_LOG_WARNING("LinkedLayerData",
+						"OpenImageIO '%s' input does not support loading from memory, attempting to source file from directory: '%s'",
+						m_Filename.c_str(), base_dir.string().c_str());
+				}
 
-			auto combined_path = base_dir / m_Filename;
-			if (!std::filesystem::exists(combined_path))
-			{
-				PSAPI_LOG_WARNING("LinkedLayerData",
-					"Unable to open linked file '%s', trying to access the image data for smart object layers related to this file will fail",
-					combined_path.string().c_str());
+				auto combined_path = base_dir / m_Filename;
+				if (!std::filesystem::exists(combined_path))
+				{
+					PSAPI_LOG_WARNING("LinkedLayerData",
+						"Unable to open linked file '%s', trying to access the image data for smart object layers related to this file will fail",
+						combined_path.string().c_str());
 
-				return;
+					return;
+				}
+
+				auto oiio_in = OIIO::ImageInput::open(combined_path);
+				parse_oiio_input(std::move(oiio_in), combined_path.string());
 			}
-
-			auto oiio_in = OIIO::ImageInput::open(combined_path);
-			parse_oiio_input(std::move(oiio_in), combined_path.string());
 		}
 	}
 

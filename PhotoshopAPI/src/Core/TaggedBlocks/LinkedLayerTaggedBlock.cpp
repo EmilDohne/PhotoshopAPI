@@ -67,6 +67,8 @@ LinkedLayerItem::Date::Date()
 void LinkedLayerItem::Data::read(File& document)
 {
 	m_Size = ReadBinaryData<uint64_t>(document);
+	m_Size = RoundUpToMultiple<uint64_t>(m_Size, 4u);
+	auto start_offset = document.get_offset();
 
 	m_Type = readType(document);
 	m_Version = ReadBinaryData<uint32_t>(document);
@@ -155,6 +157,8 @@ void LinkedLayerItem::Data::read(File& document)
 	{
 		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, dataSize);
 	}
+
+	document.set_offset(start_offset + m_Size);
 }
 
 
@@ -162,7 +166,7 @@ void LinkedLayerItem::Data::read(File& document)
 // ---------------------------------------------------------------------------------------------------------------------
 void LinkedLayerItem::Data::write(File& document)
 {
-	Impl::ScopedLengthBlock<uint64_t> len_block(document, 1u);
+	Impl::ScopedLengthBlock<uint64_t> len_block(document, 4u);
 
 	writeType(document, m_Type);
 	WriteBinaryData<uint32_t>(document, m_Version);

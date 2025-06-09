@@ -78,6 +78,24 @@ namespace Enum
 		BD_32
 	};
 
+	template <typename T>
+		requires std::is_same_v<T, uint8_t> || std::is_same_v<T, uint16_t> || std::is_same_v<T, float32_t> 
+	BitDepth bit_depth_from_t()
+	{
+		if constexpr (std::is_same_v<T, uint8_t>)
+		{
+			return BitDepth::BD_8;
+		}
+		else if constexpr (std::is_same_v<T, uint16_t>)
+		{
+			return BitDepth::BD_16;
+		}
+		else
+		{
+			return BitDepth::BD_32;
+		}
+	}
+
 	inline std::unordered_map<uint16_t, BitDepth> bitDepthMap
 	{
 		{static_cast<uint16_t>(1u), BitDepth::BD_1},

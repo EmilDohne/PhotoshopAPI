@@ -131,7 +131,7 @@ void declare_smart_object_warp(py::module& m)
 
 	smart_object_warp.def("valid", &Class::valid, R"pbdoc(
 	
-		Check if the warp struct is valid, for now returns whether the warp points hold any data
+		Deprecated: always returns true.
 
 	    )pbdoc");
 
