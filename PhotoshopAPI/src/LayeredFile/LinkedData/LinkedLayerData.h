@@ -3,6 +3,7 @@
 
 #include "Macros.h"
 
+#include "PsdPsbReader.h"
 #include "Core/Render/Render.h"
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Render/Deinterleave.h"
@@ -248,7 +249,6 @@ struct LinkedLayerData
 	/// As we only apply this on write this can be changed as many times as wanted.
 	void type(LinkedLayerType type_) noexcept{ m_Type = type_; }
 
-
 	/// Generate LinkedLayer::Data from the data, this is for internal API usage.
 	///
 	/// \param dealloc_raw_data 
@@ -296,6 +296,25 @@ private:
 		auto extension_string = m_FilePath.extension().string();
 		extension_string.erase(extension_string.begin());	// Remove the '.' so OIIO doesn't freak out
 
+		// Use our own psd psb reader for internally embedded photoshop files.
+		if ((extension_string == "psd" || extension_string == "psb") && m_RawData.size() > 0)
+		{
+			auto bd = detail::psd_psb_reader<T>::bit_depth(m_RawData);
+			if (Enum::bit_depth_from_t<T>() != bd)
+			{
+				PSAPI_LOG_ERROR(
+					"LinkedLayerData", "Unable to read photoshop file '%' using our internal mini-reader as the bit-depth"
+					" of the smart object file does not match that of the containing file. This is as of yet unimplemented.",
+					m_FilePath.string().c_str()
+				);
+			}
+
+			auto reader = detail::psd_psb_reader<T>(m_RawData);
+			m_Width = reader.header().m_Width;
+			m_Height = reader.header().m_Height;
+			m_ImageData = detail::psd_psb_reader<T>::extract_storage_type(std::move(reader));
+		}
+
 		auto _in = OIIO::ImageInput::create(extension_string);
 		if (!m_RawData.empty() && _in && static_cast<bool>(_in->supports("ioproxy")))
 		{
@@ -312,7 +331,7 @@ private:
 			else
 			{
 				auto error = _in->geterror();
-				PSAPI_LOG_ERROR("LinkedLayerData", "Unable to read image from memory, OIIO error: %s", error.c_str());
+				PSAPI_LOG_ERROR("LinkedLayerData", "Unable to read image '%s' from memory, OIIO error: %s", m_FilePath.c_str(), error.c_str());
 			}
 		}
 		else
