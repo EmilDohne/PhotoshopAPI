@@ -41,6 +41,8 @@ struct ByteStream
 	// Initialize a ByteStream from a given document and read the size into the ByteStream object
 	ByteStream(File& document, const uint64_t offset, const uint64_t size);
 
+	ByteStream(std::vector<uint8_t> buffer);
+
 private:
 	std::vector<uint8_t> m_Buffer;
 	uint64_t m_Offset = 0u;	// Internal offset for our data
