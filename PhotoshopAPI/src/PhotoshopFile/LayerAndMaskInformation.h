@@ -13,6 +13,7 @@
 #include "Core/Compression/Compression.h"
 
 #include <vector>
+#include <span>
 #include <memory>
 
 
@@ -264,11 +265,6 @@ struct ChannelImageData : public FileSection
 		}
 	};
 
-	/// Estimate the size the of compressed data by compressing n amount of chunks from the data and averaging the compression ratio
-	/// The chunks are chosen at random and have the size of m_ChunkSize in the ImageChannels. numSamples controls how many random chunks we choose
-	template <typename T>
-	uint64_t estimateSize(const FileHeader& header, const uint16_t numSamples = 16u);
-
 	/// Compress the data for the current layer and return the individual channels, invalidating the data as we go.
 	/// This function must be called before writing the data for the LayerRecord as it reveals the size of the data
 	/// required to write them. We fill out the lrChannelInfo and lrCompression vector as it goes.
@@ -445,6 +441,11 @@ struct LayerAndMaskInformation : public FileSection
 
 	/// Write the section to disk in a Photoshop compliant way
 	void write(File& document, const FileHeader& header, ProgressCallback& callback);
+
+	/// \brief Return the section size without parsing the whole struct.
+	/// \param data_span The span starting from this section!
+	static size_t get_size(const std::span<const uint8_t> data_span, const FileHeader& header);
+
 };
 
 

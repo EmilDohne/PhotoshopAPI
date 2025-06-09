@@ -4,6 +4,7 @@
 #include "Macros.h"
 #include "Enum.h"
 #include "Core/FileIO/Read.h"
+#include "Core/FileIO/BytesIO.h"
 #include "Core/FileIO/Write.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
@@ -90,6 +91,15 @@ void ColorModeData::write(File& document, FileHeader& header)
 		FileSection::size(4u);
 		WriteBinaryData<uint32_t>(document, 0u);
 	}
+}
+
+
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+size_t ColorModeData::get_size(const std::span<const uint8_t> data_span)
+{
+	auto section_len = bytes_io::read_as_and_swap<uint32_t>(data_span, 0);
+	return section_len + 4u; // Include size marker
 }
 
 PSAPI_NAMESPACE_END

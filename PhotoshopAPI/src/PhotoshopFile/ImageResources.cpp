@@ -6,6 +6,7 @@
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
 #include "Core/FileIO/LengthMarkers.h"
+#include "Core/FileIO/BytesIO.h"
 #include "Core/Struct/File.h"
 #include "Core/Struct/Section.h"
 #include "Core/Struct/ResourceBlock.h"
@@ -109,5 +110,12 @@ uint32_t ImageResources::parseResourceBlock(File& document)
 	}
 }
 
+// --------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------
+size_t ImageResources::get_size(const std::span<const uint8_t> data_span)
+{
+	auto section_len = RoundUpToMultiple<uint32_t>(bytes_io::read_as_and_swap<uint32_t>(data_span, 0), 2u);
+	return section_len + 4u; // Include size marker
+}
 
 PSAPI_NAMESPACE_END

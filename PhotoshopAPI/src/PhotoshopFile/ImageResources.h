@@ -7,6 +7,7 @@
 #include "Core/Struct/ResourceBlock.h"
 
 #include <vector>
+#include <span>
 #include <type_traits>
 
 #include <cstdint>
@@ -36,6 +37,10 @@ struct ImageResources : public FileSection
 
 	/// Write the ImageResources to disk using the given document
 	void write(File& document);
+
+	/// \brief Return the section size without parsing the whole struct.
+	/// \param data_span The span starting from this section!
+	static size_t get_size(const std::span<const uint8_t> data_span);
 
 	/// Retrieve a resource block view as the given template argument using a key as index to the block
 	/// 
