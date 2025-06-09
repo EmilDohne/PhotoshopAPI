@@ -281,6 +281,25 @@ TEST_CASE("Roundtrip layer read-write internal linkage")
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer read-write multiple smart objects, no warp information")
+{
+	// Sometimes (and this is still a bit of a mistery when or when it doesn't write this) Photoshop does not author 
+	// the warp information on a smart object layer at all (sometimes it writes defaults). Here we use some data
+	// provided by a user to test this behaviour working.
+
+	// What I mean by no warp is that the `customEnvelopeWarp` sub-descriptor is missing entirely in which case we 
+	// default construct a dummy mesh.
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>::read("documents/SmartObjects/smart_object_file_no_warp.psd");
+	LayeredFile<bpp_type>::write(std::move(file), "smart_object_out_no_warp.psd");
+	auto read_file = LayeredFile<bpp_type>::read("smart_object_out_no_warp.psd");
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 TEST_CASE("Roundtrip layer read-write external linkage")
 {
 	using namespace NAMESPACE_PSAPI;
