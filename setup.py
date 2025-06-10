@@ -168,17 +168,16 @@ setup(
     version=__version__,
     author="Emil Dohne",
     description="A performant read/write parser of Photoshop Files (*.psd and *.psb)",
-    url = "https://github.com/EmilDohne/PhotoshopAPI",
+    url="https://github.com/EmilDohne/PhotoshopAPI",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    ext_modules=[CMakeExtension("psapi")],
+    ext_modules=[CMakeExtension("psapi")],  # builds psapi.pyd
     cmdclass={"build_ext": CMakeBuild},
-    package_dir = {"": "python"},
-    packages=["psapi-stubs"],
-    package_data={"psapi-stubs": ["*.pyi", "enum/*.pyi", "util/*.pyi", "geometry/*.pyi"]},
+    package_dir={"": "python"},
+    packages=["psapi"],
+    package_data={"psapi": ["*.pyi", "geometry/*.pyi", "enum/*.pyi", "util/*.pyi"]},
+    include_package_data=True,
     zip_safe=False,
-    install_requires= [
-        "numpy>=1.21.6"
-    ],
-    python_requires=">=3.7",
+    install_requires=["numpy>=1.21.6"],
+    python_requires=">=3.8",
 )
