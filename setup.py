@@ -174,9 +174,9 @@ setup(
     ext_modules=[CMakeExtension("psapi")],  # builds psapi.pyd
     cmdclass={"build_ext": CMakeBuild},
     package_dir={"": "python"},
-    packages=["psapi"],
-    package_data={"psapi": ["*.pyi", "geometry/*.pyi", "enum/*.pyi", "util/*.pyi"]},
-    include_package_data=True,
+    # packages=["psapi-stubs"],
+    # package_data={"psapi-stubs": ["*.pyi", "geometry/*.pyi", "enum/*.pyi", "util/*.pyi"]},
+    # include_package_data=True,
     zip_safe=False,
     install_requires=["numpy>=1.21.6"],
     python_requires=">=3.8",
