@@ -1,8 +1,96 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "cmake>=3.12",
-    "ninja",
-    "wheel"
+[project]
+name = "PhotoshopAPI"
+# The build backend ascertains the version from the CMakeLists.txt file.
+dynamic = ["version"]
+description = "A performant read/write parser of Photoshop Files (*.psd and *.psb)"
+authors = [{name = "Emil Dohne", email="emildohne@gmail.com"}]
+maintainers = [{name = "Emil Dohne", email="emildohne@gmail.com"}]
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: BSD-3-Clause",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-build-backend = "setuptools.build_meta"
+requires-python = ">= 3.8"
+dependencies = ["numpy>=1.21.6"]
+
+[project.urls]
+Homepage = "https://photoshopapi.readthedocs.org/"
+Source = "https://github.com/EmilDohne/PhotoshopAPI"
+Documentation = "https://photoshopapi.readthedocs.org/"
+Issues = "https://github.com/EmilDohne/PhotoshopAPI/issues"
+
+
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = ["scikit-build-core>=0.10.6,<1", "pybind11"]
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+build.verbose = true
+
+# Exclude unnecessary directories from the source distribution.
+sdist.exclude = [".github", "docs", "PhotoshopBenchmark", "PhotoshopExamples", "PhotoshopTest"]
+
+# Pin minimum scikit-build-core to that specified in build-system.requires.
+minimum-version = "build-system.requires"
+
+# Pin minimum CMake version to that specified in CMakeLists.txt.
+cmake.version = "CMakeLists.txt"
+
+wheel.license-files = ["LICENSE"]
+
+[tool.scikit-build.cmake.define]
+VCPKG_TARGET_TRIPLET = "x64-windows-static"
+CMAKE_TOOLCHAIN_FILE = "./thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
+BUILD_SHARED_LIBS = "OFF"
+PSAPI_BUILD_PYTHON="ON"
+PSAPI_BUILD_DOCS="OFF" 
+PSAPI_BUILD_BENCHMARKS="OFF"
+PSAPI_BUILD_EXAMPLES="OFF"
+PSAPI_BUILD_TESTS="OFF"
+
+# Dynamically set the package version metadata by pasrsing CMakeLists.txt.
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "CMakeLists.txt" 
+regex = 'set \(PhotoshopAPI_VERSION "(?P<value>[0-9a-z.]+)"\)'
+
+# Set the right target triplets for linking the library
+[[tool.scikit-build.overrides]]
+if.platform-system = "Windows"
+inherit.cmake.define = "append"
+cmake.define.VCPKG_TARGET_TRIPLET = "x64-windows-static"
+cmake.define.VCPKG_LIBRARY_LINKAGE = "static"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "Linux"
+inherit.cmake.define = "append"
+cmake.define.VCPKG_TARGET_TRIPLET = "x64-linux"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "Darwin"
+inherit.cmake.define = "append"
+cmake.define.VCPKG_TARGET_TRIPLET = "x64-osx"
+
+# macOS Arch-specific already present
+[[tool.scikit-build.overrides]]
+if.platform-system = "Darwin"
+if.platform-machine  = "arm64"
+inherit.cmake.define = "append"
+cmake.define.CMAKE_OSX_ARCHITECTURES = "arm64"
+
+[[tool.scikit-build.overrides]]
+if.platform-system = "Darwin"
+if.platform-machine  = "x86_64"
+inherit.cmake.define = "append"
+cmake.define.CMAKE_OSX_ARCHITECTURES = "x86_64"
