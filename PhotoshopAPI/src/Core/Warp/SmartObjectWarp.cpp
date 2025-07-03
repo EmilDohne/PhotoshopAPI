@@ -293,10 +293,42 @@ namespace SmartObject
 		{
 			// Retrieve bounds descriptor (nested Descriptor)
 			auto boundsDescriptor = warp_descriptor->at<Descriptors::Descriptor>("bounds");
-			warp.m_Bounds[0] = boundsDescriptor->at<double>("Top ");
-			warp.m_Bounds[1] = boundsDescriptor->at<double>("Left");
-			warp.m_Bounds[2] = boundsDescriptor->at<double>("Btom");
-			warp.m_Bounds[3] = boundsDescriptor->at<double>("Rght");
+
+			try
+			{
+				warp.m_Bounds[0] = boundsDescriptor->at<double>("Top ");
+				warp.m_Bounds[1] = boundsDescriptor->at<double>("Left");
+				warp.m_Bounds[2] = boundsDescriptor->at<double>("Btom");
+				warp.m_Bounds[3] = boundsDescriptor->at<double>("Rght");
+			}
+			catch ([[maybe_unused]] std::invalid_argument& e)
+			{
+				// It appears some versions of photoshop write these out as unitfloats instead
+				auto top = boundsDescriptor->at<Descriptors::UnitFloat>("Top ");
+				auto left = boundsDescriptor->at<Descriptors::UnitFloat>("Left");
+				auto bottom= boundsDescriptor->at<Descriptors::UnitFloat>("Btom");
+				auto right = boundsDescriptor->at<Descriptors::UnitFloat>("Rght");
+
+				if (
+					top->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					left->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					bottom->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					right->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel
+					)
+				{
+					throw std::runtime_error(
+						std::format(
+							"Unable to parse warp bounds as the data was not passed as either doubles or UnitFloats of type"
+							"pixel."
+						)
+					);
+				}
+
+				warp.m_Bounds[0] = top->m_Value;
+				warp.m_Bounds[1] = left->m_Value;
+				warp.m_Bounds[2] = bottom->m_Value;
+				warp.m_Bounds[3] = right->m_Value;
+			}
 
 			// Retrieve customEnvelopeWarp descriptor (nested Descriptor)
 			if (warp_descriptor->contains("customEnvelopeWarp"))
@@ -652,10 +684,45 @@ namespace SmartObject
 			warpStruct._warp_perspective_other(warpPerspectiveOther);
 
 			const auto warpBounds = warpDescriptor->at<Descriptors::Descriptor>("bounds");
-			const auto top = warpBounds->at<double>("Top ");
-			const auto left = warpBounds->at<double>("Left");
-			const auto bottom = warpBounds->at<double>("Btom");
-			const auto right = warpBounds->at<double>("Rght");
+			double top{};
+			double left{};
+			double bottom{};
+			double right{};
+			try
+			{
+				top = warpBounds->at<double>("Top ");
+				left = warpBounds->at<double>("Left");
+				bottom = warpBounds->at<double>("Btom");
+				right = warpBounds->at<double>("Rght");
+			}
+			catch ([[maybe_unused]] std::invalid_argument& e)
+			{
+				// It appears some versions of photoshop write these out as unitfloats instead
+				auto top_desc = warpBounds->at<Descriptors::UnitFloat>("Top ");
+				auto left_desc = warpBounds->at<Descriptors::UnitFloat>("Left");
+				auto bottom_desc = warpBounds->at<Descriptors::UnitFloat>("Btom");
+				auto right_desc = warpBounds->at<Descriptors::UnitFloat>("Rght");
+
+				if (
+					top_desc->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					left_desc->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					bottom_desc->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel ||
+					right_desc->m_UnitType != Descriptors::Impl::UnitFloatType::Pixel
+					)
+				{
+					throw std::runtime_error(
+						std::format(
+							"Unable to parse warp bounds as the data was not passed as either doubles or UnitFloats of type"
+							"pixel."
+						)
+					);
+				}
+
+				top = top_desc->m_Value;
+				left = left_desc->m_Value;
+				bottom = bottom_desc->m_Value;
+				right = right_desc->m_Value;
+			}
 			Geometry::BoundingBox<double> bbox;
 			bbox.minimum = { left, top };
 			bbox.maximum = { right, bottom };
