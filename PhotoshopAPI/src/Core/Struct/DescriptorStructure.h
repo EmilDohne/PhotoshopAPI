@@ -465,6 +465,30 @@ namespace Descriptors
 			throw std::out_of_range(fmt::format("Key {} not found in descriptor.", key));
 		}
 
+		/// Access one of the sub-elements as the given type, performing bounds checking and returning
+		/// `default_val` if the key is not found, if the requested type is incorrect this will still throw
+		/// std::invalid_argument
+		/// 
+		/// \param key The key to search for
+		/// \param default_val The default value if the key cannot be found
+		/// \tparam T The type to retrieve it as
+		/// 
+		/// \returns A copy of the descriptor
+		template <typename T>
+			requires std::is_same_v<T, bool> || std::is_same_v<T, int32_t> || std::is_same_v<T, int64_t> || std::is_same_v<T, double> || std::is_same_v<T, UnicodeString>
+		T get(const std::string key, T default_val)
+		{
+			try 
+			{
+				return this->at<T>(key);
+			}
+			catch ([[maybe_unused]] std::out_of_range& e)
+			{
+				return default_val;
+			}
+			return default_val;
+		}
+
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
 		void insert(std::pair<std::string, std::unique_ptr<DescriptorBase>> item) noexcept;
 		/// Insert the given key-value pair into the Descriptor. If the key is already present the new item is ignored
