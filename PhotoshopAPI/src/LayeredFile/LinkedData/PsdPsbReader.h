@@ -98,9 +98,9 @@ namespace detail
 			}
 			if (num_channels != 3 && num_channels != 4)
 			{
-				PSAPI_LOG_ERROR(
-					"psd_psb_reader", "Invalid number of channels received for the global image data, only 3 or 4 channels"
-					" are supported (RGB or RGBA), instead got %zu", num_channels
+				PSAPI_LOG_WARNING(
+					"psd_psb_reader", "Non-standard number of channels received for the global image data, only 3 or 4 channels"
+					" are supported (RGB or RGBA), instead got %zu. Will not parse the other channels.", num_channels
 				);
 			}
 
@@ -110,6 +110,9 @@ namespace detail
 				Enum::ChannelIDInfo{Enum::ChannelID::Blue,  static_cast<int16_t>(2)},
 				Enum::ChannelIDInfo{Enum::ChannelID::Alpha, static_cast<int16_t>(-1)},
 			};
+
+			// We only support at most 4 channels to read.
+			num_channels = std::min(num_channels, size_t{ 4u });
 			
 			for (auto idx : std::views::iota(static_cast<size_t>(0), num_channels))
 			{

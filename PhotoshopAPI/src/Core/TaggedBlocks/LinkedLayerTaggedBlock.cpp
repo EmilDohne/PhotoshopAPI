@@ -153,7 +153,7 @@ void LinkedLayerItem::Data::read(File& document)
 		m_AssetIsLocked = ReadBinaryData<bool>(document);
 	}
 
-	if (m_Version == 2)
+	if (m_Version == 2 && m_Type == Type::External)
 	{
 		m_RawFileBytes = ReadBinaryArray<uint8_t>(document, dataSize);
 	}
