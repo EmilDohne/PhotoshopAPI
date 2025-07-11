@@ -33,8 +33,6 @@ void declare_linkedlayertype_enums(py::module& m)
 
 	linked_layer_type.value("data", LinkedLayerType::data);
 	linked_layer_type.value("external", LinkedLayerType::external);
-
-	linked_layer_type.export_values();
 }
 
 
@@ -62,8 +60,6 @@ void declare_bitdepth_enums(py::module& m)
 	// Note that we do not expose the bd_1 enum
 	// for now as it isnt within the currently supported
 	// bit-depths
-
-	bitDepth.export_values();
 }
 
 
@@ -88,8 +84,6 @@ void declare_colormode_enums(py::module& m)
 	colorMode.value("cmyk", Enum::ColorMode::CMYK);
 	colorMode.value("grayscale", Enum::ColorMode::Grayscale);
 	// For now we dont document the others either
-
-	colorMode.export_values();
 }
 
 
@@ -137,8 +131,6 @@ void declare_channelid_enums(py::module& m)
 	channelID.value("mask", Enum::ChannelID::UserSuppliedLayerMask);
 	channelID.value("alpha", Enum::ChannelID::Alpha);
 
-	channelID.export_values();
-
 }
 
 
@@ -166,8 +158,6 @@ void declare_compression_enums(py::module& m)
 	compression.value("rle", Enum::Compression::Rle);
 	compression.value("zip", Enum::Compression::Zip);
 	compression.value("zipprediction", Enum::Compression::ZipPrediction);
-
-	compression.export_values();
 
 }
 
@@ -266,7 +256,4 @@ void declare_blendmode_enums(py::module& m)
 	blendMode.value("saturation", Enum::BlendMode::Saturation);
 	blendMode.value("color", Enum::BlendMode::Color);
 	blendMode.value("luminosity", Enum::BlendMode::Luminosity);
-
-	blendMode.export_values();
-
 }

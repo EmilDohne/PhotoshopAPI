@@ -10,15 +10,13 @@ set_property(TARGET simdutf PROPERTY POSITION_INDEPENDENT_CODE ON)
 set(PYBIND11_FINDPYTHON ON)
 find_package(pybind11 CONFIG REQUIRED)
 
-pybind11_add_module(psapi src/main.cpp)
+pybind11_add_module(photoshopapi_py src/main.cpp)
 
-target_include_directories(psapi PUBLIC src)
-target_link_libraries(psapi PRIVATE pybind11::headers PhotoshopAPI)
+set_target_properties(photoshopapi_py PROPERTIES OUTPUT_NAME photoshopapi)
+target_include_directories(photoshopapi_py PUBLIC src)
+target_link_libraries(photoshopapi_py PRIVATE pybind11::headers PhotoshopAPI)
 
-# Copy the psapi-test/ folder to the build dir to run the tests
-add_custom_command(TARGET psapi POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       "${CMAKE_CURRENT_SOURCE_DIR}/psapi-test/" $<TARGET_FILE_DIR:psapi>)
-
-
-install(TARGETS psapi LIBRARY DESTINATION psapi)
+install(TARGETS photoshopapi_py
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

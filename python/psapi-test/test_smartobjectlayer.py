@@ -1,6 +1,4 @@
 import unittest
-import nose
-import nose.tools
 import os
 import tempfile
 
@@ -8,7 +6,7 @@ from typing import Tuple, Optional
 
 import numpy as np
 
-import psapi
+import photoshopapi as psapi
 
 
 class TestSmartObjectLayer(unittest.TestCase):
@@ -289,8 +287,3 @@ class TestSmartObjectLayer(unittest.TestCase):
         layer.reset_warp()
         self.assertEqual(layer.width, 200)
         self.assertEqual(layer.height, 108)
-        
-        
-if __name__ == "__main__":
-    a = TestSmartObjectLayer()
-    a.test_roundtrip()

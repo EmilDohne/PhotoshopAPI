@@ -16,7 +16,7 @@
 namespace py = pybind11;
 using namespace NAMESPACE_PSAPI;
 
-PYBIND11_MODULE(psapi, m) 
+PYBIND11_MODULE(photoshopapi, m)
 {
 	auto enum_module = m.def_submodule("enum", "A collection of enumerators used throughout the project.");
 	declare_linkedlayertype_enums(enum_module);
