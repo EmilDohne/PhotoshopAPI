@@ -7,6 +7,7 @@
 #include "Core/Struct/Section.h"
 
 #include <vector>
+#include <span>
 
 #include <cstdint>
 
@@ -25,6 +26,11 @@ struct ColorModeData : public FileSection
 
 	/// Read the ColorModeData section as is without interpreting anything
 	void read(File& document);
+
+	/// \brief Return the section size without parsing the whole struct.
+	/// \param data_span The span starting from this section
+	static size_t get_size(const std::span<const uint8_t> data_span);
+
 	/// Write the ColorModeData section, note that the m_Data field does not contain the length marker and we write it explicitly
 	void write(File& document, FileHeader& header);
 };

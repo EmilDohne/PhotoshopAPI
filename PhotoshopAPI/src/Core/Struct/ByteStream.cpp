@@ -126,5 +126,13 @@ ByteStream::ByteStream(File& document, const uint64_t offset, const uint64_t siz
 	m_FileOffset = offset;
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+ByteStream::ByteStream(std::vector<uint8_t> buffer)
+{
+	m_Size = buffer.size();
+	m_Buffer = std::move(buffer);
+	m_FileOffset = 0;
+}
 
 PSAPI_NAMESPACE_END

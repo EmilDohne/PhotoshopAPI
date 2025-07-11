@@ -43,6 +43,14 @@ struct FileHeader : public FileSection
 	/// Read and Initialize the FileHeader from disk
 	void read(File& document);
 
+	/// \brief Initialize a file header from bytes
+	/// \param file_data The full file data.
+	/// \return The deserialized FileHeader
+	static FileHeader from_bytes(const std::vector<uint8_t>& file_data);
+
+	/// \brief Return the section size without parsing the whole struct.
+	static constexpr size_t get_size() { return 26; }
+
 	/// Write out the data held by the struct in a Photoshop compliant way
 	void write(File& document);
 };

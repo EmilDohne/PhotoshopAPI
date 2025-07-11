@@ -12,8 +12,6 @@ int main()
 {
 	using namespace NAMESPACE_PSAPI;
 
-	LayeredFile<bpp8_t>::read("C:/Users/emild/Downloads/1/1.psd");
-
 	// Initialize some constants that we will need throughout the program
 	constexpr uint32_t width = 64u;
 	constexpr uint32_t height = 64u;

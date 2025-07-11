@@ -1,4 +1,4 @@
-﻿cmake_minimum_required (VERSION 3.20)
+cmake_minimum_required (VERSION 3.20)
 set(VCPKG_LIBRARY_LINKAGE static)
 set (PhotoshopAPI_VERSION "0.6.1")
 project ("PhotoshopAPIBuild" VERSION 0.6.1 LANGUAGES CXX)

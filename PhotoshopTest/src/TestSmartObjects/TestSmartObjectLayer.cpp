@@ -6,6 +6,7 @@
 #include "Core/Warp/SmartObjectWarp.h"
 
 #include "../DetectArmMac.h"
+#include "../TestMacros.h"
 
 #include "Core/Render/ImageBuffer.h"
 #include "Core/Render/Composite.h"
@@ -90,6 +91,39 @@ TEST_CASE("modify warp and get dimensions")
 	// we expect the same result.
 	CHECK(layer->width() == doctest::Approx(200.0f));
 	CHECK(layer->height() == doctest::Approx(108.0f));
+}
+
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Replace image multiple times same result")
+{
+	// Test that our file replace operations can be done as many times as wanted without the image changing.
+	// It should be entirely deterministic
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>::read(std::filesystem::current_path() / "documents/SmartObjects/smart_objects_transformed.psd");
+
+	auto smart_object_layer = find_layer_as<bpp_type, SmartObjectLayer>("simple_warp/bbox_change_perspective_warp", file);
+
+	smart_object_layer->replace("documents/SmartObjects/reference/control.png");
+	auto ref = smart_object_layer->get_image_data();
+
+	// Repeat this 10 times in a row
+	for (int i = 0; i < 10; ++i)
+	{
+		smart_object_layer->replace("documents/SmartObjects/reference/control.png");
+		auto image_data = smart_object_layer->get_image_data();
+
+		REQUIRE(ref.size() == image_data.size());
+
+		for (const auto [key, value] : ref)
+		{
+			CHECK_VEC_VERBOSE(ref[key], image_data[key]);
+		}
+	}
 }
 
 
@@ -276,6 +310,25 @@ TEST_CASE("Roundtrip layer read-write internal linkage")
 	auto read_layer = find_layer_as<bpp_type, SmartObjectLayer>("SmartObject", read_file);
 
 	auto image_data = read_layer->get_image_data();
+}
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer read-write multiple smart objects, no warp information")
+{
+	// Sometimes (and this is still a bit of a mistery when or when it doesn't write this) Photoshop does not author 
+	// the warp information on a smart object layer at all (sometimes it writes defaults). Here we use some data
+	// provided by a user to test this behaviour working.
+
+	// What I mean by no warp is that the `customEnvelopeWarp` sub-descriptor is missing entirely in which case we 
+	// default construct a dummy mesh.
+	using namespace NAMESPACE_PSAPI;
+	using bpp_type = uint8_t;
+
+	auto file = LayeredFile<bpp_type>::read("documents/SmartObjects/smart_object_file_no_warp.psd");
+	LayeredFile<bpp_type>::write(std::move(file), "smart_object_out_no_warp.psd");
+	auto read_file = LayeredFile<bpp_type>::read("smart_object_out_no_warp.psd");
 }
 
 

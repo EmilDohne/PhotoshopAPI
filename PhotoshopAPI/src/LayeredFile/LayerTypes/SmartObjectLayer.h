@@ -1151,12 +1151,13 @@ private:
 		m_Hash = descriptor->at<UnicodeString>("Idnt").string();	// The identifier that maps back to the LinkedLayer
 
 		// These we all ignore for the time being, we store them locally and just rewrite them back out later
-		// This isn't necessarily in order
+		// This isn't necessarily in order. Some of these aren't available in all versions but we don't track 
+		// that either since we write out descriptors valid for the latest version.
 		{
 			_m_LayerHash = descriptor->at<UnicodeString>("placed").getString();
 			_m_PageNum = descriptor->at<int32_t>("PgNm");
 			_m_NumPages = descriptor->at<int32_t>("totalPages");
-			_m_Crop = descriptor->at<int32_t>("Crop");
+			_m_Crop = descriptor->get<int32_t>("Crop", 1u);
 
 			const auto _frame_step = descriptor->at<Descriptors::Descriptor>("frameStep");
 			_m_FrameStepNumerator = _frame_step->at<int32_t>("numerator");
@@ -1171,11 +1172,16 @@ private:
 
 			_m_Type = descriptor->at<int32_t>("Type");
 
-			_m_Comp = descriptor->at<int32_t>("comp");
+			_m_Comp = descriptor->get<int32_t>("comp", -1);
 
-			const auto _comp_info = descriptor->at<Descriptors::Descriptor>("compInfo");
-			_m_CompInfoID = _comp_info->at<int32_t>("compID");
-			_m_CompInfoOriginalID = _comp_info->at<int32_t>("originalCompID");
+			// When parsing older-style descriptors these may not always be present, in that case the defaults are
+			// fine.
+			if (descriptor->contains("compInfo"))
+			{
+				const auto _comp_info = descriptor->at<Descriptors::Descriptor>("compInfo");
+				_m_CompInfoID = _comp_info->at<int32_t>("compID");
+				_m_CompInfoOriginalID = _comp_info->at<int32_t>("originalCompID");
+			}
 		}
 
 		const auto size = descriptor->at<Descriptors::Descriptor>("Sz  ");		// The spaces are not a mistake

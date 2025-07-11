@@ -61,8 +61,9 @@ namespace SmartObject
 		/// \param v_dims The dimensions across the v (y)
 		Warp(std::vector<Geometry::Point2D<double>> warp, size_t u_dims, size_t v_dims);
 
-		/// Check if the warp struct is valid, for now returns whether the warp points hold any data
-		bool valid() { return m_WarpPoints.size() > 0; }
+		/// Deprecated: Check if the warp struct is valid. Returns true always
+		[[deprecated("This function implicitly returns true now and will be removed soon.")]]
+		bool valid() { return true; }
 
 		/// Generate a Mesh from our warp structure, this is primarily used for directly
 		/// visualizing the points. To get a subdivided Bezier representation use `surface().mesh()`
@@ -180,8 +181,6 @@ namespace SmartObject
 					}
 				});
 		}
-
-
 
 
 		/// Apply the warp by warping the `image` into the `buffer` using the locally stored warp description. 

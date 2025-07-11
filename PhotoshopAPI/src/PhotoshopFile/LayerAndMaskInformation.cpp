@@ -6,6 +6,7 @@
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
 #include "Core/FileIO/LengthMarkers.h"
+#include "Core/FileIO/BytesIO.h"
 #include "StringUtil.h"
 #include "FileUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
@@ -672,63 +673,6 @@ uint32_t LayerRecord::getHeight() const noexcept
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-uint64_t ChannelImageData::estimateSize(const FileHeader& header, const uint16_t numSamples)
-{
-	uint64_t estimatedSize = 0u;
-
-	for (const auto& channel : m_ImageData)
-	{
-		auto imageChannelPtr = channel.get();
-		if (!imageChannelPtr)
-		{
-			PSAPI_LOG_WARNING("ChannelImageData", "Unable to read data from channel '%i'", channel->m_ChannelID.id);
-			continue;
-		}
-
-		if (imageChannelPtr->m_Compression == Enum::Compression::Raw)
-		{
-			// We can just get the actual byte size making the estimate entirely accurate
-			estimatedSize += imageChannelPtr->m_OrigByteSize;
-			continue;
-		}
-
-		// Extract a number of sample regions from the image that are chosen at random,
-		// we will now compress them according to the channels compression codec and add the size to 
-		// the total size multiplying by the number of chunks divided by our number of samples
-		auto channelData = imageChannelPtr->getRandomChunks<T>(header, numSamples);
-		for (const auto& sample : channelData)
-		{
-			if (imageChannelPtr->m_Compression == Enum::Compression::Rle)
-			{
-				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Rle, header, sample.size(), 1u);
-				// Subtract 2/4 bytes for the scanline size stored at the end of the data section
-				estimatedSize += (tmp.size() * sizeof(T) - SwapPsdPsb<uint16_t, uint32_t>(header.m_Version)) * (imageChannelPtr->getNumChunks() / numSamples);
-			}
-			else if (imageChannelPtr->m_Compression == Enum::Compression::Zip)
-			{
-				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
-				// Subtract 5 bytes to remove any header information 
-				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannelPtr->getNumChunks() / numSamples);
-			}
-			else if (imageChannelPtr->m_Compression == Enum::Compression::ZipPrediction)
-			{
-				// We want to just compress as a single row to avoid any issues regarding the rows being cut off etc.
-				auto tmp = CompressData(sample, Enum::Compression::Zip, header, sample.size(), 1u);
-				// Subtract 5 bytes to remove any header information 
-				estimatedSize += (tmp.size() * sizeof(T) - 5u) * (imageChannelPtr->getNumChunks() / numSamples);
-			}
-		}
-	}
-
-	return estimatedSize;
-}
-
-
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template <typename T>
 std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads)
 {
 	PSAPI_PROFILE_FUNCTION();
@@ -1294,7 +1238,7 @@ void LayerAndMaskInformation::read(File& document, const FileHeader& header, Pro
 		// Tagged blocks at the end of the layer and mask information seem to be padded to 4-bytes
 		AdditionalLayerInfo layerInfo = {};
 		layerInfo.read(document, header, callback, document.getOffset(), toRead, 4u);
-		m_AdditionalLayerInfo.emplace((std::move(layerInfo)));
+		m_AdditionalLayerInfo.emplace(std::move(layerInfo));
 	}
 }
 
@@ -1327,5 +1271,22 @@ void LayerAndMaskInformation::write(File& document, const FileHeader& header, Pr
 	WritePadddingBytes(document, sectionSizeRounded - sectionSize);
 }
 
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+size_t LayerAndMaskInformation::get_size(const std::span<const uint8_t> data_span, const FileHeader& header)
+{
+	// Read the layer mask info length marker which is 4 bytes in psd and 8 bytes in psb mode
+	if (header.m_Version == Enum::Version::Psd)
+	{
+		auto section_len = (bytes_io::read_as_and_swap<uint32_t>(data_span, 0));
+		return section_len + 4u;
+	}
+	else
+	{
+		auto section_len = (bytes_io::read_as_and_swap<uint64_t>(data_span, 0));
+		return section_len + 8u;
+	}
+}
 
 PSAPI_NAMESPACE_END
