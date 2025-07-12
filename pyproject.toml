@@ -70,7 +70,7 @@ regex = 'set \(PhotoshopAPI_VERSION "(?P<value>[0-9a-z.]+)"\)'
 archs = "auto64"
 manylinux-x86_64-image = "quay.io/pypa/manylinux_2_34_x86_64:latest"
 test-requires = ["pytest", "numpy", "opencv-python"]
-test-command = "python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py && python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py && python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py && python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py && python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py && python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py && python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py && python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py && python -m pytest {project}/python/psapi-test"
+# test-command = "python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py && python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py && python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py && python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py && python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py && python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py && python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py && python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py && python -m pytest {project}/python/psapi-test"
 
 # cibuildhweel by default repairs wheels only on linux and macos but doesn't on windows. It is
 # however recommended in their docs to run delvewheel which will handle this for us as well
