@@ -35,7 +35,7 @@ Examples
 
 	.. code-block:: python
 
-		import psapi
+		import photoshopapi as psapi
 		import numpy as np
 
 		layered_file = psapi.LayeredFile.read("File.psb")
@@ -47,7 +47,7 @@ Examples
 
 	.. code-block:: python
 
-		import psapi
+		import photoshopapi as psapi
 		import numpy as np
 
 		layered_file = psapi.LayeredFile.read("File.psb")
@@ -79,7 +79,7 @@ Check out the examples below to find out how to leverage each of these to your a
 
 		.. code-block:: python
 
-			import psapi
+			import photoshopapi as psapi
 			import numpy as np
 
 			document_color_mode = psapi.enum.ColorMode.rgb
@@ -109,7 +109,7 @@ Check out the examples below to find out how to leverage each of these to your a
 
 		.. code-block:: python
 
-			import psapi
+			import photoshopapi as psapi
 			import numpy as np
 
 			document_color_mode = psapi.enum.ColorMode.rgb
@@ -142,7 +142,7 @@ Check out the examples below to find out how to leverage each of these to your a
 
 	.. code-block:: python
 
-		import psapi
+		import photoshopapi as psapi
 		import numpy as np
 
 		document_color_mode = psapi.enum.ColorMode.rgb
@@ -182,7 +182,7 @@ Check out the examples below to find out how to leverage each of these to your a
 
 	.. code-block:: python
 
-		import psapi
+		import photoshopapi as psapi
 		import numpy as np
 
 		document_color_mode = psapi.enum.ColorMode.rgb

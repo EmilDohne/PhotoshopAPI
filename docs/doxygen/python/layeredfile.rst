@@ -24,7 +24,7 @@ under the hood.
 
 	.. code-block:: python
 
-		import psapi
+		import photoshopapi as psapi
 
 		file_path = "Path/To/File.psb"
 		# This is a wrapper over the different LayeredFile_*bit types and will actually return the 
@@ -43,7 +43,7 @@ under the hood.
 
 	.. code-block:: python
 	
-		import psapi
+		import photoshopapi as psapi
 
 		file_path = "Path/To/File.psb"
 		bit_depth: psapi.enum.BitDepth = psapi.PhotoshopFile.find_bitdepth(file_path)

@@ -86,11 +86,10 @@ jobs:
       env:
         CC: gcc-13
         CXX: g++-13
+        # The rest of the cibuildhweel related commands can be found on the pyproject.toml
         CIBW_ARCHS: auto64
         MACOSX_DEPLOYMENT_TARGET: 14.0
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
-        # Test not only by running the test suite but also by executing every example we provide. This is to ensure
-        # our examples are working and users can rely on them for starting off points
 
     - name: Verify clean directory
       run: git diff --exit-code
