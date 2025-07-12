@@ -32,7 +32,7 @@ an 8-bit psd file with minimal effort.
 
 .. code-block:: python
 
-	import psapi
+	import photoshopapi as psapi
 	import numpy as np
 	import os
 

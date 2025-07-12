@@ -172,7 +172,7 @@ The same code for reading and writing can also be used to for example `LayeredFi
 ```py
 import os
 import numpy as np
-import psapi
+import photoshopapi as psapi
 
 # Initialize some constants that we will need throughout the program
 width = 64

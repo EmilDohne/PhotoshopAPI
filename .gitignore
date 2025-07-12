@@ -5,6 +5,8 @@
 
 # Release artifacts
 release/
+wheelhouse/
+wheels/
 
 # setuptools related artifacts
 .venv/

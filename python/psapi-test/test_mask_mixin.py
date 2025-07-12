@@ -3,8 +3,7 @@ import os
 
 import numpy as np
 
-import psapi
-import psapi.geometry
+import photoshopapi as psapi
 
 
 class TestMaskMixin(unittest.TestCase):

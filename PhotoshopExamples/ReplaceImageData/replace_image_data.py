@@ -1,7 +1,7 @@
 # Example of replacing image data on a layer
 import os
 import numpy as np
-import psapi
+import photoshopapi as psapi
 
 
 def srgb_to_linear(srgb: np.ndarray) -> np.ndarray:

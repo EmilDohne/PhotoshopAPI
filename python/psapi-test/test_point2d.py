@@ -1,7 +1,6 @@
 import unittest
-import nose
 
-from psapi.geometry import Point2D
+from photoshopapi.geometry import Point2D
 
 class TestPoint2D(unittest.TestCase):
     # These tests are very basic in their nature as the main goal of these is to check
@@ -88,6 +87,3 @@ class TestPoint2D(unittest.TestCase):
         
         self.assertAlmostEqual(point_1.distance(point_2), 2)
         
-        
-if __name__ == "__main__":
-    nose.main()
