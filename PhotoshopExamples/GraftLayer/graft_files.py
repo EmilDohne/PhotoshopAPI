@@ -3,7 +3,7 @@ A more involved example showing how to 'graft' a layer from one file to another.
 going from 16-bit -> 8-bit as well as going from PSB -> PSD and going from a 128x64px file -> 256x256px file but numpy
 with the psapi make easy work of this.
 '''
-import psapi
+import photoshopapi as psapi
 import numpy as np
 import os
 

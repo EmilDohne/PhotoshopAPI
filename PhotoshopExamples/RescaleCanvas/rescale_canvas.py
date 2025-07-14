@@ -4,7 +4,7 @@ from typing import Union
 
 import numpy as np
 import cv2
-import psapi
+import photoshopapi as psapi
 
 
 def is_image_layer(layer: Union[psapi.Layer_8bit, psapi.Layer_16bit, psapi.Layer_32bit]) -> bool:

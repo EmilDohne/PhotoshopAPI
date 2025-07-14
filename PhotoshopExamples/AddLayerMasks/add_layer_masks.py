@@ -1,7 +1,7 @@
 # Example of creating a simple document with a single layer and a mask using the PhotoshopAPI.
 import os
 import numpy as np
-import psapi
+import photoshopapi as psapi
 
 
 def main() -> None:

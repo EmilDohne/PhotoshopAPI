@@ -1,11 +1,11 @@
+from pdb import run
 import unittest
-import nose.tools
 import os
 
 import numpy as np
 import cv2
 
-import psapi
+import photoshopapi as psapi
 
 
 class TestImageLayer(unittest.TestCase):
@@ -97,17 +97,16 @@ class TestImageLayer(unittest.TestCase):
         self.assertTrue(np.array_equal(layer.get_channel_by_index(2), data[2]))
         self.assertTrue(np.array_equal(layer.get_channel_by_index(-1), data[-1]))
     
-    @nose.tools.raises(ValueError)
     def test_set_incorrect_width(self):
         data = np.load(self.bin_data_path)
-        layer = psapi.ImageLayer_16bit(data, "Layer", width = 300, height = 188)
+        with self.assertRaises(ValueError):
+            layer = psapi.ImageLayer_16bit(data, "Layer", width = 300, height = 188)
 
-    @nose.tools.raises(ValueError)
     def test_set_incorrect_height(self):
         data = np.load(self.bin_data_path)
-        layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 299)
+        with self.assertRaises(ValueError):
+            layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 299)
 
-    @nose.tools.raises(RuntimeError)
     def test_set_incorrect_channels(self):
         data = np.load(self.bin_data_path)
         data_dict = {
@@ -116,20 +115,20 @@ class TestImageLayer(unittest.TestCase):
             3 : data[2],
             -1 : data[3]
         }
-        layer = psapi.ImageLayer_16bit(data_dict, "Layer", width = 400, height = 188)
+        with self.assertRaises(RuntimeError):
+            layer = psapi.ImageLayer_16bit(data_dict, "Layer", width = 400, height = 188)
 
-    @nose.tools.raises(ValueError)
     def test_set_image_data_flipped_dimensions(self):
         data = np.load(self.bin_data_path)
-        layer = psapi.ImageLayer_16bit(data, "Layer", width = 188, height = 400)
+        with self.assertRaises(ValueError):
+            layer = psapi.ImageLayer_16bit(data, "Layer", width = 188, height = 400)
 
-    @nose.tools.raises(RuntimeError)
     def test_replace_incorrect_channels(self):
         data = np.load(self.bin_data_path)
         layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 188)
-        layer.set_channel_by_id(psapi.enum.ChannelID.cyan, data[0])
+        with self.assertRaises(RuntimeError):
+            layer.set_channel_by_id(psapi.enum.ChannelID.cyan, data[0])
 
-    @nose.tools.raises(RuntimeError)
     def test_set_missing_channels(self):
         data = np.load(self.bin_data_path)
         data_dict = {
@@ -138,16 +137,17 @@ class TestImageLayer(unittest.TestCase):
             # 2 : data[2],
             -1 : data[3]
         }
-        layer = psapi.ImageLayer_16bit(data_dict, "Layer", width = 400, height = 188)
+        with self.assertRaises(RuntimeError):
+            layer = psapi.ImageLayer_16bit(data_dict, "Layer", width = 400, height = 188)
 
-    @nose.tools.raises(ValueError)
     def test_replace_image_data_without_rescale(self):
         data = np.load(self.bin_data_path)
         layer = psapi.ImageLayer_16bit(data, "Layer", width = 400, height = 188)
         data_rescaled = np.ndarray((4, 376, 800), dtype=np.uint16)
         for i in range(data.shape[0]):
             data_rescaled[i] = cv2.resize(data[i], (800, 376))
-        layer.set_image_data(data_rescaled)
+        with self.assertRaises(ValueError):
+            layer.set_image_data(data_rescaled)
 
     def test_non_c_style_contiguous(self):
         data = np.load(self.bin_data_path)

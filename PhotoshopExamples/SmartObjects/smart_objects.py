@@ -4,7 +4,7 @@ from typing import Union
 
 import numpy as np
 import cv2
-import psapi
+import photoshopapi as psapi
 
 
 def main() -> None:

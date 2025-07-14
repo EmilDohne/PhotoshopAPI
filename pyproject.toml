@@ -1,8 +1,88 @@
-[build-system]
-requires = [
-    "setuptools>=42",
-    "cmake>=3.12",
-    "ninja",
-    "wheel"
+[project]
+name = "PhotoshopAPI"
+# The build backend ascertains the version from the CMakeLists.txt file.
+dynamic = ["version"]
+description = "A performant read/write parser of Photoshop Files (*.psd and *.psb)"
+authors = [{name = "Emil Dohne", email="emildohne@gmail.com"}]
+maintainers = [{name = "Emil Dohne", email="emildohne@gmail.com"}]
+readme = "README.md"
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: BSD-3-Clause",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-build-backend = "setuptools.build_meta"
+requires-python = ">= 3.8"
+dependencies = ["numpy>=1.21.6"]
+
+[project.urls]
+Homepage = "https://photoshopapi.readthedocs.org/"
+Source = "https://github.com/EmilDohne/PhotoshopAPI"
+Documentation = "https://photoshopapi.readthedocs.org/"
+Issues = "https://github.com/EmilDohne/PhotoshopAPI/issues"
+
+
+[build-system]
+build-backend = "scikit_build_core.build"
+requires = ["scikit-build-core>=0.10.6,<1", "pybind11"]
+
+
+[tool.scikit-build]
+# This is admittedly a bit hacky but on windows the automatic wheel repair did not appear
+# to work, so we instead build into a fixed place rather than into e.g. build/{wheel_tag}.
+# Before each build we clear the dir and rebuild from scratch (dependencies are cached
+# so subsequent builds are not too affected)
+build-dir = "build/wheel_generation"
+cmake.version = "CMakeLists.txt"
+
+# This is our python 'package' with the __init__ and the stubs.
+wheel.packages = ["python/py_module/photoshopapi"]
+# Ensure the wheel is not installed directly into site-packages but instead
+# is put into an appropriate subdir
+wheel.install-dir = "photoshopapi"
+
+sdist.exclude = [".github", "benchmark", "docs", "PhotoshopExamples", "PhotoshopBenchmark", "PhotoshopTest"]
+
+[tool.scikit-build.cmake.define]
+PSAPI_USE_VCPKG = true
+PSAPI_BUILD_PYTHON = true
+PSAPI_BUILD_DOCS = false
+PSAPI_BUILD_BENCHMARKS = false
+# This is only the cpp examples, the python examples are still built.
+PSAPI_BUILD_EXAMPLES = false
+PSAPI_BUILD_TESTS = false
+
+# Dynamically set the package version metadata by pasrsing CMakeLists.txt.
+[tool.scikit-build.metadata.version]
+provider = "scikit_build_core.metadata.regex"
+input = "CMakeLists.txt" 
+regex = 'set \(PhotoshopAPI_VERSION "(?P<value>[0-9a-z.]+)"\)'
+
+[tool.cibuildwheel]
+archs = "auto64"
+manylinux-x86_64-image = "quay.io/pypa/manylinux_2_34_x86_64:latest"
+test-requires = ["pytest", "numpy", "opencv-python"]
+test-command = "python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py && python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py && python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py && python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py && python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py && python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py && python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py && python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py && python -m pytest {project}/python/psapi-test"
+
+# cibuildhweel by default repairs wheels only on linux and macos but doesn't on windows. It is
+# however recommended in their docs to run delvewheel which will handle this for us as well
+# as making sure the dependency dlls are uniquely tagged to avoid clashes when it comes times
+# to e.g. importing both photoshopapi and openimageio.
+[tool.cibuildwheel.windows]
+before-build = "pip install delvewheel"
+repair-wheel-command = "delvewheel repair --add-path build/wheel_generation/python/Release --wheel-dir {dest_dir} {wheel}"
+
+# Make sure we have a clean build on linux and macos as well
+[tool.cibuildwheel.linux]
+before-build = "rm -rf build/wheel_generation"
+
+[tool.cibuildwheel.macos]
+before-build = "rm -rf build/wheel_generation"

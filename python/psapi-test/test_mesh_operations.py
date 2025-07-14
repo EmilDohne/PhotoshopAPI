@@ -2,7 +2,7 @@ import unittest
 
 import numpy
 
-import psapi.geometry
+import photoshopapi as psapi
 
 class TestMeshOperations(unittest.TestCase):
     

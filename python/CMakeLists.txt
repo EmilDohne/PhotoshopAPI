@@ -1,17 +1,21 @@
+cmake_minimum_required(VERSION 3.15...3.27)
+
 # Define the project
 # --------------------------------------------------------------------------
 project(PhotoshopAPIPython)
 
-file(GLOB_RECURSE MY_SOURCES CONFIGURE_DEPENDS "src/*.cpp")
-
 # Compile simdutf with position independent code as it otherwise wont compile on gcc ubuntu
 set_property(TARGET simdutf PROPERTY POSITION_INDEPENDENT_CODE ON)
 
-pybind11_add_module(psapi src/main.cpp)
-target_include_directories(psapi PUBLIC src)
-target_link_libraries(psapi PUBLIC PhotoshopAPI)
+set(PYBIND11_FINDPYTHON ON)
 
-# Copy the psapi-test/ folder to the build dir to run the tests
-add_custom_command(TARGET psapi POST_BUILD
-                   COMMAND ${CMAKE_COMMAND} -E copy_directory
-                       "${CMAKE_CURRENT_SOURCE_DIR}/psapi-test/" $<TARGET_FILE_DIR:psapi>)
+pybind11_add_module(photoshopapi_py src/main.cpp)
+
+set_target_properties(photoshopapi_py PROPERTIES OUTPUT_NAME photoshopapi)
+target_include_directories(photoshopapi_py PUBLIC src)
+target_link_libraries(photoshopapi_py PRIVATE pybind11::headers PhotoshopAPI)
+
+install(TARGETS photoshopapi_py
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})

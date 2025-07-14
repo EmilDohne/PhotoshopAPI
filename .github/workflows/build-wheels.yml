@@ -86,24 +86,10 @@ jobs:
       env:
         CC: gcc-13
         CXX: g++-13
+        # The rest of the cibuildhweel related commands can be found on the pyproject.toml
         CIBW_ARCHS: auto64
         MACOSX_DEPLOYMENT_TARGET: 14.0
-        CIBW_BEFORE_BUILD: pip install cmake
-        CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux_2_34_x86_64:latest
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
-        # Test not only by running the test suite but also by executing every example we provide. This is to ensure
-        # our examples are working and users can rely on them for starting off points
-        CIBW_TEST_COMMAND: >
-            python -m pip install -r {project}/python/psapi-test/requirements.txt &&
-            python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_masks.py &&
-            python -u {project}/PhotoshopExamples/CreateGroups/create_groups.py &&
-            python -u {project}/PhotoshopExamples/CreateSimpleDocument/create_simple_document.py &&
-            python -u {project}/PhotoshopExamples/ExtractImageData/extract_image_data.py &&
-            python -u {project}/PhotoshopExamples/ModifyLayerStructure/modify_layer_structure.py &&
-            python -u {project}/PhotoshopExamples/ReplaceImageData/replace_image_data.py &&
-            python -u {project}/PhotoshopExamples/RescaleCanvas/rescale_canvas.py &&
-            python -u {project}/PhotoshopExamples/SmartObjects/smart_objects.py &&
-            nosetests {project}/python/psapi-test --verbose
 
     - name: Verify clean directory
       run: git diff --exit-code
@@ -112,7 +98,7 @@ jobs:
     - name: Upload wheels
       uses: actions/upload-artifact@v4
       with:
-        name: PhotoshopAPI_Py-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
+        name: photoshopapi-${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
         path: wheelhouse/*.whl
         
   # Step to check if we can fetch the artifacts and they all come as expected, primarily a debugging
@@ -131,10 +117,10 @@ jobs:
 
     - uses: actions/download-artifact@v4
       with:
-        path: PhotoshopAPI_Py
-        pattern: PhotoshopAPI_Py-*
+        path: photoshopapi
+        pattern: photoshopapi-*
         merge-multiple: true
-    - run: ls -R PhotoshopAPI_Py
+    - run: ls -R photoshopapi
 
 
   pypi-publish:
@@ -153,7 +139,7 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         path: dist
-        pattern: PhotoshopAPI_Py-*
+        pattern: photoshopapi-*
         merge-multiple: true
 
     - uses: pypa/gh-action-pypi-publish@release/v1

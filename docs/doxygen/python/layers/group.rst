@@ -30,7 +30,7 @@ Class Reference GroupLayer
 
 |
 
-.. autoclass:: psapi.GroupLayer_8bit
+.. autoclass:: photoshopapi.GroupLayer_8bit
 	:members:
 	:inherited-members:
 
