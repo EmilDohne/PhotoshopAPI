@@ -92,17 +92,20 @@ namespace Geometry
                 auto& slices_y_val = slices_y.value();
 
                 // Seeing as the slices are stored in ascending order the last item will denominate the magnitude.
-                auto magnitude_x = slices_x_val[slices_x_val.size() - 1];
-                auto magnitude_y = slices_y_val[slices_y_val.size() - 1];
+                auto offset_x = slices_x_val[0];
+                auto magnitude_x = slices_x_val[slices_x_val.size() - 1] - offset_x;
+
+                auto offset_y = slices_y_val[0];
+                auto magnitude_y = slices_y_val[slices_y_val.size() - 1] - offset_y;
 
                 for (auto& elem : slices_x_val)
                 {
-                    elem = elem / magnitude_x;
+                    elem = (elem - offset_x) / magnitude_x;
                     elem = std::clamp<double>(elem, 0.0f, 1.0f);
                 }
                 for (auto& elem : slices_y_val)
                 {
-                    elem = elem / magnitude_y;
+                    elem = (elem - offset_y) / magnitude_y;
                     elem = std::clamp<double>(elem, 0.0f, 1.0f);
                 }
 
