@@ -8,7 +8,6 @@ project(PhotoshopAPIPython)
 set_property(TARGET simdutf PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 set(PYBIND11_FINDPYTHON ON)
-find_package(pybind11 CONFIG REQUIRED)
 
 pybind11_add_module(photoshopapi_py src/main.cpp)
 
