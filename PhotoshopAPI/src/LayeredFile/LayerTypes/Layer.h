@@ -229,6 +229,7 @@ struct Layer : public MaskMixin<T>
 		}
 		// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 		m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
+		m_IsClippingMask = static_cast<bool>(layerRecord.m_Clipping);
 		if (m_IsLocked && !layerRecord.m_BitFlags.m_isTransparencyProtected)
 		{
 			PSAPI_LOG_WARNING("Layer", "Mismatch in parsing of protected layer settings detected. Expected both the layer to be locked and the transparency to be locked");
@@ -354,7 +355,7 @@ struct Layer : public MaskMixin<T>
 			channelInfo,
 			m_BlendMode,
 			m_Opacity,
-			0u,		// Clipping
+			static_cast<uint8_t>(m_IsClippingMask),
 			LayerRecords::BitFlags(m_IsLocked, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
 			Layer<T>::generate_blending_ranges(),	// Generate some defaults
@@ -375,6 +376,9 @@ protected:
 
 	/// Whether the layer is locked inside of photoshop
 	bool m_IsLocked = false;
+
+	/// Whether the layer is a clipping mask to the layer below.
+	bool m_IsClippingMask = false;
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
 	uint8_t m_Opacity{};
