@@ -75,12 +75,8 @@ test-command = "python -u {project}/PhotoshopExamples/AddLayerMasks/add_layer_ma
 # cibuildhweel by default repairs wheels only on linux and macos but doesn't on windows. It is
 # however recommended in their docs to run delvewheel which will handle this for us as well
 # as making sure the dependency dlls are uniquely tagged to avoid clashes when it comes times
-# to e.g. importing both compressed_image and openimageio.
+# to e.g. importing both photoshopapi and openimageio.
 [tool.cibuildwheel.windows]
-
-# This is a workaround for not being able to use {wheel_tag} in cibuildhweel tool step so we reuse the
-# same dir for builds which we clear in-between builds.
-# before-build = "if exist build\\wheel_generation rmdir /s /q build\\wheel_generation && pip install delvewheel"
 before-build = "pip install delvewheel"
 repair-wheel-command = "delvewheel repair --add-path build/wheel_generation/python/Release --wheel-dir {dest_dir} {wheel}"
 

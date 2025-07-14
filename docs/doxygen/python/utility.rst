@@ -4,12 +4,12 @@ Utility Classes
 
 |
 
-.. autoclass:: psapi.util.File
+.. autoclass:: photoshopapi.util.File
 	:members:
 
 |
 
-.. autoclass:: psapi.util.ChannelIDInfo
+.. autoclass:: photoshopapi.util.ChannelIDInfo
 	:members:
 	:undoc-members:
 

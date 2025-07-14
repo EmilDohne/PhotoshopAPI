@@ -5,7 +5,7 @@ Class Reference SmartObjectLayer
 =================================
 
 
-.. autoclass:: psapi.SmartObjectLayer_8bit
+.. autoclass:: photoshopapi.SmartObjectLayer_8bit
 	:members:
 	:inherited-members:
 

@@ -216,7 +216,7 @@ Class Reference ImageLayer
 
 |
 
-.. autoclass:: psapi.ImageLayer_8bit
+.. autoclass:: photoshopapi.ImageLayer_8bit
 	:members:
 	:inherited-members:
 

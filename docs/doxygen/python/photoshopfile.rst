@@ -5,5 +5,5 @@ Class Reference PhotoshopFile
 ==============================
 
 
-.. autoclass:: psapi.PhotoshopFile
+.. autoclass:: photoshopapi.PhotoshopFile
 	:members:

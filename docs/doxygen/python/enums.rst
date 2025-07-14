@@ -3,16 +3,16 @@ Enumerators
 
 |
 
-.. autoclass:: psapi.enum.BitDepth
+.. autoclass:: photoshopapi.enum.BitDepth
 	:members:
 
 |
 
-.. autoclass:: psapi.enum.ColorMode
+.. autoclass:: photoshopapi.enum.ColorMode
 	:members:
 
 
 
-.. autoclass:: psapi.enum.ChannelID
+.. autoclass:: photoshopapi.enum.ChannelID
 	:members:
 

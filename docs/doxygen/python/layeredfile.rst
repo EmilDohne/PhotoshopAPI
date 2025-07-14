@@ -7,7 +7,7 @@ About
 The LayeredFile class is the main class for interacting with photoshop files as it abstracts away
 the implementation of the underlying data structures and provides a simple to use interface over 
 a generic image file with layers. Below we only document the ``LayeredFile_8bit`` as well as the helper class
-for construction ``LayeredFile`` but there is one class for each bit-depth noted in :class:`psapi.enum.BitDepth` 
+for construction ``LayeredFile`` but there is one class for each bit-depth noted in :class:`photoshopapi.enum.BitDepth` 
 (``LayeredFile_16bit`` and ``LayeredFile_32bit`` respectively). 
 
 The function signature for all of these is the same as with the 8-bit instance.
@@ -29,7 +29,7 @@ under the hood.
 		file_path = "Path/To/File.psb"
 		# This is a wrapper over the different LayeredFile_*bit types and will actually return the 
 		# appropriate type depending on the file itself
-		layered_file = psapi.LayeredFile.read(file_path)
+		layered_file = photoshopapi.LayeredFile.read(file_path)
 
 		# it is however important to note that the layered_file variable will be one of 3 types
 		# LayeredFile_8bit | LayeredFile_16bit | LayeredFile_32bit 
@@ -46,15 +46,15 @@ under the hood.
 		import photoshopapi as psapi
 
 		file_path = "Path/To/File.psb"
-		bit_depth: psapi.enum.BitDepth = psapi.PhotoshopFile.find_bitdepth(file_path)
+		bit_depth: photoshopapi.enum.BitDepth = photoshopapi.PhotoshopFile.find_bitdepth(file_path)
 		layered_file = None
 
-		if bit_depth == psapi.enum.BitDepth.bd_8:
-		   layered_file = psapi.LayeredFile_8bit.read(file_path)
-		elif bit_depth == psapi.enum.BitDepth.bd_16:
-		   layered_file = psapi.LayeredFile_16bit.read(file_path)
-		elif bit_depth == psapi.enum.BitDepth.bd_32:
-		   layered_file = psapi.LayeredFile_32bit.read(file_path)
+		if bit_depth == photoshopapi.enum.BitDepth.bd_8:
+		   layered_file = photoshopapi.LayeredFile_8bit.read(file_path)
+		elif bit_depth == photoshopapi.enum.BitDepth.bd_16:
+		   layered_file = photoshopapi.LayeredFile_16bit.read(file_path)
+		elif bit_depth == photoshopapi.enum.BitDepth.bd_32:
+		   layered_file = photoshopapi.LayeredFile_32bit.read(file_path)
 
 		if not layered_file:
 		   raise RuntimeError("Unable to deduce LayeredFile bit-depth")
@@ -64,7 +64,7 @@ under the hood.
 		layered_file.write("Path/To/Out.psb")
 
 The reasoning behind the LayeredFile being split up between bit-depths is due to the templated
-nature of the C++ classes. We try to provide convenience wrappers such as :class:`psapi.LayeredFile` to 
+nature of the C++ classes. We try to provide convenience wrappers such as :class:`photoshopapi.LayeredFile` to 
 simplify the usage and typing of these as much as possible
 
 
@@ -92,12 +92,12 @@ Class Reference LayeredFile
 
 |
 
-.. autoclass:: psapi.LayeredFile
+.. autoclass:: photoshopapi.LayeredFile
 	:members:
 
 |
 
-.. autoclass:: psapi.LayeredFile_8bit
+.. autoclass:: photoshopapi.LayeredFile_8bit
 	:members:
 
 	.. automethod:: __getitem__

@@ -26,6 +26,6 @@ Class Reference Layer
 
 |
 
-.. autoclass:: psapi.Layer_8bit
+.. autoclass:: photoshopapi.Layer_8bit
 	:members:
 
