@@ -201,41 +201,15 @@ namespace _Impl
 		return ICCProfile{};
 	}
 
-	// Validate the file before writing to disk.
-	template <typename T>
-	void validate_file(const LayeredFile<T>& document)
-	{
-		validate_clipping_masks(document);
-	}
-
 	// Validate clipping masks, this checks that layers with clipping masks have a layer below them.
 	template <typename T>
-	void validate_clipping_masks(const LayeredFile<T>& document)
+	void validate_clipping_masks(LayeredFile<T>& document);
+
+	// Validate the file before writing to disk.
+	template <typename T>
+	void validate_file(LayeredFile<T>& document)
 	{
-		auto validate_scope = [&](const std::vector<std::shared_ptr<Layer<T>>> layer_ptrs) -> void
-		{
-			size_t layer_count = 0;
-			for (const auto& layer : layer_ptrs)
-			{
-				if (auto group_layer = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
-				{
-					validate_scope(group_layer->layers());
-				}
-
-				// Photoshop does not allow clipping masks as the last layer in the scope (i.e. in a group).
-				if (layer->clipping_mask() && layer_count == layer_ptrs.size() - 1)
-				{
-					PSAPI_LOG_WARNING(
-						"Validation", "Layer '%s' has its clipping mask in the last place which is not supported.", 
-						layer->name().c_str()
-					);
-				}
-
-				++layer_count;
-			}
-		};
-
-		validate_scope(document.layers());		
+		validate_clipping_masks(document);
 	}
 }
 

@@ -148,11 +148,6 @@ struct GroupLayer final: public Layer<T>
 	/// \return A tuple containing layerRecords and imageData.
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
 	{
-		if (Layer<T>::m_IsClippingMask)
-		{
-			throw std::invalid_argument("clipping masks are not supported on group layers");
-		}
-
 		PascalString lrName = Layer<T>::generate_name();
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
@@ -219,7 +214,7 @@ struct GroupLayer final: public Layer<T>
 				channelInfoVec,
 				Enum::BlendMode::Normal,
 				Layer<T>::m_Opacity,
-				clipping,
+				static_cast<uint8_t>(Layer<T>::m_IsClippingMask),
 				bitFlags,
 				lrMaskData,
 				blendingRanges,
