@@ -66,6 +66,8 @@ struct Layer : public MaskMixin<T>
 		bool visible = true;
 		// Whether the layer is locked
 		bool locked = false;
+		// Whether the layer is clipped to the one below
+		bool clipping_mask = false;
 	};
 
 	/// The layers' name. Stored as a utf-8 string
@@ -97,6 +99,13 @@ struct Layer : public MaskMixin<T>
 	bool visible() const noexcept { return m_IsVisible; }
 	/// Visibility toggle of the layer
 	void visible(bool is_visible) noexcept { m_IsVisible = is_visible; }
+
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	bool& clipping_mask() noexcept { return m_IsClippingMask; }
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	bool clipping_mask() const noexcept { return m_IsClippingMask; }
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	void clipping_mask(bool is_clipped) noexcept { m_IsClippingMask = is_clipped; }
 
 	/// The layers' opacity. 
 	/// 
@@ -176,7 +185,6 @@ struct Layer : public MaskMixin<T>
 	{
 		MaskMixin<T>::set_mask_compression(_compcode);
 	}
-
 
 	Layer() : m_LayerName(""), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
 

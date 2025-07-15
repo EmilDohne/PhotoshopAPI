@@ -276,7 +276,6 @@ public:
 		PascalString name = Layer<T>::generate_name();
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 
-		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bit_flags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lr_mask_data = Layer<T>::internal_generate_mask_data();
 		LayerRecords::LayerBlendingRanges blending_ranges = Layer<T>::generate_blending_ranges();
@@ -309,7 +308,7 @@ public:
 			channel_info,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,
-			clipping,
+			static_cast<uint8_t>(Layer<T>::m_IsClippingMask),
 			bit_flags,
 			lr_mask_data,
 			blending_ranges,
@@ -430,6 +429,7 @@ private:
 		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
+		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
 
 		// Forward the mask channel if it was passed as part of the image data to the layer mask
 		// The actual populating of the mask channel will be done further down
