@@ -381,6 +381,7 @@ namespace _Impl
 	template bool remove_layer_recursive(std::shared_ptr<Layer<uint8_t>> parentLayer, std::shared_ptr<Layer<uint8_t>> layer);
 	template bool remove_layer_recursive(std::shared_ptr<Layer<uint16_t>> parentLayer, std::shared_ptr<Layer<uint16_t>> layer);
 	template bool remove_layer_recursive(std::shared_ptr<Layer<float>> parentLayer, std::shared_ptr<Layer<float>> layer);
-}
+
+} // _Impl 
 
 PSAPI_NAMESPACE_END

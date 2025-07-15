@@ -594,6 +594,8 @@ struct LayeredFile
 	/// \param forceOvewrite Whether to forcefully overwrite the file or fail if the file already exists
 	static void write(LayeredFile<T>&& layeredFile, const std::filesystem::path& filePath, ProgressCallback& callback, const bool forceOvewrite = true)
 	{
+		_Impl::validate_file(layered_file);
+
 		File::FileParams params = {};
 		params.doRead = false;
 		params.forceOverwrite = forceOvewrite;
