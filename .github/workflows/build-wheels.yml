@@ -35,6 +35,10 @@ jobs:
 
 
   build_wheels:
+    permissions:
+      actions: read
+      contents: read
+
     name: Wheels on ${{ matrix.os_dist.os }}-${{ matrix.os_dist.dist }}
     runs-on: ${{ matrix.os_dist.os }}
     strategy:
@@ -71,19 +75,21 @@ jobs:
     - name: Setup macos dependencies
       if: matrix.os_dist.os == 'macos-latest'
       run: |
-          brew install ninja
           brew install autoconf
           brew install libtool
           brew install automake
       
-
-    - name: Initialize vcpkg
-      uses: lukka/run-vcpkg@v11
+    - name: Restore vcpkg cache
+      id: vcpkg-cache
+      uses: TAServers/vcpkg-cache@v3
       with:
-        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: vcpkg-wheels/
 
     - uses: pypa/cibuildwheel@v2.23.1
       env:
+        VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
+        VCPKG_BINARY_SOURCES: "clear;files,${{ steps.vcpkg-cache.outputs.path }},readwrite"
         CC: gcc-13
         CXX: g++-13
         # The rest of the cibuildhweel related commands can be found on the pyproject.toml
