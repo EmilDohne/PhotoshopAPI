@@ -392,7 +392,7 @@ namespace _Impl
 		std::function<void(const std::vector<std::shared_ptr<Layer<T>>>&)> validate_scope;
 		validate_scope = [&](const std::vector<std::shared_ptr<Layer<T>>>& layer_ptrs) -> void
 			{
-				size_t layer_count = 0;
+				size_t layer_index = 0;
 				for (const auto& layer : layer_ptrs)
 				{
 					if (auto group_layer = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
@@ -408,16 +408,16 @@ namespace _Impl
 					}
 
 					// Photoshop does not allow clipping masks as the last layer in the scope (i.e. in a group).
-					if (layer->clipping_mask() && layer_count == layer_ptrs.size() - 1)
+					if (layer->clipping_mask() && layer_index == layer_ptrs.size() - 1)
 					{
 						PSAPI_LOG_WARNING(
-							"Validation", "Layer '%s' has a clipping mask which will be ignored by photoshop because"
-							" it is the last layer within its scope (e.g. group).",
+							"Validation", "Layer '%s' has a clipping mask which will lead to it being invisible because"
+							" it is the last layer within its scope (e.g. group/root).",
 							layer->name().c_str()
 						);
 					}
 
-					++layer_count;
+					++layer_index;
 				}
 			};
 

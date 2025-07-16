@@ -37,17 +37,17 @@ TEST_CASE("Read clipping masks")
 	SUBCASE("set on lowest level of group")
 	{
 		auto document_2 = LayeredFile<bpp8_t>::read("documents/ClippingMasks/clipping_masks.psd");
-		auto layer_nested_bottom = find_layer_as<bpp8_t, ImageLayer>("group/Layer 3", document);
+		auto layer_nested_bottom = find_layer_as<bpp8_t, ImageLayer>("group/Layer 3", document_2);
 
 		layer_nested_bottom->clipping_mask(true);
 		
 		LayeredFile<bpp8_t>::write(std::move(document_2), "documents/clipping_mask_invalid_layer_2.psd");
 	}
 
-	SUBCASE("set on lowest level of group")
+	SUBCASE("set on lowest level of file")
 	{
 		auto document_3 = LayeredFile<bpp8_t>::read("documents/ClippingMasks/clipping_masks.psd");
-		auto layer_bottom = find_layer_as<bpp8_t, ImageLayer>("Layer 0", document);
+		auto layer_bottom = find_layer_as<bpp8_t, ImageLayer>("Layer 0", document_3);
 
 		layer_bottom->clipping_mask(true);
 
