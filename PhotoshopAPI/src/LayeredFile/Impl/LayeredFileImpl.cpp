@@ -381,6 +381,54 @@ namespace _Impl
 	template bool remove_layer_recursive(std::shared_ptr<Layer<uint8_t>> parentLayer, std::shared_ptr<Layer<uint8_t>> layer);
 	template bool remove_layer_recursive(std::shared_ptr<Layer<uint16_t>> parentLayer, std::shared_ptr<Layer<uint16_t>> layer);
 	template bool remove_layer_recursive(std::shared_ptr<Layer<float>> parentLayer, std::shared_ptr<Layer<float>> layer);
-}
+
+
+
+	// ---------------------------------------------------------------------------------------------------------------------
+	// ---------------------------------------------------------------------------------------------------------------------
+	template <typename T>
+	void validate_clipping_masks(LayeredFile<T>& document)
+	{
+		std::function<void(const std::vector<std::shared_ptr<Layer<T>>>&)> validate_scope;
+		validate_scope = [&](const std::vector<std::shared_ptr<Layer<T>>>& layer_ptrs) -> void
+			{
+				size_t layer_index = 0;
+				for (const auto& layer : layer_ptrs)
+				{
+					if (auto group_layer = std::dynamic_pointer_cast<GroupLayer<T>>(layer))
+					{
+						if (group_layer->clipping_mask())
+						{
+							PSAPI_LOG_WARNING(
+								"Validation", "Group Layer '%s' has a clipping mask which will be ignored by photoshop.",
+								group_layer->name().c_str()
+							);
+						}
+						validate_scope(group_layer->layers());
+					}
+
+					// Photoshop does not allow clipping masks as the last layer in the scope (i.e. in a group).
+					if (layer->clipping_mask() && layer_index == layer_ptrs.size() - 1)
+					{
+						PSAPI_LOG_WARNING(
+							"Validation", "Layer '%s' has a clipping mask which will lead to it being invisible because"
+							" it is the last layer within its scope (e.g. group/root).",
+							layer->name().c_str()
+						);
+					}
+
+					++layer_index;
+				}
+			};
+
+		validate_scope(document.layers());
+	}
+
+	// Explicit template instantiations
+	template void validate_clipping_masks(LayeredFile<uint8_t>& document);
+	template void validate_clipping_masks(LayeredFile<uint16_t>& document);
+	template void validate_clipping_masks(LayeredFile<float>& document);
+
+} // _Impl 
 
 PSAPI_NAMESPACE_END

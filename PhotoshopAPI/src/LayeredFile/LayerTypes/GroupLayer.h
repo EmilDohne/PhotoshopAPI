@@ -55,6 +55,12 @@ struct GroupLayer final: public Layer<T>
 		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
+		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
+
+		if (Layer<T>::m_IsClippingMask)
+		{
+			throw std::invalid_argument("clipping masks are not supported on group layers");
+		}
 
 		m_isCollapsed = isCollapsed;
 
@@ -144,7 +150,6 @@ struct GroupLayer final: public Layer<T>
 	{
 		PascalString lrName = Layer<T>::generate_name();
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
-		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags = LayerRecords::BitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::internal_generate_mask_data();
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
@@ -188,7 +193,7 @@ struct GroupLayer final: public Layer<T>
 				channelInfoVec,
 				Layer<T>::m_BlendMode,
 				Layer<T>::m_Opacity,
-				clipping,
+				static_cast<uint8_t>(Layer<T>::m_IsClippingMask),
 				bitFlags,
 				lrMaskData,
 				blendingRanges,
@@ -209,7 +214,7 @@ struct GroupLayer final: public Layer<T>
 				channelInfoVec,
 				Enum::BlendMode::Normal,
 				Layer<T>::m_Opacity,
-				clipping,
+				static_cast<uint8_t>(Layer<T>::m_IsClippingMask),
 				bitFlags,
 				lrMaskData,
 				blendingRanges,

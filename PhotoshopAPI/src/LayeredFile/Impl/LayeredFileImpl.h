@@ -200,6 +200,17 @@ namespace _Impl
 		}
 		return ICCProfile{};
 	}
+
+	// Validate clipping masks, this checks that layers with clipping masks have a layer below them.
+	template <typename T>
+	void validate_clipping_masks(LayeredFile<T>& document);
+
+	// Validate the file before writing to disk.
+	template <typename T>
+	void validate_file(LayeredFile<T>& document)
+	{
+		validate_clipping_masks(document);
+	}
 }
 
 PSAPI_NAMESPACE_END

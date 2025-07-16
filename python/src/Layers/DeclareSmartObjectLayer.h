@@ -132,6 +132,8 @@ void declare_smart_object_layer(py::module& m, const std::string& extension)
             The locked state of the layer, this locks all pixel channels
         is_visible: bool
             Whether the layer is visible
+        clipping_mask: bool
+            Whether the layer is clipped to the one below.
         mask: np.ndarray
             The layers' mask channel, may be empty
         mask_disabled: bool

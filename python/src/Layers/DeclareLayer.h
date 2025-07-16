@@ -63,6 +63,8 @@ void declare_layer(py::module& m, const std::string& extension) {
             The locked state of the layer, this locks all pixel channels
         is_visible: bool
             Whether the layer is visible
+        clipping_mask: bool
+            Whether the layer is clipped to the one below.
         mask: np.ndarray
             The layers' mask channel, may be empty
         mask_disabled: bool
@@ -95,4 +97,5 @@ void declare_layer(py::module& m, const std::string& extension) {
     layer.def_property("center_y", [](const Class& self) { return self.center_y(); }, [](Class& self, float center_y) { self.center_y(center_y); });
     layer.def_property("is_locked", [](const Class& self) { return self.locked(); }, [](Class& self, bool locked) { self.locked(locked); });
     layer.def_property("is_visible", [](const Class& self) { return self.visible(); }, [](Class& self, bool visible) { self.visible(visible); });
+    layer.def_property("clipping_mask", [](const Class& self) { return self.clipping_mask(); }, [](Class& self, bool is_clipped) { self.clipping_mask(is_clipped); });
 }

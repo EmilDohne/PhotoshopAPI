@@ -66,6 +66,8 @@ struct Layer : public MaskMixin<T>
 		bool visible = true;
 		// Whether the layer is locked
 		bool locked = false;
+		// Whether the layer is clipped to the one below
+		bool clipping_mask = false;
 	};
 
 	/// The layers' name. Stored as a utf-8 string
@@ -97,6 +99,13 @@ struct Layer : public MaskMixin<T>
 	bool visible() const noexcept { return m_IsVisible; }
 	/// Visibility toggle of the layer
 	void visible(bool is_visible) noexcept { m_IsVisible = is_visible; }
+
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	bool& clipping_mask() noexcept { return m_IsClippingMask; }
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	bool clipping_mask() const noexcept { return m_IsClippingMask; }
+	/// Clipping mask toggle of the layer, clips it to the layer below
+	void clipping_mask(bool is_clipped) noexcept { m_IsClippingMask = is_clipped; }
 
 	/// The layers' opacity. 
 	/// 
@@ -177,7 +186,6 @@ struct Layer : public MaskMixin<T>
 		MaskMixin<T>::set_mask_compression(_compcode);
 	}
 
-
 	Layer() : m_LayerName(""), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
 
 	/// \brief Initialize a Layer instance from the internal Photoshop File Format structures.
@@ -229,6 +237,7 @@ struct Layer : public MaskMixin<T>
 		}
 		// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 		m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
+		m_IsClippingMask = static_cast<bool>(layerRecord.m_Clipping);
 		if (m_IsLocked && !layerRecord.m_BitFlags.m_isTransparencyProtected)
 		{
 			PSAPI_LOG_WARNING("Layer", "Mismatch in parsing of protected layer settings detected. Expected both the layer to be locked and the transparency to be locked");
@@ -354,7 +363,7 @@ struct Layer : public MaskMixin<T>
 			channelInfo,
 			m_BlendMode,
 			m_Opacity,
-			0u,		// Clipping
+			static_cast<uint8_t>(m_IsClippingMask),
 			LayerRecords::BitFlags(m_IsLocked, !m_IsVisible, false),
 			std::nullopt,	// LayerMaskData
 			Layer<T>::generate_blending_ranges(),	// Generate some defaults
@@ -375,6 +384,9 @@ protected:
 
 	/// Whether the layer is locked inside of photoshop
 	bool m_IsLocked = false;
+
+	/// Whether the layer is a clipping mask to the layer below.
+	bool m_IsClippingMask = false;
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
 	uint8_t m_Opacity{};

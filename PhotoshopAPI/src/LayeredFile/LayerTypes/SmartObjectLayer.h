@@ -639,7 +639,6 @@ public:
 		ChannelExtents extents = generate_extents(ChannelCoordinates(Layer<T>::m_Width, Layer<T>::m_Height, Layer<T>::m_CenterX, Layer<T>::m_CenterY));
 		size_t channelCount = this->num_channels(true);
 
-		uint8_t clipping = 0u;	// No clipping mask for now
 		LayerRecords::BitFlags bitFlags(Layer<T>::m_IsLocked, !Layer<T>::m_IsVisible, false);
 		std::optional<LayerRecords::LayerMaskData> lrMaskData = Layer<T>::internal_generate_mask_data();
 		LayerRecords::LayerBlendingRanges blendingRanges = Layer<T>::generate_blending_ranges();
@@ -670,7 +669,7 @@ public:
 			channelInfoVec,
 			Layer<T>::m_BlendMode,
 			Layer<T>::m_Opacity,
-			clipping,
+			static_cast<uint8_t>(Layer<T>::m_IsClippingMask),
 			bitFlags,
 			lrMaskData,
 			blendingRanges,
@@ -1085,6 +1084,7 @@ private:
 		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
+		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
 		Layer<T>::parse_mask(parameters);
 
 		// Transform the layer by the passed parameters' width and height
