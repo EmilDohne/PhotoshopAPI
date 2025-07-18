@@ -6,6 +6,7 @@ on:
   push:
     branches:
      - dev
+     - fix-pypi-release
   pull_request:
     branches:
      - master
@@ -129,7 +130,6 @@ jobs:
       id-token: write
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release' && github.event.action == 'published'
 
     steps:
     - uses: actions/setup-python@v5
