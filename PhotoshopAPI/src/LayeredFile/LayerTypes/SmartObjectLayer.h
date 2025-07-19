@@ -215,6 +215,8 @@ public:
 	void warp(SmartObject::Warp _warp) 
 	{ 
 		m_SmartObjectWarp = std::move(_warp);
+		invalidate_cache();
+		invalidate_mesh_cache();
 		evaluate_transforms();
 	}
 
@@ -260,6 +262,7 @@ public:
 		m_SmartObjectWarp.points(pts);
 		invalidate_cache();
 		invalidate_mesh_cache();
+		evaluate_transforms();
 	}
 
 
