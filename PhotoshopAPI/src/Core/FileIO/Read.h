@@ -252,8 +252,7 @@ void ReadBinaryArray(ByteStream& stream, std::span<T> buffer, uint64_t offset, u
 			size, sizeof(T));
 	}
 
-	std::vector<T> data(size / sizeof(T));
-	stream.read(Util::toWritableBytes(data), offset);
+	stream.read(Util::toWritableBytes(buffer), offset);
 	endianDecodeBEArray<T>(buffer);
 }
 
