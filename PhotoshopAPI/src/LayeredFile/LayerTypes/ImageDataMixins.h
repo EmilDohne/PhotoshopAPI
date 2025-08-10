@@ -33,7 +33,7 @@ struct ImageDataMixin
 {
 public:
 	/// Type used for a single channel
-	using channel_type = std::unique_ptr<ImageChannel>;
+	using channel_type = std::unique_ptr<channel_wrapper>;
 	/// Type used for a mapping of channels.
 	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher>;
 	/// Type used for data as it is passed back to the user.
@@ -279,7 +279,7 @@ protected:
 		std::unordered_map<Enum::ChannelIDInfo, size_t, Enum::ChannelIDInfoHasher> channel_sizes{};
 		for (const auto& [key, channel_ptr] : m_ImageData)
 		{
-			channel_sizes[key] = channel_ptr->m_OrigByteSize / sizeof(T);
+			channel_sizes[key] = channel_ptr->element_size();
 		}
 
 		// If there is only one channel, we can skip size comparison
@@ -703,7 +703,7 @@ protected:
 		}
 		else
 		{
-			ImageDataMixin<T>::m_ImageData[id] = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, id, width, height, center_x, center_y);
+			ImageDataMixin<T>::m_ImageData[id] = std::make_unique<channel_wrapper>(Enum::Compression::ZipPrediction, data, id, width, height, center_x, center_y);
 		}
 	}
 

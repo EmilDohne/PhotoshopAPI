@@ -260,7 +260,7 @@ struct Layer : public MaskMixin<T>
 			if (channelInfo.m_ChannelID == MaskMixin<T>::s_mask_index)
 			{
 				// Move the compressed image data into our LayerMask struct
-				auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
+				auto channelPtr = channelImageData.extract_image_ptr(channelInfo.m_ChannelID);
 				if (channelPtr)
 				{
 					MaskMixin<T>::m_MaskData = std::move(channelPtr);
@@ -406,7 +406,7 @@ protected:
 	{
 		if (parameters.mask)
 		{
-			auto mask_data = std::make_unique<ImageChannel>(
+			auto mask_data = std::make_unique<channel_wrapper>(
 				parameters.compression,
 				parameters.mask.value(),
 				MaskMixin<T>::s_mask_index,
@@ -467,7 +467,7 @@ protected:
 	/// \param channelInfoVec The channel infos to append to, will only add channels if the default keys dont already exist
 	/// \param channelDataVec The channel data to append to, will only add channels if the default keys dont already exist
 	/// \param colormode	  The colormode associated with the layer, dictates how many layers are actually written out
-	void generate_empty_channels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<ImageChannel>>& channelDataVec, const Enum::ColorMode& colormode)
+	void generate_empty_channels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<channel_wrapper>>& channelDataVec, const Enum::ColorMode& colormode)
 	{
 		auto processChannel = [&](Enum::ChannelIDInfo channelid, int16_t i)
 			{
@@ -480,7 +480,7 @@ protected:
 				}
 
 				std::vector<T> empty(0);
-				auto channel = std::make_unique<ImageChannel>(Enum::Compression::Raw, empty, channelid, 0u, 0u, 0.0f, 0.0f);
+				auto channel = std::make_unique<channel_wrapper>(Enum::Compression::Raw, empty, channelid, 0u, 0u, 0.0f, 0.0f);
 				channelInfoVec.push_back(channelinfo);
 				channelDataVec.push_back(std::move(channel));
 			};

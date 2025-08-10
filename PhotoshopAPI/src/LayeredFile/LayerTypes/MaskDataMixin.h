@@ -7,6 +7,7 @@
 
 #include "Core/Struct/ImageChannel.h"
 #include "Core/Geometry/BoundingBox.h"
+#include "Util/CoordinateUtil.h"
 
 #include "LayeredFile/fwd.h"
 
@@ -33,7 +34,7 @@ PSAPI_NAMESPACE_BEGIN
 template <typename T>
 struct MaskMixin
 {
-	using channel_type = std::unique_ptr<ImageChannel>;
+	using channel_type = std::unique_ptr<channel_wrapper>;
 
 	/// Colormode independent mask index as Enum::ChannelIDInfo that may be used 
 	static constexpr auto s_mask_index = Enum::ChannelIDInfo{ Enum::ChannelID::UserSuppliedLayerMask, -2 };
@@ -74,7 +75,7 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			return m_MaskData.value()->template getData<T>();
+			return m_MaskData.value()->template get_data<T>();
 		}
 		PSAPI_LOG_WARNING("Mask", "No mask channel exists on the layer, get_mask() will return an empty channel");
 		return std::vector<T>();
@@ -89,7 +90,7 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			return m_MaskData.value()->template getData<T>(buffer);
+			return m_MaskData.value()->template get_data<T>(buffer);
 		}
 		PSAPI_LOG_WARNING("Mask", "No mask channel exists on the layer, get_mask() will return an empty channel");
 	}
@@ -110,8 +111,8 @@ struct MaskMixin
 		float center_y = static_cast<float>(height) / 2;
 		if (this->has_mask())
 		{
-			center_x = this->m_MaskData.value()->getCenterX();
-			center_y = this->m_MaskData.value()->getCenterY();
+			center_x = this->m_MaskData.value()->center_x();
+			center_y = this->m_MaskData.value()->center_y();
 		}
 
 		if (buffer.size() != width * height)
@@ -121,7 +122,7 @@ struct MaskMixin
 				width, height, width * height, buffer.size()));
 		}
 
-		auto channel = std::make_unique<ImageChannel>(
+		auto channel = std::make_unique<channel_wrapper>(
 			Enum::Compression::ZipPrediction, 
 			buffer, 
 			this->s_mask_index, 
@@ -161,8 +162,8 @@ struct MaskMixin
 		float center_y = static_cast<float>(document.bbox().center().y);
 		if (this->has_mask())
 		{
-			center_x = this->m_MaskData.value()->getCenterX();
-			center_y = this->m_MaskData.value()->getCenterY();
+			center_x = this->m_MaskData.value()->center_x();
+			center_y = this->m_MaskData.value()->center_y();
 		}
 
 		// Deduce dimensions from passed width and height
@@ -177,7 +178,7 @@ struct MaskMixin
 					width_val, height_val, width_val * height_val, buffer.size()));
 			}
 
-			auto channel = std::make_unique<ImageChannel>(
+			auto channel = std::make_unique<channel_wrapper>(
 				Enum::Compression::ZipPrediction, 
 				buffer, 
 				this->s_mask_index, 
@@ -199,8 +200,8 @@ struct MaskMixin
 				);
 			}
 
-			const size_t width_val = m_MaskData.value()->getWidth();
-			const size_t height_val = m_MaskData.value()->getHeight();
+			const size_t width_val = m_MaskData.value()->width();
+			const size_t height_val = m_MaskData.value()->height();
 			if (buffer.size() != width_val * height_val)
 			{
 				throw std::invalid_argument(
@@ -208,7 +209,7 @@ struct MaskMixin
 					width_val, height_val, width_val * height_val, buffer.size()));
 			}
 
-			auto channel = std::make_unique<ImageChannel>(
+			auto channel = std::make_unique<channel_wrapper>(
 				Enum::Compression::ZipPrediction, 
 				buffer, 
 				this->s_mask_index, 
@@ -230,7 +231,7 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			this->m_MaskData.value()->m_Compression = _compcode;
+			this->m_MaskData.value()->compression_codec(_compcode);
 		}
 	}
 
@@ -245,7 +246,7 @@ struct MaskMixin
 		{
 			auto bbox = Geometry::BoundingBox<double>(
 				Geometry::Point2D<double>(0, 0),
-				Geometry::Point2D<double>(this->m_MaskData.value()->getWidth(), this->m_MaskData.value()->getHeight())
+				Geometry::Point2D<double>(this->m_MaskData.value()->width(), this->m_MaskData.value()->height())
 			);
 			bbox.offset(this->mask_position());
 			return bbox;
@@ -287,7 +288,7 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			return Geometry::Point2D<double>(m_MaskData.value()->getCenterX(), m_MaskData.value()->getCenterY());
+			return Geometry::Point2D<double>(m_MaskData.value()->center_x(), m_MaskData.value()->center_y());
 		}
 		return Geometry::Point2D<double>(-1.0f, -1.0f);
 	}
@@ -301,8 +302,8 @@ struct MaskMixin
 	{
 		if (this->has_mask())
 		{
-			m_MaskData.value()->setCenterX(static_cast<float>(position.x));
-			m_MaskData.value()->setCenterY(static_cast<float>(position.y));
+			m_MaskData.value()->center_x(static_cast<float>(position.x));
+			m_MaskData.value()->center_y(static_cast<float>(position.y));
 		}
 	}
 
@@ -445,15 +446,15 @@ protected:
 	/// Part of the internal API, not expected to be used by users.
 	/// 
 	/// \return An optional containing a tuple of ChannelInformation and a unique_ptr to ImageChannel.
-	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<ImageChannel>>> internal_extract_mask()
+	std::optional<std::tuple<LayerRecords::ChannelInformation, std::unique_ptr<channel_wrapper>>> internal_extract_mask()
 	{
 		if (!this->has_mask())
 		{
 			return std::nullopt;
 		}
 
-		std::unique_ptr<ImageChannel> mask_channel = std::move(m_MaskData.value());
-		LayerRecords::ChannelInformation channel_info{ this->s_mask_index, mask_channel->m_OrigByteSize };
+		std::unique_ptr<channel_wrapper> mask_channel = std::move(m_MaskData.value());
+		LayerRecords::ChannelInformation channel_info{ this->s_mask_index, mask_channel->byte_size()};
 
 		auto data = std::make_tuple(channel_info, std::move(mask_channel));
 		return std::make_optional(std::move(data));

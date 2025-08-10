@@ -2,6 +2,7 @@
 
 #include "FileHeader.h"
 #include "Macros.h"
+#include "Core/Compression/Compression.h"
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
@@ -10,6 +11,7 @@
 #include "StringUtil.h"
 #include "FileUtil.h"
 #include "Profiling/Perf/Instrumentor.h"
+#include "Util/CoordinateUtil.h"
 
 #include "libdeflate.h"
 
@@ -673,7 +675,7 @@ uint32_t LayerRecord::getHeight() const noexcept
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads)
+std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression)
 {
 	PSAPI_PROFILE_FUNCTION();
 
@@ -696,8 +698,8 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		size_t maxHeight = 0;
 		for (const auto& channel : m_ImageData)
 		{
-			size_t width = channel->getWidth();
-			size_t height = channel->getHeight();
+			size_t width = channel->width();
+			size_t height = channel->height();
 			if (width > maxWidth)
 				maxWidth = width;
 			if (height > maxHeight)
@@ -709,7 +711,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		bool hasRLE = false;
 		for (const auto& channel : m_ImageData)
 		{
-			if (channel->m_Compression == Enum::Compression::Rle)
+			if (channel->compression_codec() == Enum::Compression::Rle)
 				hasRLE = true;
 		}
 		// Compute the maximum necessary size to fit all of our compression needs and fill the buffer with that information
@@ -732,7 +734,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	size_t maxSize = 0;
 	for (const auto& channel : m_ImageData)
 	{
-		size_t size = static_cast<size_t>(channel->getWidth()) * channel->getHeight();
+		size_t size = static_cast<size_t>(channel->width()) * channel->height();
 		if (maxSize < size)
 		{
 			maxSize = size;
@@ -747,7 +749,7 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 	for (int i = 0; i < m_ImageData.size(); ++i)
 	{
 		// Take ownership of and invalidate the current channel index
-		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData[i]);
+		std::unique_ptr<channel_wrapper> imageChannelPtr = std::move(m_ImageData[i]);
 		if (imageChannelPtr == nullptr) [[unlikely]]
 		{
 			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", i);
@@ -755,10 +757,10 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		}
 		m_ImageData[i] = nullptr;
 
-		const auto& width = imageChannelPtr->getWidth();
-		const auto& height = imageChannelPtr->getHeight();
-		auto& compressionMode = imageChannelPtr->m_Compression;
-		const auto& channelIdx = imageChannelPtr->m_ChannelID;
+		const auto& width = imageChannelPtr->width();
+		const auto& height = imageChannelPtr->height();
+		auto compressionMode = imageChannelPtr->compression_codec();
+		const auto& channelIdx = imageChannelPtr->channel_id_info();
 
 		// In 32-bit mode Photoshop insists on the data being prediction encoded even if the compression mode is set to zip
 		// to probably get better compression. We warn the user of this and switch to ZipPrediction
@@ -775,13 +777,14 @@ std::vector<std::vector<uint8_t>> ChannelImageData::compressData(const FileHeade
 		std::span<T> channelDataSpan = std::span<T>(channelDataBuffer.begin(), channelDataBuffer.begin() + static_cast<size_t>(width) * height);
 
 		// Compress the image data into a binary array and store it in our compressedData vec
-		imageChannelPtr->getData<T>(channelDataSpan, numThreads);
+		imageChannelPtr->get_data<T>(channelDataSpan);
 		compressedData.push_back(CompressData(channelDataSpan, buffer, compressor, compressionMode, header, width, height));
 
 		// Store our additional data. The size of the channel must include the 2 bytes for the compression marker
 		LayerRecords::ChannelInformation channelInfo{.m_ChannelID = channelIdx, .m_Size = compressedData[i].size() + 2u };
 		lrChannelInfo.push_back(channelInfo);
 		lrCompression.push_back(compressionMode);
+		imageChannelPtr->compression_codec(compressionMode);
 	}
 
 	libdeflate_free_compressor(compressor);
@@ -884,9 +887,9 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			std::span<uint8_t> bufferSpan(buffer.data(), coordinates.width * coordinates.height);
 			DecompressData<uint8_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			auto channelPtr = std::make_unique<ImageChannel>(
+			auto channelPtr = std::make_unique<channel_wrapper>(
 				channelCompression,
-				bufferSpan,
+				std::span<const uint8_t>(bufferSpan.begin(), bufferSpan.end()),
 				channel.m_ChannelID,
 				coordinates.width,
 				coordinates.height,
@@ -898,9 +901,9 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			std::span<uint16_t> bufferSpan(reinterpret_cast<uint16_t*>(buffer.data()), coordinates.width * coordinates.height);
 			DecompressData<uint16_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			auto channelPtr = std::make_unique<ImageChannel>(
+			auto channelPtr = std::make_unique<channel_wrapper>(
 				channelCompression,
-				bufferSpan,
+				std::span<const uint16_t>(bufferSpan.begin(), bufferSpan.end()),
 				channel.m_ChannelID,
 				coordinates.width,
 				coordinates.height,
@@ -912,9 +915,9 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 		{
 			std::span<float32_t> bufferSpan(reinterpret_cast<float32_t*>(buffer.data()), coordinates.width * coordinates.height);
 			DecompressData<float32_t>(stream, bufferSpan, channelOffset + 2u, channelCompression, header, coordinates.width, coordinates.height, channel.m_Size - 2u);
-			auto channelPtr = std::make_unique<ImageChannel>(
+			auto channelPtr = std::make_unique<channel_wrapper>(
 				channelCompression,
-				bufferSpan,
+				std::span<const float32_t>(bufferSpan.begin(), bufferSpan.end()),
 				channel.m_ChannelID,
 				coordinates.width,
 				coordinates.height,
@@ -1127,21 +1130,17 @@ void LayerInfo::write(File& document, const FileHeader& header, ProgressCallback
 			std::vector<LayerRecords::ChannelInformation> lrChannelInfo;
 			std::vector<Enum::Compression> lrCompression;
 
-			// If we have some additional threads to spare we pass them into compression as some internal functions can make use of this
-			size_t threadCount = std::thread::hardware_concurrency() / m_ChannelImageData.size();
-			threadCount = threadCount < 1 ? 1 : threadCount;
-
 			if (header.m_Depth == Enum::BitDepth::BD_8)
 			{
-				compressedData[index] = channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression, threadCount);
+				compressedData[index] = channel.compressData<uint8_t>(header, lrChannelInfo, lrCompression);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_16)
 			{
-				compressedData[index] = channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression, threadCount);
+				compressedData[index] = channel.compressData<uint16_t>(header, lrChannelInfo, lrCompression);
 			}
 			else if (header.m_Depth == Enum::BitDepth::BD_32)
 			{
-				compressedData[index] = channel.compressData<float32_t>(header, lrChannelInfo, lrCompression, threadCount);
+				compressedData[index] = channel.compressData<float32_t>(header, lrChannelInfo, lrCompression);
 			}
 			else
 			{

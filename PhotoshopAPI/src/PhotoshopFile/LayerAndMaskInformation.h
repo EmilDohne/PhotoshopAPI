@@ -257,11 +257,11 @@ struct GlobalLayerMaskInfo : public FileSection
 struct ChannelImageData : public FileSection
 {
 	ChannelImageData() = default;
-	ChannelImageData(std::vector<std::unique_ptr<ImageChannel>> data) : m_ImageData(std::move(data)) 
+	ChannelImageData(std::vector<std::unique_ptr<channel_wrapper>> data) : m_ImageData(std::move(data)) 
 	{
 		for (const auto& item : m_ImageData)
 		{
-			m_ChannelCompression.push_back(item->m_Compression);
+			m_ChannelCompression.push_back(item->compression_codec());
 		}
 	};
 
@@ -269,7 +269,7 @@ struct ChannelImageData : public FileSection
 	/// This function must be called before writing the data for the LayerRecord as it reveals the size of the data
 	/// required to write them. We fill out the lrChannelInfo and lrCompression vector as it goes.
 	template <typename T>
-	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression, size_t numThreads);
+	std::vector<std::vector<uint8_t>> compressData(const FileHeader& header, std::vector<LayerRecords::ChannelInformation>& lrChannelInfo, std::vector<Enum::Compression>& lrCompression);
 
 	/// Read a single layer instance from a pre-allocated bytestream
 	void read(ByteStream& stream, const FileHeader& header, const uint64_t offset, const LayerRecord& layerRecord);
@@ -283,7 +283,7 @@ struct ChannelImageData : public FileSection
 	{
 		for (int i = 0; i < m_ImageData.size(); ++i)
 		{
-			if (m_ImageData[i]->m_ChannelID.id == channelID)
+			if (m_ImageData[i]->channel_id_info().id == channelID)
 			{
 				return i;
 			}
@@ -299,7 +299,7 @@ struct ChannelImageData : public FileSection
 		{
 			// Check if the ptr is valid as well as comparing the channelInfo struct
 			auto& imgData = m_ImageData.at(i);
-			if (imgData && imgData->m_ChannelID == channelIDInfo)
+			if (imgData && imgData->channel_id_info() == channelIDInfo)
 			{
 				return i;
 			}
@@ -311,32 +311,32 @@ struct ChannelImageData : public FileSection
 	/// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
 	/// had their data removed
 	template <typename T>
-	std::vector<T> extractImageData(int index)
+	std::vector<T> extract_image_data(int index)
 	{
 		// Take ownership of and invalidate the current index
-		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		auto imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
 			PSAPI_LOG_WARNING("ChannelImageData", "Channel %i no longer contains any data, was it extracted beforehand?", index);
 			return std::vector<T>();
 		}
 		m_ImageData[index] = nullptr;
-		return imageChannelPtr->extractData<T>();
+		return imageChannelPtr->extract_data<T>();
 	}
 
 	/// Extract a channel from the given ChannelID and take ownership of the data. After this function is called the index will point to nullptr
 	/// If the channel has already been extracted we return an empty array of T and raise a warning about accessing elements that have already
 	/// had their data removed
 	template <typename T>
-	std::vector<T> extractImageData(Enum::ChannelID channelID)
+	std::vector<T> extract_image_data(Enum::ChannelID channelID)
 	{
 		const int index = this->getChannelIndex(channelID);
-		return extractImageData<T>(index);
+		return extract_image_data<T>(index);
 	}
 
 	/// Extract a channels pointer from our channel vector and invalidate the index. If the channel is already a nullptr
 	/// we just return that silently and leave it up to the caller to check for this
-	std::unique_ptr<ImageChannel> extractImagePtr(Enum::ChannelIDInfo channelIDInfo)
+	std::unique_ptr<channel_wrapper> extract_image_ptr(Enum::ChannelIDInfo channelIDInfo)
 	{
 		const int index = this->getChannelIndex(channelIDInfo);
 		if (index == -1)
@@ -345,7 +345,7 @@ struct ChannelImageData : public FileSection
 			return nullptr;
 		}
 		// Take ownership of and invalidate the current index
-		std::unique_ptr<ImageChannel> imageChannelPtr = std::move(m_ImageData.at(index));
+		auto imageChannelPtr = std::move(m_ImageData.at(index));
 		if (imageChannelPtr == nullptr)
 		{
 			return nullptr;
@@ -371,7 +371,7 @@ private:
 	/// We hold the image data for all of the channels in this vector.
 	/// The image data gets compressed using blosc2 on creation allowing for a very small
 	/// memory footprint
-	std::vector<std::unique_ptr<ImageChannel>> m_ImageData;
+	std::vector<std::unique_ptr<channel_wrapper>> m_ImageData;
 };
 
 

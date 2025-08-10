@@ -51,11 +51,11 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		REQUIRE(channel_a_index != -1);
 
 		// We could also extract directly using this signature and skip the step above
-		// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
-		std::vector<T> channel_r = channelImageData.extractImageData<T>(channel_r_index);
-		std::vector<T> channel_g = channelImageData.extractImageData<T>(channel_g_index);
-		std::vector<T> channel_b = channelImageData.extractImageData<T>(channel_b_index);
-		std::vector<T> channel_a = channelImageData.extractImageData<T>(channel_a_index);
+		// channelImageData.extract_image_data<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
+		std::vector<T> channel_r = channelImageData.extract_image_data<T>(channel_r_index);
+		std::vector<T> channel_g = channelImageData.extract_image_data<T>(channel_g_index);
+		std::vector<T> channel_b = channelImageData.extract_image_data<T>(channel_b_index);
+		std::vector<T> channel_a = channelImageData.extract_image_data<T>(channel_a_index);
 
 		std::vector<T> expected_r(64 * 64, one_val);
 		std::vector<T> expected_bg(64 * 64, red_zero_val);
@@ -86,11 +86,11 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		REQUIRE(channel_a_index != -1);
 
 		// We could also extract directly using this signature and skip the step above
-		// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
-		std::vector<T> channel_r = channelImageData.extractImageData<T>(channel_r_index);
-		std::vector<T> channel_g = channelImageData.extractImageData<T>(channel_g_index);
-		std::vector<T> channel_b = channelImageData.extractImageData<T>(channel_b_index);
-		std::vector<T> channel_a = channelImageData.extractImageData<T>(channel_a_index);
+		// channelImageData.extract_image_data<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
+		std::vector<T> channel_r = channelImageData.extract_image_data<T>(channel_r_index);
+		std::vector<T> channel_g = channelImageData.extract_image_data<T>(channel_g_index);
+		std::vector<T> channel_b = channelImageData.extract_image_data<T>(channel_b_index);
+		std::vector<T> channel_a = channelImageData.extract_image_data<T>(channel_a_index);
 
 		// Fill the first row with white values
 		std::vector<T> expected_r(64 * 64, zero_val);
@@ -125,11 +125,11 @@ void checkDecompressionFileImpl(NAMESPACE_PSAPI::LayerInfo& layerInformation, co
 		int channel_a_index = channelImageData.getChannelIndex(NAMESPACE_PSAPI::Enum::ChannelID::Alpha);
 
 		// We could also extract directly using this signature and skip the step above
-		// channelImageData.extractImageData<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
-		std::vector<T> channel_r = channelImageData.extractImageData<T>(channel_r_index);
-		std::vector<T> channel_g = channelImageData.extractImageData<T>(channel_g_index);
-		std::vector<T> channel_b = channelImageData.extractImageData<T>(channel_b_index);
-		std::vector<T> channel_a = channelImageData.extractImageData<T>(channel_a_index);
+		// channelImageData.extract_image_data<T>(NAMESPACE_PSAPI::Enum::ChannelID::Red)
+		std::vector<T> channel_r = channelImageData.extract_image_data<T>(channel_r_index);
+		std::vector<T> channel_g = channelImageData.extract_image_data<T>(channel_g_index);
+		std::vector<T> channel_b = channelImageData.extract_image_data<T>(channel_b_index);
+		std::vector<T> channel_a = channelImageData.extract_image_data<T>(channel_a_index);
 
 		REQUIRE(channel_r_index != -1);
 		REQUIRE(channel_g_index != -1);

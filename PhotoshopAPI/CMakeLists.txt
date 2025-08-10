@@ -13,12 +13,11 @@ set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/json/single_include/nlohmann
 target_include_directories(PhotoshopAPI PUBLIC include src ${JSON_INCLUDE_DIR})
 target_include_directories(PhotoshopAPI PRIVATE src/Util)
 target_link_libraries(PhotoshopAPI PUBLIC 
-    Blosc2::blosc2_static
     OpenImageIO::OpenImageIO
     Eigen3::Eigen
-    blosc2_include
     mio::mio-headers 
     tcb_span 
+    compressed_image
     $<IF:$<TARGET_EXISTS:libdeflate::libdeflate_static>,libdeflate::libdeflate_static,libdeflate::libdeflate_shared>
     simdutf
     fmt::fmt

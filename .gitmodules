@@ -19,3 +19,6 @@
 [submodule "thirdparty/json"]
 	path = thirdparty/json
 	url = https://github.com/nlohmann/json
+[submodule "thirdparty/compressed-image"]
+	path = thirdparty/compressed-image
+	url = https://github.com/EmilDohne/compressed-image

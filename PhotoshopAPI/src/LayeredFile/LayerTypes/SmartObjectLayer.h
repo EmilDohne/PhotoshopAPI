@@ -120,7 +120,7 @@ public:
 	{
 		for (const auto& [_, channel_ptr] : ImageDataMixin<T>::m_ImageData)
 		{
-			channel_ptr->m_Compression = _compcode;
+			channel_ptr->compression_codec(_compcode);
 		}
 		Layer<T>::set_mask_compression(_compcode);
 	}
@@ -711,7 +711,7 @@ protected:
 	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{
 		std::vector<LayerRecords::ChannelInformation> channel_info;
-		std::vector<std::unique_ptr<ImageChannel>> channel_data;
+		std::vector<std::unique_ptr<channel_wrapper>> channel_data;
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same
@@ -725,7 +725,7 @@ protected:
 		// Extract all the channels next and push them into our data representation
 		for (auto& [id, channel] : ImageDataMixin<T>::m_ImageData)
 		{
-			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->m_OrigByteSize });
+			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->byte_size()});
 			channel_data.push_back(std::move(channel));
 		}
 
@@ -975,7 +975,7 @@ protected:
 					Enum::channelIDToString(idinfo.id))
 				);
 			}
-			return ImageDataMixin<T>::m_ImageData.at(idinfo)->template getData<T>();
+			return ImageDataMixin<T>::m_ImageData.at(idinfo)->template get_data<T>();
 		}
 		else
 		{
@@ -1021,12 +1021,12 @@ protected:
 			auto compression_codec = Enum::Compression::ZipPrediction;
 			if (ImageDataMixin<T>::m_ImageData.contains(idinfo))
 			{
-				compression_codec = ImageDataMixin<T>::m_ImageData[idinfo]->m_Compression;
+				compression_codec = ImageDataMixin<T>::m_ImageData[idinfo]->compression_codec();
 			}
 
 			// Finally apply the warp and store the cache
 			m_SmartObjectWarp.apply(channel_warp_buffer, orig_buffer, warp_mesh);
-			ImageDataMixin<T>::m_ImageData[idinfo] = std::make_unique<ImageChannel>(
+			ImageDataMixin<T>::m_ImageData[idinfo] = std::make_unique<channel_wrapper>(
 				compression_codec,
 				channel_warp,
 				idinfo,

@@ -61,7 +61,7 @@ public:
 	{
 		for (const auto& [_, channel_ptr] : WritableImageDataMixin<T>::m_ImageData)
 		{
-			channel_ptr->m_Compression = _compcode;
+			channel_ptr->compression_codec(_compcode);
 		}
 		Layer<T>::set_mask_compression(_compcode);
 	}
@@ -105,7 +105,7 @@ public:
 			// We already extract masks ahead of time in ctor of Layer<T> and skip them here to avoid raising warnings
 			if (channel_info.m_ChannelID.id == Enum::ChannelID::UserSuppliedLayerMask) continue;
 
-			auto channelPtr = channel_image_data.extractImagePtr(channel_info.m_ChannelID);
+			auto channelPtr = channel_image_data.extract_image_ptr(channel_info.m_ChannelID);
 			// Pointers might have already been released previously
 			if (!channelPtr) continue;
 
@@ -324,7 +324,7 @@ protected:
 	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{
 		std::vector<LayerRecords::ChannelInformation> channel_info;
-		std::vector<std::unique_ptr<ImageChannel>> channel_data;
+		std::vector<std::unique_ptr<channel_wrapper>> channel_data;
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same
@@ -338,7 +338,7 @@ protected:
 		// Extract all the channels next and push them into our data representation
 		for (auto& [id, channel] : WritableImageDataMixin<T>::m_ImageData)
 		{
-			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->m_OrigByteSize });
+			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->byte_size() });
 			channel_data.push_back(std::move(channel));
 		}
 
@@ -360,10 +360,7 @@ protected:
 		{
 			throw std::runtime_error(fmt::format("ImageLayer '{}': Not all channels in the ImageLayer are the same size, unable to evaluate image data", Layer<T>::m_LayerName));
 		}
-		auto channel_size = WritableImageDataMixin<T>::m_ImageData.begin()->second->m_OrigByteSize / sizeof(T);
-
-		size_t num_threads = std::thread::hardware_concurrency() / WritableImageDataMixin<T>::m_ImageData.size();
-		num_threads = std::min(static_cast<size_t>(1), num_threads);
+		auto channel_size = WritableImageDataMixin<T>::m_ImageData.begin()->second->element_size();
 
 		// Allocate image data and then fill it by decompressing in parallel
 		data_type data = WritableImageDataMixin<T>::parallel_alloc_image_data(_channel_indices, channel_size);
@@ -372,7 +369,7 @@ protected:
 				auto& [key, channel_buffer] = pair;
 				auto idinfo = Enum::toChannelIDInfo(key, Layer<T>::m_ColorMode);
 				auto buffer_span = std::span<T>(channel_buffer.begin(), channel_buffer.end());
-				WritableImageDataMixin<T>::m_ImageData[idinfo]->template getData<T>(buffer_span, num_threads);
+				WritableImageDataMixin<T>::m_ImageData[idinfo]->template get_data<T>(buffer_span);
 			});
 
 		if (Layer<T>::has_mask())
@@ -396,7 +393,7 @@ protected:
 		{
 			throw std::invalid_argument(fmt::format("ImageLayer '{}': Invalid channel '{}' accessed while calling evaluate_channel()", Layer<T>::m_LayerName, Enum::channelIDToString(idinfo.id)));
 		}
-		return WritableImageDataMixin<T>::m_ImageData.at(idinfo)->template getData<T>();
+		return WritableImageDataMixin<T>::m_ImageData.at(idinfo)->template get_data<T>();
 	}
 
 	void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height, float center_x, float center_y) override
