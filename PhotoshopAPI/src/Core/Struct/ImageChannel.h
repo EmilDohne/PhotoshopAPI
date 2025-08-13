@@ -203,7 +203,8 @@ struct channel_wrapper
 			}
 			else
 			{
-				return var.uncompressed_size() * sizeof(std::remove_cvref_t<decltype(var)>::value_type);
+				using channel_t = std::remove_cvref_t<decltype(var)>;
+				return var.uncompressed_size() * sizeof(typename channel_t::value_type);
 			}
 		}, m_Channel);
 	}
