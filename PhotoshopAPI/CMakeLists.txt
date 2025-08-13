@@ -8,6 +8,7 @@ add_library(PhotoshopAPI STATIC ${MY_SOURCES})
 set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 
+target_include_directories(PhotoshopAPI PUBLIC include src)
 target_include_directories(PhotoshopAPI PRIVATE src/Util)
 target_link_libraries(PhotoshopAPI PUBLIC 
     OpenImageIO::OpenImageIO
