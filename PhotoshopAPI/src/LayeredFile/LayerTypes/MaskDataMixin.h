@@ -95,6 +95,18 @@ struct MaskMixin
 		PSAPI_LOG_WARNING("Mask", "No mask channel exists on the layer, get_mask() will return an empty channel");
 	}
 
+	/// \brief Extract the compressed mask channel used internally.
+	/// 
+	/// \throws std::runtime_error if no mask is present (as checked by ``has_mask``).
+	compressed::channel<T> extract_mask()
+	{
+		if (this->has_mask())
+		{
+			return m_MaskData.value()->template extract_channel<T>();
+		}
+		throw std::runtime_error("Unable to call 'extract_mask' on layer as the mask was already extracted previously.");
+	}
+
 	/// Sets the layer's mask to the given buffer.
 	/// 
 	/// If no mask was previously held the inserted mask will be at the top-left of the canvas.
@@ -132,6 +144,26 @@ struct MaskMixin
 			center_y
 		);
 		m_MaskData.emplace(std::move(channel));
+	}
+
+	void set_mask(compressed::channel<T> channel)
+	{
+		float center_x = static_cast<float>(channel.width()) / 2;
+		float center_y = static_cast<float>(channel.height()) / 2;
+		if (this->has_mask())
+		{
+			center_x = this->m_MaskData.value()->center_x();
+			center_y = this->m_MaskData.value()->center_y();
+		}
+
+		auto wrapper = std::make_unique<channel_wrapper>(
+			std::move(channel), 
+			Enum::Compression::ZipPrediction, 
+			this->s_mask_index, 
+			center_x, 
+			center_y
+		);
+		m_MaskData.emplace(std::move(wrapper));
 	}
 
 	/// Sets the layer's mask to the given buffer.

@@ -78,7 +78,22 @@ public:
 			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
 			remapped[info.index] = std::move(value);
 		}
-		construct(std::move(remapped), parameters);
+		this->construct(std::move(remapped), parameters);
+	}
+
+	/// Generate an ImageLayer instance ready to be used in a LayeredFile document. 
+	/// 
+	/// \param data the ImageData to associate with the layer
+	/// \param parameters The parameters dictating layer name, width, height, mask etc.
+	ImageLayer(std::unordered_map<Enum::ChannelID, compressed::channel<T>> data, Layer<T>::Params& parameters)
+	{
+		std::unordered_map<int, compressed::channel<T>> remapped{};
+		for (auto& [key, value] : data)
+		{
+			Enum::ChannelIDInfo info = Enum::toChannelIDInfo(key, parameters.colormode);
+			remapped[info.index] = std::move(value);
+		}
+		this->construct_from_compressed(std::move(remapped), parameters);
 	}
 
 	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
@@ -88,6 +103,15 @@ public:
 	ImageLayer(std::unordered_map<int, std::vector<T>> data, Layer<T>::Params& parameters) 
 	{
 		this->construct(std::move(data), parameters);
+	}
+
+	/// Generate an ImageLayer instance ready to be used in a LayeredFile document.
+	/// 
+	/// \param data the ImageData to associate with the channel
+	/// \param parameters The parameters dictating layer name, width, height, mask etc.
+	ImageLayer(std::unordered_map<int, compressed::channel<T>> data, Layer<T>::Params& parameters) 
+	{
+		this->construct_from_compressed(std::move(data), parameters);
 	}
 
 	/// Initialize the ImageLayer from the photoshop primitives
@@ -402,6 +426,12 @@ protected:
 		Layer<T>::mask_position(Geometry::Point2D<double>(center_x, center_y));
 	}
 
+	void impl_set_mask(compressed::channel<T> channel, float center_x, float center_y) override
+	{
+		Layer<T>::set_mask(std::move(channel));
+		Layer<T>::mask_position(Geometry::Point2D<double>(center_x, center_y));
+	}
+
 private:
 
 	/// Construct and initialize the layer from memory.
@@ -462,6 +492,64 @@ private:
 		}
 	}
 
+	/// Construct and initialize the layer from memory.
+	void construct_from_compressed(std::unordered_map<int, compressed::channel<T>> data, Layer<T>::Params& parameters)
+	{
+		PSAPI_PROFILE_FUNCTION();
+		Layer<T>::m_ColorMode = parameters.colormode;
+		Layer<T>::m_LayerName = parameters.name;
+		if (parameters.blendmode == Enum::BlendMode::Passthrough)
+		{
+			PSAPI_LOG_WARNING("ImageLayer", "The Passthrough blend mode is reserved for groups, defaulting to 'Normal'");
+			Layer<T>::m_BlendMode = Enum::BlendMode::Normal;
+		}
+		else
+		{
+			Layer<T>::m_BlendMode = parameters.blendmode;
+		}
+		Layer<T>::m_Opacity = parameters.opacity;
+		Layer<T>::m_IsVisible = parameters.visible;
+		Layer<T>::m_IsLocked = parameters.locked;
+		Layer<T>::m_CenterX = static_cast<float>(parameters.center_x);
+		Layer<T>::m_CenterY = static_cast<float>(parameters.center_y);
+		Layer<T>::m_Width = parameters.width;
+		Layer<T>::m_Height = parameters.height;
+		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
+
+		// Forward the mask channel if it was passed as part of the image data to the layer mask
+		// The actual populating of the mask channel will be done further down
+		if (data.contains(Layer<T>::s_mask_index.index))
+		{
+			if (parameters.mask)
+			{
+				PSAPI_LOG_ERROR("ImageLayer",
+								"Got mask from both the ImageData as index -2 and as part of the layer parameter, please only pass it as one of these");
+			}
+
+			PSAPI_LOG_DEBUG("ImageLayer", "Forwarding mask channel passed as part of image data to m_LayerMask");
+			parameters.mask = std::move(data[Layer<T>::s_mask_index.index]);
+			data.erase(Layer<T>::s_mask_index.index);
+		}
+
+
+		// Apply the image data and mask channel.
+		Layer<T>::parse_mask(parameters);
+		WritableImageDataMixin<T>::impl_set_image_data(
+			std::move(data), 
+			Layer<T>::m_Width, 
+			Layer<T>::m_Height, 
+			Layer<T>::m_CenterX, 
+			Layer<T>::m_CenterY, 
+			Layer<T>::m_ColorMode
+		);
+
+		// Do a check if the channels contain the minimum required for the given colormode.
+		if (!WritableImageDataMixin<T>::validate_channels(Layer<T>::m_ColorMode))
+		{
+			throw std::runtime_error(fmt::format("ImageLayer '{}': Invalid channels passed to constructor", Layer<T>::m_LayerName));
+		}
+
+	}
 };
 
 

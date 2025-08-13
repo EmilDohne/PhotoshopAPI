@@ -41,6 +41,36 @@ TEST_CASE("Construct ImageLayer with int16_t ctor")
 	CHECK(layer->num_channels(true) == data.size());
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Construct ImageLayer with compressed_image ctor")
+{
+	using namespace NAMESPACE_PSAPI;
+	using type = bpp16_t;
+	constexpr int32_t width = 64;
+	constexpr int32_t height = 64;
+	constexpr int32_t size = width * height;
+
+	std::unordered_map<int, compressed::channel<type>> data;
+	data.emplace(0, compressed::channel<type>::zeros(width, height));
+	data.emplace(1, compressed::channel<type>::zeros(width, height));
+	data.emplace(2, compressed::channel<type>::zeros(width, height));
+	auto params = typename Layer<type>::Params
+	{
+		.name = "Layer",
+		.width = width,
+		.height = height,
+	};
+
+	auto layer = std::make_shared<ImageLayer<type>>(std::move(data), params);
+
+	CHECK(layer->width() == width);
+	CHECK(layer->height() == height);
+	CHECK(layer->name() == "Layer");
+	CHECK(layer->num_channels(true) == 3);
+}
+
+
 
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------

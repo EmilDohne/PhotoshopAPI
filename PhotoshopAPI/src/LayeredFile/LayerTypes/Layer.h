@@ -19,6 +19,7 @@
 #include "MaskDataMixin.h"
 #include "LayeredFile/concepts.h"
 
+#include <compressed/channel.h>
 
 #include <vector>
 #include <optional>
@@ -42,7 +43,7 @@ struct Layer : public MaskMixin<T>
 	{
 		/// Optional Layer Mask parameter, if none is specified there is no mask. This image data must have the same size as 
 		/// the layer itself
-		std::optional<std::vector<T>> mask = std::nullopt;
+		std::optional<std::variant<std::vector<T>, compressed::channel<T>>> mask = std::nullopt;
 		/// The Layer Name to give to the layer, has a maximum length of 255
 		std::string name = "";
 		/// The Layers Blend Mode, all available blend modes are valid except for 'Passthrough' on non-group layers
@@ -404,14 +405,25 @@ protected:
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
 	void parse_mask(Params& parameters)
 	{
-		if (parameters.mask)
+		if (parameters.mask && std::holds_alternative<std::vector<T>>(parameters.mask.value()))
 		{
 			auto mask_data = std::make_unique<channel_wrapper>(
 				parameters.compression,
-				parameters.mask.value(),
+				std::get<std::vector<T>>(parameters.mask.value()),
 				MaskMixin<T>::s_mask_index,
 				parameters.width,
 				parameters.height,
+				static_cast<float>(parameters.center_x),
+				static_cast<float>(parameters.center_y)
+			);
+			MaskMixin<T>::m_MaskData = std::move(mask_data);
+		}
+		else if (parameters.mask && std::holds_alternative<compressed::channel<T>>(parameters.mask.value()))
+		{
+			auto mask_data = std::make_unique<channel_wrapper>(
+				std::move(std::get<compressed::channel<T>>(parameters.mask.value())),
+				parameters.compression,
+				MaskMixin<T>::s_mask_index,
 				static_cast<float>(parameters.center_x),
 				static_cast<float>(parameters.center_y)
 			);
