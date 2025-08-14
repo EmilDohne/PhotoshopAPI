@@ -71,22 +71,22 @@ void checkLayerIsSame(NAMESPACE_PSAPI::LayerInfo& layerInformation, const NAMESP
 	std::vector<uint8_t> compressedDataB;
 	std::vector<uint8_t> compressedDataA;
 	{
-		auto channelData = channelImageData.extractImageData<T>(channel_r_index);
+		auto channelData = channelImageData.extract_image_data<T>(channel_r_index);
 		const auto channelCompression = channelImageData.getChannelCompression(channel_r_index);
 		compressedDataR = NAMESPACE_PSAPI::CompressData<T>(channelData, channelCompression, header, width, height);
 	}
 	{
-		auto channelData = channelImageData.extractImageData<T>(channel_g_index);
+		auto channelData = channelImageData.extract_image_data<T>(channel_g_index);
 		const auto channelCompression = channelImageData.getChannelCompression(channel_g_index);
 		compressedDataG = NAMESPACE_PSAPI::CompressData<T>(channelData, channelCompression, header, width, height);
 	}
 	{
-		auto channelData = channelImageData.extractImageData<T>(channel_b_index);
+		auto channelData = channelImageData.extract_image_data<T>(channel_b_index);
 		const auto channelCompression = channelImageData.getChannelCompression(channel_b_index);
 		compressedDataB = NAMESPACE_PSAPI::CompressData<T>(channelData, channelCompression, header, width, height);
 	}
 	{
-		auto channelData = channelImageData.extractImageData<T>(channel_a_index);
+		auto channelData = channelImageData.extract_image_data<T>(channel_a_index);
 		const auto channelCompression = channelImageData.getChannelCompression(channel_a_index);
 		compressedDataA = NAMESPACE_PSAPI::CompressData<T>(channelData, channelCompression, header, width, height);
 	}

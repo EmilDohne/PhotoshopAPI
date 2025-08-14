@@ -50,7 +50,6 @@ jobs:
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
         cmake -B ${{github.workspace}}/build \
-            -DCMAKE_UNITY_BUILD=ON \
             -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} \
             -DPSAPI_BUILD_DOCS=OFF \
             -DPSAPI_BUILD_BENCHMARKS=OFF \

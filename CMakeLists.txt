@@ -40,6 +40,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Include the local vcpkg toolchain, if specified
 if (PSAPI_USE_VCPKG)
+    set(FMT_SYSTEM_HEADERS ON)
     include("${PROJECT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
 
@@ -66,24 +67,6 @@ find_package(stduuid CONFIG REQUIRED)
 # Add mio for memory-mapped IO files
 add_subdirectory (thirdparty/mio)
 
-# Add c-blosc2
-set(DEACTIVATE_ZLIB ON)
-set(DEACTIVATE_ZSTD ON)
-set(BUILD_TESTS OFF)
-set(BUILD_FUZZERS OFF)
-set(BUILD_BENCHMARKS OFF)
-set(BUILD_EXAMPLES OFF)
-add_subdirectory (thirdparty/c-blosc2 EXCLUDE_FROM_ALL)
-# In our CI we use unity builds to speed up compilation but due to c-blosc2's build
-# setup this doesn't work and will result in undefined references
-if (CMAKE_UNITY_BUILD)
-    set_target_properties(blosc2_static PROPERTIES UNITY_BUILD OFF)
-    set_target_properties(blosc2_shared PROPERTIES UNITY_BUILD OFF)
-endif()
-
-# Add target for blosc2 headers
-add_library(blosc2_include INTERFACE)
-target_include_directories(blosc2_include SYSTEM INTERFACE thirdparty/c-blosc2/include)
 
 # Add doctest
 add_library(doctest INTERFACE)
@@ -95,12 +78,13 @@ set (SIMDUTF_TOOLS OFF)
 set (SIMDUTF_ICONV OFF)
 add_subdirectory (thirdparty/simdutf)
 
-# JSON module for parsing of Descriptors
-add_subdirectory(thirdparty/json)
-
 # Add span from tcb for compatibility with older compilers for python bindings
 add_library(tcb_span INTERFACE)
 target_include_directories(tcb_span SYSTEM INTERFACE thirdparty/compatibility)
+
+# CompressedImage for loading images into a compressed memory buffer as well as storing our channels
+set(COMPRESSED_IMAGE_USE_VCPKG OFF)
+add_subdirectory(thirdparty/compressed-image)
 
 # Projects
 # --------------------------------------------------------------------------

@@ -158,7 +158,7 @@ struct GroupLayer final: public Layer<T>
 		// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
 		// again later
 		std::vector<LayerRecords::ChannelInformation> channelInfoVec;
-		std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
+		std::vector<std::unique_ptr<channel_wrapper>> channelDataVec;
 
 		// First extract our mask data, the order of our channels does not matter as long as the 
 		// order of channelInfo and channelData is the same

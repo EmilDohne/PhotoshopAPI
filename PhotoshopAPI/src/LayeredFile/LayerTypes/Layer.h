@@ -19,6 +19,7 @@
 #include "MaskDataMixin.h"
 #include "LayeredFile/concepts.h"
 
+#include <compressed/channel.h>
 
 #include <vector>
 #include <optional>
@@ -42,7 +43,7 @@ struct Layer : public MaskMixin<T>
 	{
 		/// Optional Layer Mask parameter, if none is specified there is no mask. This image data must have the same size as 
 		/// the layer itself
-		std::optional<std::vector<T>> mask = std::nullopt;
+		std::optional<std::variant<std::vector<T>, compressed::channel<T>>> mask = std::nullopt;
 		/// The Layer Name to give to the layer, has a maximum length of 255
 		std::string name = "";
 		/// The Layers Blend Mode, all available blend modes are valid except for 'Passthrough' on non-group layers
@@ -260,7 +261,7 @@ struct Layer : public MaskMixin<T>
 			if (channelInfo.m_ChannelID == MaskMixin<T>::s_mask_index)
 			{
 				// Move the compressed image data into our LayerMask struct
-				auto channelPtr = channelImageData.extractImagePtr(channelInfo.m_ChannelID);
+				auto channelPtr = channelImageData.extract_image_ptr(channelInfo.m_ChannelID);
 				if (channelPtr)
 				{
 					MaskMixin<T>::m_MaskData = std::move(channelPtr);
@@ -404,14 +405,25 @@ protected:
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
 	void parse_mask(Params& parameters)
 	{
-		if (parameters.mask)
+		if (parameters.mask && std::holds_alternative<std::vector<T>>(parameters.mask.value()))
 		{
-			auto mask_data = std::make_unique<ImageChannel>(
+			auto mask_data = std::make_unique<channel_wrapper>(
 				parameters.compression,
-				parameters.mask.value(),
+				std::get<std::vector<T>>(parameters.mask.value()),
 				MaskMixin<T>::s_mask_index,
 				parameters.width,
 				parameters.height,
+				static_cast<float>(parameters.center_x),
+				static_cast<float>(parameters.center_y)
+			);
+			MaskMixin<T>::m_MaskData = std::move(mask_data);
+		}
+		else if (parameters.mask && std::holds_alternative<compressed::channel<T>>(parameters.mask.value()))
+		{
+			auto mask_data = std::make_unique<channel_wrapper>(
+				std::move(std::get<compressed::channel<T>>(parameters.mask.value())),
+				parameters.compression,
+				MaskMixin<T>::s_mask_index,
 				static_cast<float>(parameters.center_x),
 				static_cast<float>(parameters.center_y)
 			);
@@ -467,7 +479,7 @@ protected:
 	/// \param channelInfoVec The channel infos to append to, will only add channels if the default keys dont already exist
 	/// \param channelDataVec The channel data to append to, will only add channels if the default keys dont already exist
 	/// \param colormode	  The colormode associated with the layer, dictates how many layers are actually written out
-	void generate_empty_channels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<ImageChannel>>& channelDataVec, const Enum::ColorMode& colormode)
+	void generate_empty_channels(std::vector<LayerRecords::ChannelInformation>& channelInfoVec, std::vector<std::unique_ptr<channel_wrapper>>& channelDataVec, const Enum::ColorMode& colormode)
 	{
 		auto processChannel = [&](Enum::ChannelIDInfo channelid, int16_t i)
 			{
@@ -480,7 +492,7 @@ protected:
 				}
 
 				std::vector<T> empty(0);
-				auto channel = std::make_unique<ImageChannel>(Enum::Compression::Raw, empty, channelid, 0u, 0u, 0.0f, 0.0f);
+				auto channel = std::make_unique<channel_wrapper>(Enum::Compression::Raw, empty, channelid, 0u, 0u, 0.0f, 0.0f);
 				channelInfoVec.push_back(channelinfo);
 				channelDataVec.push_back(std::move(channel));
 			};

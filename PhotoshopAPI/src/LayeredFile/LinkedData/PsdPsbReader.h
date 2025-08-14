@@ -29,7 +29,7 @@ namespace detail
 	template <typename T = uint8_t>
 	struct psd_psb_reader
 	{
-		using storage_type = std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>;
+		using storage_type = std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<channel_wrapper>, Enum::ChannelIDInfoHasher>;
 		using data_type = std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher>;
 
 
@@ -130,7 +130,7 @@ namespace detail
 				}
 
 				// Now we can compress and insert
-				m_Storage[id] = std::make_unique<ImageChannel>(
+				m_Storage[id] = std::make_unique<channel_wrapper>(
 					Enum::Compression::Raw,
 					data_vec,
 					id,

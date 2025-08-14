@@ -33,7 +33,7 @@ struct ImageDataMixin
 {
 public:
 	/// Type used for a single channel
-	using channel_type = std::unique_ptr<ImageChannel>;
+	using channel_type = std::unique_ptr<channel_wrapper>;
 	/// Type used for a mapping of channels.
 	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher>;
 	/// Type used for data as it is passed back to the user.
@@ -88,7 +88,7 @@ public:
 		auto data = evaluate_image_data();
 		return std::move(data);
 	}
-
+	
 	/// Get the channel held at the given index
 	///
 	/// This channel will have the dimensions `width()` * `height()` unless you 
@@ -279,7 +279,7 @@ protected:
 		std::unordered_map<Enum::ChannelIDInfo, size_t, Enum::ChannelIDInfoHasher> channel_sizes{};
 		for (const auto& [key, channel_ptr] : m_ImageData)
 		{
-			channel_sizes[key] = channel_ptr->m_OrigByteSize / sizeof(T);
+			channel_sizes[key] = channel_ptr->element_size();
 		}
 
 		// If there is only one channel, we can skip size comparison
@@ -594,6 +594,40 @@ protected:
 
 	/// \brief Internal helper method to set image data with advanced parameters.
 	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_image_data(
+		std::unordered_map<int, compressed::channel<T>> data,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		// Clear image data before setting.
+		ImageDataMixin<T>::m_ImageData.clear();
+
+		for (auto& [key, channel] : data)
+		{
+			auto id = Enum::toChannelIDInfo(static_cast<int16_t>(key), colormode);
+			try
+			{
+				this->impl_set_channel(id, std::move(channel), width, height, center_x, center_y, colormode);
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(fmt::format("{{ channel : {} }}, {{ exception: {} }}\n", key, e.what()));
+			}
+		}
+	}
+
+	/// \brief Internal helper method to set image data with advanced parameters.
+	///
 	/// This private method handles setting image data while managing exceptions
 	/// during the process. It supports parallel processing across multiple channels.
 	///
@@ -629,6 +663,40 @@ protected:
 
 	/// \brief Internal helper method to set image data with advanced parameters.
 	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_image_data(
+		std::unordered_map<Enum::ChannelID, compressed::channel<T>> data,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		// Clear image data before setting.
+		ImageDataMixin<T>::m_ImageData.clear();
+
+		for (auto& [key, channel] : data)
+		{
+			auto id = Enum::toChannelIDInfo(key, colormode);
+			try
+			{
+				this->impl_set_channel(id, std::move(channel), width, height, center_x, center_y, colormode);
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(fmt::format("{{ channel : {} }}, {{ exception: {} }}\n", id.index, e.what()));
+			}
+		}
+	}
+
+	/// \brief Internal helper method to set image data with advanced parameters.
+	///
 	/// This private method handles setting image data while managing exceptions
 	/// during the process. It supports parallel processing across multiple channels.
 	///
@@ -660,6 +728,39 @@ protected:
 			center_y,
 			colormode
 		);
+	}
+
+	/// \brief Internal helper method to set image data with advanced parameters.
+	///
+	/// \param data The image data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_image_data(
+		std::unordered_map<Enum::ChannelIDInfo, compressed::channel<T>> data,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		// Clear image data before setting.
+		ImageDataMixin<T>::m_ImageData.clear();
+
+		for (auto& [key, channel] : data)
+		{
+			try
+			{
+				this->impl_set_channel(key, std::move(channel), width, height, center_x, center_y, colormode);
+			}
+			catch (const std::exception& e)
+			{
+				throw std::runtime_error(fmt::format("{{ channel : {} }}, {{ exception: {} }}\n", key.index, e.what()));
+			}
+		}
 	}
 
 	/// \brief Internal helper method to set data for a specific channel.
@@ -703,7 +804,52 @@ protected:
 		}
 		else
 		{
-			ImageDataMixin<T>::m_ImageData[id] = std::make_unique<ImageChannel>(Enum::Compression::ZipPrediction, data, id, width, height, center_x, center_y);
+			ImageDataMixin<T>::m_ImageData[id] = std::make_unique<channel_wrapper>(Enum::Compression::ZipPrediction, data, id, width, height, center_x, center_y);
+		}
+	}
+
+	/// \brief Internal helper method to set data for a specific channel.
+	///
+	/// This method validates the channel and data size, then stores the data
+	/// in the appropriate channel, handling exceptions if needed.
+	///
+	/// \param id The channel ID to set the data for.
+	/// \param data The channel data to be set.
+	/// \param width The width of the image.
+	/// \param height The height of the image.
+	/// \param center_x The center x-coordinate for the image data.
+	/// \param center_y The center y-coordinate for the image data.
+	/// \param colormode The color mode of the image.
+	void impl_set_channel(
+		Enum::ChannelIDInfo id,
+		compressed::channel<T> channel,
+		int32_t width,
+		int32_t height,
+		float center_x,
+		float center_y,
+		Enum::ColorMode colormode
+	)
+	{
+		PSAPI_PROFILE_FUNCTION();
+		if (!Enum::channelValidForColorMode(id.id, colormode))
+		{
+			throw std::invalid_argument(fmt::format("Unable to construct channel '{}' as it is not valid for the colormode '{}', skipping setting of this channel",
+													Enum::channelIDToString(id.id), Enum::colorModeToString(colormode)));
+		}
+		if (channel.width() != width || channel.height() != height)
+		{
+			throw std::invalid_argument(
+				fmt::format("Invalid channel size encountered while calling set_channel(), expected <{}x{}> but instead got <{}x{}>",
+							width, height, channel.width(), channel.height()));
+		}
+
+		if (id.id == Enum::ChannelID::UserSuppliedLayerMask)
+		{
+			this->impl_set_mask(std::move(channel), center_x, center_y);
+		}
+		else
+		{
+			ImageDataMixin<T>::m_ImageData[id] = std::make_unique<channel_wrapper>(std::move(channel), Enum::Compression::ZipPrediction, id, center_x, center_y);
 		}
 	}
 
@@ -718,6 +864,16 @@ protected:
 	/// \param center_x The center x-coordinate for the mask.
 	/// \param center_y The center y-coordinate for the mask.
 	virtual void impl_set_mask(const std::span<const T> data, int32_t width, int32_t height ,float center_x, float center_y) = 0;
+
+	/// \brief Pure virtual method to set the mask data.
+	///
+	/// This method must be implemented by derived classes to handle setting
+	/// mask data for specific image layers.
+	///
+	/// \param data The mask data to be set.
+	/// \param center_x The center x-coordinate for the mask.
+	/// \param center_y The center y-coordinate for the mask.
+	virtual void impl_set_mask(compressed::channel<T> data, float center_x, float center_y) = 0;
 
 };
 

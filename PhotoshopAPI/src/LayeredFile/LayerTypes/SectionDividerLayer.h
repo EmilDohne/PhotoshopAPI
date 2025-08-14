@@ -49,7 +49,7 @@ public:
 		// Initialize the channelInfo. Note that if the data is to be compressed the channel size gets update
 		// again later
 		std::vector<LayerRecords::ChannelInformation> channelInfoVec;
-		std::vector<std::unique_ptr<ImageChannel>> channelDataVec;
+		std::vector<std::unique_ptr<channel_wrapper>> channelDataVec;
 
 		// Applications such as krita expect empty channels to be in-place for the given colormode
 		// to actually parse the file. 

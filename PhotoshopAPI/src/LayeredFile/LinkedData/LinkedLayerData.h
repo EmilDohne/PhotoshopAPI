@@ -42,7 +42,7 @@ template <typename T>
 struct LinkedLayerData
 {
 	/// Alias for our storage data type
-	using storage_type = std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<ImageChannel>, Enum::ChannelIDInfoHasher>;
+	using storage_type = std::unordered_map<Enum::ChannelIDInfo, std::unique_ptr<channel_wrapper>, Enum::ChannelIDInfoHasher>;
 	using data_type = std::unordered_map<Enum::ChannelIDInfo, std::vector<T>, Enum::ChannelIDInfoHasher>;
 
 	/// initialize a linked layer from a filepath, parsing the file 
@@ -155,23 +155,20 @@ struct LinkedLayerData
 		{
 			throw std::invalid_argument(fmt::format("LinkedLayer: Invalid channel index {} for file {}", _id.index, m_FilePath.string()));
 		}
-		return m_ImageData.at(_id)->template getData<T>();
+		return m_ImageData.at(_id)->template get_data<T>();
 	}
 
 	data_type get_image_data() const
 	{
 		PSAPI_PROFILE_FUNCTION();
 		data_type out;
-
-		size_t threads = std::thread::hardware_concurrency() / m_ImageData.size();
-		threads = std::max(threads, static_cast<size_t>(1));
 		std::mutex mutex;
 
 		std::for_each(std::execution::par_unseq , m_ImageData.begin(), m_ImageData.end(), [&](const auto& pair)
 			{
 				const auto& key = pair.first;
 				const auto& channel = pair.second;
-				std::vector<T> data = channel->template getData<T>(threads);
+				std::vector<T> data = channel->template get_data<T>();
 				{
 					std::lock_guard<std::mutex> lock(mutex);
 					out[key] = std::move(data);
@@ -412,7 +409,7 @@ private:
 				int idx = spec.channelindex(name);
 				if (idx != alpha_channel && idx >= 0 && idx <= 2)
 				{
-					auto channel = std::make_unique<ImageChannel>(
+					auto channel = std::make_unique<channel_wrapper>(
 						Enum::Compression::ZipPrediction, 
 						planar_data.at(idx), 
 						channelIDs[idx], 
@@ -426,7 +423,7 @@ private:
 				}
 				else if (idx == alpha_channel)
 				{
-					auto channel = std::make_unique<ImageChannel>(
+					auto channel = std::make_unique<channel_wrapper>(
 						Enum::Compression::ZipPrediction, 
 						planar_data.at(idx), 
 						channelIDs[3], 

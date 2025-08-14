@@ -79,7 +79,6 @@ jobs:
         CXXFLAGS: ${{ matrix.cxxflags }}
       run: |
         cmake -B ${{github.workspace}}/build        ${{ matrix.multiline-separator}}
-            -DCMAKE_UNITY_BUILD=ON                  ${{ matrix.multiline-separator}}
             -DCMAKE_OSX_ARCHITECTURES="arm64"       ${{ matrix.multiline-separator}}
             -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}  ${{ matrix.multiline-separator}}
             -DPSAPI_BUILD_DOCS=OFF                  ${{ matrix.multiline-separator}}

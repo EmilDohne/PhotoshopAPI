@@ -8,17 +8,14 @@ add_library(PhotoshopAPI STATIC ${MY_SOURCES})
 set_property(TARGET PhotoshopAPI PROPERTY POSITION_INDEPENDENT_CODE 1)
 set_property(TARGET blosc2_static PROPERTY POSITION_INDEPENDENT_CODE 1)
 
-set(JSON_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/thirdparty/json/single_include/nlohmann)
-
-target_include_directories(PhotoshopAPI PUBLIC include src ${JSON_INCLUDE_DIR})
+target_include_directories(PhotoshopAPI PUBLIC include src)
 target_include_directories(PhotoshopAPI PRIVATE src/Util)
 target_link_libraries(PhotoshopAPI PUBLIC 
-    Blosc2::blosc2_static
     OpenImageIO::OpenImageIO
     Eigen3::Eigen
-    blosc2_include
     mio::mio-headers 
     tcb_span 
+    compressed_image
     $<IF:$<TARGET_EXISTS:libdeflate::libdeflate_static>,libdeflate::libdeflate_static,libdeflate::libdeflate_shared>
     simdutf
     fmt::fmt
@@ -32,7 +29,7 @@ if(MSVC)
     # w44062 is for if a switch misses some enum members.
     # w44464 is for #include containing .. in the path
     # w45264 is for using std:move when returning a temporary.
-    target_compile_options(PhotoshopAPI PRIVATE /W4 /WX /w44062 /w44464 /w45264)
+    target_compile_options(PhotoshopAPI PRIVATE /W4 /WX /wd4702 /w44062 /w44464 /w45264)
 else()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(PhotoshopAPI PUBLIC -O3 -Wuninitialized -Wmaybe-uninitialized)
