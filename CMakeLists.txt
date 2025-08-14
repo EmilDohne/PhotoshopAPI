@@ -40,6 +40,7 @@ set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 # Include the local vcpkg toolchain, if specified
 if (PSAPI_USE_VCPKG)
+    set(FMT_SYSTEM_HEADERS ON)
     include("${PROJECT_SOURCE_DIR}/thirdparty/vcpkg/scripts/buildsystems/vcpkg.cmake")
 endif()
 
