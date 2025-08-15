@@ -17,6 +17,10 @@ env:
 
 jobs:
   valgrind:
+    permissions:
+      actions: read
+      contents: read
+
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -37,13 +41,17 @@ jobs:
         submodules: 'recursive'
         fetch-depth: 0
 
-    - name: Load or restore vcpkg libraries
-      uses: lukka/run-vcpkg@v11
+    - name: Restore vcpkg cache
+      id: vcpkg-cache
+      uses: TAServers/vcpkg-cache@v3
       with:
-        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: vcpkg-valgrind/
 
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
+        VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
+        VCPKG_BINARY_SOURCES: "clear;files,${{ steps.vcpkg-cache.outputs.path }},readwrite"
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
