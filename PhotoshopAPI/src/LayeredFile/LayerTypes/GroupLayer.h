@@ -25,6 +25,19 @@ template <typename T>
 	requires concepts::bit_depth<T>
 struct GroupLayer final: public Layer<T>
 {
+	/// \defgroup compose Composite the group layers' children down into a flat buffer
+	/// @{
+	
+
+	/// \brief Composite the group layers' children into a 
+	/// \return 
+	std::vector<T> composite() const
+	{
+
+	}
+
+	/// @}
+
 	/// \defgroup layer The groups' child layers
 	/// @{
 	std::vector<std::shared_ptr<Layer<T>>>& layers() noexcept { return m_Layers; }

@@ -33,6 +33,21 @@ if(MSVC)
 else()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
         target_compile_options(PhotoshopAPI PUBLIC -O3 -Wuninitialized -Wmaybe-uninitialized)
+    elseif(CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+        
+        # AppleClang only partially supports the parallel standard library (std::for_each(std::execution::par))
+        # and it is hidden by the compile/link flag -fexperimental-library. As PhotoshopAPI requires this, we expose it 
+        # as a public flag
+        target_compile_options(
+		    PhotoshopAPI 
+		    PUBLIC 
+		    -fexperimental-library
+		    -Wno-pass-failed # Silence warnings about 'failed to transform' when clang cannot vectorize a loop.
+            -O3
+		    -Wuninitialized 
+            -Wmaybe-uninitialized
+	    )
+        target_link_options(PhotoshopAPI PUBLIC -fexperimental-library)
     else()
         target_compile_options(PhotoshopAPI PUBLIC -O3)
     endif()

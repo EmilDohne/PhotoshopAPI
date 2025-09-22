@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Util/Enum.h"
 #include "Layer.h"
-#include "ImageDataMixins.h"
+#include "Mixins/ImageDataMixins.h"
 
 #include "Core/Struct/ImageChannel.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"

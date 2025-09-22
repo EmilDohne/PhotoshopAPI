@@ -3,7 +3,7 @@
 #include "Macros.h"
 #include "Layer.h"
 #include "LayeredFile/concepts.h"
-#include "ImageDataMixins.h"
+#include "Mixins/ImageDataMixins.h"
 
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 #include "PhotoshopFile/AdditionalLayerInfo.h"

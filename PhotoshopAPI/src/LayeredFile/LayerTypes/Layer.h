@@ -16,7 +16,7 @@
 #include "Core/TaggedBlocks/ReferencePointTaggedBlock.h"
 #include "Core/TaggedBlocks/UnicodeLayerNameTaggedBlock.h"
 
-#include "MaskDataMixin.h"
+#include "Mixins/MaskDataMixin.h"
 #include "LayeredFile/concepts.h"
 
 #include <compressed/channel.h>
