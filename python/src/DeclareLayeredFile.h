@@ -215,7 +215,7 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 			return py::array_t<uint8_t>(shape, ptr);
 		}, [](Class& self, const std::filesystem::path& path)
 		{
-			self.icc_profile() = ICCProfile(path);
+			self.icc_profile(ICCProfile(path));
 		});
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, &Class::set_compression);
 	layeredFile.def_property_readonly("num_channels", &Class::num_channels);
