@@ -207,15 +207,30 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	// Properties
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
-	layeredFile.def_property("icc", [](const Class& self)
-		{
+	layeredFile.def_property("icc",
+		[](const Class& self) {
 			auto data = self.icc_profile().data();
 			uint8_t* ptr = data.data();
 			std::vector<size_t> shape = { self.icc_profile().data_size() };
 			return py::array_t<uint8_t>(shape, ptr);
-		}, [](Class& self, const std::filesystem::path& path)
-		{
-			self.icc_profile(ICCProfile(path));
+		},
+		[](Class& self, std::variant<std::filesystem::path, py::array_t<uint8_t>> value) {
+			if (std::holds_alternative<py::array_t<uint8_t>>(value)) {
+				const auto& arr = std::get<py::array_t<uint8_t>>(value);
+				py::buffer_info buf = arr.request();
+				std::vector<uint8_t> data(
+					static_cast<uint8_t*>(buf.ptr),
+					static_cast<uint8_t*>(buf.ptr) + buf.size
+				);
+				self.icc_profile(ICCProfile(std::move(data)));
+			}
+			else if (std::holds_alternative<std::filesystem::path>(value)) {
+				const auto& path = std::get<std::filesystem::path>(value);
+				self.icc_profile(ICCProfile(path));
+			}
+			else {
+				throw py::type_error("ICC profile must be either a numpy.ndarray or a filesystem path (str or os.PathLike)");
+			}
 		});
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, &Class::set_compression);
 	layeredFile.def_property_readonly("num_channels", &Class::num_channels);

@@ -21,6 +21,11 @@ class LayeredFile_8bit:
         ...
 
     @icc.setter
+    def icc(self: LayeredFile_8bit, value: numpy.ndarray) -> None:
+        ...
+
+    @overload
+    @icc.setter
     def icc(self: LayeredFile_8bit, path: os.PathLike) -> None:
         ...
 
@@ -119,6 +124,11 @@ class LayeredFile_16bit:
         ...
 
     @icc.setter
+    def icc(self: LayeredFile_16bit, value: numpy.ndarray) -> None:
+        ...
+
+    @overload
+    @icc.setter
     def icc(self: LayeredFile_16bit, path: os.PathLike) -> None:
         ...
 
@@ -216,6 +226,11 @@ class LayeredFile_32bit:
     def icc(self: LayeredFile_32bit) -> numpy.ndarray:
         ...
 
+    @icc.setter
+    def icc(self: LayeredFile_32bit, value: numpy.ndarray) -> None:
+        ...
+
+    @overload
     @icc.setter
     def icc(self: LayeredFile_32bit, path: os.PathLike) -> None:
         ...
