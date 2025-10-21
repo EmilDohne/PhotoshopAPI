@@ -14,7 +14,7 @@ struct ICCProfile
 	/// Initialize an empty ICCProfile
 	ICCProfile() : m_Data({}) {};
 	/// Initialize the ICCProfile by passing in a raw byte array of an ICC profile
-	ICCProfile(std::vector<uint8_t> data) : m_Data(data) {};
+	ICCProfile(std::vector<uint8_t> data) : m_Data(std::move(data)) {};
 	/// Initialize the ICCProfile by loading the path contents from disk
 	ICCProfile(const std::filesystem::path& pathToICCFile);
 
