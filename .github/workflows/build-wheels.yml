@@ -94,8 +94,8 @@ jobs:
         CIBW_ENVIRONMENT_LINUX: >
             VCPKG_FEATURE_FLAG="binarycaching"
             VCPKG_BINARY_SOURCES="clear;files,/output/.vcpkg-cache,readwrite"
-        CC: gcc-13
-        CXX: g++-13
+        CC: ${{ matrix.os_dist.os == 'macos-latest' && 'clang' || 'gcc-13' }}
+        CXX: ${{ matrix.os_dist.os == 'macos-latest' && 'clang++' || 'g++-13' }}
         CIBW_ARCHS: auto64
         MACOSX_DEPLOYMENT_TARGET: 14.0
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
@@ -106,17 +106,17 @@ jobs:
         # by default and vcpkg used it for its binary caching
         CIBW_BEFORE_ALL_LINUX: |
             dnf install -y zip
-            dnf install -y unzip
             dnf install -y perl-IPC-Cmd
-            dnf install -y kernel-headers
+            dnf install -y perl-core
             echo "Copying vcpkg cache into container..."
+
             mkdir -p /output/.vcpkg-cache
             if [ -d /host${{ github.workspace }}/.vcpkg-cache ]; then
                 cp -r /host${{ github.workspace }}/.vcpkg-cache/* /output/.vcpkg-cache/
                 COUNT=$(find /output/.vcpkg-cache -type f | wc -l)
                 echo "Copied $COUNT binary caches"
             fi
-
+            
     - name: Copy vcpkg cache (linux only)
       if: matrix.os_dist.os == 'ubuntu-latest'
       run: |
