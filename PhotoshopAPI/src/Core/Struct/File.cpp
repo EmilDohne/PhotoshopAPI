@@ -156,7 +156,7 @@ File::File(std::filesystem::path file, const FileParams params)
 	if (!std::filesystem::is_directory(file.parent_path()) && (!file.parent_path().empty() || file.has_root_directory()))
 	{
 		std::filesystem::create_directories(file.parent_path());
-		PSAPI_LOG("Created directory '%s' as it didnt exist", file.parent_path().string().c_str());
+		PSAPI_LOG("File", "Created directory '%s' as it didnt exist", file.parent_path().u8string().c_str());
 	}
 	m_Offset = 0;
 	m_Size = 0;
@@ -167,11 +167,13 @@ File::File(std::filesystem::path file, const FileParams params)
 		if (std::filesystem::exists(file))
 		{
 			m_Document.open(file, std::ios::binary | std::fstream::in);
-			m_DocumentMMap = mio::ummap_source(file.string());
+
+			std::u8string file_handle_u8 = file.u8string();
+			m_DocumentMMap = mio::ummap_source(std::string(reinterpret_cast<const char*>(file_handle_u8.c_str())));
 		}
 		else
 		{
-			PSAPI_LOG_ERROR("File", "File %s does not exist, aborting parsing", file.string().c_str());
+			PSAPI_LOG_ERROR("File", "File %s does not exist, aborting parsing", file.u8string().c_str());
 		}
 	}
 	else
@@ -181,15 +183,15 @@ File::File(std::filesystem::path file, const FileParams params)
 			if (params.forceOverwrite)
 			{
 				std::filesystem::remove(file);
-				PSAPI_LOG("File", "Removed file %s", file.string().c_str());
+				PSAPI_LOG("File", "Removed file %s", file.u8string().c_str());
 			}
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
+			PSAPI_LOG("File", "Created file %s", file.u8string().c_str());
 		}
 		else
 		{
 			m_Document.open(file, std::ios::binary | std::fstream::out | std::fstream::trunc);
-			PSAPI_LOG("File", "Created file %s", file.string().c_str());
+			PSAPI_LOG("File", "Created file %s", file.u8string().c_str());
 		}
 	}
 
@@ -203,7 +205,7 @@ File::File(std::filesystem::path file, const FileParams params)
 	else
 	{
 		// Handle file open error
-		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.string().c_str());
+		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.u8string().c_str());
 	}	
 
 	m_FilePath = file;
