@@ -17,6 +17,10 @@ env:
 
 jobs:
   test:
+    permissions:
+      actions: read
+      contents: read
+
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -43,10 +47,10 @@ jobs:
              cflags: ""
              cxxflags: ""
              multiline-separator: "`"
-           - name: MacOS ARM GCC
+           - name: MacOS ARM AppleClang
              os: macos-latest
-             compiler: gcc-14
-             compilercxx: g++-14
+             compiler: clang
+             compilercxx: clang++
              cflags: ""
              cxxflags: ""
              multiline-separator: \
@@ -66,13 +70,17 @@ jobs:
           brew install libtool
           brew install automake
 
-    - name: Initialize vcpkg
-      uses: lukka/run-vcpkg@v11
+    - name: Restore vcpkg cache
+      id: vcpkg-cache
+      uses: TAServers/vcpkg-cache@v3
       with:
-        vcpkgDirectory: '${{ github.workspace }}/thirdparty/vcpkg'
+        token: ${{ secrets.GITHUB_TOKEN }}
+        prefix: vcpkg-test/
   
     - name: Configure CMake ${{ matrix.os }}-${{ matrix.compilercxx }}
       env:
+        VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
+        VCPKG_BINARY_SOURCES: "clear;files,${{ steps.vcpkg-cache.outputs.path }},readwrite"
         CC: ${{ matrix.compiler }}
         CXX: ${{ matrix.compilercxx }}
         CFLAGS: ${{ matrix.cflags }}
