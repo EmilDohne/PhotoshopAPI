@@ -4,7 +4,7 @@ import shutil
 import photoshopapi as psapi
 
 
-class TestImageLayer(unittest.TestCase):
+class TestLayeredFile(unittest.TestCase):
     base_path = os.path.join(os.path.dirname(__file__), "documents", "BaseFile.psb")
     copy_path = os.path.join(os.path.dirname(__file__), "documents", "你好.psd")
     out_path = os.path.join(os.path.dirname(__file__), "documents", "你好_2.psd")
