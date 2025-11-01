@@ -108,6 +108,7 @@ jobs:
             dnf install -y zip
             dnf install -y unzip
             dnf install -y perl-IPC-Cmd
+            dnf install -y kernel-headers
             echo "Copying vcpkg cache into container..."
             mkdir -p /output/.vcpkg-cache
             if [ -d /host${{ github.workspace }}/.vcpkg-cache ]; then
