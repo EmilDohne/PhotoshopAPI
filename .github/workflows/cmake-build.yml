@@ -41,10 +41,10 @@ jobs:
              compiler: msvc
              compilercxx: msvc
              multiline-separator: "`"
-           - name: MacOS ARM GCC
+           - name: MacOS ARM AppleClang
              os: macos-latest
-             compiler: gcc-14
-             compilercxx: g++-14
+             compiler: clang
+             compilercxx: clang++
              multiline-separator: \
 
     steps:
