@@ -84,18 +84,43 @@ jobs:
       uses: TAServers/vcpkg-cache@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
-        prefix: vcpkg-wheels/
+        prefix: ${{ matrix.os_dist.os }}_wheels_vcpkg
 
     - uses: pypa/cibuildwheel@v2.23.1
       env:
         VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
+        # Override the binary sources on linux only
         VCPKG_BINARY_SOURCES: "clear;files,${{ steps.vcpkg-cache.outputs.path }},readwrite"
+        CIBW_ENVIRONMENT_LINUX: >
+            VCPKG_FEATURE_FLAG="binarycaching"
+            VCPKG_BINARY_SOURCES="clear;files,/output/.vcpkg-cache,readwrite"
         CC: gcc-13
         CXX: g++-13
-        # The rest of the cibuildhweel related commands can be found on the pyproject.toml
         CIBW_ARCHS: auto64
         MACOSX_DEPLOYMENT_TARGET: 14.0
         CIBW_BUILD: "${{ matrix.os_dist.dist }}"
+
+        # Linux unlike windows/macos doesn't run cibuildwheel natively but rather in a container
+        # so to restore the vcpkg cache we need to manually copy things back and forth. We (ab)use the /output
+        # directory meant for wheels as that is copied back natively. Note: `zip` is needed here as it doesn't come
+        # by default and vcpkg used it for its binary caching
+        CIBW_BEFORE_ALL_LINUX: |
+            dnf install -y zip
+            dnf install -y unzip
+            echo "Copying vcpkg cache into container..."
+            mkdir -p /output/.vcpkg-cache
+            if [ -d /host${{ github.workspace }}/.vcpkg-cache ]; then
+                cp -r /host${{ github.workspace }}/.vcpkg-cache/* /output/.vcpkg-cache/
+                COUNT=$(find /output/.vcpkg-cache -type f | wc -l)
+                echo "Copied $COUNT binary caches"
+            fi
+
+    - name: Copy vcpkg cache (linux only)
+      if: matrix.os_dist.os == 'ubuntu-latest'
+      run: |
+        rm -rf ${{ steps.vcpkg-cache.outputs.path }}
+        mv ./wheelhouse/.vcpkg-cache ${{ steps.vcpkg-cache.outputs.path }}
+        ls -la ${{ steps.vcpkg-cache.outputs.path }}
 
     - name: Verify clean directory
       run: git diff --exit-code

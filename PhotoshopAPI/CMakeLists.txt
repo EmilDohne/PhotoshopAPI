@@ -45,3 +45,10 @@ else()
         target_compile_options(PhotoshopAPI PUBLIC -mavx2)
     endif()
 endif()
+
+# When compiling via AppleClang we must set the fexperimental-library flag as otherwise we cannot use std::for_each
+# with a parallel execution policy.
+if (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
+	target_compile_options(PhotoshopAPI PUBLIC -fexperimental-library)
+	target_link_options(PhotoshopAPI PUBLIC -fexperimental-library)
+endif()
