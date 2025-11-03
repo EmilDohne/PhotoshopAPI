@@ -831,6 +831,20 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 				maxHeight = static_cast<uint32_t>(lrMask.height);
 			}
 		}
+		else if (layerRecord.m_LayerMaskData.value().m_VectorMask.has_value())
+		{
+			const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_VectorMask.value();
+			// Generate our coordinates from the mask extents instead
+			ChannelCoordinates lrMask = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right));
+			if (static_cast<uint32_t>(lrMask.width) > maxWidth)
+			{
+				maxWidth = static_cast<uint32_t>(lrMask.width);
+			}
+			if (static_cast<uint32_t>(lrMask.height) > maxHeight)
+			{
+				maxHeight = static_cast<uint32_t>(lrMask.height);
+			}
+		}
 	}
 	std::vector<uint8_t> buffer;
 	if (header.m_Depth == Enum::BitDepth::BD_8)
@@ -867,6 +881,12 @@ void ChannelImageData::read(ByteStream& stream, const FileHeader& header, const 
 			if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_LayerMask.has_value())
 			{
 				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_LayerMask.value();
+				// Generate our coordinates from the mask extents instead
+				coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right));
+			}
+			else if (layerRecord.m_LayerMaskData.has_value() && layerRecord.m_LayerMaskData->m_VectorMask.has_value())
+			{
+				const LayerRecords::LayerMask mask = layerRecord.m_LayerMaskData.value().m_VectorMask.value();
 				// Generate our coordinates from the mask extents instead
 				coordinates = generateChannelCoordinates(ChannelExtents(mask.m_Top, mask.m_Left, mask.m_Bottom, mask.m_Right));
 			}
