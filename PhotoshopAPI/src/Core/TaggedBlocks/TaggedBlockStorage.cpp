@@ -209,7 +209,7 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			baseTaggedBlock->read(document, header, offset, signature, taggedBlock.value(), padding);
 			if (taggedBlock.value() == Enum::TaggedBlockKey::Unknown)
 			{
-				PSAPI_LOG_ERROR("TaggedBlock", "Unknown tagged block key %s encountered, skipping reading it.");
+				PSAPI_LOG_ERROR("TaggedBlock", "Unknown tagged block key %s encountered, skipping reading it.", keyStr.c_str());
 				return nullptr;
 			}
 			this->m_TaggedBlocks.push_back(baseTaggedBlock);
