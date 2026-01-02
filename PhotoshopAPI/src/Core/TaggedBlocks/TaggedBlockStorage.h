@@ -36,6 +36,9 @@ struct TaggedBlockStorage : public FileSection
 	template <typename T>
 	std::vector<std::shared_ptr<T>> get_tagged_blocks() const;
 
+	/// Retrieve a vector of all base tagged blocks, excluding any classes derived from TaggedBlock.
+	std::vector<std::shared_ptr<TaggedBlock>> get_base_tagged_blocks() const;
+
 	// Read a tagged block into m_TaggedBlocks as well as returning a shared_ptr to it.
 	// The shared ptr should be used only to retrieve data, hence its markation as const
 	const std::shared_ptr<TaggedBlock> readTaggedBlock(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u);

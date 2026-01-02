@@ -11,6 +11,7 @@ template <typename T>
 	requires concepts::bit_depth<T>
 struct ShapeLayer : Layer<T>
 {
+	using Layer<T>::Layer;
 	ShapeLayer() = default;
 };
 

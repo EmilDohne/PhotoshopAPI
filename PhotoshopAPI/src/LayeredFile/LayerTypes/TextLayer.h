@@ -11,6 +11,7 @@ template <typename T>
 	requires concepts::bit_depth<T>
 struct TextLayer : Layer<T>
 {
+	using Layer<T>::Layer;
 	TextLayer() = default;
 };
 

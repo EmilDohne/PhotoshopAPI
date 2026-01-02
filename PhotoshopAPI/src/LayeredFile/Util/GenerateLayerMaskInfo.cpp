@@ -34,14 +34,19 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint8_t>& layeredFile
 	GlobalLayerMaskInfo maskInfo{};
 
 	std::optional<AdditionalLayerInfo> additional_layer_info = std::nullopt;
-	if (!layeredFile.linked_layers()->empty())
+	std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
+	auto unparsed_blocks = layeredFile.unparsed_blocks();
+	if (!layeredFile.linked_layers()->empty() || !unparsed_blocks.empty())
 	{
-		std::vector<std::shared_ptr<TaggedBlock>> block_ptrs{};
 		auto linked_layer_blocks = layeredFile.linked_layers()->to_photoshop(true, file_path);
 		for (const auto& block : linked_layer_blocks)
 		{
 			block_ptrs.push_back(block);
 		}
+		for (auto& block : unparsed_blocks)
+		{
+			block_ptrs.push_back(block);
+		}		
 
 		AdditionalLayerInfo _additional_info;
 		_additional_info.m_TaggedBlocks = TaggedBlockStorage{ block_ptrs };
@@ -73,6 +78,10 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<uint16_t>& layeredFil
 			block_ptrs.push_back(block);
 		}
 	}
+	for (auto& block : layeredFile.unparsed_blocks())
+	{
+		block_ptrs.push_back(block);
+	}
 
 	TaggedBlockStorage blockStorage(block_ptrs);
 
@@ -101,6 +110,10 @@ LayerAndMaskInformation generate_layermaskinfo(LayeredFile<float32_t>& layeredFi
 		{
 			block_ptrs.push_back(block);
 		}
+	}
+	for (auto& block : layeredFile.unparsed_blocks())
+	{
+		block_ptrs.push_back(block);
 	}
 
 	TaggedBlockStorage blockStorage(block_ptrs);

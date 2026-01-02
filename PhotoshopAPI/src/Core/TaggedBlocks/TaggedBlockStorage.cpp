@@ -136,7 +136,7 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			getPrintableChar(signature.m_Representation[3]));
 	}
 	std::string keyStr = uint32ToString(ReadBinaryData<uint32_t>(document));
-	std::optional<Enum::TaggedBlockKey> taggedBlock = Enum::getTaggedBlockKey<std::string, Enum::TaggedBlockKey>(keyStr);
+	std::optional<Enum::TaggedBlockKey> taggedBlock = Enum::get_tagged_block_key<std::string, Enum::TaggedBlockKey>(keyStr);
 
 	if (taggedBlock.has_value())
 	{
@@ -207,6 +207,11 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 		{
 			auto baseTaggedBlock = std::make_shared<TaggedBlock>();
 			baseTaggedBlock->read(document, header, offset, signature, taggedBlock.value(), padding);
+			if (taggedBlock.value() == Enum::TaggedBlockKey::Unknown)
+			{
+				PSAPI_LOG_ERROR("TaggedBlock", "Unknown tagged block key %s encountered, skipping reading it.");
+				return nullptr;
+			}
 			this->m_TaggedBlocks.push_back(baseTaggedBlock);
 			return baseTaggedBlock;
 		}
@@ -218,6 +223,8 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 	}
 }
 
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 void TaggedBlockStorage::write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding) const
 {
 	for (const auto& block : m_TaggedBlocks)
@@ -225,6 +232,23 @@ void TaggedBlockStorage::write(File& document, const FileHeader& header, Progres
 		block->write(document, header, callback, padding);
 	}
 	// Since the tagged blocks themselves are aligned to padding we dont need to pad the rest of this section manually
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+std::vector<std::shared_ptr<TaggedBlock>> TaggedBlockStorage::get_base_tagged_blocks() const
+{
+	std::vector<std::shared_ptr<TaggedBlock>> result;
+	for (const auto& block : m_TaggedBlocks)
+	{
+		// Ensure exact type match: exclude subclasses
+		if (block && typeid(*block) == typeid(TaggedBlock))
+		{
+			result.push_back(block);
+		}
+	}
+
+	return result;
 }
 
 PSAPI_NAMESPACE_END

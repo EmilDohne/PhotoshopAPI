@@ -144,6 +144,11 @@ struct LayeredFile
 	std::shared_ptr<LinkedLayers<T>> linked_layers() noexcept { return m_LinkedLayers; }
 	const std::shared_ptr<LinkedLayers<T>> linked_layers() const noexcept { return m_LinkedLayers; }
 
+	/// Primarily for internal use or advanced users.
+	///
+	/// Returns any unparsed blocks (tagged blocks that have no explicit parser yet) for roundtripping 
+	/// purposes.
+	std::vector<std::shared_ptr<TaggedBlock>> unparsed_blocks() const noexcept { return m_UnparsedBlocks; }
 
 	LayeredFile() = default;
 
@@ -171,6 +176,7 @@ struct LayeredFile
 		if (document->m_LayerMaskInfo.m_AdditionalLayerInfo)
 		{
 			m_LinkedLayers = std::make_shared<LinkedLayers<T>>(document->m_LayerMaskInfo.m_AdditionalLayerInfo.value(), file_path);
+			m_UnparsedBlocks = document->m_LayerMaskInfo.m_AdditionalLayerInfo.value().get_base_tagged_blocks();
 		}
 
 		m_Layers = _Impl::template build_layer_hierarchy<T>(*this, std::move(document));
@@ -655,6 +661,8 @@ private:
 	/// can access the same layers without data duplication
 	std::shared_ptr<LinkedLayers<T>> m_LinkedLayers = std::make_shared<LinkedLayers<T>>();
 
+	/// Stores all unparsed tagged blocks that we want to pass through on read/write.
+	std::vector<std::shared_ptr<TaggedBlock>> m_UnparsedBlocks;
 
 	std::vector<std::shared_ptr<Layer<T>>> generate_flattened_layers_impl(const LayerOrder order)
 	{

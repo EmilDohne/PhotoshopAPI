@@ -37,7 +37,7 @@ namespace _Impl
 				auto artboardTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrArtboard);
 				if (artboardTaggedBlock.has_value())
 				{
-					return std::make_shared<ArtboardLayer<T>>();
+					return std::make_shared<ArtboardLayer<T>>(layerRecord, channelImageData, header);
 				}
 				return std::make_shared<GroupLayer<T>>(layerRecord, channelImageData, header);
 			}
@@ -50,7 +50,7 @@ namespace _Impl
 		auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTypeTool);
 		if (typeToolTaggedBlock.has_value())
 		{
-			return std::make_shared<TextLayer<T>>();
+			return std::make_shared<TextLayer<T>>(layerRecord, channelImageData, header);
 		}
 
 		auto lrPlacedTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrPlaced);
@@ -82,7 +82,7 @@ namespace _Impl
 			CHECK_TAGGED_BLOCK(Enum::TaggedBlockKey::adjPhotoFilter) ||
 			CHECK_TAGGED_BLOCK(Enum::TaggedBlockKey::adjSelectiveColor))
 		{
-			return std::make_shared<AdjustmentLayer<T>>();
+			return std::make_shared<AdjustmentLayer<T>>(layerRecord, channelImageData, header);
 		}
 
 		if (CHECK_TAGGED_BLOCK(Enum::TaggedBlockKey::vecOriginData) ||
@@ -90,7 +90,7 @@ namespace _Impl
 			CHECK_TAGGED_BLOCK(Enum::TaggedBlockKey::vecStrokeData) ||
 			CHECK_TAGGED_BLOCK(Enum::TaggedBlockKey::vecStrokeContentData))
 		{
-			return std::make_shared<ShapeLayer<T>>();
+			return std::make_shared<ShapeLayer<T>>(layerRecord, channelImageData, header);
 		}
 #undef CHECK_TAGGED_BLOCK
 
