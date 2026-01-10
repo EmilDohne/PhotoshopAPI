@@ -786,6 +786,7 @@ namespace Enum
 		lrAnnotations,
 		// Non-Pixel layers
 		lrTypeTool,		// This is the superseeded version 'TySh', not 'tySh' as that was phased out in 2000
+		lrTextEngineData,	
 		lrPatternData,
 		lrPatterns,
 		lrLinked,
@@ -818,6 +819,7 @@ namespace Enum
 		vecMaskSettings,	// 'vmsk' for CS6 and up. We dont support the legacy 'vsms' option here 
 		vecStrokeData,
 		vecStrokeContentData,
+		contentGeneratorExtraData
 	};
 
 	namespace {
@@ -855,6 +857,7 @@ namespace Enum
 			{"shmd", TaggedBlockKey::lrMetaData},
 			{"Anno", TaggedBlockKey::lrAnnotations},
 			{"TySh", TaggedBlockKey::lrTypeTool},
+			{"Txt2", TaggedBlockKey::lrTextEngineData},
 			{"shpa", TaggedBlockKey::lrPatternData},
 			{"Patt", TaggedBlockKey::lrPatterns},
 			{"Pat2", TaggedBlockKey::lrPatterns},
@@ -892,6 +895,7 @@ namespace Enum
 			{"vmsk", TaggedBlockKey::vecMaskSettings},
 			{"vstk", TaggedBlockKey::vecStrokeData},
 			{"vscg", TaggedBlockKey::vecStrokeContentData},
+			{"CgEd", TaggedBlockKey::contentGeneratorExtraData},
 		};
 	}
 

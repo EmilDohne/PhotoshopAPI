@@ -406,6 +406,11 @@ protected:
 
 	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 	
+	using channel_type = std::unique_ptr<channel_wrapper>;
+	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher>;
+
+	image_type m_UnparsedImageData;
+
 	/// Stores all unparsed tagged blocks that we want to pass through on read/write.
 	std::vector<std::shared_ptr<TaggedBlock>> m_UnparsedBlocks;
 
