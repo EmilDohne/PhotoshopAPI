@@ -251,9 +251,7 @@ void ReadBinaryArray(ByteStream& stream, std::span<T> buffer, uint64_t offset, u
 		PSAPI_LOG_ERROR("ReadBinaryArray", "Was given a binary size of %" PRIu64 " but that is not cleanly divisible by the size of the datatype T, which is %i",
 			size, sizeof(T));
 	}
-
-	std::vector<T> data(size / sizeof(T));
-	stream.read(Util::toWritableBytes(data), offset);
+	stream.read(Util::toWritableBytes(buffer), offset);
 	endianDecodeBEArray<T>(buffer);
 }
 
