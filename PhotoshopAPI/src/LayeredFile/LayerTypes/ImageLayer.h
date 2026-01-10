@@ -347,28 +347,67 @@ protected:
 	/// itself. This also takes care of generating our layer mask channel if it is present. Invalidates any data held by the ImageLayer
 	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{
+		using ChannelEntry = std::pair<LayerRecords::ChannelInformation, std::unique_ptr<channel_wrapper>>;
+
+		std::vector<ChannelEntry> channels;
+
+		// First extract mask data
+		if (auto mask_data = Layer<T>::internal_extract_mask(); mask_data.has_value())
+		{
+			channels.emplace_back(
+				std::get<0>(mask_data.value()),
+				std::move(std::get<1>(mask_data.value()))
+			);
+		}
+
+		// Extract image channels
+		for (auto& [id, channel] : WritableImageDataMixin<T>::m_ImageData)
+		{
+			channels.emplace_back(
+				LayerRecords::ChannelInformation{ id, channel->byte_size() },
+				std::move(channel)
+			);
+		}
+
+		// Sort channels:
+		//  - negatives first: -1, -2, -3
+		//  - then 0..n
+		std::sort(channels.begin(), channels.end(), [](const ChannelEntry& a, const ChannelEntry& b)
+		{
+			const int a_id = a.first.m_ChannelID.index;
+			const int b_id = b.first.m_ChannelID.index;
+
+			const bool a_neg = a_id < 0;
+			const bool b_neg = b_id < 0;
+
+			if (a_neg != b_neg)
+			{
+				return a_neg;                 // negatives first
+			}
+
+			if (a_neg)
+			{
+				return a_id > b_id;           // -1, -2, -3
+			}
+
+			return a_id < b_id;               // 0..n
+		});
+
+		// Split back into the final structures
 		std::vector<LayerRecords::ChannelInformation> channel_info;
 		std::vector<std::unique_ptr<channel_wrapper>> channel_data;
 
-		// First extract our mask data, the order of our channels does not matter as long as the 
-		// order of channelInfo and channelData is the same
-		auto mask_data = Layer<T>::internal_extract_mask();
-		if (mask_data.has_value())
+		channel_info.reserve(channels.size());
+		channel_data.reserve(channels.size());
+
+		for (auto& [info, data] : channels)
 		{
-			channel_info.push_back(std::get<0>(mask_data.value()));
-			channel_data.push_back(std::move(std::get<1>(mask_data.value())));
+			channel_info.push_back(info);
+			channel_data.push_back(std::move(data));
 		}
 
-		// Extract all the channels next and push them into our data representation
-		for (auto& [id, channel] : WritableImageDataMixin<T>::m_ImageData)
-		{
-			channel_info.push_back(LayerRecords::ChannelInformation{ id, channel->byte_size() });
-			channel_data.push_back(std::move(channel));
-		}
-
-		// Construct the channel image data from our vector of ptrs, moving gets handled by the constructor
 		ChannelImageData channel_image_data(std::move(channel_data));
-		return std::make_tuple(channel_info, std::move(channel_image_data));
+		return std::make_tuple(std::move(channel_info), std::move(channel_image_data));
 	}
 
 	data_type evaluate_image_data() override
