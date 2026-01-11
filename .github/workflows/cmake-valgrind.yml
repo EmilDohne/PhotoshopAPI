@@ -6,7 +6,7 @@ on:
     types:
       - published
   schedule:
-    - cron: "0 0 * * 0"  # Runs every Sunday at midnight UTC
+    - cron: "0 0 * * 1"  # Runs every Monday at midnight UTC
 
 env:
   BUILD_TYPE: Debug
