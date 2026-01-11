@@ -20,7 +20,14 @@ void AdditionalLayerInfo::read(File& document, const FileHeader& header, Progres
 	while (toRead >= 12u)
 	{
 		auto start_offset = document.get_offset();
-		const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, callback, padding);
+		try
+		{
+			const std::shared_ptr<TaggedBlock> taggedBlock = m_TaggedBlocks.readTaggedBlock(document, header, callback, padding);
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("AdditionalLayerInfo", "Unknown tagged block encountered. Skipping it.");
+		}
 		toRead -= document.get_offset() - start_offset;
 	}
 	if (toRead >= 0)

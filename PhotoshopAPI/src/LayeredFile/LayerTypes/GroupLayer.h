@@ -262,7 +262,7 @@ protected:
 	/// \brief Generate the tagged blocks necessary for writing the layer
 	std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
 	{
-		auto blockVec = Layer<T>::generate_tagged_blocks();
+		auto block_vec = Layer<T>::generate_tagged_blocks();
 		LrSectionTaggedBlock sectionBlock;
 		if (m_isCollapsed)
 		{
@@ -286,9 +286,9 @@ protected:
 				sectionBlock = LrSectionTaggedBlock(Enum::SectionDivider::OpenFolder, std::nullopt);
 			}
 		}
-		blockVec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
+		block_vec.push_back(std::make_shared<LrSectionTaggedBlock>(sectionBlock));
 
-		return blockVec;
+		return block_vec;
 	}
 };
 

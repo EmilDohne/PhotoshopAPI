@@ -9,9 +9,12 @@
 #include "PhotoshopFile/FileHeader.h"
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
+#include "Core/FileIO/LengthMarkers.h"
 
 #include <cassert>
 #include <ctime>
+#include <vector>
+#include <span>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -27,14 +30,16 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 		uint64_t length = ReadBinaryData<uint64_t>(document);
 		length = RoundUpToMultiple<uint64_t>(length, padding);
 		m_Length = length;
-		document.skip(length);
+		m_Data = std::vector<std::byte>(length);
+		document.read(std::span<uint8_t>(reinterpret_cast<uint8_t*>(m_Data.data()), m_Data.size()));
 	}
 	else
 	{
 		uint32_t length = ReadBinaryData<uint32_t>(document);
 		length = RoundUpToMultiple<uint32_t>(length, padding);
 		m_Length = length;
-		document.skip(length);
+		m_Data = std::vector<std::byte>(length);
+		document.read(std::span<uint8_t>(reinterpret_cast<uint8_t*>(m_Data.data()), m_Data.size()));
 	}
 }
 
@@ -43,12 +48,8 @@ void TaggedBlock::read(File& document, const FileHeader& header, const uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 void TaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& header, [[maybe_unused]] ProgressCallback& callback, [[maybe_unused]] const uint16_t padding /* = 1u */)
 {
-
-	// Signatures are specified as being either '8BIM' or '8B64'. However, it isnt specified when we use which one.
-	// For simplicity we will just write '8BIM' all the time and only write other signatures if we encounter them.
-	// The 'FMsk' and 'cinf' tagged blocks for example have '8B64' in PSB mode
-	WriteBinaryData<uint32_t>(document, Signature("8BIM").m_Value);
-	std::optional<std::vector<std::string>> keyStr = Enum::getTaggedBlockKey<Enum::TaggedBlockKey, std::vector<std::string>>(m_Key);
+	WriteBinaryData<uint32_t>(document, m_Signature.m_Value);
+	std::optional<std::vector<std::string>> keyStr = Enum::get_tagged_block_key<Enum::TaggedBlockKey, std::vector<std::string>>(m_Key);
 	if (!keyStr.has_value())
 	{
 		PSAPI_LOG_ERROR("TaggedBlock", "Was unable to extract a string from the tagged block key");
@@ -61,15 +62,14 @@ void TaggedBlock::write(File& document, [[maybe_unused]] const FileHeader& heade
 
 	if (isTaggedBlockSizeUint64(m_Key) && header.m_Version == Enum::Version::Psb)
 	{
-		WriteBinaryData<uint64_t>(document, 0u);
+		Impl::ScopedLengthBlock<uint64_t> len_block(document, padding);
+		WriteBinaryArray<std::byte>(document, m_Data);
 	}
 	else
 	{
-		WriteBinaryData<uint32_t>(document, 0u);
+		Impl::ScopedLengthBlock<uint32_t> len_block(document, padding);
+		WriteBinaryArray<std::byte>(document, m_Data);
 	}
-
-	// No need to write any padding bytes here as the section will already be aligned to all the possible padding sizes (1u for LayerRecord TaggedBlocks and 4u
-	// for "Global" Tagged Blocks (found at the end of the LayerAndMaskInformation section))
 }
 
 PSAPI_NAMESPACE_END
