@@ -50,6 +50,26 @@ namespace byteShufffleImpl
 		// Store the result back into the span
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(&data[0]), vec);
 	}
+
+	// Perform a byteshuffle on 8byte wide types, modifies the input span in place
+	// This function requires the data span to be 32 wide (256 bit register / 8 bits)
+	// Please perform checks on whether a byte shuffle is even required before using
+	// this function
+	inline void byteShuffleAVX2_8Wide(uint8_t* data)
+	{
+		__m256i vec = _mm256_loadu_si256(reinterpret_cast<const __m256i*>(data));
+
+		// Reverse bytes within each 8-byte lane
+		vec = _mm256_shuffle_epi8(vec, _mm256_set_epi8(
+			31, 30, 29, 28, 27, 26, 25, 24,
+			23, 22, 21, 20, 19, 18, 17, 16,
+			15, 14, 13, 12, 11, 10, 9, 8,
+			7,  6,  5,  4,  3,  2,  1,  0
+		));
+
+		_mm256_storeu_si256(reinterpret_cast<__m256i*>(data), vec);
+	}
+
 }
 
 
@@ -66,35 +86,33 @@ void byteShuffleAVX2_BE(uint8_t* data)
 // ---------------------------------------------------------------------------------------------------------------------
 // ---------------------------------------------------------------------------------------------------------------------
 template <typename T>
-inline void byteShuffleAVX2_LE([[maybe_unused]] uint8_t* data)
+inline void byteShuffleAVX2_LE(uint8_t* data)
 {
-}
+	static_assert(std::is_trivially_copyable_v<T>,
+				  "byteShuffleAVX2_LE requires trivially copyable types");
 
-
-// Template specialization for uint8_t
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template<>
-inline void byteShuffleAVX2_LE<uint8_t>([[maybe_unused]] uint8_t* data)
-{
-}
-
-// Template specialization for uint16_t
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template<>
-inline void byteShuffleAVX2_LE<uint16_t>(uint8_t* data)
-{
-	byteShufffleImpl::byteShuffleAVX2_2Wide(data);
-}
-
-// Template specialization for float32_t
-// ---------------------------------------------------------------------------------------------------------------------
-// ---------------------------------------------------------------------------------------------------------------------
-template<>
-inline void byteShuffleAVX2_LE<float32_t>(uint8_t* data)
-{
-	byteShufffleImpl::byteShuffleAVX2_4Wide(data);
+	if constexpr (sizeof(T) == 1)
+	{
+		// No-op for byte-sized types
+		return;
+	}
+	else if constexpr (sizeof(T) == 2)
+	{
+		byteShufffleImpl::byteShuffleAVX2_2Wide(data);
+	}
+	else if constexpr (sizeof(T) == 4)
+	{
+		byteShufffleImpl::byteShuffleAVX2_4Wide(data);
+	}
+	else if constexpr (sizeof(T) == 8)
+	{
+		byteShufffleImpl::byteShuffleAVX2_8Wide(data);
+	}
+	else
+	{
+		static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8,
+					  "Unsupported type size for AVX2 byte shuffle");
+	}
 }
 
 PSAPI_NAMESPACE_END
