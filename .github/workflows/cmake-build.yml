@@ -26,10 +26,15 @@ jobs:
       fail-fast: false
       matrix:
         include:
-           - name: Ubuntu GCC
+           - name: Ubuntu GCC-13
              os: ubuntu-24.04
              compiler: gcc-13
              compilercxx: g++-13
+             multiline-separator: \
+           - name: Ubuntu GCC-15
+             os: ubuntu-24.04
+             compiler: gcc-15
+             compilercxx: g++-15
              multiline-separator: \
            - name: Ubuntu Clang
              os: ubuntu-24.04
@@ -61,6 +66,12 @@ jobs:
           brew install autoconf
           brew install libtool
           brew install automake
+
+    - name: Setup gcc-15
+      if: matrix.compiler == 'gcc-15'
+      run: |
+          sudo apt-get update
+            sudo apt-get install -y gcc-15 g++-15
 
     - name: Restore vcpkg cache
       id: vcpkg-cache
