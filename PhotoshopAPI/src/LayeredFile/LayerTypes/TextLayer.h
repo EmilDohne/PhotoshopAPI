@@ -14,6 +14,13 @@ struct TextLayer : Layer<T>
 	using Layer<T>::Layer;
 
 	TextLayer() = default;
+
+	// ---------------------------------------------------------------------
+	// These methods are only here to allow for clean roundtripping, they
+	// should not be used directly and will be replaced once proper support
+	// for this layer type is in place.
+	// ---------------------------------------------------------------------
+
 	TextLayer(const LayerRecord& layer_record, ChannelImageData& channel_image_data, const FileHeader& header)
 		: Layer<T>(layer_record, channel_image_data, header)
 	{
@@ -33,15 +40,6 @@ struct TextLayer : Layer<T>
 			// to uncompress / recompress
 			Layer<T>::m_UnparsedImageData[channel_info.m_ChannelID] = std::move(channelPtr);
 		}
-	}
-
-	size_t num_channels(bool include_mask) const
-	{
-		if (Layer<T>::has_mask() && include_mask)
-		{
-			return Layer<T>::m_UnparsedImageData.size() + 1;
-		}
-		return Layer<T>::m_UnparsedImageData.size();
 	}
 
 	std::tuple<LayerRecord, ChannelImageData> to_photoshop() override
@@ -89,6 +87,19 @@ struct TextLayer : Layer<T>
 		);
 		return std::make_tuple(std::move(lr_record), std::move(channel_img_data));
 	}
+
+
+private:
+
+	size_t num_channels(bool include_mask) const
+	{
+		if (Layer<T>::has_mask() && include_mask)
+		{
+			return Layer<T>::m_UnparsedImageData.size() + 1;
+		}
+		return Layer<T>::m_UnparsedImageData.size();
+	}
+
 
 	std::tuple<std::vector<LayerRecords::ChannelInformation>, ChannelImageData> generate_channel_image_data()
 	{

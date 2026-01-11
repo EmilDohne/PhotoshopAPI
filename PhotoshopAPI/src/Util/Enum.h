@@ -779,6 +779,7 @@ namespace Enum
 		// at the end of each layer record. Not the one at the end of the layer and mask section
 		lrUnicodeName,
 		lrId,
+		lrVersion,
 		lrNameSourceSetting,
 		lrSectionDivider,	// This stores information about if it is a group layer and if its open or closed
 		lrArtboard,			// Whether or not the layer is an Artboard layer. May be the keys 'artb', 'artd' or 'abdd'
@@ -816,7 +817,8 @@ namespace Enum
 		lrReferencePoint,
 		// Shape Layer Tagged Blocks
 		vecOriginData,
-		vecMaskSettings,	// 'vmsk' for CS6 and up. We dont support the legacy 'vsms' option here 
+		vecOriginUnknown,
+		vecMaskSettings,	// 'vsms' for CS6 and up. We dont support the legacy 'vmsk' option here
 		vecStrokeData,
 		vecStrokeContentData,
 		contentGeneratorExtraData
@@ -848,6 +850,7 @@ namespace Enum
 			{"lrFX", TaggedBlockKey::fxLayer},
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
+			{"lyvr", TaggedBlockKey::lrVersion},
 			{"lnsr", TaggedBlockKey::lrNameSourceSetting},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
 			{"lsdk", TaggedBlockKey::lrSectionDivider},
@@ -892,7 +895,8 @@ namespace Enum
 			{"fxrp", TaggedBlockKey::lrReferencePoint},
 			// Vector Data for shape Layers
 			{"vogk", TaggedBlockKey::vecOriginData},
-			{"vmsk", TaggedBlockKey::vecMaskSettings},
+			{"vowv", TaggedBlockKey::vecOriginUnknown},
+			{"vsms", TaggedBlockKey::vecMaskSettings},
 			{"vstk", TaggedBlockKey::vecStrokeData},
 			{"vscg", TaggedBlockKey::vecStrokeContentData},
 			{"CgEd", TaggedBlockKey::contentGeneratorExtraData},
