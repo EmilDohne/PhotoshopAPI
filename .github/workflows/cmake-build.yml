@@ -11,6 +11,8 @@ on:
   release:
     types:
       - published
+  schedule:
+    - cron: "0 0 * * 1"  # Runs every Monday at midnight UTC
 
 env:
   BUILD_TYPE: Release
