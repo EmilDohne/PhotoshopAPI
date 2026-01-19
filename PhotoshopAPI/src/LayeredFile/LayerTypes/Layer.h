@@ -214,11 +214,15 @@ struct Layer : public MaskMixin<T>
 		}
 		else
 		{
-			auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
-			auto sectionDivider = additionalLayerInfo.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
-			if (sectionDivider.has_value() && sectionDivider.value()->m_BlendMode.has_value())
+			auto& additional_layer_info = layerRecord.m_AdditionalLayerInfo.value();
+
+			// Pass along the unparsed blocks
+			m_UnparsedBlocks = additional_layer_info.get_base_tagged_blocks();
+
+			auto section_divider_block = additional_layer_info.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
+			if (section_divider_block.has_value() && section_divider_block.value()->m_BlendMode.has_value())
 			{
-				m_BlendMode = sectionDivider.value()->m_BlendMode.value();
+				m_BlendMode = section_divider_block.value()->m_BlendMode.value();
 			}
 			else
 			{
@@ -226,7 +230,7 @@ struct Layer : public MaskMixin<T>
 			}
 
 			// Parse the layer protection settings
-			auto protectionSettings = additionalLayerInfo.getTaggedBlock<ProtectedSettingTaggedBlock>(Enum::TaggedBlockKey::lrProtectedSetting);
+			auto protectionSettings = additional_layer_info.getTaggedBlock<ProtectedSettingTaggedBlock>(Enum::TaggedBlockKey::lrProtectedSetting);
 			if (protectionSettings)
 			{
 				m_IsLocked = protectionSettings.value()->m_IsLocked;
@@ -401,6 +405,14 @@ protected:
 	float m_CenterY{};
 
 	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
+	
+	using channel_type = std::unique_ptr<channel_wrapper>;
+	using image_type = std::unordered_map<Enum::ChannelIDInfo, channel_type, Enum::ChannelIDInfoHasher>;
+
+	image_type m_UnparsedImageData;
+
+	/// Stores all unparsed tagged blocks that we want to pass through on read/write.
+	std::vector<std::shared_ptr<TaggedBlock>> m_UnparsedBlocks;
 
 	/// Parse the layer mask passed as part of the parameters into m_LayerMask
 	void parse_mask(Params& parameters)
@@ -442,24 +454,25 @@ protected:
 	/// \brief Generate the tagged blocks necessary for writing the layer
 	virtual std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks()
 	{
-		std::vector<std::shared_ptr<TaggedBlock>> blockVec;
+		std::vector<std::shared_ptr<TaggedBlock>> block_vec = m_UnparsedBlocks;
+		
 		// Generate our reference point tagged block
 		if (m_ReferencePointX.has_value() && m_ReferencePointY.has_value())
 		{
 			auto referencePointPtr = std::make_shared<ReferencePointTaggedBlock>(m_ReferencePointX.value(), m_ReferencePointY.value());
-			blockVec.push_back(referencePointPtr);
+			block_vec.push_back(referencePointPtr);
 		}
 
 		// Generate our unicode layer name block, we always include this as its size is trivial and this avoids 
 		// any issues with names being truncated
 		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
-		blockVec.push_back(unicodeNamePtr);
+		block_vec.push_back(unicodeNamePtr);
 
 		// Generate our LockedSettings Tagged block
 		auto protectionSettingsPtr = std::make_shared<ProtectedSettingTaggedBlock>(m_IsLocked);
-		blockVec.push_back(protectionSettingsPtr);
+		block_vec.push_back(protectionSettingsPtr);
 
-		return blockVec;
+		return block_vec;
 	}
 
 	/// \brief Generate the layer blending ranges (which for now are just the defaults).

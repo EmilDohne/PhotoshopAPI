@@ -17,12 +17,14 @@
 PSAPI_NAMESPACE_BEGIN
 
 
-// Generic Tagged Block which does not hold any data. If you wish to parse further tagged blocks extend this struct and add an implementation
+// Base TaggedBlock, this is the default implementation for any non-specialized tagged blocks and will read
+// and write the raw byte data but not attempt to decode this. Acts as a simple pass through.
 struct TaggedBlock
 {
-	Signature m_Signature;
+	Signature m_Signature = Signature("8BIM");
 	uint64_t m_Offset = 0u;	// Demarkates the start of the taggedblock, not the start of the data
-	std::variant<uint32_t, uint64_t> m_Length;
+	std::variant<uint32_t, uint64_t> m_Length = uint32_t{ 0u };
+	std::vector<std::byte> m_Data;
 
 	Enum::TaggedBlockKey getKey() const noexcept{ return m_Key; };
 

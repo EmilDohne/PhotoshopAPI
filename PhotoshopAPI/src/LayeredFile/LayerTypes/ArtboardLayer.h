@@ -14,6 +14,7 @@ template <typename T>
 	requires concepts::bit_depth<T>
 struct ArtboardLayer : Layer<T>
 {
+	using Layer<T>::Layer;
 	ArtboardLayer() = default;
 };
 
