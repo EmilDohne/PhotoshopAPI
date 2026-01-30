@@ -779,13 +779,17 @@ namespace Enum
 		// at the end of each layer record. Not the one at the end of the layer and mask section
 		lrUnicodeName,
 		lrId,
+		lrVersion,
+		lrNameSourceSetting,
 		lrSectionDivider,	// This stores information about if it is a group layer and if its open or closed
 		lrArtboard,			// Whether or not the layer is an Artboard layer. May be the keys 'artb', 'artd' or 'abdd'
 		lrMetaData,
 		lrAnnotations,
 		// Non-Pixel layers
 		lrTypeTool,		// This is the superseeded version 'TySh', not 'tySh' as that was phased out in 2000
+		lrTextEngineData,	
 		lrPatternData,
+		lrPatterns,
 		lrLinked,
 		lrLinked_8Byte,	// Same as lrLinked but for some reason 'lnk2' has a 8-byte wide length field
 		lrPlaced,	// Represents the keys 'SoLd'
@@ -813,9 +817,11 @@ namespace Enum
 		lrReferencePoint,
 		// Shape Layer Tagged Blocks
 		vecOriginData,
-		vecMaskSettings,	// 'vmsk' for CS6 and up. We dont support the legacy 'vsms' option here 
+		vecOriginUnknown,
+		vecMaskSettings,	// 'vsms' for CS6 and up. We dont support the legacy 'vmsk' option here
 		vecStrokeData,
 		vecStrokeContentData,
+		contentGeneratorExtraData
 	};
 
 	namespace {
@@ -844,6 +850,8 @@ namespace Enum
 			{"lrFX", TaggedBlockKey::fxLayer},
 			{"luni", TaggedBlockKey::lrUnicodeName},
 			{"lyid", TaggedBlockKey::lrId},
+			{"lyvr", TaggedBlockKey::lrVersion},
+			{"lnsr", TaggedBlockKey::lrNameSourceSetting},
 			{"lsct", TaggedBlockKey::lrSectionDivider},
 			{"lsdk", TaggedBlockKey::lrSectionDivider},
 			{"artb", TaggedBlockKey::lrArtboard},
@@ -852,7 +860,11 @@ namespace Enum
 			{"shmd", TaggedBlockKey::lrMetaData},
 			{"Anno", TaggedBlockKey::lrAnnotations},
 			{"TySh", TaggedBlockKey::lrTypeTool},
+			{"Txt2", TaggedBlockKey::lrTextEngineData},
 			{"shpa", TaggedBlockKey::lrPatternData},
+			{"Patt", TaggedBlockKey::lrPatterns},
+			{"Pat2", TaggedBlockKey::lrPatterns},
+			{"Pat3", TaggedBlockKey::lrPatterns},
 			{"lnkD", TaggedBlockKey::lrLinked},
 			{"lnkE", TaggedBlockKey::lrLinked},
 			{"lnk3", TaggedBlockKey::lrLinked},
@@ -883,36 +895,40 @@ namespace Enum
 			{"fxrp", TaggedBlockKey::lrReferencePoint},
 			// Vector Data for shape Layers
 			{"vogk", TaggedBlockKey::vecOriginData},
-			{"vmsk", TaggedBlockKey::vecMaskSettings},
+			{"vowv", TaggedBlockKey::vecOriginUnknown},
+			{"vsms", TaggedBlockKey::vecMaskSettings},
 			{"vstk", TaggedBlockKey::vecStrokeData},
 			{"vscg", TaggedBlockKey::vecStrokeContentData},
+			{"CgEd", TaggedBlockKey::contentGeneratorExtraData},
 		};
 	}
 
 	// Bidirectional mapping of Tagged block keys
 	template<typename TKey, typename TValue>
-	inline std::optional<TValue> getTaggedBlockKey(TKey key)
+	inline std::optional<TValue> get_tagged_block_key(TKey key)
 	{
-		PSAPI_LOG_ERROR("getTaggedBlockKey", "No overload for the specific search type found");
+		PSAPI_LOG_ERROR("get_tagged_block_key", "No overload for the specific search type found");
 		return std::nullopt;
 	}
 
 	template<>
-	inline std::optional<TaggedBlockKey> getTaggedBlockKey(std::string key)
+	inline std::optional<TaggedBlockKey> get_tagged_block_key(std::string key)
 	{
 		auto it = taggedBlockMap.find(key);
 
-		if (it != taggedBlockMap.end()) {
+		if (it != taggedBlockMap.end()) 
+		{
 			return std::optional<TaggedBlockKey>(it->second);
 		}
-		else {
+		else 
+		{
 			return std::optional<TaggedBlockKey>(TaggedBlockKey::Unknown);
 		}
 	}
 
 	// Sometimes multiple strings can match a singular key, therefore we return a vector here
 	template <>
-	inline std::optional<std::vector<std::string>> getTaggedBlockKey(TaggedBlockKey key)
+	inline std::optional<std::vector<std::string>> get_tagged_block_key(TaggedBlockKey key)
 	{
 		return findMultipleByValue(taggedBlockMap, key);
 	}

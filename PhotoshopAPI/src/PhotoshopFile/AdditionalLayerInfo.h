@@ -67,6 +67,14 @@ struct AdditionalLayerInfo : public FileSection
 		return this->getTaggedBlock<T>();
 	}
 
+	/// Retrieve all the base tagged blocks from the additional layer information,
+	/// excluding any blocks that are explicitly overridden to decode them.
+	/// This is useful e.g. for roundtripping tagged blocks.
+	std::vector<std::shared_ptr<TaggedBlock>> get_base_tagged_blocks() const
+	{
+		return this->m_TaggedBlocks.get_base_tagged_blocks();
+	}
+
 	template <typename T>
 		requires std::is_base_of_v<TaggedBlock, T>
 	std::vector<std::shared_ptr<T>> get_tagged_blocks() const
