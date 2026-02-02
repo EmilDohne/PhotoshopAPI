@@ -821,7 +821,8 @@ namespace Enum
 		vecMaskSettings,	// 'vsms' for CS6 and up. We dont support the legacy 'vmsk' option here
 		vecStrokeData,
 		vecStrokeContentData,
-		contentGeneratorExtraData
+		contentGeneratorExtraData,
+		ocioData 
 	};
 
 	namespace {
@@ -900,6 +901,7 @@ namespace Enum
 			{"vstk", TaggedBlockKey::vecStrokeData},
 			{"vscg", TaggedBlockKey::vecStrokeContentData},
 			{"CgEd", TaggedBlockKey::contentGeneratorExtraData},
+			{"OCIO", TaggedBlockKey::ocioData},
 		};
 	}
 
