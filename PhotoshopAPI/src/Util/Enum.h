@@ -963,6 +963,16 @@ namespace Enum
 // --------------------------------------------------------------------------------
 namespace Enum
 {
+
+	/// Enumerator for the color management system used by a given Photoshop File
+	enum class ColorSystem
+	{
+		/// OCIO, available from Photoshop 2025 as an option for a document.
+		ocio,
+		/// ICC, the default color management system.
+		icc
+	};
+
 	enum class Compression
 	{
 		/// Raw bytes with no compression

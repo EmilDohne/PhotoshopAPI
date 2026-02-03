@@ -380,7 +380,7 @@ namespace Descriptors
 		/// \param key The key to search for
 		/// \tparam T The type to retrieve it as
 		/// 
-		/// \returns A const ref to the item, no copy is performed
+		/// \returns A const ref to the item, no copy is performed. Will never be nullptr
 		template <typename T> 
 			requires std::is_base_of_v<DescriptorBase, T>
 		const T* at(const std::string key) const

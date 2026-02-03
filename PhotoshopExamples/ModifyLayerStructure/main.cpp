@@ -16,5 +16,11 @@ int main()
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
 	// variable on the PhotoshopFile to figure it out programmatically. This would need to be done using the 
 	// "extended" read signature.
-	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("C:/Users/emild/Desktop/ocio/custom_ocio.psb");
+	auto file_ocio = LayeredFile<bpp16_t>::read(
+		"C:/repos/PhotoshopAPI/PhotoshopTest/documents/ColorManagement/color_checker_ocio_acescg_16.psd"
+	);
+
+	auto file_icc = LayeredFile<bpp16_t>::read(
+		"C:/repos/PhotoshopAPI/PhotoshopTest/documents/ColorManagement/color_checker_icc_srgb_16.psd"
+	);
 }

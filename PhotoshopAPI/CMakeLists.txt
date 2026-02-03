@@ -12,6 +12,8 @@ target_include_directories(PhotoshopAPI PUBLIC include src)
 target_include_directories(PhotoshopAPI PRIVATE src/Util)
 target_link_libraries(PhotoshopAPI PUBLIC 
     OpenImageIO::OpenImageIO
+    OpenColorIO::OpenColorIO
+    lcms2::lcms2
     Eigen3::Eigen
     mio::mio-headers 
     tcb_span 

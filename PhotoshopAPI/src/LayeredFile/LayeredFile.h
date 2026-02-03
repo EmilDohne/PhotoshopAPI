@@ -1,9 +1,18 @@
 #pragma once
 
+#include <variant>
+#include <vector>
+#include <set>
+#include <filesystem>
+#include <memory>
+#include <optional>
+
 #include "Macros.h"
 #include "Util/Enum.h"
 #include "Util/StringUtil.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
+#include "Core/Struct/ICCProfile.h"
+#include "Core/Struct/OCIOProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
@@ -18,12 +27,6 @@
 #include "LayeredFile/Util/GenerateImageResources.h"
 #include "LayeredFile/Util/GenerateLayerMaskInfo.h"
 #include "LayeredFile/Util/ClearLinkedLayers.h"
-
-#include <variant>
-#include <vector>
-#include <set>
-#include <filesystem>
-#include <memory>
 
 
 PSAPI_NAMESPACE_BEGIN
@@ -69,13 +72,53 @@ struct LayeredFile
 	std::vector<std::shared_ptr<Layer<T>>>& layers() noexcept { return m_Layers; }
 	void layers(std::vector<std::shared_ptr<Layer<T>>> layer_vec) noexcept { m_Layers = std::move(layer_vec); }
 
-	/// The files' ICC Profile
+	/// \brief Retrieve the color management system used by the LayeredFile
 	/// 
-	/// The ICC Profile defines the view transform on the file but does not 
-	/// actually apply any color conversion. If you wish to actually convert your
-	/// colors you should instead use something like `lcms2`
-	ICCProfile icc_profile() const noexcept { return m_ICCProfile; }
-	void icc_profile(ICCProfile profile) noexcept { m_ICCProfile = std::move(profile); }
+	/// this may be icc or ocio depending on the document settings. Setting the color
+	/// management system is done implictly by either calling the setter of `icc_profile` or
+	/// `ocio_profile`
+	Enum::ColorSystem color_management()
+	{
+		if (std::holds_alternative<ICCProfile>(m_ColorManagement))
+		{
+			return Enum::ColorSystem::icc;
+		}
+		return Enum::ColorSystem::ocio;
+	}
+
+	/// \brief The files' ICC profile
+	/// 
+	/// The ICC profile defines the view transform on the file but does not 
+	/// actually apply any color conversion. The pixel values of layers are stored
+	/// untransformed until the final composite is done by Photoshop.
+	std::optional<ICCProfile> icc_profile() const noexcept 
+	{ 
+		if (std::holds_alternative<ICCProfile>(m_ColorManagement))
+		{
+			return std::get<ICCProfile>(m_ColorManagement);
+		}
+		return std::nullopt;
+	}
+	void icc_profile(ICCProfile profile) noexcept { m_ColorManagement = std::move(profile); }
+
+	/// \brief The files' OCIO profile
+	///
+	/// The OCIO profile defines the working space and the final view/display transform
+	/// that is applied. The raw pixel data is stored in the scene working space.
+	/// 
+	/// .. note::
+	///		Photoshop will, on export, ignore any view or display transforms when exported to a non-exr
+	///		format. The equivalent transform will be 'Un-tone-mapped'.
+	std::optional<OCIOProfile> ocio_profile() const
+	{
+		if (std::holds_alternative<OCIOProfile>(m_ColorManagement))
+		{
+			return std::get<OCIOProfile>(m_ColorManagement);
+		}
+		return std::nullopt;
+	}
+	void ocio_profile(OCIOProfile profile) noexcept { m_ColorManagement = std::move(profile); }
+	
 
 	/// The files' dots per inch (dpi) resolution
 	float& dpi() noexcept { return m_DotsPerInch; }
@@ -169,8 +212,18 @@ struct LayeredFile
 		m_Width = document->m_Header.m_Width;
 		m_Height = document->m_Header.m_Height;
 
-		// Extract the ICC Profile if it exists on the document, otherwise it will simply be empty
-		m_ICCProfile = _Impl::read_icc_profile(document.get());
+		// Extract the Color Management information from the document
+		auto [mode, profile] = _Impl::read_ocio_profile(document.get());
+		if (mode == Enum::ColorSystem::icc)
+		{
+			m_ColorManagement = _Impl::read_icc_profile(document.get());
+		}
+		else
+		{
+			m_ColorManagement = profile.value_or(OCIOProfile());
+		}
+
+
 		// Extract the DPI from the document, default to 72
 		m_DotsPerInch = _Impl::read_dpi(document.get());
 		if (document->m_LayerMaskInfo.m_AdditionalLayerInfo)
@@ -606,7 +659,10 @@ struct LayeredFile
 		params.doRead = false;
 		params.forceOverwrite = forceOvewrite;
 
-		if (layeredFile.m_ICCProfile.data_size() == 0 && layeredFile.m_ColorMode == Enum::ColorMode::CMYK)
+		if (
+			std::holds_alternative<ICCProfile>(layeredFile.m_ColorManagement) &&
+			std::get<ICCProfile>(layeredFile.m_ColorManagement).data_size() == 0 && 
+			layeredFile.m_ColorMode == Enum::ColorMode::CMYK)
 		{
 			PSAPI_LOG_WARNING("LayeredFile",
 				"Writing out a CMYK file without an embedded ICC Profile. The output image data will likely look very wrong");
@@ -637,9 +693,9 @@ private:
 	/// The root layers in the file, they may contain multiple levels of sub-layers
 	std::vector<std::shared_ptr<Layer<T>>> m_Layers;
 
-	/// The ICC Profile associated with the file, this may be empty in which case there will be no colour
+	/// The ICC/OCIO Profile associated with the file, this may be empty in which case there will be no colour
 	/// profile associated with the file
-	ICCProfile m_ICCProfile;
+	std::variant<ICCProfile, OCIOProfile> m_ColorManagement;
 
 	/// The DPI of the document, this will only change the display unit and wont resize any data
 	float m_DotsPerInch = 72.0f;

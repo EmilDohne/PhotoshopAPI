@@ -7,7 +7,10 @@
 #include "Core/TaggedBlocks/LrSectionTaggedBlock.h"
 #include "Core/TaggedBlocks/Lr16TaggedBlock.h"
 #include "Core/TaggedBlocks/Lr32TaggedBlock.h"
+#include "Core/TaggedBlocks/OcioTaggedBlock.h"
+#include "Core/Struct/DescriptorStructure.h"
 #include "Core/Struct/ICCProfile.h"
+#include "Core/Struct/OCIOProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
@@ -187,6 +190,45 @@ namespace _Impl
 			return blockPtr->m_HorizontalRes.getFloat();
 		}
 		return 72.0f;
+	}
+
+	inline std::tuple<Enum::ColorSystem, std::optional<OCIOProfile>> read_ocio_profile(const PhotoshopFile* file)
+	{
+		if (!file->m_LayerMaskInfo.m_AdditionalLayerInfo)
+		{
+			return std::make_tuple(Enum::ColorSystem::icc, std::nullopt);
+		}
+
+		std::shared_ptr<OcioTaggedBlock> block = file->m_LayerMaskInfo.m_AdditionalLayerInfo.value().get_tagged_block<OcioTaggedBlock>();
+
+		if (!block)
+		{
+			return std::make_tuple(Enum::ColorSystem::icc, std::nullopt);
+		}
+
+		auto& descriptor = block->m_Descriptor;
+
+		std::string kind = descriptor->at<Descriptors::UnicodeString_Wrapper>("Knd ")->m_Value.string();
+		if (kind == "icc")
+		{
+			return std::make_tuple(Enum::ColorSystem::icc, std::nullopt);
+		}
+
+		auto path = descriptor->at<Descriptors::Descriptor>("configuration")
+							  ->at<Descriptors::UnicodeString_Wrapper>("Srce")
+							  ->m_Value.string();
+
+		auto working_space = descriptor->at<Descriptors::UnicodeString_Wrapper>("working_space")
+									   ->m_Value.string();
+
+		auto view = descriptor->at<Descriptors::Descriptor>("ocio_display_view")
+							  ->at<Descriptors::UnicodeString_Wrapper>("view")
+							  ->m_Value.string();
+		auto display = descriptor->at<Descriptors::Descriptor>("ocio_display_view")
+								 ->at<Descriptors::UnicodeString_Wrapper>("display")
+								 ->m_Value.string();
+
+		return std::make_tuple(Enum::ColorSystem::ocio, OCIOProfile(path, working_space, view, display));
 	}
 
 	/// Read the ICC profile from the PhotoshopFile, if it doesnt exist we simply initialize an
