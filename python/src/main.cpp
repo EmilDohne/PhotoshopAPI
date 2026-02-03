@@ -8,6 +8,7 @@
 #include "Layers/DeclareGroupLayer.h"
 #include "Layers/DeclareSmartObjectLayer.h"
 #include "Mixins/DeclareMaskMixin.h"
+#include "Mixins/DeclareOcioProfile.h"
 #include "DeclareSmartObjectWarp.h"
 #include "DeclareEnums.h"
 #include "DeclareGeometry.h"
@@ -33,6 +34,8 @@ PYBIND11_MODULE(photoshopapi, m)
 	auto geometry_module = m.def_submodule("geometry");
 	declare_point2d(geometry_module);
 	declare_geometry_operations(geometry_module);
+
+	declare_ocio_profile(m);
 
 	declare_layer<bpp8_t>(m, "_8bit");
 	declare_layer<bpp16_t>(m, "_16bit");

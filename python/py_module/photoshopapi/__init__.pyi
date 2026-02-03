@@ -9,4 +9,5 @@ from ._image_layer import *
 from ._group_layer import *
 from ._smart_object_layer import *
 from ._smart_object_warp import *
+from ._ocio_profile import *
 from ._layered_file import *

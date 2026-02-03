@@ -24,8 +24,6 @@ if (PSAPI_BUILD_PYTHON)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
 
-
-
 # Build setup
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set (CMAKE_CXX_STANDARD 20)
@@ -35,9 +33,6 @@ set (CMAKE_CXX_STANDARD 20)
 set(CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake" ${CMAKE_MODULE_PATH})
 
 
-# Set up our toolchain using the local vcpkg, gets the 
-# --------------------------------------------------------------------------
-
 # Include the local vcpkg toolchain, if specified
 if (PSAPI_USE_VCPKG)
     set(FMT_SYSTEM_HEADERS ON)
@@ -46,6 +41,10 @@ endif()
 
 # Here we add support for OpenImageIO which is used for smart object image data extraction.
 find_package(OpenImageIO CONFIG REQUIRED)
+
+find_package(OpenColorIO CONFIG REQUIRED)
+
+find_package(lcms2 CONFIG REQUIRED)
 
 # Add libdeflate for zip compression and decompression
 find_package(libdeflate CONFIG REQUIRED)

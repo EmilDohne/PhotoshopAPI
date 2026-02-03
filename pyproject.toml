@@ -20,7 +20,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">= 3.8"
-dependencies = ["numpy>=1.21.6"]
+dependencies = ["numpy>=1.21.6", "opencolorio>=2.4.2"]
 
 [project.urls]
 Homepage = "https://photoshopapi.readthedocs.org/"

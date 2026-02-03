@@ -92,10 +92,16 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 
 		Attributes
 		-------------
-		icc : numpy.ndarray
+		icc : numpy.ndarray | None
 			Property for setting and retrieving the ICC profile attached to the file. This does not do any color conversions
 			but simply tells photoshop how to interpret the data. The assignment is overloaded such that you need to pass
 			a path to the ICC file you want to load and loading will be done internally.
+			This property may return None if the document is instead managed by an OCIO profile.
+
+		ocio : psapi.OcioProfile | None
+			Property for setting and retrieving the OCIO profile attached to the file. This does not do any color conversions
+			but simply tells photoshop how to interpret the data. 
+			This property may return None if the document is instead managed by an ICC profile.
 
 		compression : psapi.enum.Compression
 			Write-only property which sets the compression of all the layers in the LayeredFile
@@ -208,10 +214,14 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc",
-		[](const Class& self) {
-			auto data = self.icc_profile().data();
+		[](const Class& self) -> std::optional<py::array_t<uint8_t>> {
+			if (!self.icc_profile())
+			{
+				return std::nullopt;
+			}
+			auto data = self.icc_profile().value().data();
 			uint8_t* ptr = data.data();
-			std::vector<size_t> shape = { self.icc_profile().data_size() };
+			std::vector<size_t> shape = { self.icc_profile().value().data_size() };
 			return py::array_t<uint8_t>(shape, ptr);
 		},
 		[](Class& self, std::variant<std::filesystem::path, py::array_t<uint8_t>> value) {
@@ -232,6 +242,9 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 				throw py::type_error("ICC profile must be either a numpy.ndarray or a filesystem path (str or os.PathLike)");
 			}
 		});
+	layeredFile.def_property("ocio",
+		[](const Class& self) -> std::optional<OCIOProfile> { return self.ocio_profile(); },
+		[](Class& self, OCIOProfile& profile) { self.ocio_profile(profile) });
 	layeredFile.def_property("compression", [](const Class& self) {throw py::type_error("compression property has no getter"); }, &Class::set_compression);
 	layeredFile.def_property_readonly("num_channels", &Class::num_channels);
 	layeredFile.def_property_readonly("layers", [](Class& self) { return self.layers(); });

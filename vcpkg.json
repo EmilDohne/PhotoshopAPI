@@ -4,6 +4,8 @@
   "builtin-baseline": "e3ed41868d5034bc608eaaa58383cd6ecdbb5ffb",
   "dependencies": [
     "openimageio",
+    "opencolorio",
+    "lcms",
     "fmt",
     "libdeflate",
     "stduuid",
@@ -11,8 +13,16 @@
   ],
   "overrides": [
     {
-      "name": "openimageio",
-      "version": "3.0.9.1"
+        "name": "openimageio",
+        "version": "3.0.9.1"
+    },
+    {
+        "name": "opencolorio",
+        "version": "2.4.2"
+    },
+    {
+      "name": "lcms",
+      "version": "2.17"
     },
     {
       "name": "fmt",

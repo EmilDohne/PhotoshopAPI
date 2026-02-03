@@ -5,6 +5,7 @@ import os
 import psapi.enum
 import psapi.util
 from ._layer import Layer_8bit, Layer_16bit, Layer_32bit
+from ._ocio import OcioProfile
 
 
 class LayeredFile:
@@ -17,7 +18,7 @@ class LayeredFile:
 class LayeredFile_8bit:
 
     @property
-    def icc(self: LayeredFile_8bit) -> numpy.ndarray:
+    def icc(self: LayeredFile_8bit) -> numpy.ndarray | None:
         ...
 
     @icc.setter
@@ -27,6 +28,14 @@ class LayeredFile_8bit:
     @overload
     @icc.setter
     def icc(self: LayeredFile_8bit, path: os.PathLike) -> None:
+        ...
+
+    @property
+    def ocio(self: LayeredFile_8bit) -> OcioProfile | None:
+        ...
+
+    @ocio.setter
+    def ocio(self: LayeredFile_8bit, profile: OcioProfile) -> None:
         ...
 
     # We put it here as its property-like
@@ -120,7 +129,7 @@ class LayeredFile_8bit:
 class LayeredFile_16bit:
 
     @property
-    def icc(self: LayeredFile_16bit) -> numpy.ndarray:
+    def icc(self: LayeredFile_16bit) -> numpy.ndarray | None:
         ...
 
     @icc.setter
@@ -130,6 +139,14 @@ class LayeredFile_16bit:
     @overload
     @icc.setter
     def icc(self: LayeredFile_16bit, path: os.PathLike) -> None:
+        ...
+
+    @property
+    def ocio(self: LayeredFile_16bit) -> OcioProfile | None:
+        ...
+
+    @ocio.setter
+    def ocio(self: LayeredFile_16bit, profile: OcioProfile) -> None:
         ...
 
     # We put it here as its property-like
@@ -223,7 +240,7 @@ class LayeredFile_16bit:
 class LayeredFile_32bit:
 
     @property
-    def icc(self: LayeredFile_32bit) -> numpy.ndarray:
+    def icc(self: LayeredFile_32bit) -> numpy.ndarray | None:
         ...
 
     @icc.setter
@@ -233,6 +250,14 @@ class LayeredFile_32bit:
     @overload
     @icc.setter
     def icc(self: LayeredFile_32bit, path: os.PathLike) -> None:
+        ...
+
+    @property
+    def ocio(self: LayeredFile_32bit) -> OcioProfile | None:
+        ...
+
+    @ocio.setter
+    def ocio(self: LayeredFile_32bit, profile: OcioProfile) -> None:
         ...
 
     # We put it here as its property-like
