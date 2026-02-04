@@ -13,6 +13,7 @@
 #include "Core/TaggedBlocks/TaggedBlock.h"
 #include "Core/Struct/ICCProfile.h"
 #include "Core/Struct/OCIOProfile.h"
+#include "Core/Render/Ocio.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
@@ -326,6 +327,82 @@ struct LayeredFile
 		}
 		PSAPI_LOG_WARNING("LayeredFile", "Unable to find layer path %s", path.c_str());
 		return nullptr;
+	}
+
+	std::unordered_map<int, std::vector<T>> apply_color_management(std::shared_ptr<Layer<T>>& layer) const
+	{
+		auto downcast_ptr = dynamic_pointer_cast<ImageDataMixin<T>>(layer.get());
+
+		if (!downcast_ptr)
+		{
+			throw std::runtime_error(
+				fmt::format(
+					"Passed layer {} does not contain any image data.",
+					layer->name()
+				)
+			);
+		}
+
+		auto r = downcast_ptr->get_channel(Enum::ChannelID::Red);
+		auto g = downcast_ptr->get_channel(Enum::ChannelID::Green);
+		auto b = downcast_ptr->get_channel(Enum::ChannelID::Blue);
+		std::vector<T> a = {};
+		try
+		{
+			a = downcast_ptr->get_channel();
+		}
+		catch (const std::invalid_argument& e) {}
+
+		if (a.size())
+		{
+			if (this->color_management() == Enum::ColorSystem::icc)
+			{
+				return this->apply_icc_profile(
+					std::span<T>(r),
+					std::span<T>(g),
+					std::span<T>(b),
+					std::span<T>(a),
+					layer->width(),
+					layer->height()
+				);
+			}
+			else
+			{
+				return this->apply_ocio_profile(
+					std::span<T>(r),
+					std::span<T>(g),
+					std::span<T>(b),
+					std::span<T>(a),
+					layer->width(),
+					layer->height()
+					);
+			}
+		}
+		else
+		{
+			if (this->color_management() == Enum::ColorSystem::icc)
+			{
+				return this->apply_icc_profile(
+					std::span<T>(r),
+					std::span<T>(g),
+					std::span<T>(b),
+					std::nullopt,
+					layer->width(),
+					layer->height()
+					);
+			}
+			else
+			{
+				return this->apply_ocio_profile(
+					std::span<T>(r),
+					std::span<T>(g),
+					std::span<T>(b),
+					std::nullopt,
+					layer->width(),
+					layer->height()
+					);
+			}
+		}
 	}
 
 	/// \brief Inserts a layer into the root of the layered file.
@@ -749,6 +826,127 @@ private:
 		bool isDescendantOf = _Impl::layer_in_document_recursive(parentLayer, layer);
 		// We additionally check if the layer is the same as the parent layer as that would also not be allowed
 		return isDescendantOf || layer == parentLayer;
+	}
+
+	std::unordered_map<int, std::span<T>> apply_icc_profile(
+		std::span<T> r, 
+		std::span<T> g, 
+		std::span<T> b,
+		std::optional<std::span<T>> a,
+		size_t width,
+		size_t height,
+	)
+	{
+		std::vector<std::span<const T>> data;
+		std::vector<std::span<T>> data_out;
+
+		data.push_back(std::span<const T>(r.begin(), r.end()));
+		data_out.push_back(r);
+		data.push_back(std::span<const T>(g.begin(), g.end()));
+		data_out.push_back(g);
+		data.push_back(std::span<const T>(b.begin(), b.end()));
+		data_out.push_back(b);
+
+		if (a)
+		{
+			data.push_back(std::span<const T>(a.value().begin(), a.value().end()));
+			data_out.push_back(a.value());
+		}
+
+		auto interleaved = Render::interleave_alloc<T>(a);
+
+		
+
+		auto deinterleaved = Render::deinterleave(std::span<const T>(interleaved), data_out);
+		std::unordered_map<int, std::span<T>> result =
+		{
+			{0, data_out.at(0)},
+			{1, data_out.at(1)},
+			{2, data_out.at(2)},
+		}
+		if (a)
+		{
+			result[-1] = data_out.at(3);
+		}
+		return result;
+	}
+	}
+
+	std::unordered_map<int, std::span<T>> apply_ocio_profile(
+		std::span<T> r,
+		std::span<T> g,
+		std::span<T> b,
+		std::optional<std::span<T>> a,
+		size_t width,
+		size_t height,
+	)
+	{
+		std::vector<std::span<const T>> data;
+		std::vector<std::span<T>> data_out;
+
+		data.push_back(std::span<const T>(r.begin(), r.end()));
+		data_out.push_back(r);
+		data.push_back(std::span<const T>(g.begin(), g.end()));
+		data_out.push_back(g);
+		data.push_back(std::span<const T>(b.begin(), b.end()));
+		data_out.push_back(b);
+
+		if (a)
+		{
+			data.push_back(std::span<const T>(a.value().begin(), a.value().end()));
+			data_out.push_back(a.value());
+		}
+
+		auto interleaved = Render::interleave_alloc<T>(a);
+
+		auto depth = ocio::map_to_bitdepth<T>();
+		OCIO::ConstProcessorRcPtr processor = this->ocio_profile().config().getProcessor(
+			this->ocio_profile().working_space(),
+			this->ocio_profile().view_transform(),
+			this->ocio_profile().display_transform(),
+			TRANSFORM_DIR_FORWARD
+		);
+		OCIO::ConstCPUProcessorRcPtr cpu_processor = processor->getOptimizedCPUProcessor(
+			depth, 
+			depth, 
+			OCIO::OPTIMIZATION_DEFAULT
+		);
+
+		ptrdiff_t chan_stride_bytes = sizeof(T);
+		size_t num_channels = (3 + static_cast<size_t>(a.has_value()));
+		ptrdiff_t x_stride_bytes = chan_stride_bytes * num_channels;
+		ptrdiff_t y_stride_bytes = x_stride_bytes * width;
+
+		auto gen = std::views::iota(size_t{ 0 }, height);
+		std::for_each(std::execution::par, gen.begin(), gen.end(),
+			[&](size_t y)
+			{
+				T* scanline_start = interleaved.data() + y * width * num_channels;
+				auto imageDesc = OCIO::PackedImageDesc(
+					scanline_start,
+					width,
+					1,
+					num_channels,
+					depth,
+					chan_stride_bytes,
+					x_stride_bytes,
+					y_stride_bytes);
+				cpu_processor->apply(imageDesc);
+			});
+
+
+		auto deinterleaved = Render::deinterleave(std::span<const T>(interleaved), data_out);
+		std::unordered_map<int, std::span<T>> result = 
+		{
+			{0, data_out.at(0)},
+			{1, data_out.at(1)},
+			{2, data_out.at(2)},
+		}
+		if (a)
+		{
+			result[-1] = data_out.at(3);
+		}
+		return result;
 	}
 };
 
