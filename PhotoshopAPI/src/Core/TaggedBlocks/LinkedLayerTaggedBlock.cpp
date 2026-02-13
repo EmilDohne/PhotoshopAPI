@@ -72,7 +72,8 @@ void LinkedLayerItem::Data::read(File& document)
 
 	m_Type = readType(document);
 	m_Version = ReadBinaryData<uint32_t>(document);
-	if (m_Version < 1 || m_Version > 7)
+	// Allow Version 8
+	if (m_Version < 1 || m_Version > 8)
 	{
 		PSAPI_LOG_ERROR("LinkedLayer", "Unknown Linked Layer version %d encountered, aborting parsing", m_Version);
 	}
