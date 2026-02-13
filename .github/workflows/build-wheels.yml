@@ -91,7 +91,7 @@ jobs:
         token: ${{ secrets.GITHUB_TOKEN }}
         prefix: ${{ matrix.os_dist.os }}_wheels_vcpkg
 
-    - uses: pypa/cibuildwheel@v2.23.1
+    - uses: pypa/cibuildwheel@v3.3.1
       env:
         VCPKG_FEATURE_FLAGS: "binarycaching" # Possibly redundant, but explicitly sets the binary caching feature flag
         # Override the binary sources on linux only
