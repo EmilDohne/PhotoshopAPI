@@ -2,7 +2,7 @@
 #include "ImageLayer.h"
 #include "GroupLayer.h"
 #include "SectionDividerLayer.h"
-#include "TextLayer.h"
+#include "TextLayer/TextLayer.h"
 #include "SmartObjectLayer.h"
 #include "AdjustmentLayer.h"
 #include "ArtboardLayer.h"
