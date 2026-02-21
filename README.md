@@ -204,6 +204,9 @@ Scope
 - Style/format via high-level range helpers (`*_range`, `*_text`, `*_all`)
 - Use lower-level run APIs (`style_run(index)`, `paragraph_run(index)`, `set_style_run_*`)
 - Read attributes from layer-level and run-level APIs
+- Switch orientation between horizontal and vertical text
+- Switch between box text and point text (`TextLayer` creation defaults to box text)
+- Set character direction (LTR / RTL)
 
 C++
 ---
@@ -242,7 +245,17 @@ layer->style_all().set_font_size(36.0).set_fill_color({1.0, 0.0, 0.0, 0.0});
 layer->style_text("World").set_underline(true); // occurrence omitted -> all matches
 layer->style_text("World", 1).set_font("Arial-BoldMT").set_stroke_flag(true).set_outline_width(2.0); // first match
 layer->style_range(0, 5).set_underline(true);
+layer->style_all().set_character_direction(TextLayerEnum::CharacterDirection::RightToLeft); // RTL
+layer->style_all().set_character_direction(TextLayerEnum::CharacterDirection::LeftToRight); // LTR
 layer->paragraph_all().set_justification(TextLayerEnum::Justification::Center);
+
+// Orientation: horizontal <-> vertical
+layer->set_orientation(TextLayerEnum::WritingDirection::Vertical);
+layer->set_orientation(TextLayerEnum::WritingDirection::Horizontal);
+
+// Text frame type: box <-> point (create() defaults to box text)
+layer->convert_to_point_text();          // box -> point
+layer->convert_to_box_text(600.0, 260.0); // point -> box
 ```
 
 Lower-level API (powers run-level control)
@@ -273,6 +286,7 @@ if (auto lengths = layer->style_run_lengths(); lengths.has_value()) {
         auto font_idx = layer->style_run_font(i);
         auto size = layer->style_run_font_size(i);
         auto fill = layer->style_run_fill_color(i);
+        auto char_dir = layer->style_run_character_direction(i);
     }
 }
 if (auto p_lengths = layer->paragraph_run_lengths(); p_lengths.has_value()) {
@@ -280,6 +294,18 @@ if (auto p_lengths = layer->paragraph_run_lengths(); p_lengths.has_value()) {
         auto just = layer->paragraph_run_justification(i);
     }
 }
+```
+
+Important when editing an existing PSD
+--------------------------------------
+
+If you modify text on a PSD you read from disk, call `invalidate_text_cache()` on the
+`LayeredFile` before writing. This triggers Photoshop's text-update prompt on open.
+Without this, text can appear invisible until Photoshop refreshes text internals.
+
+```cpp
+doc.invalidate_text_cache();
+doc.write("edited.psd");
 ```
 
 Python
@@ -315,9 +341,19 @@ Same high-level API semantics as C++ above (`occurrence=0` means all matches).
 layer.style_all().set_font_size(36.0).set_fill_color([1.0, 0.0, 0.0, 0.0])
 layer.style_text("World", 1).set_font("Arial-BoldMT").set_stroke_flag(True).set_outline_width(2.0)
 layer.style_range(0, 5).set_underline(True)
+layer.style_all().set_character_direction(psapi.enum.CharacterDirection.RightToLeft)  # RTL
+layer.style_all().set_character_direction(psapi.enum.CharacterDirection.LeftToRight)   # LTR
 
 # Paragraph styling
 layer.paragraph_all().set_justification(psapi.enum.Justification.Center)
+
+# Orientation: horizontal <-> vertical
+layer.set_orientation(psapi.enum.WritingDirection.Vertical)
+layer.set_orientation(psapi.enum.WritingDirection.Horizontal)
+
+# Text frame type: box <-> point (TextLayer_8bit(...) defaults to box text)
+layer.convert_to_point_text()        # box -> point
+layer.convert_to_box_text(600.0, 260.0)  # point -> box
 ```
 
 Lower-level API (powers run-level control)
@@ -357,6 +393,7 @@ for i, run_len in enumerate(layer.style_run_lengths() or []):
     fill = layer.style_run_fill_color(i)
     stroke = layer.style_run_stroke_color(i)
     underline = layer.style_run_underline(i)
+    char_dir = layer.style_run_character_direction(i)
 
 for i, run_len in enumerate(layer.paragraph_run_lengths() or []):
     just = layer.paragraph_run_justification(i)
@@ -369,4 +406,11 @@ run = layer.style_run(0)
 size = run.font_size
 fill = run.fill_color
 outline_w = run.outline_width
+```
+
+When editing an existing PSD, call:
+
+```py
+doc.invalidate_text_cache()
+doc.write("edited.psd")
 ```
