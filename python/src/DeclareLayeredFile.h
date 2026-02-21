@@ -264,6 +264,34 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 
 	)pbdoc");
 
+	layeredFile.def("invalidate_text_cache", &Class::invalidate_text_cache, R"pbdoc(
+
+		Remove the global Txt2 block and mark all text layers dirty so Photoshop re-renders every one on open.
+
+		**What this does (two steps):**
+
+		1. Strips the global ``Txt2`` (TextEngineData) tagged block. Photoshop uses this
+		   block as a render-cache token; its absence causes the "Update text layers?"
+		   dialog to appear the moment the file is opened.
+
+		2. Forces every text layer through the parsed TySh serialization path. Without
+		   this step, layers never touched by setter APIs stay as raw-byte pass-throughs;
+		   Photoshop's per-layer update checker sees no change in their data and silently
+		   skips re-rendering them, leaving them blank even after you click Update.
+
+		After one click of "Update" in Photoshop, all text layers are rendered from the
+		live TySh metadata and remain fully editable. The actual text content and
+		styling of unmodified layers is preserved exactly.
+
+		Example usage::
+
+		    lf = psapi.LayeredFile.read("template.psd")
+		    # ... edit specific text layers ...
+		    lf.invalidate_text_cache()   # one call - all layers will render on open
+		    lf.write("output.psd")
+
+	)pbdoc");
+
 	// wrap the write function to no longer be static as we dont have move semantics and it makes the signature
 	// a bit awkward otherwise so that now you can just call LayeredFile.write("SomeFile.psd")
 	layeredFile.def("write", [](Class& self, const std::filesystem::path& path, const bool force_overwrite = true)

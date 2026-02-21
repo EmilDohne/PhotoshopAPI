@@ -6,6 +6,7 @@
 #include "Layers/DeclareLayer.h"
 #include "Layers/DeclareImageLayer.h"
 #include "Layers/DeclareGroupLayer.h"
+#include "Layers/TextLayer/DeclareTextLayer.h"
 #include "Layers/DeclareSmartObjectLayer.h"
 #include "Mixins/DeclareMaskMixin.h"
 #include "DeclareSmartObjectWarp.h"
@@ -25,6 +26,7 @@ PYBIND11_MODULE(photoshopapi, m)
 	declare_channelid_enums(enum_module);
 	declare_compression_enums(enum_module);
 	declare_blendmode_enums(enum_module);
+	declare_textlayer_enums(enum_module);
 
 	auto util_module = m.def_submodule("util", "Utility functions and structures to support the creation/interaction with LayeredFile or PhotoshopFile");
 	declare_file_struct(util_module);
@@ -50,6 +52,14 @@ PYBIND11_MODULE(photoshopapi, m)
 	declare_group_layer<bpp8_t>(m, "_8bit");
 	declare_group_layer<bpp16_t>(m, "_16bit");
 	declare_group_layer<bpp32_t>(m, "_32bit");
+
+	declare_text_layer_proxies<bpp8_t>(m, "_8bit");
+	declare_text_layer_proxies<bpp16_t>(m, "_16bit");
+	declare_text_layer_proxies<bpp32_t>(m, "_32bit");
+
+	declare_text_layer<bpp8_t>(m, "_8bit");
+	declare_text_layer<bpp16_t>(m, "_16bit");
+	declare_text_layer<bpp32_t>(m, "_32bit");
 
 	declare_smart_object_layer<bpp8_t>(m, "_8bit");
 	declare_smart_object_layer<bpp16_t>(m, "_16bit");
