@@ -3,21 +3,16 @@ import numpy
 
 from .._layer import Layer_8bit
 from ._ranges import CharacterStyleRange_8bit, ParagraphStyleRange_8bit
+from ._proxies import (
+    StyleRunProxy_8bit,
+    StyleNormalProxy_8bit,
+    ParagraphRunProxy_8bit,
+    ParagraphNormalProxy_8bit,
+    FontProxy_8bit,
+    FontSetProxy_8bit,
+)
 import psapi.enum
 
-
-
-class StyleRunProxy_8bit: ...
-
-class StyleNormalProxy_8bit: ...
-
-class ParagraphRunProxy_8bit: ...
-
-class ParagraphNormalProxy_8bit: ...
-
-class FontProxy_8bit: ...
-
-class FontSetProxy_8bit: ...
 class TextLayer_8bit(Layer_8bit):
 
     def __init__(

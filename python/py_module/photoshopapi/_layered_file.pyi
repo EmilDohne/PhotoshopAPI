@@ -110,6 +110,9 @@ class LayeredFile_8bit:
     def read(path: os.PathLike) -> LayeredFile_8bit:
         ...
 
+    def invalidate_text_cache(self: LayeredFile_8bit) -> None:
+        ...
+
     def write(self: LayeredFile_8bit, path: os.PathLike, force_overwrite: bool = ...) -> None:
         ...
 
@@ -213,6 +216,9 @@ class LayeredFile_16bit:
     def read(path: os.PathLike) -> LayeredFile_16bit:
         ...
 
+    def invalidate_text_cache(self: LayeredFile_16bit) -> None:
+        ...
+
     def write(self: LayeredFile_16bit, path: os.PathLike, force_overwrite: bool = ...) -> None:
         ...
 
@@ -314,6 +320,9 @@ class LayeredFile_32bit:
 
     @staticmethod
     def read(path: os.PathLike) -> LayeredFile_32bit:
+        ...
+
+    def invalidate_text_cache(self: LayeredFile_32bit) -> None:
         ...
 
     def write(self: LayeredFile_32bit, path: os.PathLike, force_overwrite: bool = ...) -> None:

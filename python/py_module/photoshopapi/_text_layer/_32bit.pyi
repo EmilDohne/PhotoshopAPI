@@ -3,21 +3,16 @@ import numpy
 
 from .._layer import Layer_32bit
 from ._ranges import CharacterStyleRange_32bit, ParagraphStyleRange_32bit
+from ._proxies import (
+    StyleRunProxy_32bit,
+    StyleNormalProxy_32bit,
+    ParagraphRunProxy_32bit,
+    ParagraphNormalProxy_32bit,
+    FontProxy_32bit,
+    FontSetProxy_32bit,
+)
 import psapi.enum
 
-
-
-class StyleRunProxy_32bit: ...
-
-class StyleNormalProxy_32bit: ...
-
-class ParagraphRunProxy_32bit: ...
-
-class ParagraphNormalProxy_32bit: ...
-
-class FontProxy_32bit: ...
-
-class FontSetProxy_32bit: ...
 class TextLayer_32bit(Layer_32bit):
 
     def __init__(
