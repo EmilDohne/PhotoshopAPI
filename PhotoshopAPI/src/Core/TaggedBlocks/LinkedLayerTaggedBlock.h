@@ -43,12 +43,12 @@ namespace LinkedLayerItem
 	};
 
 	/// Data representation of a single LinkedLayer record, there may be multiple of these per LinkedLayerTaggedBlock
-	/// Photoshop knows of multiple versions of these which may or may not contain certain information. When writing 
-	/// these out we only care about version 7 
+	/// Photoshop knows of multiple versions of these which may or may not contain certain information. When writing
+	/// these out we only care about version 7
 	struct Data
 	{
 		Type m_Type = Type::Data;		// How the data is (or isnt) stored in the file
-		int32_t m_Version = 7u;			// 1-7. In our case should always be 7 for write
+		int32_t m_Version = 7u;			// 1-8. In our case should always be 7 for write
 		std::string m_UniqueID;			// Mirrors the UniqueID on a PlacedLayerTaggedBlock, this must be referenced somewhere
 		UnicodeString m_FileName;		// The actual filename itself, this does not necessarily represent a path to an actual file
 		std::string m_FileType;			// E.g. "png " for png files etc.
@@ -56,6 +56,9 @@ namespace LinkedLayerItem
 
 		std::unique_ptr<Descriptors::Descriptor> m_FileOpenDescriptor = nullptr;
 		std::unique_ptr<Descriptors::Descriptor> m_LinkedFileDescriptor = nullptr;
+
+		// For Version 8 and above there is an additional contentID descriptor.
+		std::unique_ptr<Descriptors::Descriptor> m_ContentID = nullptr;
 
 		std::optional<Date> m_Date;
 
@@ -71,7 +74,7 @@ namespace LinkedLayerItem
 
 		void read(File& document);
 		/// Write the LinkedLayerData struct. Unlike the other write methods this is non-const since otherwise we would have to copy
-		/// on write the raw file data. 
+		/// on write the raw file data.
 		void write(File& document);
 
 	private:
@@ -91,7 +94,7 @@ namespace LinkedLayerItem
 /// related to a smart object such as the FilePath, data size, file information etc.
 /// It additionally stores a unique ID for each of the layers which get mirrored in the PlacedLayer TaggedBlock such that on layer parsing
 /// we can map the layer specific PlacedLayerTaggedBlock -> LinkedLayerTaggedBlock.
-/// 
+///
 /// Photoshop has 3 different ways of storing SmartObject data, either as Linked into the file, Linked to an external file or as an Alias (unknown)
 struct LinkedLayerTaggedBlock : TaggedBlock
 {
