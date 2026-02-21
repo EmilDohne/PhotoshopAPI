@@ -153,16 +153,16 @@ void LinkedLayerItem::Data::read(File& document)
 	{
 		m_AssetIsLocked = ReadBinaryData<bool>(document);
 	}
-if (m_Version >= 8)
-{
-	auto descriptor_version = ReadBinaryData<uint32_t>(document);
-	if (descriptor_version != 16u)
+	if (m_Version >= 8)
 	{
-		PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptor_version);
+		auto descriptor_version = ReadBinaryData<uint32_t>(document);
+		if (descriptor_version != 16u)
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptor_version);
+		}
+		m_ContentID = std::make_unique<Descriptors::Descriptor>();
+		m_ContentID->read(document);
 	}
-	m_ContentID = std::make_unique<Descriptors::Descriptor>();
-	m_ContentID->read(document);
-}
 
 	if (m_Version == 2 && m_Type == Type::External)
 	{
