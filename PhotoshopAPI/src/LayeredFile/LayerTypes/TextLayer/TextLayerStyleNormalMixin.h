@@ -247,12 +247,19 @@ private:
 			auto style_data = TextLayerDetail::style_normal_sheet_data(parsed.root);
 			if (style_data == nullptr) continue;
 			auto property_value = EngineData::find_dict_value(*style_data, property_key);
-			if (property_value == nullptr) return false;
-			const size_t old_start = property_value->start_offset;
-			const size_t old_end = property_value->end_offset;
-			if (!EngineData::set_number(*property_value, value)) return false;
-			auto new_bytes = EngineData::format_value_bytes(*property_value);
-			EngineData::splice_payload(payload, old_start, old_end, new_bytes);
+			if (property_value == nullptr)
+			{
+				if (!EngineData::insert_dict_entry_bytes(payload, *style_data, std::string(property_key), EngineData::make_number(value)))
+					return false;
+			}
+			else
+			{
+				const size_t old_start = property_value->start_offset;
+				const size_t old_end = property_value->end_offset;
+				if (!EngineData::set_number(*property_value, value)) return false;
+				auto new_bytes = EngineData::format_value_bytes(*property_value);
+				EngineData::splice_payload(payload, old_start, old_end, new_bytes);
+			}
 			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload);
 		}
 		return false;
