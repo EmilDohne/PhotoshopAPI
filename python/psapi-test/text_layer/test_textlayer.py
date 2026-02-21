@@ -265,17 +265,17 @@ class TestTextLayer(unittest.TestCase):
         self.assertTrue(layer.set_style_run_no_break(0, run_no_break_after))
         self.assertTrue(layer.set_style_run_font_baseline(0, run_font_baseline_after))
         self.assertTrue(layer.set_style_run_language(0, run_language_after))
-        if run_character_direction_after is not None:
-            self.assertTrue(layer.set_style_run_character_direction(0, run_character_direction_after))
-        else:
-            self.assertFalse(layer.set_style_run_character_direction(0, psapi.enum.CharacterDirection.LeftToRight))
+        expected_character_direction_after = run_character_direction_after
+        if expected_character_direction_after is None:
+            expected_character_direction_after = psapi.enum.CharacterDirection.LeftToRight
+        self.assertTrue(layer.set_style_run_character_direction(0, expected_character_direction_after))
         self.assertTrue(layer.set_style_run_baseline_direction(0, run_baseline_direction_after))
         self.assertTrue(layer.set_style_run_tsume(0, run_tsume_after))
         self.assertTrue(layer.set_style_run_kashida(0, run_kashida_after))
-        if run_diacritic_pos_after is not None:
-            self.assertTrue(layer.set_style_run_diacritic_pos(0, run_diacritic_pos_after))
-        else:
-            self.assertFalse(layer.set_style_run_diacritic_pos(0, psapi.enum.DiacriticPosition.Loose))
+        expected_diacritic_pos_after = run_diacritic_pos_after
+        if expected_diacritic_pos_after is None:
+            expected_diacritic_pos_after = psapi.enum.DiacriticPosition.Loose
+        self.assertTrue(layer.set_style_run_diacritic_pos(0, expected_diacritic_pos_after))
         self.assertTrue(layer.set_style_run_ligatures(0, run_ligatures_after))
         self.assertTrue(layer.set_style_run_dligatures(0, run_dligatures_after))
         self.assertTrue(layer.set_style_run_underline(0, run_underline_after))
@@ -292,15 +292,15 @@ class TestTextLayer(unittest.TestCase):
             self.assertTrue(layer.set_style_run_fill_first(0, run_fill_first_after))
         else:
             self.assertTrue(layer.set_style_run_fill_first(0, False))
-        if run_outline_width_after is not None:
-            self.assertTrue(layer.set_style_run_outline_width(0, run_outline_width_after))
-        else:
-            self.assertFalse(layer.set_style_run_outline_width(0, 2.0))
+        expected_outline_width_after = run_outline_width_after
+        if expected_outline_width_after is None:
+            expected_outline_width_after = 2.0
+        self.assertTrue(layer.set_style_run_outline_width(0, expected_outline_width_after))
         self.assertTrue(layer.set_style_run_fill_color(0, run_fill_color_after))
-        if run_stroke_color_after is not None:
-            self.assertTrue(layer.set_style_run_stroke_color(0, run_stroke_color_after))
-        else:
-            self.assertFalse(layer.set_style_run_stroke_color(0, [1.0, 0.1, 0.2, 0.3]))
+        expected_stroke_color_after = run_stroke_color_after
+        if expected_stroke_color_after is None:
+            expected_stroke_color_after = [1.0, 0.1, 0.2, 0.3]
+        self.assertTrue(layer.set_style_run_stroke_color(0, expected_stroke_color_after))
         self.assertFalse(layer.set_style_run_font(200, run_font_after))
         self.assertFalse(layer.set_style_run_font_size(0, float("inf")))
         self.assertFalse(layer.set_style_run_leading(200, run_leading_after))
@@ -346,17 +346,11 @@ class TestTextLayer(unittest.TestCase):
             self.assertEqual(reread_layer.style_run_no_break(0), run_no_break_after)
             self.assertEqual(reread_layer.style_run_font_baseline(0), run_font_baseline_after)
             self.assertEqual(reread_layer.style_run_language(0), run_language_after)
-            if run_character_direction_after is not None:
-                self.assertEqual(reread_layer.style_run_character_direction(0), run_character_direction_after)
-            else:
-                self.assertIsNone(reread_layer.style_run_character_direction(0))
+            self.assertEqual(reread_layer.style_run_character_direction(0), expected_character_direction_after)
             self.assertEqual(reread_layer.style_run_baseline_direction(0), run_baseline_direction_after)
             self.assertAlmostEqual(reread_layer.style_run_tsume(0), run_tsume_after, places=3)
             self.assertEqual(reread_layer.style_run_kashida(0), run_kashida_after)
-            if run_diacritic_pos_after is not None:
-                self.assertEqual(reread_layer.style_run_diacritic_pos(0), run_diacritic_pos_after)
-            else:
-                self.assertIsNone(reread_layer.style_run_diacritic_pos(0))
+            self.assertEqual(reread_layer.style_run_diacritic_pos(0), expected_diacritic_pos_after)
             self.assertEqual(reread_layer.style_run_ligatures(0), run_ligatures_after)
             self.assertEqual(reread_layer.style_run_dligatures(0), run_dligatures_after)
             self.assertEqual(reread_layer.style_run_underline(0), run_underline_after)
@@ -373,10 +367,7 @@ class TestTextLayer(unittest.TestCase):
                 self.assertEqual(reread_layer.style_run_fill_first(0), run_fill_first_after)
             else:
                 self.assertFalse(reread_layer.style_run_fill_first(0))
-            if run_outline_width_after is not None:
-                self.assertAlmostEqual(reread_layer.style_run_outline_width(0), run_outline_width_after, places=3)
-            else:
-                self.assertIsNone(reread_layer.style_run_outline_width(0))
+            self.assertAlmostEqual(reread_layer.style_run_outline_width(0), expected_outline_width_after, places=3)
             reread_fill = reread_layer.style_run_fill_color(0)
             self.assertIsNotNone(reread_fill)
             self.assertEqual(len(reread_fill), 4)
@@ -384,16 +375,13 @@ class TestTextLayer(unittest.TestCase):
             self.assertAlmostEqual(reread_fill[1], run_fill_color_after[1], places=3)
             self.assertAlmostEqual(reread_fill[2], run_fill_color_after[2], places=3)
             self.assertAlmostEqual(reread_fill[3], run_fill_color_after[3], places=3)
-            if run_stroke_color_after is not None:
-                reread_stroke = reread_layer.style_run_stroke_color(0)
-                self.assertIsNotNone(reread_stroke)
-                self.assertEqual(len(reread_stroke), 4)
-                self.assertAlmostEqual(reread_stroke[0], run_stroke_color_after[0], places=3)
-                self.assertAlmostEqual(reread_stroke[1], run_stroke_color_after[1], places=3)
-                self.assertAlmostEqual(reread_stroke[2], run_stroke_color_after[2], places=3)
-                self.assertAlmostEqual(reread_stroke[3], run_stroke_color_after[3], places=3)
-            else:
-                self.assertIsNone(reread_layer.style_run_stroke_color(0))
+            reread_stroke = reread_layer.style_run_stroke_color(0)
+            self.assertIsNotNone(reread_stroke)
+            self.assertEqual(len(reread_stroke), 4)
+            self.assertAlmostEqual(reread_stroke[0], expected_stroke_color_after[0], places=3)
+            self.assertAlmostEqual(reread_stroke[1], expected_stroke_color_after[1], places=3)
+            self.assertAlmostEqual(reread_stroke[2], expected_stroke_color_after[2], places=3)
+            self.assertAlmostEqual(reread_stroke[3], expected_stroke_color_after[3], places=3)
 
             # Style-run mutation should not rewrite normal style-sheet defaults.
             self.assertAlmostEqual(reread_layer.style_normal_font_size(), normal_font_size_before, places=3)
