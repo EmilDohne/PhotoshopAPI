@@ -5,3 +5,4 @@ from ._channel_id import *
 from ._color_mode import *
 from ._compression import *
 from ._linked_layer_type import *
+from ._text_layer import *
