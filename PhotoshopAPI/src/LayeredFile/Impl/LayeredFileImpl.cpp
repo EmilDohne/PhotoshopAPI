@@ -10,7 +10,7 @@
 #include "LayeredFile/LayerTypes/SectionDividerLayer.h"
 #include "LayeredFile/LayerTypes/ShapeLayer.h"
 #include "LayeredFile/LayerTypes/SmartObjectLayer.h"
-#include "LayeredFile/LayerTypes/TextLayer.h"
+#include "LayeredFile/LayerTypes/TextLayer/TextLayer.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -48,7 +48,8 @@ namespace _Impl
 		}
 
 		auto typeToolTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTypeTool);
-		if (typeToolTaggedBlock.has_value())
+		auto textEngineTaggedBlock = additionalLayerInfo.getTaggedBlock<TaggedBlock>(Enum::TaggedBlockKey::lrTextEngineData);
+		if (typeToolTaggedBlock.has_value() || textEngineTaggedBlock.has_value())
 		{
 			return std::make_shared<TextLayer<T>>(layerRecord, channelImageData, header);
 		}
