@@ -8,6 +8,7 @@
 #include "Profiling/Perf/Instrumentor.h"
 
 #include <cassert>
+#include <limits>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -114,11 +115,16 @@ void ICCProfileBlock::read(File& document, const uint64_t offset)
 	PSAPI_PROFILE_FUNCTION();
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name.read(document, 2u);
-	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
+	const uint32_t raw_size = ReadBinaryData<uint32_t>(document);
+	m_DataSize = RoundUpToMultiple(raw_size, 2u);
 	auto size = static_cast<uint64_t>(4u) + 2u + m_Name.size() + 4u + m_DataSize;
 	FileSection::initialize(offset, size);
 
-	m_RawICCProfile = ReadBinaryArray<uint8_t>(document, m_DataSize);
+	m_RawICCProfile = ReadBinaryArray<uint8_t>(document, raw_size);
+	if (m_DataSize > raw_size)
+	{
+		document.skip(static_cast<int64_t>(m_DataSize - raw_size));
+	}
 }
 
 
@@ -133,18 +139,22 @@ void ICCProfileBlock::write(File& document)
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
 	m_Name.write(document);
-	WriteBinaryData<uint32_t>(document, m_DataSize);	// This value is already padded
+	assert(m_RawICCProfile.size() <= std::numeric_limits<uint32_t>::max());
+	const uint32_t raw_size = static_cast<uint32_t>(m_RawICCProfile.size());
+	const uint32_t padded_size = RoundUpToMultiple(raw_size, 2u);
+	m_DataSize = padded_size;
+	WriteBinaryData<uint32_t>(document, raw_size);
 
-	WriteBinaryArray<uint8_t>(document, std::move(m_RawICCProfile));
+	WriteBinaryArray<uint8_t>(document, m_RawICCProfile);
 
 	// Check that we didnt initialize m_DataSize incorrectly
-	if (static_cast<int>(m_DataSize) - m_RawICCProfile.size() < 0) [[unlikely]]
+	if (static_cast<int>(padded_size) - static_cast<int>(raw_size) < 0) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("ICCProfileBlock", "Block would require writing %i padding bytes which is not possible, is m_DataSize initialized correctly?", 
-			static_cast<int>(m_DataSize) - m_RawICCProfile.size());
+			static_cast<int>(padded_size) - static_cast<int>(raw_size));
 	}
 	// This will handle the 0 byte case
-	WritePadddingBytes(document, m_DataSize - m_RawICCProfile.size());
+	WritePadddingBytes(document, padded_size - raw_size);
 }
 
 PSAPI_NAMESPACE_END
