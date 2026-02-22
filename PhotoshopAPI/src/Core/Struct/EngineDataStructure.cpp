@@ -419,7 +419,7 @@ namespace EngineData
 						return false;
 					}
 
-					out.dictionary_items.push_back(std::make_pair(key_value.string_value, std::move(value)));
+					out.dictionary_items.emplace_back(key_value.string_value, std::move(value));
 				}
 			}
 
@@ -1073,7 +1073,7 @@ namespace EngineData
 			}
 		}
 
-		dictionary.dictionary_items.push_back(std::make_pair(key, std::move(value)));
+		dictionary.dictionary_items.emplace_back(key, std::move(value));
 		return true;
 	}
 

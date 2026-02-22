@@ -29,18 +29,29 @@ namespace EngineData
 
 	struct Value
 	{
+		struct DictionaryItem;
+
 		ValueType type = ValueType::Identifier;
 		size_t start_offset = 0u;
 		size_t end_offset = 0u;
 
-		std::vector<std::pair<std::string, Value>> dictionary_items{};
-		std::vector<Value> array_items{};
+		std::vector<DictionaryItem> dictionary_items;
+		std::vector<Value> array_items;
 
-		std::string string_value{};
+		std::string string_value;
 		double number_value = 0.0;
 		bool bool_value = false;
 		bool is_integer = false;
 		int64_t integer_value = 0;
+	};
+
+	struct Value::DictionaryItem
+	{
+		std::string first;
+		Value second;
+
+		DictionaryItem() = default;
+		DictionaryItem(std::string key, Value value) : first(std::move(key)), second(std::move(value)) {}
 	};
 
 	struct ParseResult
