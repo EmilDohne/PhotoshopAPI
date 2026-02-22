@@ -9,6 +9,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 
+#include <cstring>
 #include <iostream>
 
 namespace py = pybind11;
@@ -209,10 +210,13 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc",
 		[](const Class& self) {
-			auto data = self.icc_profile().data();
-			uint8_t* ptr = data.data();
-			std::vector<size_t> shape = { self.icc_profile().data_size() };
-			return py::array_t<uint8_t>(shape, ptr);
+			const auto data = self.icc_profile().data();
+			py::array_t<uint8_t> array(data.size());
+			if (!data.empty())
+			{
+				std::memcpy(array.mutable_data(), data.data(), data.size());
+			}
+			return array;
 		},
 		[](Class& self, std::variant<std::filesystem::path, py::array_t<uint8_t>> value) {
 			if (std::holds_alternative<py::array_t<uint8_t>>(value)) {
