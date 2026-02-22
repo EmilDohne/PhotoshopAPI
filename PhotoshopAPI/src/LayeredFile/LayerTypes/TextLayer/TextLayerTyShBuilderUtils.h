@@ -8,10 +8,12 @@
 // =========================================================================
 
 #include "Macros.h"
-#include "TextLayerDescriptorBinaryUtils.h"
+#include "TextLayerDescriptorUtils.h"
 #include "TextLayerEngineDataUtils.h"
 #include "TextLayerU16Utils.h"
 
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/Struct/DescriptorStructure.h"
 #include "Core/Struct/EngineDataStructure.h"
 #include "Core/Struct/UnicodeString.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
@@ -30,6 +32,39 @@ PSAPI_NAMESPACE_BEGIN
 
 namespace TextLayerDetail
 {
+template <typename T>
+inline void push_be_encoded(std::vector<std::byte>& buf, T value)
+{
+	const T encoded = endian_encode_be<T>(value);
+	const auto* bytes = reinterpret_cast<const std::byte*>(&encoded);
+	buf.insert(buf.end(), bytes, bytes + sizeof(T));
+}
+
+inline void push_u16_be(std::vector<std::byte>& buf, uint16_t v)
+{
+	push_be_encoded<uint16_t>(buf, v);
+}
+
+inline void push_double_be(std::vector<std::byte>& buf, double v)
+{
+	push_be_encoded<double>(buf, v);
+}
+
+inline void push_u32_be(std::vector<std::byte>& buf, uint32_t v)
+{
+	push_be_encoded<uint32_t>(buf, v);
+}
+
+inline std::vector<std::byte> serialize_descriptor_with_version(const Descriptors::Descriptor& descriptor, uint32_t version)
+{
+	std::vector<std::byte> bytes{};
+	bytes.reserve(4u);
+	push_u32_be(bytes, version);
+	const auto body = serialize_descriptor_body(descriptor);
+	bytes.insert(bytes.end(), body.begin(), body.end());
+	return bytes;
+}
+
 // -----------------------------------------------------------------------
 //  TyShTaggedBlock  -  trivial derivation that lets us set the key
 // -----------------------------------------------------------------------
@@ -798,68 +833,53 @@ inline std::vector<std::byte> build_text_descriptor(
 	const std::array<double,4>& bounds_ltrb = {0,0,0,0},
 	const std::array<double,4>& bbox_ltrb   = {0,0,0,0})
 {
-	std::vector<std::byte> buf;
-	buf.reserve(1024 + engine_data.size());
+	const auto text_utf8 = UnicodeString::convertUTF16LEtoUTF8(text_utf16);
+	const auto& os_enum = Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::Enumerated);
+	const auto& os_unitf = Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::UnitFloat);
+	const auto& os_raw = Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::RawData);
 
-	// 4-byte descriptor format version (required by Photoshop)
-	push_u32_be(buf, 16u);  // = 0x00000010
+	Descriptors::Descriptor descriptor("TxLr");
+	descriptor.insert("Txt ", UnicodeString(text_utf8, 1u));
+	descriptor.insert("textGridding", std::make_unique<Descriptors::Enumerated>(
+		"textGridding", os_enum, "textGridding", "None"));
+	descriptor.insert("Ornt", std::make_unique<Descriptors::Enumerated>(
+		"Ornt", os_enum, "Ornt", "Hrzn"));
+	descriptor.insert("AntA", std::make_unique<Descriptors::Enumerated>(
+		"AntA", os_enum, "Annt", "AnCr"));
 
-	// className: 1 null character (as in Photoshop-generated files)
-	push_class_name_default(buf);
-	// classID: "TxLr" (length=0 shorthand)
-	push_descriptor_key(buf, "TxLr");
-	// 8 keys: Txt, textGridding, Ornt, AntA, bounds, boundingBox, TextIndex, EngineData
-	push_u32_be(buf, 8u);
+	auto bounds = std::make_unique<Descriptors::Descriptor>("bounds");
+	bounds->insert("Left", std::make_unique<Descriptors::UnitFloat>(
+		"Left", os_unitf, Descriptors::Impl::UnitFloatType::Points, bounds_ltrb[0]));
+	bounds->insert("Top ", std::make_unique<Descriptors::UnitFloat>(
+		"Top ", os_unitf, Descriptors::Impl::UnitFloatType::Points, bounds_ltrb[1]));
+	bounds->insert("Rght", std::make_unique<Descriptors::UnitFloat>(
+		"Rght", os_unitf, Descriptors::Impl::UnitFloatType::Points, bounds_ltrb[2]));
+	bounds->insert("Btom", std::make_unique<Descriptors::UnitFloat>(
+		"Btom", os_unitf, Descriptors::Impl::UnitFloatType::Points, bounds_ltrb[3]));
+	descriptor.insert("bounds", std::move(bounds));
 
-	// Key 1: "Txt " = TEXT (the text content)
-	push_descriptor_key(buf, "Txt ");
-	push_text_value(buf, text_utf16);
+	auto bounding_box = std::make_unique<Descriptors::Descriptor>("boundingBox");
+	bounding_box->insert("Left", std::make_unique<Descriptors::UnitFloat>(
+		"Left", os_unitf, Descriptors::Impl::UnitFloatType::Points, bbox_ltrb[0]));
+	bounding_box->insert("Top ", std::make_unique<Descriptors::UnitFloat>(
+		"Top ", os_unitf, Descriptors::Impl::UnitFloatType::Points, bbox_ltrb[1]));
+	bounding_box->insert("Rght", std::make_unique<Descriptors::UnitFloat>(
+		"Rght", os_unitf, Descriptors::Impl::UnitFloatType::Points, bbox_ltrb[2]));
+	bounding_box->insert("Btom", std::make_unique<Descriptors::UnitFloat>(
+		"Btom", os_unitf, Descriptors::Impl::UnitFloatType::Points, bbox_ltrb[3]));
+	descriptor.insert("boundingBox", std::move(bounding_box));
 
-	// Key 2: "textGridding" = enum textGridding None
-	push_descriptor_key(buf, "textGridding");
-	push_enum_value(buf, "textGridding", "None");
+	descriptor.insert("TextIndex", static_cast<int32_t>(1));
 
-	// Key 3: "Ornt" = enum Ornt Hrzn (horizontal orientation)
-	push_descriptor_key(buf, "Ornt");
-	push_enum_value(buf, "Ornt", "Hrzn");
+	std::vector<uint8_t> engine_data_u8{};
+	engine_data_u8.reserve(engine_data.size());
+	for (const auto b : engine_data)
+	{
+		engine_data_u8.push_back(std::to_integer<uint8_t>(b));
+	}
+	descriptor.insert("EngineData", std::make_unique<Descriptors::RawData>("EngineData", os_raw, std::move(engine_data_u8)));
 
-	// Key 4: "AntA" = enum Annt AnCr (anti-aliasing: crisp)
-	push_descriptor_key(buf, "AntA");
-	push_enum_value(buf, "Annt", "AnCr");
-
-	// Key 5: "bounds" = Objc (bounding rectangle)
-	push_descriptor_key(buf, "bounds");
-	push_descriptor_start(buf, "", "bounds", 4);
-	push_descriptor_key(buf, "Left");
-	push_untf_value(buf, "#Pnt", bounds_ltrb[0]);
-	push_descriptor_key(buf, "Top ");
-	push_untf_value(buf, "#Pnt", bounds_ltrb[1]);
-	push_descriptor_key(buf, "Rght");
-	push_untf_value(buf, "#Pnt", bounds_ltrb[2]);
-	push_descriptor_key(buf, "Btom");
-	push_untf_value(buf, "#Pnt", bounds_ltrb[3]);
-
-	// Key 6: "boundingBox" = Objc (bounding box)
-	push_descriptor_key(buf, "boundingBox");
-	push_descriptor_start(buf, "", "boundingBox", 4);
-	push_descriptor_key(buf, "Left");
-	push_untf_value(buf, "#Pnt", bbox_ltrb[0]);
-	push_descriptor_key(buf, "Top ");
-	push_untf_value(buf, "#Pnt", bbox_ltrb[1]);
-	push_descriptor_key(buf, "Rght");
-	push_untf_value(buf, "#Pnt", bbox_ltrb[2]);
-	push_descriptor_key(buf, "Btom");
-	push_untf_value(buf, "#Pnt", bbox_ltrb[3]);
-
-	// Key 7: "TextIndex" = long 1
-	push_descriptor_key(buf, "TextIndex");
-	push_long_value(buf, 1);
-
-	// Key 8: "EngineData" = tdta (raw EngineData blob)
-	push_descriptor_key(buf, "EngineData");
-	push_tdta_value(buf, engine_data);
-
-	return buf;
+	return serialize_descriptor_with_version(descriptor, 16u);
 }
 
 // -----------------------------------------------------------------------
@@ -874,36 +894,19 @@ inline std::vector<std::byte> build_warp_descriptor()
 
 	// Warp version/type prefix: 2 bytes version (0x0001) + 4 bytes (descriptor version = 16)
 	push_u16_be(buf, 1u);           // warp version
-	push_u32_be(buf, 16u);          // descriptor version
+	const auto& os_enum = Descriptors::Impl::descriptorKeys.at(Descriptors::Impl::OSTypes::Enumerated);
 
-	// Descriptor body
-	// className: 1 null character (matching Photoshop format)
-	push_class_name_default(buf);
-	// classID: "warp" (explicit length=4)
-	push_u32_be(buf, 4u);
-	push_ascii(buf, "warp");
-	// 2 keys: warpStyle, warpValue
-	push_u32_be(buf, 5u);
+	Descriptors::Descriptor warp_desc("warp");
+	warp_desc.insert("warpStyle", std::make_unique<Descriptors::Enumerated>(
+		"warpStyle", os_enum, "warpStyle", "warpNone"));
+	warp_desc.insert("warpValue", 0.0);
+	warp_desc.insert("warpPerspective", 0.0);
+	warp_desc.insert("warpPerspectiveOther", 0.0);
+	warp_desc.insert("warpRotate", std::make_unique<Descriptors::Enumerated>(
+		"warpRotate", os_enum, "Ornt", "Hrzn"));
 
-	// Key 1: warpStyle = enum warpStyle warpNone
-	push_descriptor_key(buf, "warpStyle");
-	push_enum_value(buf, "warpStyle", "warpNone");
-
-	// Key 2: warpValue = doub 0.0
-	push_descriptor_key(buf, "warpValue");
-	push_doub_value(buf, 0.0);
-
-	// Key 3: warpPerspective = doub 0.0
-	push_descriptor_key(buf, "warpPerspective");
-	push_doub_value(buf, 0.0);
-
-	// Key 4: warpPerspectiveOther = doub 0.0
-	push_descriptor_key(buf, "warpPerspectiveOther");
-	push_doub_value(buf, 0.0);
-
-	// Key 5: warpRotate = enum Ornt Hrzn
-	push_descriptor_key(buf, "warpRotate");
-	push_enum_value(buf, "Ornt", "Hrzn");
+	const auto desc_bytes = serialize_descriptor_with_version(warp_desc, 16u);
+	buf.insert(buf.end(), desc_bytes.begin(), desc_bytes.end());
 
 	// After warp descriptor: Photoshop writes 19 zero-bytes as padding/bounds
 	// (not 4 full doubles).  Match exactly for compatibility.
