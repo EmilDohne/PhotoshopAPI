@@ -167,6 +167,9 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 	const std::optional<double> run_outline_width_after = run_outline_width_before.has_value()
 		? std::optional<double>(run_outline_width_before.value() + 1.0)
 		: std::nullopt;
+	const TextLayerEnum::CharacterDirection expected_character_direction_after = run_character_direction_after.value_or(TextLayerEnum::CharacterDirection::LeftToRight);
+	const TextLayerEnum::DiacriticPosition expected_diacritic_pos_after = run_diacritic_pos_after.value_or(TextLayerEnum::DiacriticPosition::Loose);
+	const double expected_outline_width_after = run_outline_width_after.value_or(2.0);
 	const std::vector<double> run_fill_color_after{
 		(*run_fill_color_before)[0],
 		std::clamp((*run_fill_color_before)[1] + 0.05, 0.0, 1.0),
@@ -200,25 +203,11 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 	CHECK(text_layer->set_style_run_no_break(0u, run_no_break_after));
 	CHECK(text_layer->set_style_run_font_baseline(0u, run_font_baseline_after));
 	CHECK(text_layer->set_style_run_language(0u, run_language_after));
-	if (run_character_direction_after.has_value())
-	{
-		CHECK(text_layer->set_style_run_character_direction(0u, run_character_direction_after.value()));
-	}
-	else
-	{
-		CHECK_FALSE(text_layer->set_style_run_character_direction(0u, TextLayerEnum::CharacterDirection::LeftToRight));
-	}
+	CHECK(text_layer->set_style_run_character_direction(0u, expected_character_direction_after));
 	CHECK(text_layer->set_style_run_baseline_direction(0u, run_baseline_direction_after));
 	CHECK(text_layer->set_style_run_tsume(0u, run_tsume_after));
 	CHECK(text_layer->set_style_run_kashida(0u, run_kashida_after));
-	if (run_diacritic_pos_after.has_value())
-	{
-		CHECK(text_layer->set_style_run_diacritic_pos(0u, run_diacritic_pos_after.value()));
-	}
-	else
-	{
-		CHECK_FALSE(text_layer->set_style_run_diacritic_pos(0u, TextLayerEnum::DiacriticPosition::Loose));
-	}
+	CHECK(text_layer->set_style_run_diacritic_pos(0u, expected_diacritic_pos_after));
 	CHECK(text_layer->set_style_run_ligatures(0u, run_ligatures_after));
 	CHECK(text_layer->set_style_run_dligatures(0u, run_dligatures_after));
 	CHECK(text_layer->set_style_run_underline(0u, run_underline_after));
@@ -247,14 +236,7 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 	{
 		CHECK(text_layer->set_style_run_fill_first(0u, false));
 	}
-	if (run_outline_width_after.has_value())
-	{
-		CHECK(text_layer->set_style_run_outline_width(0u, run_outline_width_after.value()));
-	}
-	else
-	{
-		CHECK_FALSE(text_layer->set_style_run_outline_width(0u, 2.0));
-	}
+	CHECK(text_layer->set_style_run_outline_width(0u, expected_outline_width_after));
 	CHECK(text_layer->set_style_run_fill_color(0u, run_fill_color_after));
 	if (run_stroke_color_after.has_value())
 	{
@@ -367,27 +349,13 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 	CHECK(reread_run_no_break.value() == run_no_break_after);
 	CHECK(reread_run_font_baseline.value() == run_font_baseline_after);
 	CHECK(reread_run_language.value() == run_language_after);
-	if (run_character_direction_after.has_value())
-	{
-		REQUIRE(reread_run_character_direction.has_value());
-		CHECK(reread_run_character_direction.value() == run_character_direction_after.value());
-	}
-	else
-	{
-		CHECK_FALSE(reread_run_character_direction.has_value());
-	}
+	REQUIRE(reread_run_character_direction.has_value());
+	CHECK(reread_run_character_direction.value() == expected_character_direction_after);
 	CHECK(reread_run_baseline_direction.value() == run_baseline_direction_after);
 	CHECK(doctest::Approx(reread_run_tsume.value()).epsilon(0.0001) == run_tsume_after);
 	CHECK(reread_run_kashida.value() == run_kashida_after);
-	if (run_diacritic_pos_after.has_value())
-	{
-		REQUIRE(reread_run_diacritic_pos.has_value());
-		CHECK(reread_run_diacritic_pos.value() == run_diacritic_pos_after.value());
-	}
-	else
-	{
-		CHECK_FALSE(reread_run_diacritic_pos.has_value());
-	}
+	REQUIRE(reread_run_diacritic_pos.has_value());
+	CHECK(reread_run_diacritic_pos.value() == expected_diacritic_pos_after);
 	CHECK(reread_run_ligatures.value() == run_ligatures_after);
 	CHECK(reread_run_dligatures.value() == run_dligatures_after);
 	CHECK(reread_run_underline.value() == run_underline_after);
@@ -422,15 +390,8 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 		REQUIRE(reread_run_fill_first.has_value());
 		CHECK_FALSE(reread_run_fill_first.value());
 	}
-	if (run_outline_width_after.has_value())
-	{
-		REQUIRE(reread_run_outline_width.has_value());
-		CHECK(doctest::Approx(reread_run_outline_width.value()).epsilon(0.0001) == run_outline_width_after.value());
-	}
-	else
-	{
-		CHECK_FALSE(reread_run_outline_width.has_value());
-	}
+	REQUIRE(reread_run_outline_width.has_value());
+	CHECK(doctest::Approx(reread_run_outline_width.value()).epsilon(0.0001) == expected_outline_width_after);
 	CHECK(doctest::Approx((*reread_run_fill_color)[0]).epsilon(0.0001) == run_fill_color_after[0]);
 	CHECK(doctest::Approx((*reread_run_fill_color)[1]).epsilon(0.0001) == run_fill_color_after[1]);
 	CHECK(doctest::Approx((*reread_run_fill_color)[2]).epsilon(0.0001) == run_fill_color_after[2]);
