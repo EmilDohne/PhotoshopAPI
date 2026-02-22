@@ -3,6 +3,7 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
+#include "Core/FileIO/LengthMarkers.h"
 #include "Enum.h"
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
@@ -141,20 +142,11 @@ void ICCProfileBlock::write(File& document)
 	m_Name.write(document);
 	assert(m_RawICCProfile.size() <= std::numeric_limits<uint32_t>::max());
 	const uint32_t raw_size = static_cast<uint32_t>(m_RawICCProfile.size());
-	const uint32_t padded_size = RoundUpToMultiple(raw_size, 2u);
-	m_DataSize = padded_size;
-	WriteBinaryData<uint32_t>(document, raw_size);
-
-	WriteBinaryArray<uint8_t>(document, m_RawICCProfile);
-
-	// Check that we didnt initialize m_DataSize incorrectly
-	if (static_cast<int>(padded_size) - static_cast<int>(raw_size) < 0) [[unlikely]]
+	m_DataSize = RoundUpToMultiple(raw_size, 2u);
 	{
-		PSAPI_LOG_ERROR("ICCProfileBlock", "Block would require writing %i padding bytes which is not possible, is m_DataSize initialized correctly?", 
-			static_cast<int>(padded_size) - static_cast<int>(raw_size));
+		Impl::ScopedLengthBlock<uint32_t> len_block(document, 2u);
+		WriteBinaryArray<uint8_t>(document, m_RawICCProfile);
 	}
-	// This will handle the 0 byte case
-	WritePadddingBytes(document, padded_size - raw_size);
 }
 
 PSAPI_NAMESPACE_END
