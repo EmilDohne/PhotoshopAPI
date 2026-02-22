@@ -72,7 +72,8 @@ void LinkedLayerItem::Data::read(File& document)
 
 	m_Type = readType(document);
 	m_Version = ReadBinaryData<uint32_t>(document);
-	if (m_Version < 1 || m_Version > 7)
+	// Allow Version 8
+	if (m_Version < 1 || m_Version > 8)
 	{
 		PSAPI_LOG_ERROR("LinkedLayer", "Unknown Linked Layer version %d encountered, aborting parsing", m_Version);
 	}
@@ -151,6 +152,16 @@ void LinkedLayerItem::Data::read(File& document)
 	if (m_Version >= 7)
 	{
 		m_AssetIsLocked = ReadBinaryData<bool>(document);
+	}
+	if (m_Version >= 8)
+	{
+		auto descriptor_version = ReadBinaryData<uint32_t>(document);
+		if (descriptor_version != 16u)
+		{
+			PSAPI_LOG_ERROR("LinkedLayer", "Unknown descriptor version passed. Expected 16 but got %d instead", descriptor_version);
+		}
+		m_ContentID = std::make_unique<Descriptors::Descriptor>();
+		m_ContentID->read(document);
 	}
 
 	if (m_Version == 2 && m_Type == Type::External)
