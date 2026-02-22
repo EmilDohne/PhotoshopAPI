@@ -311,9 +311,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         :param method: The anti-aliasing method to apply
         :type method: AntiAliasMethod
-
-        :return: True on success
-        :rtype: bool
+        :raises:
+            ValueError: if an unsupported anti-alias enum value is passed
+            RuntimeError: if this layer has no TySh tagged block or writing AntA fails
 
     )pbdoc");
 

@@ -56,7 +56,7 @@ class TextLayer_8bit(Layer_8bit):
     def replace_text_equal_length(self: TextLayer_8bit, old_text: str, new_text: str, replace_all: bool = ...) -> bool:
         ...
 
-    def split_style_run(self: TextLayer_8bit, run_index: int, char_offset: int) -> bool:
+    def split_style_run(self: TextLayer_8bit, run_index: int, char_offset: int) -> None:
         ...
 
     def style_run_lengths(self: TextLayer_8bit) -> Optional[List[int]]:
@@ -720,8 +720,8 @@ class TextLayer_8bit(Layer_8bit):
         """Return the anti-aliasing method, or None if unavailable."""
         ...
 
-    def set_anti_alias(self: TextLayer_8bit, method: psapi.enum.AntiAliasMethod) -> bool:
-        """Set the anti-aliasing method. Returns True on success."""
+    def set_anti_alias(self: TextLayer_8bit, method: psapi.enum.AntiAliasMethod) -> None:
+        """Set the anti-aliasing method. Raises on failure."""
         ...
 
     # ── Warp read APIs ──────────────────────────────────────────────────────
@@ -788,7 +788,7 @@ class TextLayer_8bit(Layer_8bit):
         """Get paragraph run lengths in UTF-16 code units, or None."""
         ...
 
-    def split_paragraph_run(self: TextLayer_8bit, run_index: int, char_offset: int) -> bool:
+    def split_paragraph_run(self: TextLayer_8bit, run_index: int, char_offset: int) -> None:
         """Split a paragraph run at the given character offset."""
         ...
 

@@ -40,6 +40,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -165,8 +166,7 @@ struct TextLayer :
 	}
 
 	/// Set the anti-aliasing method in the TySh text descriptor ("AntA" key).
-	/// Returns true on success.
-	bool set_anti_alias(TextLayerEnum::AntiAliasMethod method)
+	void set_anti_alias(TextLayerEnum::AntiAliasMethod method)
 	{
 		// Use the canonical code that Photoshop writes for each value.
 		// Sharp has no charID – must use the long stringID "antiAliasSharp".
@@ -178,17 +178,27 @@ struct TextLayer :
 			case TextLayerEnum::AntiAliasMethod::Strong: code = "AnSt"; break;
 			case TextLayerEnum::AntiAliasMethod::Smooth: code = "AnSm"; break;
 			case TextLayerEnum::AntiAliasMethod::Sharp:  code = "antiAliasSharp"; break;
-			default: return false;
+			default:
+				throw std::invalid_argument("TextLayer::set_anti_alias() received an unsupported AntiAliasMethod enum value");
 		}
 		auto blocks = text_tagged_blocks();
-		if (blocks.empty()) return false;
-		bool any = false;
+		if (blocks.empty())
+		{
+			throw std::runtime_error("TextLayer::set_anti_alias() failed: no lrTypeTool tagged block found on this layer");
+		}
+
+		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
 			if (TextLayerDetail::write_text_desc_enum(*block, "AntA", code))
-				any = true;
+			{
+				++modified;
+			}
 		}
-		return any;
+		if (modified == 0u)
+		{
+			throw std::runtime_error("TextLayer::set_anti_alias() failed: unable to write AntA in TySh text descriptor");
+		}
 	}
 
 	// =================================================================
@@ -200,17 +210,22 @@ struct TextLayer :
 	/// covers [0, char_offset) and the new run covers [char_offset, end).
 	/// The new run inherits all style properties from the original.
 	/// Both style and paragraph runs are split at the same offset.
-	bool split_style_run(size_t run_index, size_t char_offset)
+	void split_style_run(size_t run_index, size_t char_offset)
 	{
 		auto blocks = text_tagged_blocks();
-		if (blocks.empty()) return false;
-
-		for (const auto& block : blocks)
+		if (blocks.empty())
 		{
-			if (!TextLayerDetail::split_style_run(*block, run_index, char_offset))
-				return false;
+			throw std::runtime_error("TextLayer::split_style_run() failed: no lrTypeTool tagged block found on this layer");
 		}
-		return true;
+
+		for (size_t i = 0u; i < blocks.size(); ++i)
+		{
+			if (!TextLayerDetail::split_style_run(*blocks[i], run_index, char_offset))
+			{
+				throw std::runtime_error(
+					"TextLayer::split_style_run() failed: invalid split or descriptor mutation failed for run_index/char_offset");
+			}
+		}
 	}
 
 	/// Get the style run lengths as a list of code-unit counts.
@@ -225,16 +240,21 @@ struct TextLayer :
 	}
 
 	/// Split a paragraph run at the given char offset (analogous to split_style_run).
-	bool split_paragraph_run(size_t run_index, size_t char_offset)
+	void split_paragraph_run(size_t run_index, size_t char_offset)
 	{
 		auto blocks = text_tagged_blocks();
-		if (blocks.empty()) return false;
-		for (const auto& block : blocks)
+		if (blocks.empty())
 		{
-			if (!TextLayerDetail::split_paragraph_run(*block, run_index, char_offset))
-				return false;
+			throw std::runtime_error("TextLayer::split_paragraph_run() failed: no lrTypeTool tagged block found on this layer");
 		}
-		return true;
+		for (size_t i = 0u; i < blocks.size(); ++i)
+		{
+			if (!TextLayerDetail::split_paragraph_run(*blocks[i], run_index, char_offset))
+			{
+				throw std::runtime_error(
+					"TextLayer::split_paragraph_run() failed: invalid split or descriptor mutation failed for run_index/char_offset");
+			}
+		}
 	}
 
 	/// Get the paragraph run lengths as a list of code-unit counts.
@@ -488,7 +508,7 @@ private:
 		std::vector<std::shared_ptr<TaggedBlock>> out;
 		for (const auto& block : Layer<T>::m_UnparsedBlocks)
 		{
-			if (block->getKey() == Enum::TaggedBlockKey::lrTypeTool)
+			if (block && block->getKey() == Enum::TaggedBlockKey::lrTypeTool)
 			{
 				out.push_back(block);
 			}
