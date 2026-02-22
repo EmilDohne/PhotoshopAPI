@@ -199,7 +199,7 @@ TEST_CASE("TextLayer::create then split_style_run produces correct run lengths")
 	CHECK(lengths->at(0) == 17);  // 16 chars + trailing \r
 
 	// Split at offset 6 → "Hello " | "Bold World\r"
-	CHECK(layer->split_style_run(0, 6));
+	CHECK_NOTHROW(layer->split_style_run(0, 6));
 	lengths = layer->style_run_lengths();
 	REQUIRE(lengths.has_value());
 	REQUIRE(lengths->size() == 2u);
@@ -207,7 +207,7 @@ TEST_CASE("TextLayer::create then split_style_run produces correct run lengths")
 	CHECK(lengths->at(1) == 11);
 
 	// Split "Bold World\r" at offset 4 → "Bold" | " World\r"
-	CHECK(layer->split_style_run(1, 4));
+	CHECK_NOTHROW(layer->split_style_run(1, 4));
 	lengths = layer->style_run_lengths();
 	REQUIRE(lengths.has_value());
 	REQUIRE(lengths->size() == 3u);
@@ -222,7 +222,7 @@ TEST_CASE("split_style_run with invalid run index returns false")
 	using namespace NAMESPACE_PSAPI;
 
 	auto layer = TextLayer<bpp8_t>::create("Invalid", "Short");
-	CHECK_FALSE(layer->split_style_run(5, 2));  // run index 5 doesn't exist
+	CHECK_THROWS(layer->split_style_run(5, 2));  // run index 5 doesn't exist
 }
 
 
@@ -231,7 +231,7 @@ TEST_CASE("split_style_run with zero offset returns false")
 	using namespace NAMESPACE_PSAPI;
 
 	auto layer = TextLayer<bpp8_t>::create("ZeroOff", "Hello");
-	CHECK_FALSE(layer->split_style_run(0, 0));  // can't split at start
+	CHECK_THROWS(layer->split_style_run(0, 0));  // can't split at start
 }
 
 
@@ -246,17 +246,17 @@ TEST_CASE("Style properties can be set on split runs and roundtrip")
 	auto layer = TextLayer<bpp8_t>::create("StyleMut", "Hello Bold World", "ArialMT", 28.0);
 
 	// Split into: "Hello " (6) | "Bold" (4) | " World\r" (7)
-	CHECK(layer->split_style_run(0, 6));
-	CHECK(layer->split_style_run(1, 4));
+	CHECK_NOTHROW(layer->split_style_run(0, 6));
+	CHECK_NOTHROW(layer->split_style_run(1, 4));
 
 	// Modify run 1 ("Bold")
-	CHECK(layer->set_style_run_faux_bold(1, true));
-	CHECK(layer->set_style_run_font_size(1, 32.0));
-	CHECK(layer->set_style_run_fill_color(1, { 1.0, 1.0, 0.0, 0.0 }));  // red
+	CHECK_NOTHROW(layer->set_style_run_faux_bold(1, true));
+	CHECK_NOTHROW(layer->set_style_run_font_size(1, 32.0));
+	CHECK_NOTHROW(layer->set_style_run_fill_color(1, { 1.0, 1.0, 0.0, 0.0 }));  // red
 
 	// Modify run 2 (" World\r")
-	CHECK(layer->set_style_run_faux_italic(2, true));
-	CHECK(layer->set_style_run_underline(2, true));
+	CHECK_NOTHROW(layer->set_style_run_faux_italic(2, true));
+	CHECK_NOTHROW(layer->set_style_run_underline(2, true));
 
 	// Verify in-memory
 	auto bold = layer->style_run_faux_bold(1);
@@ -333,9 +333,9 @@ TEST_CASE("Stroke flag, color, and outline width roundtrip on created layer")
 
 	auto layer = TextLayer<bpp8_t>::create("Stroke", "Outlined Text", "ArialMT", 28.0);
 
-	CHECK(layer->set_style_run_stroke_flag(0, true));
-	CHECK(layer->set_style_run_stroke_color(0, { 1.0, 0.0, 0.0, 1.0 }));  // blue
-	CHECK(layer->set_style_run_outline_width(0, 3.0));
+	CHECK_NOTHROW(layer->set_style_run_stroke_flag(0, true));
+	CHECK_NOTHROW(layer->set_style_run_stroke_color(0, { 1.0, 0.0, 0.0, 1.0 }));  // blue
+	CHECK_NOTHROW(layer->set_style_run_outline_width(0, 3.0));
 
 	// Verify in-memory
 	auto sflag = layer->style_run_stroke_flag(0);
@@ -397,7 +397,7 @@ TEST_CASE("Font size remains float after set_style_run_font_size with whole numb
 	auto layer = TextLayer<bpp8_t>::create("FontFloat", "Test", "ArialMT", 28.0);
 
 	// Set a whole-number font size
-	CHECK(layer->set_style_run_font_size(0, 20.0));
+	CHECK_NOTHROW(layer->set_style_run_font_size(0, 20.0));
 
 	auto fs = layer->style_run_font_size(0);
 	REQUIRE(fs.has_value());
@@ -492,10 +492,10 @@ TEST_CASE("Complex multi-run styled layer roundtrips all properties")
 	//   run 2: " World\r"     (7)  — \n converted to \r
 	//   run 3: "Underline"    (9)
 	//   run 4: " here\r"      (6)
-	CHECK(layer->split_style_run(0, 6));
-	CHECK(layer->split_style_run(1, 4));
-	CHECK(layer->split_style_run(2, 7));
-	CHECK(layer->split_style_run(3, 9));
+	CHECK_NOTHROW(layer->split_style_run(0, 6));
+	CHECK_NOTHROW(layer->split_style_run(1, 4));
+	CHECK_NOTHROW(layer->split_style_run(2, 7));
+	CHECK_NOTHROW(layer->split_style_run(3, 9));
 
 	auto lengths = layer->style_run_lengths();
 	REQUIRE(lengths.has_value());
@@ -507,20 +507,20 @@ TEST_CASE("Complex multi-run styled layer roundtrips all properties")
 	CHECK(lengths->at(4) == 6);
 
 	// Style run 1: bold
-	CHECK(layer->set_style_run_faux_bold(1, true));
+	CHECK_NOTHROW(layer->set_style_run_faux_bold(1, true));
 
 	// Style run 2: red + blue stroke
-	CHECK(layer->set_style_run_fill_color(2, { 1.0, 1.0, 0.0, 0.0 }));
-	CHECK(layer->set_style_run_stroke_flag(2, true));
-	CHECK(layer->set_style_run_stroke_color(2, { 1.0, 0.0, 0.0, 1.0 }));
-	CHECK(layer->set_style_run_outline_width(2, 2.0));
+	CHECK_NOTHROW(layer->set_style_run_fill_color(2, { 1.0, 1.0, 0.0, 0.0 }));
+	CHECK_NOTHROW(layer->set_style_run_stroke_flag(2, true));
+	CHECK_NOTHROW(layer->set_style_run_stroke_color(2, { 1.0, 0.0, 0.0, 1.0 }));
+	CHECK_NOTHROW(layer->set_style_run_outline_width(2, 2.0));
 
 	// Style run 3: underline
-	CHECK(layer->set_style_run_underline(3, true));
+	CHECK_NOTHROW(layer->set_style_run_underline(3, true));
 
 	// Style run 4: italic + different size
-	CHECK(layer->set_style_run_faux_italic(4, true));
-	CHECK(layer->set_style_run_font_size(4, 20.0));
+	CHECK_NOTHROW(layer->set_style_run_faux_italic(4, true));
+	CHECK_NOTHROW(layer->set_style_run_font_size(4, 20.0));
 
 	// Roundtrip
 	auto doc = LayeredFile<bpp8_t>(Enum::ColorMode::RGB, 800, 600);

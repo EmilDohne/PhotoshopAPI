@@ -1,4 +1,4 @@
-﻿#include "doctest.h"
+#include "doctest.h"
 #include "TestTextLayerMutationUtils.h"
 
 TEST_CASE("TextLayer can read text payload from fixture descriptor")
@@ -27,7 +27,7 @@ TEST_CASE("TextLayer equal-length replacement survives write/read roundtrip")
 	auto text_layer = find_text_layer_with_contents(file, "Hello 123");
 	REQUIRE(text_layer);
 
-	CHECK(text_layer->replace_text_equal_length("Hello", "Hallo"));
+	CHECK_NOTHROW(text_layer->replace_text_equal_length("Hello", "Hallo"));
 	CHECK(text_layer->text().has_value());
 	CHECK(text_layer->text().value() == "Hallo 123");
 
@@ -54,8 +54,8 @@ TEST_CASE("TextLayer rejects non-equal-length replacements")
 	auto text_layer = find_text_layer_with_contents(file, "Hello 123");
 	REQUIRE(text_layer);
 
-	CHECK_FALSE(text_layer->replace_text_equal_length("Hello", "Greetings"));
-	CHECK_FALSE(text_layer->set_text_equal_length("Longer than nine"));
+	CHECK_THROWS(text_layer->replace_text_equal_length("Hello", "Greetings"));
+	CHECK_THROWS(text_layer->set_text_equal_length("Longer than nine"));
 
 	CHECK(text_layer->text().has_value());
 	CHECK(text_layer->text().value() == "Hello 123");
@@ -73,7 +73,7 @@ TEST_CASE("TextLayer variable-length replacement survives write/read roundtrip")
 	auto text_layer = find_text_layer_with_contents(file, "Hello 123");
 	REQUIRE(text_layer);
 
-	CHECK(text_layer->replace_text("Hello", "Greetings"));
+	CHECK_NOTHROW(text_layer->replace_text("Hello", "Greetings"));
 	CHECK(text_layer->text().has_value());
 	CHECK(text_layer->text().value() == "Greetings 123");
 
@@ -100,7 +100,7 @@ TEST_CASE("TextLayer remaps EngineData run lengths for style runs")
 	auto text_layer = find_text_layer_with_contents(file, "Alpha Beta Gamma");
 	REQUIRE(text_layer);
 
-	CHECK(text_layer->replace_text("Beta", "Betaaaa"));
+	CHECK_NOTHROW(text_layer->replace_text("Beta", "Betaaaa"));
 	CHECK(text_layer->text().has_value());
 	CHECK(text_layer->text().value() == "Alpha Betaaaa Gamma");
 
@@ -138,7 +138,7 @@ TEST_CASE("TextLayer legacy From/To remap: variable-length mutation on multi-sty
 	REQUIRE(text_layer);
 
 	// Grow mid-run text so indices shift
-	CHECK(text_layer->replace_text("Beta", "BetaBetaBeta"));
+	CHECK_NOTHROW(text_layer->replace_text("Beta", "BetaBetaBeta"));
 	CHECK(text_layer->text().value() == "Alpha BetaBetaBeta Gamma");
 
 	// Write and re-read
@@ -180,7 +180,7 @@ TEST_CASE("TextLayer legacy From/To remap: shrinking mutation on multi-style fil
 	REQUIRE(text_layer);
 
 	// Shrink: "Alpha" -> "A"
-	CHECK(text_layer->replace_text("Alpha", "A"));
+	CHECK_NOTHROW(text_layer->replace_text("Alpha", "A"));
 	CHECK(text_layer->text().value() == "A Beta Gamma");
 
 	const auto out_path = temp_psd_path();
@@ -218,7 +218,7 @@ TEST_CASE("TextLayer legacy From/To remap: no-op on same-length mutation preserv
 	REQUIRE(text_layer);
 
 	// Same-length substitution: "Beta" -> "XXXX"
-	CHECK(text_layer->replace_text("Beta", "XXXX"));
+	CHECK_NOTHROW(text_layer->replace_text("Beta", "XXXX"));
 	CHECK(text_layer->text().value() == "Alpha XXXX Gamma");
 
 	const auto out_path = temp_psd_path();

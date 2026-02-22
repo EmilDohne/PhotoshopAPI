@@ -131,7 +131,7 @@ TEST_CASE("Proxy: StyleRunProxy setter mutates via proxy and roundtrips")
 	REQUIRE(old_size.has_value());
 	const double new_size = old_size.value() + 10.0;
 
-	CHECK(proxy.set_font_size(new_size));
+	CHECK_NOTHROW(proxy.set_font_size(new_size));
 
 	// Verify readback through flat API too
 	CHECK(layer->style_run_font_size(0u).value() == doctest::Approx(new_size));
@@ -218,7 +218,7 @@ TEST_CASE("Proxy: StyleNormalProxy setter mutates via proxy and roundtrips")
 	REQUIRE(old_size.has_value());
 	const double new_size = old_size.value() + 5.0;
 
-	CHECK(proxy.set_font_size(new_size));
+	CHECK_NOTHROW(proxy.set_font_size(new_size));
 	CHECK(layer->style_normal_font_size().value() == doctest::Approx(new_size));
 
 	const auto out_path = temp_psd_path();
@@ -294,7 +294,7 @@ TEST_CASE("Proxy: ParagraphRunProxy setter mutates via proxy and roundtrips")
 		? TextLayerEnum::Justification::Center
 		: TextLayerEnum::Justification::Left;
 
-	CHECK(proxy.set_justification(new_just));
+	CHECK_NOTHROW(proxy.set_justification(new_just));
 	CHECK(layer->paragraph_run_justification(0u).value() == new_just);
 
 	const auto out_path = temp_psd_path();
@@ -370,7 +370,7 @@ TEST_CASE("Proxy: ParagraphNormalProxy setter mutates via proxy and roundtrips")
 		? TextLayerEnum::Justification::Right
 		: TextLayerEnum::Justification::Left;
 
-	CHECK(proxy.set_justification(new_just));
+	CHECK_NOTHROW(proxy.set_justification(new_just));
 	CHECK(layer->paragraph_normal_justification().value() == new_just);
 
 	const auto out_path = temp_psd_path();
@@ -441,7 +441,7 @@ TEST_CASE("Proxy: FontProxy setter roundtrips postscript_name")
 	const auto old_name = proxy.postscript_name();
 	REQUIRE(old_name.has_value());
 
-	CHECK(proxy.set_postscript_name("Helvetica-Bold"));
+	CHECK_NOTHROW(proxy.set_postscript_name("Helvetica-Bold"));
 	CHECK(layer->font_postscript_name(0u).value() == "Helvetica-Bold");
 
 	const auto out_path = temp_psd_path();

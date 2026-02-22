@@ -285,7 +285,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_font_postscript_name(0, "RenamedFont")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_postscript_name(0), "RenamedFont")
         self.assertEqual(layer.font_count, count_before)
 
@@ -295,8 +295,8 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
 
-        result = layer.set_font_postscript_name(999, "NoSuchFont")
-        self.assertFalse(result)
+        with self.assertRaises(ValueError):
+            layer.set_font_postscript_name(999, "NoSuchFont")
 
     @unittest.skipUnless(os.path.exists(_FIXTURE_PATH), "Basic fixture missing")
     def test_add_font_unicode_name(self):
@@ -342,7 +342,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_style_run_font_by_name(0, "BrandNewFont-Py")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before + 1)
         # Run 0 should point at the newly-added index
         self.assertEqual(layer.style_run_font(0), count_before)
@@ -356,7 +356,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         existing_name = layer.font_postscript_name(0)
         count_before = layer.font_count
         result = layer.set_style_run_font_by_name(0, existing_name)
-        self.assertTrue(result)
+        self.assertIsNone(result)
         # Should NOT have added a new font
         self.assertEqual(layer.font_count, count_before)
 
@@ -368,7 +368,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_style_normal_font_by_name("NormalNewFont-Py")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before + 1)
         self.assertEqual(layer.style_normal_font(), count_before)
 
@@ -381,7 +381,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         existing_name = layer.font_postscript_name(0)
         count_before = layer.font_count
         result = layer.set_style_normal_font_by_name(existing_name)
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before)
 
     # ── Step 7: Legacy From/To remap tests ─────────────────────────────────
