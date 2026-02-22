@@ -8,10 +8,10 @@
 // =========================================================================
 
 #include "Macros.h"
+#include "Core/Endian/EndianByteSwap.h"
 
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <string>
 #include <vector>
 
@@ -23,33 +23,32 @@ namespace TextLayerDetail
 //  Binary descriptor helpers (write Photoshop binary descriptor format)
 // -----------------------------------------------------------------------
 
+template <typename T>
+inline void push_be_encoded(std::vector<std::byte>& buf, T value)
+{
+	const T encoded = endian_encode_be<T>(value);
+	const auto* bytes = reinterpret_cast<const std::byte*>(&encoded);
+	buf.insert(buf.end(), bytes, bytes + sizeof(T));
+}
+
 inline void push_u16_be(std::vector<std::byte>& buf, uint16_t v)
 {
-	buf.push_back(static_cast<std::byte>((v >> 8) & 0xFF));
-	buf.push_back(static_cast<std::byte>(v & 0xFF));
+	push_be_encoded<uint16_t>(buf, v);
 }
 
 inline void push_u32_be(std::vector<std::byte>& buf, uint32_t v)
 {
-	buf.push_back(static_cast<std::byte>((v >> 24) & 0xFF));
-	buf.push_back(static_cast<std::byte>((v >> 16) & 0xFF));
-	buf.push_back(static_cast<std::byte>((v >> 8) & 0xFF));
-	buf.push_back(static_cast<std::byte>(v & 0xFF));
+	push_be_encoded<uint32_t>(buf, v);
 }
 
 inline void push_i32_be(std::vector<std::byte>& buf, int32_t v)
 {
-	push_u32_be(buf, static_cast<uint32_t>(v));
+	push_be_encoded<int32_t>(buf, v);
 }
 
 inline void push_double_be(std::vector<std::byte>& buf, double v)
 {
-	uint64_t bits;
-	std::memcpy(&bits, &v, sizeof(double));
-	for (int i = 7; i >= 0; --i)
-	{
-		buf.push_back(static_cast<std::byte>((bits >> (i * 8)) & 0xFF));
-	}
+	push_be_encoded<double>(buf, v);
 }
 
 inline void push_ascii(std::vector<std::byte>& buf, const std::string& s)
