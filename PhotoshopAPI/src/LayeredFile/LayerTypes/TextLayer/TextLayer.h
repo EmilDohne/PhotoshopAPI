@@ -282,7 +282,10 @@ struct TextLayer :
 	//  Core text read / write
 	// =================================================================
 
-	/// Retrieve the text payload from the first available text descriptor.
+	/// Retrieve the text payload from TySh descriptor data.
+	/// Normal Photoshop-authored files typically contain one payload per text layer;
+	/// if a file contains duplicates, this returns the first parseable one
+	/// as Photoshop appears to display only the first.
 	std::optional<std::string> text() const
 	{
 		for (const auto& block : text_tagged_blocks())
