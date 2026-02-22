@@ -211,7 +211,8 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	layeredFile.def_property("icc",
 		[](const Class& self) {
 			const auto data = self.icc_profile().data();
-			py::array_t<uint8_t> array(data.size());
+			const auto length = static_cast<py::ssize_t>(data.size());
+			py::array_t<uint8_t> array({ length }, { static_cast<py::ssize_t>(sizeof(uint8_t)) });
 			if (!data.empty())
 			{
 				std::memcpy(array.mutable_data(), data.data(), data.size());
