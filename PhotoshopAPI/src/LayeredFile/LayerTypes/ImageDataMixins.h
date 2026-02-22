@@ -539,56 +539,23 @@ protected:
 		Enum::ColorMode colormode
 		)
 	{
-		// Construct variables for correct exception stack unwinding
-		struct exception_info
-		{
-			typename data_type::key_type key;
-			std::exception_ptr exception;
-		};
-		std::vector<exception_info> exceptions;
-		std::mutex exceptions_mutex;
-
 		// Clear image data before setting.
 		ImageDataMixin<T>::m_ImageData.clear();
 
-		std::for_each(std::execution::par_unseq, data.begin(), data.end(), [&](const auto& pair)
-			{
-				const auto& [key, data] = pair;
-				auto id = Enum::toChannelIDInfo(static_cast<int16_t>(key), colormode);
-
-				const auto data_span = std::span<const T>(data.begin(), data.end());
-				try
-				{
-					this->impl_set_channel(id, data_span, width, height, center_x, center_y, colormode);
-				}
-				catch (...)
-				{
-					std::lock_guard guard(exceptions_mutex);
-					exceptions.push_back({ key, std::current_exception() });
-				}
-			});
-
-
-		// Unwind the exception stack and rethrow all as one big exception showing exactly what threw.
-		std::string error_message = "Encountered the following errors while setting the image data:\n";
-		for (auto& exception : exceptions)
+		// Mutating an unordered_map from parallel workers is undefined behavior and may
+		// drop channels non-deterministically. Keep this path deterministic.
+		for (const auto& [key, channel_data] : data)
 		{
+			auto id = Enum::toChannelIDInfo(static_cast<int16_t>(key), colormode);
+			const auto data_span = std::span<const T>(channel_data.begin(), channel_data.end());
 			try
 			{
-				std::rethrow_exception(exception.exception);
+				this->impl_set_channel(id, data_span, width, height, center_x, center_y, colormode);
 			}
 			catch (const std::exception& e)
 			{
-				error_message += fmt::format("\t{{ channel : {} }}, {{ exception: {} }}\n", exception.key, e.what());
+				throw std::runtime_error(fmt::format("{{ channel : {} }}, {{ exception: {} }}\n", key, e.what()));
 			}
-			catch (...)
-			{
-				error_message += fmt::format("\t{{ channel : {} }}, {{ exception: unknown }}\n", exception.key);
-			}
-		}
-		if (exceptions.size() > 0)
-		{
-			throw std::runtime_error(error_message);
 		}
 	}
 
