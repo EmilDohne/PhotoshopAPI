@@ -14,6 +14,7 @@
 #include "Macros.h"
 #include <cstdint>
 #include <optional>
+#include <type_traits>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -199,6 +200,7 @@ namespace TextLayerEnum
 
 	// -- Utility: convert optional<int32_t> to optional<Enum> ----------------
 	template <typename E>
+		requires std::is_enum_v<E>
 	std::optional<E> opt_enum(std::optional<int32_t> v)
 	{
 		if (!v.has_value()) return std::nullopt;
