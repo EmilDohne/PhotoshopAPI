@@ -11,6 +11,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <vector>
 
@@ -79,29 +81,36 @@ public:
 	std::optional<bool>                      paragraph_run_every_line_composer(const size_t i) const    { return paragraph_run_bool_property(i, "EveryLineComposer"); }
 
 	// --- Paragraph run setters ---
-	bool set_paragraph_run_justification(const size_t i, const TextLayerEnum::Justification v)                  { return set_paragraph_run_int32_property(i, "Justification", static_cast<int32_t>(v)); }
-	bool set_paragraph_run_first_line_indent(const size_t i, const double v)                            { return set_paragraph_run_number_property(i, "FirstLineIndent", v); }
-	bool set_paragraph_run_start_indent(const size_t i, const double v)                                 { return set_paragraph_run_number_property(i, "StartIndent", v); }
-	bool set_paragraph_run_end_indent(const size_t i, const double v)                                   { return set_paragraph_run_number_property(i, "EndIndent", v); }
-	bool set_paragraph_run_space_before(const size_t i, const double v)                                 { return set_paragraph_run_number_property(i, "SpaceBefore", v); }
-	bool set_paragraph_run_space_after(const size_t i, const double v)                                  { return set_paragraph_run_number_property(i, "SpaceAfter", v); }
-	bool set_paragraph_run_auto_hyphenate(const size_t i, const bool v)                                 { return set_paragraph_run_bool_property(i, "AutoHyphenate", v); }
-	bool set_paragraph_run_hyphenated_word_size(const size_t i, const int32_t v)                        { return set_paragraph_run_int32_property(i, "HyphenatedWordSize", v); }
-	bool set_paragraph_run_pre_hyphen(const size_t i, const int32_t v)                                  { return set_paragraph_run_int32_property(i, "PreHyphen", v); }
-	bool set_paragraph_run_post_hyphen(const size_t i, const int32_t v)                                 { return set_paragraph_run_int32_property(i, "PostHyphen", v); }
-	bool set_paragraph_run_consecutive_hyphens(const size_t i, const int32_t v)                         { return set_paragraph_run_int32_property(i, "ConsecutiveHyphens", v); }
-	bool set_paragraph_run_zone(const size_t i, const double v)                                         { return set_paragraph_run_number_property(i, "Zone", v); }
-	bool set_paragraph_run_word_spacing(const size_t i, const std::vector<double>& v)                   { return set_paragraph_run_number_array_property(i, "WordSpacing", v); }
-	bool set_paragraph_run_letter_spacing(const size_t i, const std::vector<double>& v)                 { return set_paragraph_run_number_array_property(i, "LetterSpacing", v); }
-	bool set_paragraph_run_glyph_spacing(const size_t i, const std::vector<double>& v)                  { return set_paragraph_run_number_array_property(i, "GlyphSpacing", v); }
-	bool set_paragraph_run_auto_leading(const size_t i, const double v)                                 { return set_paragraph_run_number_property(i, "AutoLeading", v); }
-	bool set_paragraph_run_leading_type(const size_t i, const TextLayerEnum::LeadingType v)                  { return set_paragraph_run_int32_property(i, "LeadingType", static_cast<int32_t>(v)); }
-	bool set_paragraph_run_hanging(const size_t i, const bool v)                                        { return set_paragraph_run_bool_property(i, "Hanging", v); }
-	bool set_paragraph_run_burasagari(const size_t i, const bool v)                                     { return set_paragraph_run_bool_property(i, "Burasagari", v); }
-	bool set_paragraph_run_kinsoku_order(const size_t i, const TextLayerEnum::KinsokuOrder v)                { return set_paragraph_run_int32_property(i, "KinsokuOrder", static_cast<int32_t>(v)); }
-	bool set_paragraph_run_every_line_composer(const size_t i, const bool v)                            { return set_paragraph_run_bool_property(i, "EveryLineComposer", v); }
+	void set_paragraph_run_justification(const size_t i, const TextLayerEnum::Justification v)                  { throw_on_set_failure(set_paragraph_run_int32_property(i, "Justification", static_cast<int32_t>(v)), "set_paragraph_run_justification"); }
+	void set_paragraph_run_first_line_indent(const size_t i, const double v)                            { throw_on_set_failure(set_paragraph_run_number_property(i, "FirstLineIndent", v), "set_paragraph_run_first_line_indent"); }
+	void set_paragraph_run_start_indent(const size_t i, const double v)                                 { throw_on_set_failure(set_paragraph_run_number_property(i, "StartIndent", v), "set_paragraph_run_start_indent"); }
+	void set_paragraph_run_end_indent(const size_t i, const double v)                                   { throw_on_set_failure(set_paragraph_run_number_property(i, "EndIndent", v), "set_paragraph_run_end_indent"); }
+	void set_paragraph_run_space_before(const size_t i, const double v)                                 { throw_on_set_failure(set_paragraph_run_number_property(i, "SpaceBefore", v), "set_paragraph_run_space_before"); }
+	void set_paragraph_run_space_after(const size_t i, const double v)                                  { throw_on_set_failure(set_paragraph_run_number_property(i, "SpaceAfter", v), "set_paragraph_run_space_after"); }
+	void set_paragraph_run_auto_hyphenate(const size_t i, const bool v)                                 { throw_on_set_failure(set_paragraph_run_bool_property(i, "AutoHyphenate", v), "set_paragraph_run_auto_hyphenate"); }
+	void set_paragraph_run_hyphenated_word_size(const size_t i, const int32_t v)                        { throw_on_set_failure(set_paragraph_run_int32_property(i, "HyphenatedWordSize", v), "set_paragraph_run_hyphenated_word_size"); }
+	void set_paragraph_run_pre_hyphen(const size_t i, const int32_t v)                                  { throw_on_set_failure(set_paragraph_run_int32_property(i, "PreHyphen", v), "set_paragraph_run_pre_hyphen"); }
+	void set_paragraph_run_post_hyphen(const size_t i, const int32_t v)                                 { throw_on_set_failure(set_paragraph_run_int32_property(i, "PostHyphen", v), "set_paragraph_run_post_hyphen"); }
+	void set_paragraph_run_consecutive_hyphens(const size_t i, const int32_t v)                         { throw_on_set_failure(set_paragraph_run_int32_property(i, "ConsecutiveHyphens", v), "set_paragraph_run_consecutive_hyphens"); }
+	void set_paragraph_run_zone(const size_t i, const double v)                                         { throw_on_set_failure(set_paragraph_run_number_property(i, "Zone", v), "set_paragraph_run_zone"); }
+	void set_paragraph_run_word_spacing(const size_t i, const std::vector<double>& v)                   { throw_on_set_failure(set_paragraph_run_number_array_property(i, "WordSpacing", v), "set_paragraph_run_word_spacing"); }
+	void set_paragraph_run_letter_spacing(const size_t i, const std::vector<double>& v)                 { throw_on_set_failure(set_paragraph_run_number_array_property(i, "LetterSpacing", v), "set_paragraph_run_letter_spacing"); }
+	void set_paragraph_run_glyph_spacing(const size_t i, const std::vector<double>& v)                  { throw_on_set_failure(set_paragraph_run_number_array_property(i, "GlyphSpacing", v), "set_paragraph_run_glyph_spacing"); }
+	void set_paragraph_run_auto_leading(const size_t i, const double v)                                 { throw_on_set_failure(set_paragraph_run_number_property(i, "AutoLeading", v), "set_paragraph_run_auto_leading"); }
+	void set_paragraph_run_leading_type(const size_t i, const TextLayerEnum::LeadingType v)                  { throw_on_set_failure(set_paragraph_run_int32_property(i, "LeadingType", static_cast<int32_t>(v)), "set_paragraph_run_leading_type"); }
+	void set_paragraph_run_hanging(const size_t i, const bool v)                                        { throw_on_set_failure(set_paragraph_run_bool_property(i, "Hanging", v), "set_paragraph_run_hanging"); }
+	void set_paragraph_run_burasagari(const size_t i, const bool v)                                     { throw_on_set_failure(set_paragraph_run_bool_property(i, "Burasagari", v), "set_paragraph_run_burasagari"); }
+	void set_paragraph_run_kinsoku_order(const size_t i, const TextLayerEnum::KinsokuOrder v)                { throw_on_set_failure(set_paragraph_run_int32_property(i, "KinsokuOrder", static_cast<int32_t>(v)), "set_paragraph_run_kinsoku_order"); }
+	void set_paragraph_run_every_line_composer(const size_t i, const bool v)                            { throw_on_set_failure(set_paragraph_run_bool_property(i, "EveryLineComposer", v), "set_paragraph_run_every_line_composer"); }
 
 private:
+	void throw_on_set_failure(const bool ok, const char* method_name) const
+	{
+		if (!ok)
+		{
+			throw std::invalid_argument(std::string("TextLayer::") + method_name + "() failed");
+		}
+	}
 
 	std::optional<double> paragraph_run_number_property(const size_t run_index, const std::string_view property_key) const
 	{

@@ -12,6 +12,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -54,7 +56,7 @@ public:
 		return wd.has_value() && wd.value() == TextLayerEnum::WritingDirection::Vertical;
 	}
 
-	bool set_orientation(const TextLayerEnum::WritingDirection writing_direction)
+	void set_orientation(const TextLayerEnum::WritingDirection writing_direction)
 	{
 		// Map the enum to the TySh descriptor value for the "Ornt" key.
 		const std::string ornt_value =
@@ -76,7 +78,10 @@ public:
 			if (!parsed.ok) continue;
 
 			auto shapes_wd = EngineData::find_by_path(parsed.root, { "EngineDict", "Rendered", "Shapes", "WritingDirection" });
-			if (shapes_wd == nullptr) return false;
+			if (shapes_wd == nullptr)
+			{
+				throw std::runtime_error("TextLayer::set_orientation() failed: missing WritingDirection");
+			}
 
 			std::vector<EngineData::PayloadPatch> patches;
 
@@ -84,7 +89,9 @@ public:
 				const size_t old_start = shapes_wd->start_offset;
 				const size_t old_end = shapes_wd->end_offset;
 				if (!EngineData::set_number(*shapes_wd, static_cast<double>(writing_direction)))
-					return false;
+				{
+					throw std::runtime_error("TextLayer::set_orientation() failed: unable to set WritingDirection");
+				}
 				patches.push_back({ old_start, old_end, EngineData::format_value_bytes(*shapes_wd) });
 			}
 
@@ -101,7 +108,9 @@ public:
 						const size_t old_start = procession->start_offset;
 						const size_t old_end = procession->end_offset;
 						if (!EngineData::set_number(*procession, procession_value))
-							return false;
+						{
+							throw std::runtime_error("TextLayer::set_orientation() failed: unable to set Procession");
+						}
 						patches.push_back({ old_start, old_end, EngineData::format_value_bytes(*procession) });
 					}
 
@@ -111,7 +120,9 @@ public:
 						const size_t old_start = lines_wd->start_offset;
 						const size_t old_end = lines_wd->end_offset;
 						if (!EngineData::set_number(*lines_wd, static_cast<double>(writing_direction)))
-							return false;
+						{
+							throw std::runtime_error("TextLayer::set_orientation() failed: unable to set Lines/WritingDirection");
+						}
 						patches.push_back({ old_start, old_end, EngineData::format_value_bytes(*lines_wd) });
 					}
 				}
@@ -119,15 +130,17 @@ public:
 
 			EngineData::apply_patches(payload, patches);
 			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::set_orientation() failed: unable to write engine payload");
+			}
 
 			// Also update the "Ornt" enum in the TySh binary descriptor so
 			// Photoshop renders the correct orientation on open.
 			TextLayerDetail::write_text_desc_enum(*block, "Ornt", ornt_value);
 
-			return true;
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_orientation() failed: no parseable TySh block found");
 	}
 
 	// =======================================================================
@@ -171,39 +184,45 @@ public:
 	std::optional<double> transform_tx() const { return transform_component(4); }
 	std::optional<double> transform_ty() const { return transform_component(5); }
 
-	bool set_transform(const std::vector<double>& values)
+	void set_transform(const std::vector<double>& values)
 	{
-		if (values.size() != kTransformDoubles) return false;
+		if (values.size() != kTransformDoubles)
+		{
+			throw std::invalid_argument("TextLayer::set_transform() failed: transform must contain exactly 6 values");
+		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
 			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			for (size_t i = 0u; i < kTransformDoubles; ++i)
 				TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + i * 8u, values[i]);
-			return true;
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_transform() failed: no lrTypeTool transform payload found");
 	}
 
-	bool set_transform_component(const size_t index, const double value)
+	void set_transform_component(const size_t index, const double value)
 	{
-		if (index >= kTransformDoubles) return false;
+		if (index >= kTransformDoubles)
+		{
+			throw std::invalid_argument("TextLayer::set_transform_component() failed: index out of range");
+		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
 			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + index * 8u, value);
-			return true;
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_transform_component() failed: no lrTypeTool transform payload found");
 	}
 
-	bool set_transform_xx(const double value) { return set_transform_component(0, value); }
-	bool set_transform_xy(const double value) { return set_transform_component(1, value); }
-	bool set_transform_yx(const double value) { return set_transform_component(2, value); }
-	bool set_transform_yy(const double value) { return set_transform_component(3, value); }
-	bool set_transform_tx(const double value) { return set_transform_component(4, value); }
-	bool set_transform_ty(const double value) { return set_transform_component(5, value); }
+	void set_transform_xx(const double value) { set_transform_component(0, value); }
+	void set_transform_xy(const double value) { set_transform_component(1, value); }
+	void set_transform_yx(const double value) { set_transform_component(2, value); }
+	void set_transform_yy(const double value) { set_transform_component(3, value); }
+	void set_transform_tx(const double value) { set_transform_component(4, value); }
+	void set_transform_ty(const double value) { set_transform_component(5, value); }
 
 	// -----------------------------------------------------------------------
 	//  High-level transform helpers
@@ -230,10 +249,13 @@ public:
 		return std::sqrt(xform[2] * xform[2] + xform[3] * xform[3]);
 	}
 
-	bool set_rotation_angle(const double degrees)
+	void set_rotation_angle(const double degrees)
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::set_rotation_angle() failed: transform is unavailable");
+		}
 		const double sx = std::sqrt(xform[0] * xform[0] + xform[1] * xform[1]);
 		const double sy = std::sqrt(xform[2] * xform[2] + xform[3] * xform[3]);
 		const double rad = degrees * (3.14159265358979323846 / 180.0);
@@ -241,42 +263,60 @@ public:
 		const double s = std::sin(rad);
 		xform[0] = c * sx; xform[1] = s * sx;
 		xform[2] = -s * sy; xform[3] = c * sy;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 
-	bool set_scale_x(const double sx)
+	void set_scale_x(const double sx)
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::set_scale_x() failed: transform is unavailable");
+		}
 		const double old_sx = std::sqrt(xform[0] * xform[0] + xform[1] * xform[1]);
-		if (old_sx < 1e-15) return false;
+		if (old_sx < 1e-15)
+		{
+			throw std::invalid_argument("TextLayer::set_scale_x() failed: current x scale is near zero");
+		}
 		const double ratio = sx / old_sx;
 		xform[0] *= ratio; xform[1] *= ratio;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 
-	bool set_scale_y(const double sy)
+	void set_scale_y(const double sy)
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::set_scale_y() failed: transform is unavailable");
+		}
 		const double old_sy = std::sqrt(xform[2] * xform[2] + xform[3] * xform[3]);
-		if (old_sy < 1e-15) return false;
+		if (old_sy < 1e-15)
+		{
+			throw std::invalid_argument("TextLayer::set_scale_y() failed: current y scale is near zero");
+		}
 		const double ratio = sy / old_sy;
 		xform[2] *= ratio; xform[3] *= ratio;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 
-	bool set_scale(const double sx, const double sy)
+	void set_scale(const double sx, const double sy)
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::set_scale() failed: transform is unavailable");
+		}
 		const double old_sx = std::sqrt(xform[0] * xform[0] + xform[1] * xform[1]);
 		const double old_sy = std::sqrt(xform[2] * xform[2] + xform[3] * xform[3]);
-		if (old_sx < 1e-15 || old_sy < 1e-15) return false;
+		if (old_sx < 1e-15 || old_sy < 1e-15)
+		{
+			throw std::invalid_argument("TextLayer::set_scale() failed: current scale is near zero");
+		}
 		const double rx = sx / old_sx; const double ry = sy / old_sy;
 		xform[0] *= rx; xform[1] *= rx;
 		xform[2] *= ry; xform[3] *= ry;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 
 	std::pair<double, double> position() const
@@ -286,21 +326,27 @@ public:
 		return { 0.0, 0.0 };
 	}
 
-	bool set_position(const double x, const double y)
+	void set_position(const double x, const double y)
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::set_position() failed: transform is unavailable");
+		}
 		xform[4] = x; xform[5] = y;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 
-	bool reset_transform()
+	void reset_transform()
 	{
 		auto xform = transform();
-		if (xform.size() != kTransformDoubles) return false;
+		if (xform.size() != kTransformDoubles)
+		{
+			throw std::runtime_error("TextLayer::reset_transform() failed: transform is unavailable");
+		}
 		xform[0] = 1.0; xform[1] = 0.0;
 		xform[2] = 0.0; xform[3] = 1.0;
-		return set_transform(xform);
+		set_transform(xform);
 	}
 };
 

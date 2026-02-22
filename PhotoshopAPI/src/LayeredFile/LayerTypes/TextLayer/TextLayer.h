@@ -303,17 +303,16 @@ struct TextLayer :
 	}
 
 	/// Set text while preserving descriptor metadata and remapping style ranges.
-	bool set_text(const std::string& new_text)
+	void set_text(const std::string& new_text)
 	{
 		const auto new_utf16 = UnicodeString::convertUTF8ToUTF16LE(new_text);
 
 		auto blocks = text_tagged_blocks();
 		if (blocks.empty())
 		{
-			return false;
+			throw std::runtime_error("TextLayer::set_text() failed: no lrTypeTool tagged block found on this layer");
 		}
 
-		bool changed_any = false;
 		bool found_any = false;
 
 		for (const auto& block : blocks)
@@ -333,32 +332,35 @@ struct TextLayer :
 			std::vector<TextLayerDetail::TextReplacement> replacements{};
 			replacements.push_back(TextLayerDetail::TextReplacement{ 0u, parsed->text_utf16.size(), new_utf16.size() });
 
-			if (TextLayerDetail::apply_text_mutation(*block, parsed.value(), new_utf16, replacements))
+			if (!TextLayerDetail::apply_text_mutation(*block, parsed.value(), new_utf16, replacements))
 			{
-				changed_any = true;
+				throw std::runtime_error("TextLayer::set_text() failed: unable to apply TySh text mutation");
 			}
 		}
 
-		return found_any && changed_any;
+		if (!found_any)
+		{
+			throw std::runtime_error("TextLayer::set_text() failed: no parseable TySh text payload found");
+		}
 	}
 
 	/// Replace text occurrences while preserving descriptor metadata and remapping style ranges.
-	bool replace_text(const std::string& old_text, const std::string& new_text, const bool replace_all = true)
+	void replace_text(const std::string& old_text, const std::string& new_text, const bool replace_all = true)
 	{
 		const auto old_utf16 = UnicodeString::convertUTF8ToUTF16LE(old_text);
 		const auto new_utf16 = UnicodeString::convertUTF8ToUTF16LE(new_text);
 		if (old_utf16.empty())
 		{
-			return false;
+			throw std::invalid_argument("TextLayer::replace_text() failed: old_text must not be empty");
 		}
 
 		auto blocks = text_tagged_blocks();
 		if (blocks.empty())
 		{
-			return false;
+			throw std::runtime_error("TextLayer::replace_text() failed: no lrTypeTool tagged block found on this layer");
 		}
 
-		bool changed_any = false;
+		bool found_any = false;
 		for (const auto& block : blocks)
 		{
 			auto parsed = TextLayerDetail::parse_text_span(*block);
@@ -366,6 +368,7 @@ struct TextLayer :
 			{
 				continue;
 			}
+			found_any = true;
 
 			auto replaced = TextLayerDetail::replace_utf16(parsed->text_utf16, old_utf16, new_utf16, replace_all);
 			if (!replaced.has_value())
@@ -373,22 +376,25 @@ struct TextLayer :
 				continue;
 			}
 
-			if (TextLayerDetail::apply_text_mutation(*block, parsed.value(), replaced->text_utf16, replaced->replacements))
+			if (!TextLayerDetail::apply_text_mutation(*block, parsed.value(), replaced->text_utf16, replaced->replacements))
 			{
-				changed_any = true;
+				throw std::runtime_error("TextLayer::replace_text() failed: unable to apply TySh text mutation");
 			}
 		}
 
-		return changed_any;
+		if (!found_any)
+		{
+			throw std::runtime_error("TextLayer::replace_text() failed: no parseable TySh text payload found");
+		}
 	}
 
 	/// Set text while preserving descriptor metadata. This strict variant requires equal UTF-16 code-unit length.
-	bool set_text_equal_length(const std::string& new_text)
+	void set_text_equal_length(const std::string& new_text)
 	{
 		auto blocks = text_tagged_blocks();
 		if (blocks.empty())
 		{
-			return false;
+			throw std::runtime_error("TextLayer::set_text_equal_length() failed: no lrTypeTool tagged block found on this layer");
 		}
 
 		const auto new_utf16_len = UnicodeString::convertUTF8ToUTF16LE(new_text).size();
@@ -404,33 +410,33 @@ struct TextLayer :
 
 			if (parsed->text_utf16_length != new_utf16_len)
 			{
-				return false;
+				throw std::invalid_argument("TextLayer::set_text_equal_length() failed: UTF-16 code-unit length mismatch");
 			}
 		}
 
 		if (!found_any)
 		{
-			return false;
+			throw std::runtime_error("TextLayer::set_text_equal_length() failed: no parseable TySh text payload found");
 		}
-		return set_text(new_text);
+		set_text(new_text);
 	}
 
 	/// Replace text occurrences while preserving descriptor metadata. This strict variant requires equal UTF-16 code-unit length.
-	bool replace_text_equal_length(const std::string& old_text, const std::string& new_text, const bool replace_all = true)
+	void replace_text_equal_length(const std::string& old_text, const std::string& new_text, const bool replace_all = true)
 	{
 		if (old_text.empty())
 		{
-			return false;
+			throw std::invalid_argument("TextLayer::replace_text_equal_length() failed: old_text must not be empty");
 		}
 
 		const auto old_utf16_len = UnicodeString::convertUTF8ToUTF16LE(old_text).size();
 		const auto new_utf16_len = UnicodeString::convertUTF8ToUTF16LE(new_text).size();
 		if (old_utf16_len != new_utf16_len)
 		{
-			return false;
+			throw std::invalid_argument("TextLayer::replace_text_equal_length() failed: UTF-16 code-unit length mismatch");
 		}
 
-		return replace_text(old_text, new_text, replace_all);
+		replace_text(old_text, new_text, replace_all);
 	}
 
 	// =================================================================

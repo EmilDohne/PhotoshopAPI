@@ -77,7 +77,7 @@ class TestStyleRunProxy(unittest.TestCase):
 
     def test_style_run_set_font_size_roundtrip(self):
         proxy = self.layer.style_run(0)
-        self.assertTrue(proxy.set_font_size(42.0))
+        proxy.set_font_size(42.0)
         # Verify via flat API too
         self.assertAlmostEqual(self.layer.style_run_font_size(0), 42.0)
 
@@ -89,7 +89,7 @@ class TestStyleRunProxy(unittest.TestCase):
 
     def test_style_run_set_faux_bold(self):
         proxy = self.layer.style_run(0)
-        self.assertTrue(proxy.set_faux_bold(True))
+        proxy.set_faux_bold(True)
         self.assertTrue(self.layer.style_run_faux_bold(0))
 
     def test_style_run_set_font_by_name(self):
@@ -99,7 +99,7 @@ class TestStyleRunProxy(unittest.TestCase):
         if current_font_idx is not None:
             name = self.layer.font_postscript_name(current_font_idx)
             if name is not None:
-                self.assertTrue(proxy.set_font_by_name(name))
+                proxy.set_font_by_name(name)
 
 
 class TestStyleNormalProxy(unittest.TestCase):
@@ -121,7 +121,7 @@ class TestStyleNormalProxy(unittest.TestCase):
 
     def test_style_normal_set_font_size_roundtrip(self):
         proxy = self.layer.style_normal()
-        self.assertTrue(proxy.set_font_size(18.0))
+        proxy.set_font_size(18.0)
         self.assertAlmostEqual(self.layer.style_normal_font_size(), 18.0)
 
     def test_style_normal_faux_italic_getter(self):
@@ -131,7 +131,7 @@ class TestStyleNormalProxy(unittest.TestCase):
 
     def test_style_normal_set_faux_italic(self):
         proxy = self.layer.style_normal()
-        self.assertTrue(proxy.set_faux_italic(True))
+        proxy.set_faux_italic(True)
         self.assertTrue(self.layer.style_normal_faux_italic())
 
 
@@ -153,7 +153,7 @@ class TestParagraphRunProxy(unittest.TestCase):
 
     def test_paragraph_run_set_justification(self):
         proxy = self.layer.paragraph_run(0)
-        self.assertTrue(proxy.set_justification(psapi.enum.Justification.Left))
+        proxy.set_justification(psapi.enum.Justification.Left)
         self.assertEqual(self.layer.paragraph_run_justification(0), psapi.enum.Justification.Left)
 
     def test_paragraph_run_auto_hyphenate_getter(self):
@@ -180,7 +180,7 @@ class TestParagraphNormalProxy(unittest.TestCase):
 
     def test_paragraph_normal_set_justification(self):
         proxy = self.layer.paragraph_normal()
-        self.assertTrue(proxy.set_justification(psapi.enum.Justification.Left))
+        proxy.set_justification(psapi.enum.Justification.Left)
         self.assertEqual(self.layer.paragraph_normal_justification(), psapi.enum.Justification.Left)
 
 

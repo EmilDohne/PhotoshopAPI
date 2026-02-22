@@ -104,7 +104,7 @@ class TestTransformAPIs(unittest.TestCase):
         self.assertIsNotNone(layer)
 
         new_xform = [2.0, 0.1, -0.1, 2.0, 50.0, 75.0]
-        self.assertTrue(layer.set_transform(new_xform))
+        layer.set_transform(new_xform)
         after = layer.transform()
         for i in range(6):
             self.assertAlmostEqual(after[i], new_xform[i], places=10)
@@ -113,14 +113,15 @@ class TestTransformAPIs(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertFalse(layer.set_transform([1.0, 0.0, 0.0]))
+        with self.assertRaises(ValueError):
+            layer.set_transform([1.0, 0.0, 0.0])
 
     def test_set_transform_individual_setters(self):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.set_transform([3.0, 0.5, -0.5, 3.0, 100.0, 200.0]))
+        layer.set_transform([3.0, 0.5, -0.5, 3.0, 100.0, 200.0])
 
         self.assertAlmostEqual(layer.transform_xx, 3.0, places=10)
         self.assertAlmostEqual(layer.transform_xy, 0.5, places=10)
@@ -135,7 +136,7 @@ class TestTransformAPIs(unittest.TestCase):
         self.assertIsNotNone(layer)
 
         new_xform = [1.5, 0.25, -0.25, 1.5, 33.3, 44.4]
-        self.assertTrue(layer.set_transform(new_xform))
+        layer.set_transform(new_xform)
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
             tmp_path = f.name
@@ -182,15 +183,15 @@ class TestTransformConvenienceAPIs(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_rotation_angle(45.0))
+        layer.set_rotation_angle(45.0)
         self.assertAlmostEqual(layer.rotation_angle, 45.0, places=6)
 
     def test_set_rotation_preserves_scale(self):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_scale(2.0, 3.0))
-        self.assertTrue(layer.set_rotation_angle(30.0))
+        layer.set_scale(2.0, 3.0)
+        layer.set_rotation_angle(30.0)
         self.assertAlmostEqual(layer.scale_x, 2.0, places=10)
         self.assertAlmostEqual(layer.scale_y, 3.0, places=10)
         self.assertAlmostEqual(layer.rotation_angle, 30.0, places=6)
@@ -199,7 +200,7 @@ class TestTransformConvenienceAPIs(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_scale(1.5, 2.0))
+        layer.set_scale(1.5, 2.0)
         self.assertAlmostEqual(layer.scale_x, 1.5, places=10)
         self.assertAlmostEqual(layer.scale_y, 2.0, places=10)
 
@@ -207,8 +208,8 @@ class TestTransformConvenienceAPIs(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_rotation_angle(60.0))
-        self.assertTrue(layer.set_scale(1.5, 2.0))
+        layer.set_rotation_angle(60.0)
+        layer.set_scale(1.5, 2.0)
         self.assertAlmostEqual(layer.rotation_angle, 60.0, places=6)
         self.assertAlmostEqual(layer.scale_x, 1.5, places=10)
         self.assertAlmostEqual(layer.scale_y, 2.0, places=10)
@@ -250,7 +251,7 @@ class TestPositionConvenience(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "TransformControl")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_position(77.5, 199.25))
+        layer.set_position(77.5, 199.25)
         self.assertAlmostEqual(layer.transform_tx, 77.5, places=10)
         self.assertAlmostEqual(layer.transform_ty, 199.25, places=10)
 
@@ -272,7 +273,7 @@ class TestPositionConvenience(unittest.TestCase):
         file = psapi.LayeredFile.read(_TRANSFORM_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "RotatedText")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.reset_transform())
+        layer.reset_transform()
         self.assertAlmostEqual(layer.rotation_angle, 0.0, places=10)
         self.assertAlmostEqual(layer.scale_x, 1.0, places=10)
         self.assertAlmostEqual(layer.scale_y, 1.0, places=10)
@@ -286,7 +287,7 @@ class TestUniformScale(unittest.TestCase):
         file = psapi.LayeredFile.read(_FIXTURE_PATH)
         layer = _find_text_layer_by_name(file, "SimpleASCII")
         self.assertIsNotNone(layer)
-        self.assertTrue(layer.set_scale(1.5))
+        layer.set_scale(1.5)
         self.assertAlmostEqual(layer.scale_x, 1.5, places=10)
         self.assertAlmostEqual(layer.scale_y, 1.5, places=10)
 
@@ -295,7 +296,7 @@ class TestUniformScale(unittest.TestCase):
         layer = _find_text_layer_by_name(file, "SimpleASCII")
         self.assertIsNotNone(layer)
         layer.set_rotation_angle(35.0)
-        self.assertTrue(layer.set_scale(2.0))
+        layer.set_scale(2.0)
         self.assertAlmostEqual(layer.rotation_angle, 35.0, places=6)
         self.assertAlmostEqual(layer.scale_x, 2.0, places=10)
         self.assertAlmostEqual(layer.scale_y, 2.0, places=10)

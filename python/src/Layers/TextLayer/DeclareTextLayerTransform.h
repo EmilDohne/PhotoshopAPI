@@ -64,7 +64,8 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
 
         Write all six affine-transform doubles into the TySh header.
         ``values`` must be a list of exactly 6 floats [xx, xy, yx, yy, tx, ty].
-        Returns True on success.
+        :raises ValueError: if values does not contain exactly 6 numbers
+        :raises RuntimeError: if no writable TySh transform payload exists
 
     )pbdoc");
 
@@ -72,7 +73,8 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
         py::arg("index"), py::arg("value"), R"pbdoc(
 
         Write a single transform component by index (0–5).
-        Returns True on success, False for out-of-range index.
+        :raises ValueError: if index is outside [0, 5]
+        :raises RuntimeError: if no writable TySh transform payload exists
 
     )pbdoc");
 
@@ -123,15 +125,17 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
     text_layer.def("set_scale_x", &Class::set_scale_x,
         py::arg("sx"), R"pbdoc(
         Set the horizontal scale factor while preserving the current
-        rotation angle and translation.  Returns False when the current
-        scale is degenerate (near-zero).
+        rotation angle and translation.
+        :raises ValueError: when the current scale is degenerate (near-zero)
+        :raises RuntimeError: if transform data is unavailable
     )pbdoc");
 
     text_layer.def("set_scale_y", &Class::set_scale_y,
         py::arg("sy"), R"pbdoc(
         Set the vertical scale factor while preserving the current
-        rotation angle and translation.  Returns False when the current
-        scale is degenerate (near-zero).
+        rotation angle and translation.
+        :raises ValueError: when the current scale is degenerate (near-zero)
+        :raises RuntimeError: if transform data is unavailable
     )pbdoc");
 
     text_layer.def("set_scale", &Class::set_scale,
@@ -142,14 +146,15 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
         - ``set_scale(1.5)`` — uniform scale (same X and Y).
         - ``set_scale(0.86, 1.18)`` — non-uniform scale.
 
-        Returns False when the current scale is degenerate (near-zero).
+        :raises ValueError: when the current scale is degenerate (near-zero)
+        :raises RuntimeError: if transform data is unavailable
     )pbdoc");
 
     // Python wrapper: when sy is None, treat as uniform scaling
     // We override the binding with a lambda that fills in sy = sx when omitted.
     text_layer.def("set_scale",
-        [](Class& self, double sx, std::optional<double> sy) -> bool {
-            return self.set_scale(sx, sy.value_or(sx));
+        [](Class& self, double sx, std::optional<double> sy) {
+            self.set_scale(sx, sy.value_or(sx));
         },
         py::arg("sx"), py::arg("sy") = py::none(), R"pbdoc(
         Set scale factor(s) while preserving the current rotation angle
@@ -158,7 +163,8 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
         - ``set_scale(1.5)`` — uniform scale (same X and Y).
         - ``set_scale(0.86, 1.18)`` — non-uniform scale.
 
-        Returns False when the current scale is degenerate (near-zero).
+        :raises ValueError: when the current scale is degenerate (near-zero)
+        :raises RuntimeError: if transform data is unavailable
     )pbdoc");
 
     // -----------------------------------------------------------------------

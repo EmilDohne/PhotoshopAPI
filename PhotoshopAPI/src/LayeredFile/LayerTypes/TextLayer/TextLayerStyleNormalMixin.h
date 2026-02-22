@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -92,9 +93,12 @@ public:
 	std::optional<std::vector<double>>       style_normal_stroke_color() const          { return style_normal_color_values_property("StrokeColor"); }
 
 	// --- Style normal setters ---
-	bool set_style_normal_sheet_index(const int32_t sheet_index)
+	void set_style_normal_sheet_index(const int32_t sheet_index)
 	{
-		if (sheet_index < 0) return false;
+		if (sheet_index < 0)
+		{
+			throw std::invalid_argument("TextLayer::set_style_normal_sheet_index() failed: sheet_index must be >= 0");
+		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
 			const auto engine_span_opt = TextLayerDetail::find_engine_data_span(*block);
@@ -106,53 +110,72 @@ public:
 			if (!parsed.ok) continue;
 			auto sheet_set = TextLayerDetail::style_sheet_set_from_root(parsed.root);
 			if (sheet_set == nullptr || sheet_set->type != EngineData::ValueType::Array) continue;
-			if (static_cast<size_t>(sheet_index) >= sheet_set->array_items.size()) return false;
+			if (static_cast<size_t>(sheet_index) >= sheet_set->array_items.size())
+			{
+				throw std::invalid_argument("TextLayer::set_style_normal_sheet_index() failed: sheet_index out of range");
+			}
 			auto normal_index_value = EngineData::find_by_path(parsed.root, { "ResourceDict", "TheNormalStyleSheet" });
-			if (normal_index_value == nullptr) return false;
+			if (normal_index_value == nullptr)
+			{
+				throw std::runtime_error("TextLayer::set_style_normal_sheet_index() failed: missing TheNormalStyleSheet");
+			}
 			const size_t old_start = normal_index_value->start_offset;
 			const size_t old_end = normal_index_value->end_offset;
 			if (!EngineData::set_number(*normal_index_value, static_cast<double>(sheet_index)))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::set_style_normal_sheet_index() failed: unable to set TheNormalStyleSheet");
+			}
 			auto new_bytes = EngineData::format_value_bytes(*normal_index_value);
 			EngineData::splice_payload(payload, old_start, old_end, new_bytes);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload))
+			{
+				throw std::runtime_error("TextLayer::set_style_normal_sheet_index() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_style_normal_sheet_index() failed: no parseable TySh block found");
 	}
 
-	bool set_style_normal_font(const int32_t v)                                    { return set_style_normal_int32_property("Font", v); }
-	bool set_style_normal_font_size(const double v)                                { return set_style_normal_number_property("FontSize", v); }
-	bool set_style_normal_leading(const double v)                                  { return set_style_normal_number_property("Leading", v); }
-	bool set_style_normal_auto_leading(const bool v)                               { return set_style_normal_bool_property("AutoLeading", v); }
-	bool set_style_normal_kerning(const int32_t v)                                 { return set_style_normal_int32_property("Kerning", v); }
-	bool set_style_normal_faux_bold(const bool v)                                  { return set_style_normal_bool_property("FauxBold", v); }
-	bool set_style_normal_faux_italic(const bool v)                                { return set_style_normal_bool_property("FauxItalic", v); }
-	bool set_style_normal_horizontal_scale(const double v)                         { return set_style_normal_number_property("HorizontalScale", v); }
-	bool set_style_normal_vertical_scale(const double v)                           { return set_style_normal_number_property("VerticalScale", v); }
-	bool set_style_normal_tracking(const int32_t v)                                { return set_style_normal_int32_property("Tracking", v); }
-	bool set_style_normal_auto_kerning(const bool v)                               { return set_style_normal_bool_property("AutoKerning", v); }
-	bool set_style_normal_baseline_shift(const double v)                           { return set_style_normal_number_property("BaselineShift", v); }
-	bool set_style_normal_font_caps(const TextLayerEnum::FontCaps v)                           { return set_style_normal_int32_property("FontCaps", static_cast<int32_t>(v)); }
-	bool set_style_normal_font_baseline(const TextLayerEnum::FontBaseline v)                    { return set_style_normal_int32_property("FontBaseline", static_cast<int32_t>(v)); }
-	bool set_style_normal_no_break(const bool v)                                   { return set_style_normal_bool_property("NoBreak", v); }
-	bool set_style_normal_language(const int32_t v)                                { return set_style_normal_int32_property("Language", v); }
-	bool set_style_normal_character_direction(const TextLayerEnum::CharacterDirection v) { return set_style_normal_int32_property("CharacterDirection", static_cast<int32_t>(v)); }
-	bool set_style_normal_baseline_direction(const TextLayerEnum::BaselineDirection v)   { return set_style_normal_int32_property("BaselineDirection", static_cast<int32_t>(v)); }
-	bool set_style_normal_tsume(const double v)                                    { return set_style_normal_number_property("Tsume", v); }
-	bool set_style_normal_kashida(const int32_t v)                                 { return set_style_normal_int32_property("Kashida", v); }
-	bool set_style_normal_diacritic_pos(const TextLayerEnum::DiacriticPosition v)       { return set_style_normal_int32_property("DiacriticPos", static_cast<int32_t>(v)); }
-	bool set_style_normal_ligatures(const bool v)                                  { return set_style_normal_bool_property("Ligatures", v); }
-	bool set_style_normal_dligatures(const bool v)                                 { return set_style_normal_bool_property("DLigatures", v); }
-	bool set_style_normal_underline(const bool v)                                  { return set_style_normal_bool_property("Underline", v); }
-	bool set_style_normal_strikethrough(const bool v)                              { return set_style_normal_bool_property("Strikethrough", v); }
-	bool set_style_normal_stroke_flag(const bool v)                                { return set_style_normal_bool_property("StrokeFlag", v); }
-	bool set_style_normal_fill_flag(const bool v)                                  { return set_style_normal_bool_property("FillFlag", v); }
-	bool set_style_normal_fill_first(const bool v)                                 { return set_style_normal_bool_property("FillFirst", v); }
-	bool set_style_normal_outline_width(const double v)                            { return set_style_normal_number_property("OutlineWidth", v); }
-	bool set_style_normal_fill_color(const std::vector<double>& v)                 { return set_style_normal_color_values_property("FillColor", v); }
-	bool set_style_normal_stroke_color(const std::vector<double>& v)               { return set_style_normal_color_values_property("StrokeColor", v); }
+	void set_style_normal_font(const int32_t v)                                    { throw_on_set_failure(set_style_normal_int32_property("Font", v), "set_style_normal_font"); }
+	void set_style_normal_font_size(const double v)                                { throw_on_set_failure(set_style_normal_number_property("FontSize", v), "set_style_normal_font_size"); }
+	void set_style_normal_leading(const double v)                                  { throw_on_set_failure(set_style_normal_number_property("Leading", v), "set_style_normal_leading"); }
+	void set_style_normal_auto_leading(const bool v)                               { throw_on_set_failure(set_style_normal_bool_property("AutoLeading", v), "set_style_normal_auto_leading"); }
+	void set_style_normal_kerning(const int32_t v)                                 { throw_on_set_failure(set_style_normal_int32_property("Kerning", v), "set_style_normal_kerning"); }
+	void set_style_normal_faux_bold(const bool v)                                  { throw_on_set_failure(set_style_normal_bool_property("FauxBold", v), "set_style_normal_faux_bold"); }
+	void set_style_normal_faux_italic(const bool v)                                { throw_on_set_failure(set_style_normal_bool_property("FauxItalic", v), "set_style_normal_faux_italic"); }
+	void set_style_normal_horizontal_scale(const double v)                         { throw_on_set_failure(set_style_normal_number_property("HorizontalScale", v), "set_style_normal_horizontal_scale"); }
+	void set_style_normal_vertical_scale(const double v)                           { throw_on_set_failure(set_style_normal_number_property("VerticalScale", v), "set_style_normal_vertical_scale"); }
+	void set_style_normal_tracking(const int32_t v)                                { throw_on_set_failure(set_style_normal_int32_property("Tracking", v), "set_style_normal_tracking"); }
+	void set_style_normal_auto_kerning(const bool v)                               { throw_on_set_failure(set_style_normal_bool_property("AutoKerning", v), "set_style_normal_auto_kerning"); }
+	void set_style_normal_baseline_shift(const double v)                           { throw_on_set_failure(set_style_normal_number_property("BaselineShift", v), "set_style_normal_baseline_shift"); }
+	void set_style_normal_font_caps(const TextLayerEnum::FontCaps v)                           { throw_on_set_failure(set_style_normal_int32_property("FontCaps", static_cast<int32_t>(v)), "set_style_normal_font_caps"); }
+	void set_style_normal_font_baseline(const TextLayerEnum::FontBaseline v)                    { throw_on_set_failure(set_style_normal_int32_property("FontBaseline", static_cast<int32_t>(v)), "set_style_normal_font_baseline"); }
+	void set_style_normal_no_break(const bool v)                                   { throw_on_set_failure(set_style_normal_bool_property("NoBreak", v), "set_style_normal_no_break"); }
+	void set_style_normal_language(const int32_t v)                                { throw_on_set_failure(set_style_normal_int32_property("Language", v), "set_style_normal_language"); }
+	void set_style_normal_character_direction(const TextLayerEnum::CharacterDirection v) { throw_on_set_failure(set_style_normal_int32_property("CharacterDirection", static_cast<int32_t>(v)), "set_style_normal_character_direction"); }
+	void set_style_normal_baseline_direction(const TextLayerEnum::BaselineDirection v)   { throw_on_set_failure(set_style_normal_int32_property("BaselineDirection", static_cast<int32_t>(v)), "set_style_normal_baseline_direction"); }
+	void set_style_normal_tsume(const double v)                                    { throw_on_set_failure(set_style_normal_number_property("Tsume", v), "set_style_normal_tsume"); }
+	void set_style_normal_kashida(const int32_t v)                                 { throw_on_set_failure(set_style_normal_int32_property("Kashida", v), "set_style_normal_kashida"); }
+	void set_style_normal_diacritic_pos(const TextLayerEnum::DiacriticPosition v)       { throw_on_set_failure(set_style_normal_int32_property("DiacriticPos", static_cast<int32_t>(v)), "set_style_normal_diacritic_pos"); }
+	void set_style_normal_ligatures(const bool v)                                  { throw_on_set_failure(set_style_normal_bool_property("Ligatures", v), "set_style_normal_ligatures"); }
+	void set_style_normal_dligatures(const bool v)                                 { throw_on_set_failure(set_style_normal_bool_property("DLigatures", v), "set_style_normal_dligatures"); }
+	void set_style_normal_underline(const bool v)                                  { throw_on_set_failure(set_style_normal_bool_property("Underline", v), "set_style_normal_underline"); }
+	void set_style_normal_strikethrough(const bool v)                              { throw_on_set_failure(set_style_normal_bool_property("Strikethrough", v), "set_style_normal_strikethrough"); }
+	void set_style_normal_stroke_flag(const bool v)                                { throw_on_set_failure(set_style_normal_bool_property("StrokeFlag", v), "set_style_normal_stroke_flag"); }
+	void set_style_normal_fill_flag(const bool v)                                  { throw_on_set_failure(set_style_normal_bool_property("FillFlag", v), "set_style_normal_fill_flag"); }
+	void set_style_normal_fill_first(const bool v)                                 { throw_on_set_failure(set_style_normal_bool_property("FillFirst", v), "set_style_normal_fill_first"); }
+	void set_style_normal_outline_width(const double v)                            { throw_on_set_failure(set_style_normal_number_property("OutlineWidth", v), "set_style_normal_outline_width"); }
+	void set_style_normal_fill_color(const std::vector<double>& v)                 { throw_on_set_failure(set_style_normal_color_values_property("FillColor", v), "set_style_normal_fill_color"); }
+	void set_style_normal_stroke_color(const std::vector<double>& v)               { throw_on_set_failure(set_style_normal_color_values_property("StrokeColor", v), "set_style_normal_stroke_color"); }
 
 private:
+	void throw_on_set_failure(const bool ok, const char* method_name) const
+	{
+		if (!ok)
+		{
+			throw std::invalid_argument(std::string("TextLayer::") + method_name + "() failed");
+		}
+	}
 
 	std::optional<int32_t> style_normal_int32_property(const std::string_view property_key) const
 	{

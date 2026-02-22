@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -76,44 +77,54 @@ public:
 	std::optional<std::vector<double>> style_run_stroke_color(const size_t i) const { return style_run_color_values_property(i, "StrokeColor"); }
 
 	// --- Style run setters ---
-	bool set_style_run_font_size(const size_t i, const double v)
+	void set_style_run_font_size(const size_t i, const double v)
 	{
-		if (!std::isfinite(v) || v <= 0.0) return false;
-		return set_style_run_number_property(i, "FontSize", v);
+		if (!std::isfinite(v) || v <= 0.0)
+		{
+			throw std::invalid_argument("TextLayer::set_style_run_font_size() failed: font_size must be finite and > 0");
+		}
+		throw_on_set_failure(set_style_run_number_property(i, "FontSize", v), "set_style_run_font_size");
 	}
-	bool set_style_run_leading(const size_t i, const double v)                            { return set_style_run_number_property(i, "Leading", v); }
-	bool set_style_run_auto_leading(const size_t i, const bool v)                         { return set_style_run_bool_property(i, "AutoLeading", v); }
-	bool set_style_run_kerning(const size_t i, const int32_t v)                           { return set_style_run_int32_property(i, "Kerning", v); }
-	bool set_style_run_font(const size_t i, const int32_t v)                              { return set_style_run_int32_property(i, "Font", v); }
-	bool set_style_run_faux_bold(const size_t i, const bool v)                            { return set_style_run_bool_property(i, "FauxBold", v); }
-	bool set_style_run_faux_italic(const size_t i, const bool v)                          { return set_style_run_bool_property(i, "FauxItalic", v); }
-	bool set_style_run_horizontal_scale(const size_t i, const double v)                   { return set_style_run_number_property(i, "HorizontalScale", v); }
-	bool set_style_run_vertical_scale(const size_t i, const double v)                     { return set_style_run_number_property(i, "VerticalScale", v); }
-	bool set_style_run_tracking(const size_t i, const int32_t v)                          { return set_style_run_int32_property(i, "Tracking", v); }
-	bool set_style_run_auto_kerning(const size_t i, const bool v)                         { return set_style_run_bool_property(i, "AutoKerning", v); }
-	bool set_style_run_baseline_shift(const size_t i, const double v)                     { return set_style_run_number_property(i, "BaselineShift", v); }
-	bool set_style_run_font_caps(const size_t i, const TextLayerEnum::FontCaps v)              { return set_style_run_int32_property(i, "FontCaps", static_cast<int32_t>(v)); }
-	bool set_style_run_no_break(const size_t i, const bool v)                             { return set_style_run_bool_property(i, "NoBreak", v); }
-	bool set_style_run_font_baseline(const size_t i, const TextLayerEnum::FontBaseline v)      { return set_style_run_int32_property(i, "FontBaseline", static_cast<int32_t>(v)); }
-	bool set_style_run_language(const size_t i, const int32_t v)                          { return set_style_run_int32_property(i, "Language", v); }
-	bool set_style_run_character_direction(const size_t i, const TextLayerEnum::CharacterDirection v) { return set_style_run_int32_property(i, "CharacterDirection", static_cast<int32_t>(v)); }
-	bool set_style_run_baseline_direction(const size_t i, const TextLayerEnum::BaselineDirection v)   { return set_style_run_int32_property(i, "BaselineDirection", static_cast<int32_t>(v)); }
-	bool set_style_run_tsume(const size_t i, const double v)                              { return set_style_run_number_property(i, "Tsume", v); }
-	bool set_style_run_kashida(const size_t i, const int32_t v)                           { return set_style_run_int32_property(i, "Kashida", v); }
-	bool set_style_run_diacritic_pos(const size_t i, const TextLayerEnum::DiacriticPosition v) { return set_style_run_int32_property(i, "DiacriticPos", static_cast<int32_t>(v)); }
-	bool set_style_run_ligatures(const size_t i, const bool v)                            { return set_style_run_bool_property(i, "Ligatures", v); }
-	bool set_style_run_dligatures(const size_t i, const bool v)                           { return set_style_run_bool_property(i, "DLigatures", v); }
-	bool set_style_run_underline(const size_t i, const bool v)                            { return set_style_run_bool_property(i, "Underline", v); }
-	bool set_style_run_strikethrough(const size_t i, const bool v)                        { return set_style_run_bool_property(i, "Strikethrough", v); }
-	bool set_style_run_stroke_flag(const size_t i, const bool v)                          { return set_style_run_bool_property(i, "StrokeFlag", v); }
-	bool set_style_run_fill_flag(const size_t i, const bool v)                            { return set_style_run_bool_property(i, "FillFlag", v); }
-	bool set_style_run_fill_first(const size_t i, const bool v)                           { return set_style_run_bool_property(i, "FillFirst", v); }
-	bool set_style_run_outline_width(const size_t i, const double v)                      { return set_style_run_number_property(i, "OutlineWidth", v); }
+	void set_style_run_leading(const size_t i, const double v)                            { throw_on_set_failure(set_style_run_number_property(i, "Leading", v), "set_style_run_leading"); }
+	void set_style_run_auto_leading(const size_t i, const bool v)                         { throw_on_set_failure(set_style_run_bool_property(i, "AutoLeading", v), "set_style_run_auto_leading"); }
+	void set_style_run_kerning(const size_t i, const int32_t v)                           { throw_on_set_failure(set_style_run_int32_property(i, "Kerning", v), "set_style_run_kerning"); }
+	void set_style_run_font(const size_t i, const int32_t v)                              { throw_on_set_failure(set_style_run_int32_property(i, "Font", v), "set_style_run_font"); }
+	void set_style_run_faux_bold(const size_t i, const bool v)                            { throw_on_set_failure(set_style_run_bool_property(i, "FauxBold", v), "set_style_run_faux_bold"); }
+	void set_style_run_faux_italic(const size_t i, const bool v)                          { throw_on_set_failure(set_style_run_bool_property(i, "FauxItalic", v), "set_style_run_faux_italic"); }
+	void set_style_run_horizontal_scale(const size_t i, const double v)                   { throw_on_set_failure(set_style_run_number_property(i, "HorizontalScale", v), "set_style_run_horizontal_scale"); }
+	void set_style_run_vertical_scale(const size_t i, const double v)                     { throw_on_set_failure(set_style_run_number_property(i, "VerticalScale", v), "set_style_run_vertical_scale"); }
+	void set_style_run_tracking(const size_t i, const int32_t v)                          { throw_on_set_failure(set_style_run_int32_property(i, "Tracking", v), "set_style_run_tracking"); }
+	void set_style_run_auto_kerning(const size_t i, const bool v)                         { throw_on_set_failure(set_style_run_bool_property(i, "AutoKerning", v), "set_style_run_auto_kerning"); }
+	void set_style_run_baseline_shift(const size_t i, const double v)                     { throw_on_set_failure(set_style_run_number_property(i, "BaselineShift", v), "set_style_run_baseline_shift"); }
+	void set_style_run_font_caps(const size_t i, const TextLayerEnum::FontCaps v)              { throw_on_set_failure(set_style_run_int32_property(i, "FontCaps", static_cast<int32_t>(v)), "set_style_run_font_caps"); }
+	void set_style_run_no_break(const size_t i, const bool v)                             { throw_on_set_failure(set_style_run_bool_property(i, "NoBreak", v), "set_style_run_no_break"); }
+	void set_style_run_font_baseline(const size_t i, const TextLayerEnum::FontBaseline v)      { throw_on_set_failure(set_style_run_int32_property(i, "FontBaseline", static_cast<int32_t>(v)), "set_style_run_font_baseline"); }
+	void set_style_run_language(const size_t i, const int32_t v)                          { throw_on_set_failure(set_style_run_int32_property(i, "Language", v), "set_style_run_language"); }
+	void set_style_run_character_direction(const size_t i, const TextLayerEnum::CharacterDirection v) { throw_on_set_failure(set_style_run_int32_property(i, "CharacterDirection", static_cast<int32_t>(v)), "set_style_run_character_direction"); }
+	void set_style_run_baseline_direction(const size_t i, const TextLayerEnum::BaselineDirection v)   { throw_on_set_failure(set_style_run_int32_property(i, "BaselineDirection", static_cast<int32_t>(v)), "set_style_run_baseline_direction"); }
+	void set_style_run_tsume(const size_t i, const double v)                              { throw_on_set_failure(set_style_run_number_property(i, "Tsume", v), "set_style_run_tsume"); }
+	void set_style_run_kashida(const size_t i, const int32_t v)                           { throw_on_set_failure(set_style_run_int32_property(i, "Kashida", v), "set_style_run_kashida"); }
+	void set_style_run_diacritic_pos(const size_t i, const TextLayerEnum::DiacriticPosition v) { throw_on_set_failure(set_style_run_int32_property(i, "DiacriticPos", static_cast<int32_t>(v)), "set_style_run_diacritic_pos"); }
+	void set_style_run_ligatures(const size_t i, const bool v)                            { throw_on_set_failure(set_style_run_bool_property(i, "Ligatures", v), "set_style_run_ligatures"); }
+	void set_style_run_dligatures(const size_t i, const bool v)                           { throw_on_set_failure(set_style_run_bool_property(i, "DLigatures", v), "set_style_run_dligatures"); }
+	void set_style_run_underline(const size_t i, const bool v)                            { throw_on_set_failure(set_style_run_bool_property(i, "Underline", v), "set_style_run_underline"); }
+	void set_style_run_strikethrough(const size_t i, const bool v)                        { throw_on_set_failure(set_style_run_bool_property(i, "Strikethrough", v), "set_style_run_strikethrough"); }
+	void set_style_run_stroke_flag(const size_t i, const bool v)                          { throw_on_set_failure(set_style_run_bool_property(i, "StrokeFlag", v), "set_style_run_stroke_flag"); }
+	void set_style_run_fill_flag(const size_t i, const bool v)                            { throw_on_set_failure(set_style_run_bool_property(i, "FillFlag", v), "set_style_run_fill_flag"); }
+	void set_style_run_fill_first(const size_t i, const bool v)                           { throw_on_set_failure(set_style_run_bool_property(i, "FillFirst", v), "set_style_run_fill_first"); }
+	void set_style_run_outline_width(const size_t i, const double v)                      { throw_on_set_failure(set_style_run_number_property(i, "OutlineWidth", v), "set_style_run_outline_width"); }
 
-	bool set_style_run_fill_color(const size_t i, const std::vector<double>& v)           { return set_style_run_color_values_property(i, "FillColor", v); }
-	bool set_style_run_stroke_color(const size_t i, const std::vector<double>& v)         { return set_style_run_color_values_property(i, "StrokeColor", v); }
+	void set_style_run_fill_color(const size_t i, const std::vector<double>& v)           { throw_on_set_failure(set_style_run_color_values_property(i, "FillColor", v), "set_style_run_fill_color"); }
+	void set_style_run_stroke_color(const size_t i, const std::vector<double>& v)         { throw_on_set_failure(set_style_run_color_values_property(i, "StrokeColor", v), "set_style_run_stroke_color"); }
 
 private:
+	void throw_on_set_failure(const bool ok, const char* method_name) const
+	{
+		if (!ok)
+		{
+			throw std::invalid_argument(std::string("TextLayer::") + method_name + "() failed");
+		}
+	}
 
 	// -----------------------------------------------------------------------
 	//  Property helpers

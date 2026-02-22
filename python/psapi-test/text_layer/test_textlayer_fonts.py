@@ -153,7 +153,7 @@ class TestOrientationAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Horizontal)
-        self.assertTrue(layer.set_orientation(psapi.enum.WritingDirection.Vertical))
+        layer.set_orientation(psapi.enum.WritingDirection.Vertical)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Vertical)
         self.assertTrue(layer.is_vertical)
 
@@ -163,7 +163,7 @@ class TestOrientationAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "VERTICAL")
         self.assertIsNotNone(layer)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Vertical)
-        self.assertTrue(layer.set_orientation(psapi.enum.WritingDirection.Horizontal))
+        layer.set_orientation(psapi.enum.WritingDirection.Horizontal)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Horizontal)
         self.assertFalse(layer.is_vertical)
 
@@ -393,7 +393,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Beta", "BetaBetaBeta"))
+        layer.replace_text("Beta", "BetaBetaBeta")
         self.assertEqual(layer.text, "Alpha BetaBetaBeta Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -414,7 +414,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Alpha", "A"))
+        layer.replace_text("Alpha", "A")
         self.assertEqual(layer.text, "A Beta Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -435,7 +435,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Beta", "XXXX"))
+        layer.replace_text("Beta", "XXXX")
         self.assertEqual(layer.text, "Alpha XXXX Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -466,6 +466,6 @@ class TestFontConvenience(unittest.TestCase):
         layer = _find_text_layer_by_name(file, "SimpleASCII")
         self.assertIsNotNone(layer)
         old_name = layer.primary_font_name
-        self.assertTrue(layer.set_font("TestPySetFont"))
+        layer.set_font("TestPySetFont")
         self.assertEqual(layer.primary_font_name, "TestPySetFont")
         self.assertNotEqual(layer.primary_font_name, old_name)

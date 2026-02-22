@@ -44,16 +44,16 @@ class TextLayer_32bit(Layer_32bit):
     def text(self: TextLayer_32bit) -> Optional[str]:
         ...
 
-    def set_text(self: TextLayer_32bit, value: str) -> bool:
+    def set_text(self: TextLayer_32bit, value: str) -> None:
         ...
 
-    def replace_text(self: TextLayer_32bit, old_text: str, new_text: str, replace_all: bool = ...) -> bool:
+    def replace_text(self: TextLayer_32bit, old_text: str, new_text: str, replace_all: bool = ...) -> None:
         ...
 
-    def set_text_equal_length(self: TextLayer_32bit, value: str) -> bool:
+    def set_text_equal_length(self: TextLayer_32bit, value: str) -> None:
         ...
 
-    def replace_text_equal_length(self: TextLayer_32bit, old_text: str, new_text: str, replace_all: bool = ...) -> bool:
+    def replace_text_equal_length(self: TextLayer_32bit, old_text: str, new_text: str, replace_all: bool = ...) -> None:
         ...
 
     def split_style_run(self: TextLayer_32bit, run_index: int, char_offset: int) -> None:
@@ -73,187 +73,187 @@ class TextLayer_32bit(Layer_32bit):
     def style_run_font_size(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_font_size(self: TextLayer_32bit, run_index: int, font_size: float) -> bool:
+    def set_style_run_font_size(self: TextLayer_32bit, run_index: int, font_size: float) -> None:
         ...
 
     def style_run_leading(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_leading(self: TextLayer_32bit, run_index: int, leading: float) -> bool:
+    def set_style_run_leading(self: TextLayer_32bit, run_index: int, leading: float) -> None:
         ...
 
     def style_run_auto_leading(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_auto_leading(self: TextLayer_32bit, run_index: int, auto_leading: bool) -> bool:
+    def set_style_run_auto_leading(self: TextLayer_32bit, run_index: int, auto_leading: bool) -> None:
         ...
 
     def style_run_kerning(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_style_run_kerning(self: TextLayer_32bit, run_index: int, kerning: int) -> bool:
+    def set_style_run_kerning(self: TextLayer_32bit, run_index: int, kerning: int) -> None:
         ...
 
     def style_run_fill_color(self: TextLayer_32bit, run_index: int) -> Optional[List[float]]:
         ...
 
-    def set_style_run_fill_color(self: TextLayer_32bit, run_index: int, values: List[float]) -> bool:
+    def set_style_run_fill_color(self: TextLayer_32bit, run_index: int, values: List[float]) -> None:
         ...
 
     def style_run_stroke_color(self: TextLayer_32bit, run_index: int) -> Optional[List[float]]:
         ...
 
-    def set_style_run_stroke_color(self: TextLayer_32bit, run_index: int, values: List[float]) -> bool:
+    def set_style_run_stroke_color(self: TextLayer_32bit, run_index: int, values: List[float]) -> None:
         ...
 
     def style_run_font(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_style_run_font(self: TextLayer_32bit, run_index: int, font: int) -> bool:
+    def set_style_run_font(self: TextLayer_32bit, run_index: int, font: int) -> None:
         ...
 
     def style_run_faux_bold(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_faux_bold(self: TextLayer_32bit, run_index: int, faux_bold: bool) -> bool:
+    def set_style_run_faux_bold(self: TextLayer_32bit, run_index: int, faux_bold: bool) -> None:
         ...
 
     def style_run_faux_italic(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_faux_italic(self: TextLayer_32bit, run_index: int, faux_italic: bool) -> bool:
+    def set_style_run_faux_italic(self: TextLayer_32bit, run_index: int, faux_italic: bool) -> None:
         ...
 
     def style_run_horizontal_scale(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_horizontal_scale(self: TextLayer_32bit, run_index: int, horizontal_scale: float) -> bool:
+    def set_style_run_horizontal_scale(self: TextLayer_32bit, run_index: int, horizontal_scale: float) -> None:
         ...
 
     def style_run_vertical_scale(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_vertical_scale(self: TextLayer_32bit, run_index: int, vertical_scale: float) -> bool:
+    def set_style_run_vertical_scale(self: TextLayer_32bit, run_index: int, vertical_scale: float) -> None:
         ...
 
     def style_run_tracking(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_style_run_tracking(self: TextLayer_32bit, run_index: int, tracking: int) -> bool:
+    def set_style_run_tracking(self: TextLayer_32bit, run_index: int, tracking: int) -> None:
         ...
 
     def style_run_auto_kerning(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_auto_kerning(self: TextLayer_32bit, run_index: int, auto_kerning: bool) -> bool:
+    def set_style_run_auto_kerning(self: TextLayer_32bit, run_index: int, auto_kerning: bool) -> None:
         ...
 
     def style_run_baseline_shift(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_baseline_shift(self: TextLayer_32bit, run_index: int, baseline_shift: float) -> bool:
+    def set_style_run_baseline_shift(self: TextLayer_32bit, run_index: int, baseline_shift: float) -> None:
         ...
 
     def style_run_font_caps(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.FontCaps]:
         ...
 
-    def set_style_run_font_caps(self: TextLayer_32bit, run_index: int, font_caps: psapi.enum.FontCaps) -> bool:
+    def set_style_run_font_caps(self: TextLayer_32bit, run_index: int, font_caps: psapi.enum.FontCaps) -> None:
         ...
 
     def style_run_no_break(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_no_break(self: TextLayer_32bit, run_index: int, no_break: bool) -> bool:
+    def set_style_run_no_break(self: TextLayer_32bit, run_index: int, no_break: bool) -> None:
         ...
 
     def style_run_font_baseline(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.FontBaseline]:
         ...
 
-    def set_style_run_font_baseline(self: TextLayer_32bit, run_index: int, font_baseline: psapi.enum.FontBaseline) -> bool:
+    def set_style_run_font_baseline(self: TextLayer_32bit, run_index: int, font_baseline: psapi.enum.FontBaseline) -> None:
         ...
 
     def style_run_language(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_style_run_language(self: TextLayer_32bit, run_index: int, language: int) -> bool:
+    def set_style_run_language(self: TextLayer_32bit, run_index: int, language: int) -> None:
         ...
 
     def style_run_character_direction(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.CharacterDirection]:
         ...
 
-    def set_style_run_character_direction(self: TextLayer_32bit, run_index: int, character_direction: psapi.enum.CharacterDirection) -> bool:
+    def set_style_run_character_direction(self: TextLayer_32bit, run_index: int, character_direction: psapi.enum.CharacterDirection) -> None:
         ...
 
     def style_run_baseline_direction(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.BaselineDirection]:
         ...
 
-    def set_style_run_baseline_direction(self: TextLayer_32bit, run_index: int, baseline_direction: psapi.enum.BaselineDirection) -> bool:
+    def set_style_run_baseline_direction(self: TextLayer_32bit, run_index: int, baseline_direction: psapi.enum.BaselineDirection) -> None:
         ...
 
     def style_run_tsume(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_tsume(self: TextLayer_32bit, run_index: int, tsume: float) -> bool:
+    def set_style_run_tsume(self: TextLayer_32bit, run_index: int, tsume: float) -> None:
         ...
 
     def style_run_kashida(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_style_run_kashida(self: TextLayer_32bit, run_index: int, kashida: int) -> bool:
+    def set_style_run_kashida(self: TextLayer_32bit, run_index: int, kashida: int) -> None:
         ...
 
     def style_run_diacritic_pos(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.DiacriticPosition]:
         ...
 
-    def set_style_run_diacritic_pos(self: TextLayer_32bit, run_index: int, diacritic_pos: psapi.enum.DiacriticPosition) -> bool:
+    def set_style_run_diacritic_pos(self: TextLayer_32bit, run_index: int, diacritic_pos: psapi.enum.DiacriticPosition) -> None:
         ...
 
     def style_run_ligatures(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_ligatures(self: TextLayer_32bit, run_index: int, ligatures: bool) -> bool:
+    def set_style_run_ligatures(self: TextLayer_32bit, run_index: int, ligatures: bool) -> None:
         ...
 
     def style_run_dligatures(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_dligatures(self: TextLayer_32bit, run_index: int, dligatures: bool) -> bool:
+    def set_style_run_dligatures(self: TextLayer_32bit, run_index: int, dligatures: bool) -> None:
         ...
 
     def style_run_underline(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_underline(self: TextLayer_32bit, run_index: int, underline: bool) -> bool:
+    def set_style_run_underline(self: TextLayer_32bit, run_index: int, underline: bool) -> None:
         ...
 
     def style_run_strikethrough(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_strikethrough(self: TextLayer_32bit, run_index: int, strikethrough: bool) -> bool:
+    def set_style_run_strikethrough(self: TextLayer_32bit, run_index: int, strikethrough: bool) -> None:
         ...
 
     def style_run_stroke_flag(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_stroke_flag(self: TextLayer_32bit, run_index: int, stroke_flag: bool) -> bool:
+    def set_style_run_stroke_flag(self: TextLayer_32bit, run_index: int, stroke_flag: bool) -> None:
         ...
 
     def style_run_fill_flag(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_fill_flag(self: TextLayer_32bit, run_index: int, fill_flag: bool) -> bool:
+    def set_style_run_fill_flag(self: TextLayer_32bit, run_index: int, fill_flag: bool) -> None:
         ...
 
     def style_run_fill_first(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_style_run_fill_first(self: TextLayer_32bit, run_index: int, fill_first: bool) -> bool:
+    def set_style_run_fill_first(self: TextLayer_32bit, run_index: int, fill_first: bool) -> None:
         ...
 
     def style_run_outline_width(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_style_run_outline_width(self: TextLayer_32bit, run_index: int, outline_width: float) -> bool:
+    def set_style_run_outline_width(self: TextLayer_32bit, run_index: int, outline_width: float) -> None:
         ...
 
     @property
@@ -263,319 +263,319 @@ class TextLayer_32bit(Layer_32bit):
     def style_normal_sheet_index(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_sheet_index(self: TextLayer_32bit, sheet_index: int) -> bool:
+    def set_style_normal_sheet_index(self: TextLayer_32bit, sheet_index: int) -> None:
         ...
 
     def style_normal_font(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_font(self: TextLayer_32bit, font: int) -> bool:
+    def set_style_normal_font(self: TextLayer_32bit, font: int) -> None:
         ...
 
     def style_normal_font_size(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_font_size(self: TextLayer_32bit, font_size: float) -> bool:
+    def set_style_normal_font_size(self: TextLayer_32bit, font_size: float) -> None:
         ...
 
     def style_normal_leading(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_leading(self: TextLayer_32bit, leading: float) -> bool:
+    def set_style_normal_leading(self: TextLayer_32bit, leading: float) -> None:
         ...
 
     def style_normal_auto_leading(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_auto_leading(self: TextLayer_32bit, auto_leading: bool) -> bool:
+    def set_style_normal_auto_leading(self: TextLayer_32bit, auto_leading: bool) -> None:
         ...
 
     def style_normal_kerning(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_kerning(self: TextLayer_32bit, kerning: int) -> bool:
+    def set_style_normal_kerning(self: TextLayer_32bit, kerning: int) -> None:
         ...
 
     def style_normal_faux_bold(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_faux_bold(self: TextLayer_32bit, faux_bold: bool) -> bool:
+    def set_style_normal_faux_bold(self: TextLayer_32bit, faux_bold: bool) -> None:
         ...
 
     def style_normal_faux_italic(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_faux_italic(self: TextLayer_32bit, faux_italic: bool) -> bool:
+    def set_style_normal_faux_italic(self: TextLayer_32bit, faux_italic: bool) -> None:
         ...
 
     def style_normal_horizontal_scale(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_horizontal_scale(self: TextLayer_32bit, horizontal_scale: float) -> bool:
+    def set_style_normal_horizontal_scale(self: TextLayer_32bit, horizontal_scale: float) -> None:
         ...
 
     def style_normal_vertical_scale(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_vertical_scale(self: TextLayer_32bit, vertical_scale: float) -> bool:
+    def set_style_normal_vertical_scale(self: TextLayer_32bit, vertical_scale: float) -> None:
         ...
 
     def style_normal_tracking(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_tracking(self: TextLayer_32bit, tracking: int) -> bool:
+    def set_style_normal_tracking(self: TextLayer_32bit, tracking: int) -> None:
         ...
 
     def style_normal_auto_kerning(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_auto_kerning(self: TextLayer_32bit, auto_kerning: bool) -> bool:
+    def set_style_normal_auto_kerning(self: TextLayer_32bit, auto_kerning: bool) -> None:
         ...
 
     def style_normal_baseline_shift(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_baseline_shift(self: TextLayer_32bit, baseline_shift: float) -> bool:
+    def set_style_normal_baseline_shift(self: TextLayer_32bit, baseline_shift: float) -> None:
         ...
 
     def style_normal_font_caps(self: TextLayer_32bit) -> Optional[psapi.enum.FontCaps]:
         ...
 
-    def set_style_normal_font_caps(self: TextLayer_32bit, font_caps: psapi.enum.FontCaps) -> bool:
+    def set_style_normal_font_caps(self: TextLayer_32bit, font_caps: psapi.enum.FontCaps) -> None:
         ...
 
     def style_normal_font_baseline(self: TextLayer_32bit) -> Optional[psapi.enum.FontBaseline]:
         ...
 
-    def set_style_normal_font_baseline(self: TextLayer_32bit, font_baseline: psapi.enum.FontBaseline) -> bool:
+    def set_style_normal_font_baseline(self: TextLayer_32bit, font_baseline: psapi.enum.FontBaseline) -> None:
         ...
 
     def style_normal_no_break(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_no_break(self: TextLayer_32bit, no_break: bool) -> bool:
+    def set_style_normal_no_break(self: TextLayer_32bit, no_break: bool) -> None:
         ...
 
     def style_normal_language(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_language(self: TextLayer_32bit, language: int) -> bool:
+    def set_style_normal_language(self: TextLayer_32bit, language: int) -> None:
         ...
 
     def style_normal_character_direction(self: TextLayer_32bit) -> Optional[psapi.enum.CharacterDirection]:
         ...
 
-    def set_style_normal_character_direction(self: TextLayer_32bit, character_direction: psapi.enum.CharacterDirection) -> bool:
+    def set_style_normal_character_direction(self: TextLayer_32bit, character_direction: psapi.enum.CharacterDirection) -> None:
         ...
 
     def style_normal_baseline_direction(self: TextLayer_32bit) -> Optional[psapi.enum.BaselineDirection]:
         ...
 
-    def set_style_normal_baseline_direction(self: TextLayer_32bit, baseline_direction: psapi.enum.BaselineDirection) -> bool:
+    def set_style_normal_baseline_direction(self: TextLayer_32bit, baseline_direction: psapi.enum.BaselineDirection) -> None:
         ...
 
     def style_normal_tsume(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_tsume(self: TextLayer_32bit, tsume: float) -> bool:
+    def set_style_normal_tsume(self: TextLayer_32bit, tsume: float) -> None:
         ...
 
     def style_normal_kashida(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_style_normal_kashida(self: TextLayer_32bit, kashida: int) -> bool:
+    def set_style_normal_kashida(self: TextLayer_32bit, kashida: int) -> None:
         ...
 
     def style_normal_diacritic_pos(self: TextLayer_32bit) -> Optional[psapi.enum.DiacriticPosition]:
         ...
 
-    def set_style_normal_diacritic_pos(self: TextLayer_32bit, diacritic_pos: psapi.enum.DiacriticPosition) -> bool:
+    def set_style_normal_diacritic_pos(self: TextLayer_32bit, diacritic_pos: psapi.enum.DiacriticPosition) -> None:
         ...
 
     def style_normal_ligatures(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_ligatures(self: TextLayer_32bit, ligatures: bool) -> bool:
+    def set_style_normal_ligatures(self: TextLayer_32bit, ligatures: bool) -> None:
         ...
 
     def style_normal_dligatures(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_dligatures(self: TextLayer_32bit, dligatures: bool) -> bool:
+    def set_style_normal_dligatures(self: TextLayer_32bit, dligatures: bool) -> None:
         ...
 
     def style_normal_underline(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_underline(self: TextLayer_32bit, underline: bool) -> bool:
+    def set_style_normal_underline(self: TextLayer_32bit, underline: bool) -> None:
         ...
 
     def style_normal_strikethrough(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_strikethrough(self: TextLayer_32bit, strikethrough: bool) -> bool:
+    def set_style_normal_strikethrough(self: TextLayer_32bit, strikethrough: bool) -> None:
         ...
 
     def style_normal_stroke_flag(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_stroke_flag(self: TextLayer_32bit, stroke_flag: bool) -> bool:
+    def set_style_normal_stroke_flag(self: TextLayer_32bit, stroke_flag: bool) -> None:
         ...
 
     def style_normal_fill_flag(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_fill_flag(self: TextLayer_32bit, fill_flag: bool) -> bool:
+    def set_style_normal_fill_flag(self: TextLayer_32bit, fill_flag: bool) -> None:
         ...
 
     def style_normal_fill_first(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_style_normal_fill_first(self: TextLayer_32bit, fill_first: bool) -> bool:
+    def set_style_normal_fill_first(self: TextLayer_32bit, fill_first: bool) -> None:
         ...
 
     def style_normal_outline_width(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_style_normal_outline_width(self: TextLayer_32bit, outline_width: float) -> bool:
+    def set_style_normal_outline_width(self: TextLayer_32bit, outline_width: float) -> None:
         ...
 
     def style_normal_fill_color(self: TextLayer_32bit) -> Optional[List[float]]:
         ...
 
-    def set_style_normal_fill_color(self: TextLayer_32bit, values: List[float]) -> bool:
+    def set_style_normal_fill_color(self: TextLayer_32bit, values: List[float]) -> None:
         ...
 
     def style_normal_stroke_color(self: TextLayer_32bit) -> Optional[List[float]]:
         ...
 
-    def set_style_normal_stroke_color(self: TextLayer_32bit, values: List[float]) -> bool:
+    def set_style_normal_stroke_color(self: TextLayer_32bit, values: List[float]) -> None:
         ...
 
     def paragraph_run_justification(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.Justification]:
         ...
 
-    def set_paragraph_run_justification(self: TextLayer_32bit, run_index: int, justification: psapi.enum.Justification) -> bool:
+    def set_paragraph_run_justification(self: TextLayer_32bit, run_index: int, justification: psapi.enum.Justification) -> None:
         ...
 
     def paragraph_run_first_line_indent(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_first_line_indent(self: TextLayer_32bit, run_index: int, first_line_indent: float) -> bool:
+    def set_paragraph_run_first_line_indent(self: TextLayer_32bit, run_index: int, first_line_indent: float) -> None:
         ...
 
     def paragraph_run_start_indent(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_start_indent(self: TextLayer_32bit, run_index: int, start_indent: float) -> bool:
+    def set_paragraph_run_start_indent(self: TextLayer_32bit, run_index: int, start_indent: float) -> None:
         ...
 
     def paragraph_run_end_indent(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_end_indent(self: TextLayer_32bit, run_index: int, end_indent: float) -> bool:
+    def set_paragraph_run_end_indent(self: TextLayer_32bit, run_index: int, end_indent: float) -> None:
         ...
 
     def paragraph_run_space_before(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_space_before(self: TextLayer_32bit, run_index: int, space_before: float) -> bool:
+    def set_paragraph_run_space_before(self: TextLayer_32bit, run_index: int, space_before: float) -> None:
         ...
 
     def paragraph_run_space_after(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_space_after(self: TextLayer_32bit, run_index: int, space_after: float) -> bool:
+    def set_paragraph_run_space_after(self: TextLayer_32bit, run_index: int, space_after: float) -> None:
         ...
 
     def paragraph_run_auto_hyphenate(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_paragraph_run_auto_hyphenate(self: TextLayer_32bit, run_index: int, auto_hyphenate: bool) -> bool:
+    def set_paragraph_run_auto_hyphenate(self: TextLayer_32bit, run_index: int, auto_hyphenate: bool) -> None:
         ...
 
     def paragraph_run_hyphenated_word_size(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_paragraph_run_hyphenated_word_size(self: TextLayer_32bit, run_index: int, hyphenated_word_size: int) -> bool:
+    def set_paragraph_run_hyphenated_word_size(self: TextLayer_32bit, run_index: int, hyphenated_word_size: int) -> None:
         ...
 
     def paragraph_run_pre_hyphen(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_paragraph_run_pre_hyphen(self: TextLayer_32bit, run_index: int, pre_hyphen: int) -> bool:
+    def set_paragraph_run_pre_hyphen(self: TextLayer_32bit, run_index: int, pre_hyphen: int) -> None:
         ...
 
     def paragraph_run_post_hyphen(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_paragraph_run_post_hyphen(self: TextLayer_32bit, run_index: int, post_hyphen: int) -> bool:
+    def set_paragraph_run_post_hyphen(self: TextLayer_32bit, run_index: int, post_hyphen: int) -> None:
         ...
 
     def paragraph_run_consecutive_hyphens(self: TextLayer_32bit, run_index: int) -> Optional[int]:
         ...
 
-    def set_paragraph_run_consecutive_hyphens(self: TextLayer_32bit, run_index: int, consecutive_hyphens: int) -> bool:
+    def set_paragraph_run_consecutive_hyphens(self: TextLayer_32bit, run_index: int, consecutive_hyphens: int) -> None:
         ...
 
     def paragraph_run_zone(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_zone(self: TextLayer_32bit, run_index: int, zone: float) -> bool:
+    def set_paragraph_run_zone(self: TextLayer_32bit, run_index: int, zone: float) -> None:
         ...
 
     def paragraph_run_word_spacing(self: TextLayer_32bit, run_index: int) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_run_word_spacing(self: TextLayer_32bit, run_index: int, word_spacing: List[float]) -> bool:
+    def set_paragraph_run_word_spacing(self: TextLayer_32bit, run_index: int, word_spacing: List[float]) -> None:
         ...
 
     def paragraph_run_letter_spacing(self: TextLayer_32bit, run_index: int) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_run_letter_spacing(self: TextLayer_32bit, run_index: int, letter_spacing: List[float]) -> bool:
+    def set_paragraph_run_letter_spacing(self: TextLayer_32bit, run_index: int, letter_spacing: List[float]) -> None:
         ...
 
     def paragraph_run_glyph_spacing(self: TextLayer_32bit, run_index: int) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_run_glyph_spacing(self: TextLayer_32bit, run_index: int, glyph_spacing: List[float]) -> bool:
+    def set_paragraph_run_glyph_spacing(self: TextLayer_32bit, run_index: int, glyph_spacing: List[float]) -> None:
         ...
 
     def paragraph_run_auto_leading(self: TextLayer_32bit, run_index: int) -> Optional[float]:
         ...
 
-    def set_paragraph_run_auto_leading(self: TextLayer_32bit, run_index: int, auto_leading: float) -> bool:
+    def set_paragraph_run_auto_leading(self: TextLayer_32bit, run_index: int, auto_leading: float) -> None:
         ...
 
     def paragraph_run_leading_type(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.LeadingType]:
         ...
 
-    def set_paragraph_run_leading_type(self: TextLayer_32bit, run_index: int, leading_type: psapi.enum.LeadingType) -> bool:
+    def set_paragraph_run_leading_type(self: TextLayer_32bit, run_index: int, leading_type: psapi.enum.LeadingType) -> None:
         ...
 
     def paragraph_run_hanging(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_paragraph_run_hanging(self: TextLayer_32bit, run_index: int, hanging: bool) -> bool:
+    def set_paragraph_run_hanging(self: TextLayer_32bit, run_index: int, hanging: bool) -> None:
         ...
 
     def paragraph_run_burasagari(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_paragraph_run_burasagari(self: TextLayer_32bit, run_index: int, burasagari: bool) -> bool:
+    def set_paragraph_run_burasagari(self: TextLayer_32bit, run_index: int, burasagari: bool) -> None:
         ...
 
     def paragraph_run_kinsoku_order(self: TextLayer_32bit, run_index: int) -> Optional[psapi.enum.KinsokuOrder]:
         ...
 
-    def set_paragraph_run_kinsoku_order(self: TextLayer_32bit, run_index: int, kinsoku_order: psapi.enum.KinsokuOrder) -> bool:
+    def set_paragraph_run_kinsoku_order(self: TextLayer_32bit, run_index: int, kinsoku_order: psapi.enum.KinsokuOrder) -> None:
         ...
 
     def paragraph_run_every_line_composer(self: TextLayer_32bit, run_index: int) -> Optional[bool]:
         ...
 
-    def set_paragraph_run_every_line_composer(self: TextLayer_32bit, run_index: int, every_line_composer: bool) -> bool:
+    def set_paragraph_run_every_line_composer(self: TextLayer_32bit, run_index: int, every_line_composer: bool) -> None:
         ...
 
     @property
@@ -585,133 +585,133 @@ class TextLayer_32bit(Layer_32bit):
     def paragraph_normal_sheet_index(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_paragraph_normal_sheet_index(self: TextLayer_32bit, sheet_index: int) -> bool:
+    def set_paragraph_normal_sheet_index(self: TextLayer_32bit, sheet_index: int) -> None:
         ...
 
     def paragraph_normal_justification(self: TextLayer_32bit) -> Optional[psapi.enum.Justification]:
         ...
 
-    def set_paragraph_normal_justification(self: TextLayer_32bit, justification: psapi.enum.Justification) -> bool:
+    def set_paragraph_normal_justification(self: TextLayer_32bit, justification: psapi.enum.Justification) -> None:
         ...
 
     def paragraph_normal_first_line_indent(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_first_line_indent(self: TextLayer_32bit, first_line_indent: float) -> bool:
+    def set_paragraph_normal_first_line_indent(self: TextLayer_32bit, first_line_indent: float) -> None:
         ...
 
     def paragraph_normal_start_indent(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_start_indent(self: TextLayer_32bit, start_indent: float) -> bool:
+    def set_paragraph_normal_start_indent(self: TextLayer_32bit, start_indent: float) -> None:
         ...
 
     def paragraph_normal_end_indent(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_end_indent(self: TextLayer_32bit, end_indent: float) -> bool:
+    def set_paragraph_normal_end_indent(self: TextLayer_32bit, end_indent: float) -> None:
         ...
 
     def paragraph_normal_space_before(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_space_before(self: TextLayer_32bit, space_before: float) -> bool:
+    def set_paragraph_normal_space_before(self: TextLayer_32bit, space_before: float) -> None:
         ...
 
     def paragraph_normal_space_after(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_space_after(self: TextLayer_32bit, space_after: float) -> bool:
+    def set_paragraph_normal_space_after(self: TextLayer_32bit, space_after: float) -> None:
         ...
 
     def paragraph_normal_auto_hyphenate(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_paragraph_normal_auto_hyphenate(self: TextLayer_32bit, auto_hyphenate: bool) -> bool:
+    def set_paragraph_normal_auto_hyphenate(self: TextLayer_32bit, auto_hyphenate: bool) -> None:
         ...
 
     def paragraph_normal_hyphenated_word_size(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_paragraph_normal_hyphenated_word_size(self: TextLayer_32bit, hyphenated_word_size: int) -> bool:
+    def set_paragraph_normal_hyphenated_word_size(self: TextLayer_32bit, hyphenated_word_size: int) -> None:
         ...
 
     def paragraph_normal_pre_hyphen(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_paragraph_normal_pre_hyphen(self: TextLayer_32bit, pre_hyphen: int) -> bool:
+    def set_paragraph_normal_pre_hyphen(self: TextLayer_32bit, pre_hyphen: int) -> None:
         ...
 
     def paragraph_normal_post_hyphen(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_paragraph_normal_post_hyphen(self: TextLayer_32bit, post_hyphen: int) -> bool:
+    def set_paragraph_normal_post_hyphen(self: TextLayer_32bit, post_hyphen: int) -> None:
         ...
 
     def paragraph_normal_consecutive_hyphens(self: TextLayer_32bit) -> Optional[int]:
         ...
 
-    def set_paragraph_normal_consecutive_hyphens(self: TextLayer_32bit, consecutive_hyphens: int) -> bool:
+    def set_paragraph_normal_consecutive_hyphens(self: TextLayer_32bit, consecutive_hyphens: int) -> None:
         ...
 
     def paragraph_normal_zone(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_zone(self: TextLayer_32bit, zone: float) -> bool:
+    def set_paragraph_normal_zone(self: TextLayer_32bit, zone: float) -> None:
         ...
 
     def paragraph_normal_word_spacing(self: TextLayer_32bit) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_normal_word_spacing(self: TextLayer_32bit, word_spacing: List[float]) -> bool:
+    def set_paragraph_normal_word_spacing(self: TextLayer_32bit, word_spacing: List[float]) -> None:
         ...
 
     def paragraph_normal_letter_spacing(self: TextLayer_32bit) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_normal_letter_spacing(self: TextLayer_32bit, letter_spacing: List[float]) -> bool:
+    def set_paragraph_normal_letter_spacing(self: TextLayer_32bit, letter_spacing: List[float]) -> None:
         ...
 
     def paragraph_normal_glyph_spacing(self: TextLayer_32bit) -> Optional[List[float]]:
         ...
 
-    def set_paragraph_normal_glyph_spacing(self: TextLayer_32bit, glyph_spacing: List[float]) -> bool:
+    def set_paragraph_normal_glyph_spacing(self: TextLayer_32bit, glyph_spacing: List[float]) -> None:
         ...
 
     def paragraph_normal_auto_leading(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_paragraph_normal_auto_leading(self: TextLayer_32bit, auto_leading: float) -> bool:
+    def set_paragraph_normal_auto_leading(self: TextLayer_32bit, auto_leading: float) -> None:
         ...
 
     def paragraph_normal_leading_type(self: TextLayer_32bit) -> Optional[psapi.enum.LeadingType]:
         ...
 
-    def set_paragraph_normal_leading_type(self: TextLayer_32bit, leading_type: psapi.enum.LeadingType) -> bool:
+    def set_paragraph_normal_leading_type(self: TextLayer_32bit, leading_type: psapi.enum.LeadingType) -> None:
         ...
 
     def paragraph_normal_hanging(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_paragraph_normal_hanging(self: TextLayer_32bit, hanging: bool) -> bool:
+    def set_paragraph_normal_hanging(self: TextLayer_32bit, hanging: bool) -> None:
         ...
 
     def paragraph_normal_burasagari(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_paragraph_normal_burasagari(self: TextLayer_32bit, burasagari: bool) -> bool:
+    def set_paragraph_normal_burasagari(self: TextLayer_32bit, burasagari: bool) -> None:
         ...
 
     def paragraph_normal_kinsoku_order(self: TextLayer_32bit) -> Optional[psapi.enum.KinsokuOrder]:
         ...
 
-    def set_paragraph_normal_kinsoku_order(self: TextLayer_32bit, kinsoku_order: psapi.enum.KinsokuOrder) -> bool:
+    def set_paragraph_normal_kinsoku_order(self: TextLayer_32bit, kinsoku_order: psapi.enum.KinsokuOrder) -> None:
         ...
 
     def paragraph_normal_every_line_composer(self: TextLayer_32bit) -> Optional[bool]:
         ...
 
-    def set_paragraph_normal_every_line_composer(self: TextLayer_32bit, every_line_composer: bool) -> bool:
+    def set_paragraph_normal_every_line_composer(self: TextLayer_32bit, every_line_composer: bool) -> None:
         ...
 
     # ── Anti-aliasing ────────────────────────────────────────────────────────
@@ -823,16 +823,16 @@ class TextLayer_32bit(Layer_32bit):
     ) -> int:
         ...
 
-    def set_font_postscript_name(self: TextLayer_32bit, font_index: int, new_name: str) -> bool:
+    def set_font_postscript_name(self: TextLayer_32bit, font_index: int, new_name: str) -> None:
         ...
 
     def find_font_index(self: TextLayer_32bit, postscript_name: str) -> int:
         ...
 
-    def set_style_run_font_by_name(self: TextLayer_32bit, run_index: int, postscript_name: str) -> bool:
+    def set_style_run_font_by_name(self: TextLayer_32bit, run_index: int, postscript_name: str) -> None:
         ...
 
-    def set_style_normal_font_by_name(self: TextLayer_32bit, postscript_name: str) -> bool:
+    def set_style_normal_font_by_name(self: TextLayer_32bit, postscript_name: str) -> None:
         ...
 
     def orientation(self: TextLayer_32bit) -> Optional[psapi.enum.WritingDirection]:
@@ -842,7 +842,7 @@ class TextLayer_32bit(Layer_32bit):
     def is_vertical(self: TextLayer_32bit) -> bool:
         ...
 
-    def set_orientation(self: TextLayer_32bit, writing_direction: psapi.enum.WritingDirection) -> bool:
+    def set_orientation(self: TextLayer_32bit, writing_direction: psapi.enum.WritingDirection) -> None:
         ...
 
     def shape_type(self: TextLayer_32bit) -> Optional[psapi.enum.ShapeType]:
@@ -865,22 +865,22 @@ class TextLayer_32bit(Layer_32bit):
     def box_height(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_box_bounds(self: TextLayer_32bit, top: float, left: float, bottom: float, right: float) -> bool:
+    def set_box_bounds(self: TextLayer_32bit, top: float, left: float, bottom: float, right: float) -> None:
         ...
 
-    def set_box_size(self: TextLayer_32bit, width: float, height: float) -> bool:
+    def set_box_size(self: TextLayer_32bit, width: float, height: float) -> None:
         ...
 
-    def set_box_width(self: TextLayer_32bit, width: float) -> bool:
+    def set_box_width(self: TextLayer_32bit, width: float) -> None:
         ...
 
-    def set_box_height(self: TextLayer_32bit, height: float) -> bool:
+    def set_box_height(self: TextLayer_32bit, height: float) -> None:
         ...
 
-    def convert_to_box_text(self: TextLayer_32bit, width: float, height: float) -> bool:
+    def convert_to_box_text(self: TextLayer_32bit, width: float, height: float) -> None:
         ...
 
-    def convert_to_point_text(self: TextLayer_32bit) -> bool:
+    def convert_to_point_text(self: TextLayer_32bit) -> None:
         ...
 
     def transform(self: TextLayer_32bit) -> List[float]:
@@ -913,28 +913,28 @@ class TextLayer_32bit(Layer_32bit):
     def transform_ty(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_transform(self: TextLayer_32bit, values: List[float]) -> bool:
+    def set_transform(self: TextLayer_32bit, values: List[float]) -> None:
         ...
 
-    def set_transform_component(self: TextLayer_32bit, index: int, value: float) -> bool:
+    def set_transform_component(self: TextLayer_32bit, index: int, value: float) -> None:
         ...
 
-    def set_transform_xx(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_xx(self: TextLayer_32bit, value: float) -> None:
         ...
 
-    def set_transform_xy(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_xy(self: TextLayer_32bit, value: float) -> None:
         ...
 
-    def set_transform_yx(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_yx(self: TextLayer_32bit, value: float) -> None:
         ...
 
-    def set_transform_yy(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_yy(self: TextLayer_32bit, value: float) -> None:
         ...
 
-    def set_transform_tx(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_tx(self: TextLayer_32bit, value: float) -> None:
         ...
 
-    def set_transform_ty(self: TextLayer_32bit, value: float) -> bool:
+    def set_transform_ty(self: TextLayer_32bit, value: float) -> None:
         ...
 
     @property
@@ -949,32 +949,32 @@ class TextLayer_32bit(Layer_32bit):
     def scale_y(self: TextLayer_32bit) -> Optional[float]:
         ...
 
-    def set_rotation_angle(self: TextLayer_32bit, angle_degrees: float) -> bool:
+    def set_rotation_angle(self: TextLayer_32bit, angle_degrees: float) -> None:
         ...
 
-    def set_scale_x(self: TextLayer_32bit, sx: float) -> bool:
+    def set_scale_x(self: TextLayer_32bit, sx: float) -> None:
         ...
 
-    def set_scale_y(self: TextLayer_32bit, sy: float) -> bool:
+    def set_scale_y(self: TextLayer_32bit, sy: float) -> None:
         ...
 
-    def set_scale(self: TextLayer_32bit, sx: float, sy: Optional[float] = ...) -> bool:
+    def set_scale(self: TextLayer_32bit, sx: float, sy: Optional[float] = ...) -> None:
         ...
 
     def position(self: TextLayer_32bit) -> Tuple[float, float]:
         ...
 
-    def set_position(self: TextLayer_32bit, x: float, y: float) -> bool:
+    def set_position(self: TextLayer_32bit, x: float, y: float) -> None:
         ...
 
-    def reset_transform(self: TextLayer_32bit) -> bool:
+    def reset_transform(self: TextLayer_32bit) -> None:
         ...
 
     @property
     def primary_font_name(self: TextLayer_32bit) -> Optional[str]:
         ...
 
-    def set_font(self: TextLayer_32bit, postscript_name: str) -> bool:
+    def set_font(self: TextLayer_32bit, postscript_name: str) -> None:
         ...
 
     def style_run(self: TextLayer_32bit, run_index: int) -> StyleRunProxy_32bit:
@@ -994,3 +994,4 @@ class TextLayer_32bit(Layer_32bit):
 
     def font_set(self: TextLayer_32bit) -> FontSetProxy_32bit:
         ...
+
