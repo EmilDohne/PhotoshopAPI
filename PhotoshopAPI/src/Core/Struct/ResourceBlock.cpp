@@ -8,7 +8,6 @@
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
 
-#include <cassert>
 #include <limits>
 
 PSAPI_NAMESPACE_BEGIN
@@ -103,7 +102,20 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 {
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name = { "", 2u };
-	assert(iccProfile.size() < std::numeric_limits<uint32_t>::max());
+
+	// Length markers for image resources are uint32 and this block is padded to 2 bytes,
+	// so raw ICC payload may not exceed uint32_max - 1 bytes.
+	constexpr size_t max_raw_icc_size = static_cast<size_t>(std::numeric_limits<uint32_t>::max()) - 1u;
+	if (iccProfile.size() > max_raw_icc_size)
+	{
+		PSAPI_LOG_ERROR(
+			"ICCProfileBlock",
+			"ICC profile payload too large: got %zu bytes, max supported is %zu bytes",
+			iccProfile.size(),
+			max_raw_icc_size
+		);
+	}
+
 	m_DataSize = RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(iccProfile.size()), 2u);
 
 	m_RawICCProfile = std::move(iccProfile);
@@ -140,7 +152,18 @@ void ICCProfileBlock::write(File& document)
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
 	m_Name.write(document);
-	assert(m_RawICCProfile.size() <= std::numeric_limits<uint32_t>::max());
+
+	constexpr size_t max_raw_icc_size = static_cast<size_t>(std::numeric_limits<uint32_t>::max()) - 1u;
+	if (m_RawICCProfile.size() > max_raw_icc_size)
+	{
+		PSAPI_LOG_ERROR(
+			"ICCProfileBlock",
+			"ICC profile payload too large for write: got %zu bytes, max supported is %zu bytes",
+			m_RawICCProfile.size(),
+			max_raw_icc_size
+		);
+	}
+
 	const uint32_t raw_size = static_cast<uint32_t>(m_RawICCProfile.size());
 	m_DataSize = RoundUpToMultiple(raw_size, 2u);
 	{
