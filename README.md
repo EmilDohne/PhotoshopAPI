@@ -195,10 +195,3 @@ img_layer.opacity = .5
 document.write(os.path.join(os.path.dirname(__file__), "WriteSimpleFile.psd"))
 ```
 
-Editable text layers
-====================
-
-For full TextLayer usage and examples, see:
-
-- `docs/doxygen/concepts/text-layers.rst`
-- https://photoshopapi.readthedocs.io/en/latest/concepts/text-layers.html
