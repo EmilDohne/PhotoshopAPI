@@ -253,6 +253,48 @@ void bind_textlayer_transform_apis(py::class_<TextLayer<T>, Layer<T>, std::share
 
     )pbdoc");
 
+    text_layer.def("set_warp_style", &Class::set_warp_style,
+        py::arg("style"), R"pbdoc(
+
+        Set warp style enum in the TySh warp descriptor.
+        :raises ValueError: on unsupported enum value
+        :raises RuntimeError: if no writable warp descriptor is available
+
+    )pbdoc");
+
+    text_layer.def("set_warp_value", &Class::set_warp_value,
+        py::arg("value"), R"pbdoc(
+
+        Set warp bend amount (warpValue), typically in [-100, 100].
+        :raises RuntimeError: if no writable warp descriptor is available
+
+    )pbdoc");
+
+    text_layer.def("set_warp_horizontal_distortion", &Class::set_warp_horizontal_distortion,
+        py::arg("value"), R"pbdoc(
+
+        Set horizontal warp distortion (warpPerspective), typically in [-100, 100].
+        :raises RuntimeError: if no writable warp descriptor is available
+
+    )pbdoc");
+
+    text_layer.def("set_warp_vertical_distortion", &Class::set_warp_vertical_distortion,
+        py::arg("value"), R"pbdoc(
+
+        Set vertical warp distortion (warpPerspectiveOther), typically in [-100, 100].
+        :raises RuntimeError: if no writable warp descriptor is available
+
+    )pbdoc");
+
+    text_layer.def("set_warp_rotation", &Class::set_warp_rotation,
+        py::arg("rotation"), R"pbdoc(
+
+        Set warp orientation (horizontal/vertical) in the TySh warp descriptor.
+        :raises ValueError: on unsupported enum value
+        :raises RuntimeError: if no writable warp descriptor is available
+
+    )pbdoc");
+
     // -----------------------------------------------------------------------
     //  Proxy accessor methods
     // -----------------------------------------------------------------------

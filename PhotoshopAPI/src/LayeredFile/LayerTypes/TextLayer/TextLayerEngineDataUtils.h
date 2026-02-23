@@ -807,6 +807,99 @@ inline std::optional<double> read_warp_double(const TaggedBlock& block, const st
 	}
 }
 
+inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
+{
+	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	if (warp_body == 0u) return false;
+
+	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	if (old_warp_body_size == 0u)
+	{
+		return false;
+	}
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	{
+		return false;
+	}
+
+	try
+	{
+		auto& entry = descriptor.at(target_key);
+		auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+		if (enumerated == nullptr)
+		{
+			return false;
+		}
+		enumerated->m_Enum = new_value;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		new_body.begin(),
+		new_body.end());
+	return true;
+}
+
+inline bool write_warp_double(TaggedBlock& block, const std::string& target_key, const double new_value)
+{
+	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	if (warp_body == 0u) return false;
+
+	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	if (old_warp_body_size == 0u)
+	{
+		return false;
+	}
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	{
+		return false;
+	}
+
+	try
+	{
+		auto& entry = descriptor.at(target_key);
+
+		if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
+		{
+			double_value->m_Value = new_value;
+		}
+		else if (auto* unit_float = dynamic_cast<Descriptors::UnitFloat*>(entry.get()))
+		{
+			unit_float->m_Value = new_value;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		new_body.begin(),
+		new_body.end());
+	return true;
+}
+
 } // namespace TextLayerDetail
 
 PSAPI_NAMESPACE_END

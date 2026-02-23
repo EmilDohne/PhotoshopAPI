@@ -74,6 +74,56 @@ class TestWarpReadAPIs(unittest.TestCase):
             self.assertIn(style, (None, psapi.enum.WarpStyle.NoWarp))
 
 
+@unittest.skipUnless(os.path.exists(_WARP_FIXTURE_PATH), "Warp fixture missing")
+class TestWarpWriteAPIs(unittest.TestCase):
+    """Warp write APIs for TySh warp descriptor fields."""
+
+    def test_setters_update_current_layer(self):
+        file = psapi.LayeredFile.read(_WARP_FIXTURE_PATH)
+        layer = _find_text_layer_by_name(file, "WarpArc")
+        self.assertIsNotNone(layer)
+
+        layer.set_warp_style(psapi.enum.WarpStyle.Wave)
+        layer.set_warp_value(-22.5)
+        layer.set_warp_horizontal_distortion(15.0)
+        layer.set_warp_vertical_distortion(-8.25)
+        layer.set_warp_rotation(psapi.enum.WarpRotation.Vertical)
+
+        self.assertEqual(layer.warp_style, psapi.enum.WarpStyle.Wave)
+        self.assertAlmostEqual(layer.warp_value, -22.5, places=6)
+        self.assertAlmostEqual(layer.warp_horizontal_distortion, 15.0, places=6)
+        self.assertAlmostEqual(layer.warp_vertical_distortion, -8.25, places=6)
+        self.assertEqual(layer.warp_rotation, psapi.enum.WarpRotation.Vertical)
+        self.assertTrue(layer.has_warp)
+
+    def test_setters_roundtrip(self):
+        file = psapi.LayeredFile.read(_WARP_FIXTURE_PATH)
+        layer = _find_text_layer_by_name(file, "WarpArc")
+        self.assertIsNotNone(layer)
+
+        layer.set_warp_style(psapi.enum.WarpStyle.Bulge)
+        layer.set_warp_value(31.25)
+        layer.set_warp_horizontal_distortion(-11.0)
+        layer.set_warp_vertical_distortion(7.5)
+        layer.set_warp_rotation(psapi.enum.WarpRotation.Horizontal)
+
+        with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
+            tmp_path = f.name
+        try:
+            file.write(tmp_path)
+            reread = psapi.LayeredFile.read(tmp_path)
+            rl = _find_text_layer_by_name(reread, "WarpArc")
+            self.assertIsNotNone(rl)
+            self.assertEqual(rl.warp_style, psapi.enum.WarpStyle.Bulge)
+            self.assertAlmostEqual(rl.warp_value, 31.25, places=4)
+            self.assertAlmostEqual(rl.warp_horizontal_distortion, -11.0, places=4)
+            self.assertAlmostEqual(rl.warp_vertical_distortion, 7.5, places=4)
+            self.assertEqual(rl.warp_rotation, psapi.enum.WarpRotation.Horizontal)
+            self.assertTrue(rl.has_warp)
+        finally:
+            os.remove(tmp_path)
+
+
 @unittest.skipUnless(os.path.exists(_TRANSFORM_FIXTURE_PATH), "Transform fixture missing")
 class TestTransformAPIs(unittest.TestCase):
     """Transform read/write APIs for the TySh 2D affine matrix."""

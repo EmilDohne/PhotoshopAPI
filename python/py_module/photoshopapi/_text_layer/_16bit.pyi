@@ -750,6 +750,21 @@ class TextLayer_16bit(Layer_16bit):
     def warp_rotation(self: TextLayer_16bit) -> Optional[psapi.enum.WarpRotation]:
         ...
 
+    def set_warp_style(self: TextLayer_16bit, style: psapi.enum.WarpStyle) -> None:
+        ...
+
+    def set_warp_value(self: TextLayer_16bit, value: float) -> None:
+        ...
+
+    def set_warp_horizontal_distortion(self: TextLayer_16bit, value: float) -> None:
+        ...
+
+    def set_warp_vertical_distortion(self: TextLayer_16bit, value: float) -> None:
+        ...
+
+    def set_warp_rotation(self: TextLayer_16bit, rotation: psapi.enum.WarpRotation) -> None:
+        ...
+
     # ── Range-based style API ───────────────────────────────────────────────
 
     def style_range(self: TextLayer_16bit, start: int, end: int) -> CharacterStyleRange_16bit:

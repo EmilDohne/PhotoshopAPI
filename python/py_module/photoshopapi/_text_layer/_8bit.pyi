@@ -750,6 +750,21 @@ class TextLayer_8bit(Layer_8bit):
     def warp_rotation(self: TextLayer_8bit) -> Optional[psapi.enum.WarpRotation]:
         ...
 
+    def set_warp_style(self: TextLayer_8bit, style: psapi.enum.WarpStyle) -> None:
+        ...
+
+    def set_warp_value(self: TextLayer_8bit, value: float) -> None:
+        ...
+
+    def set_warp_horizontal_distortion(self: TextLayer_8bit, value: float) -> None:
+        ...
+
+    def set_warp_vertical_distortion(self: TextLayer_8bit, value: float) -> None:
+        ...
+
+    def set_warp_rotation(self: TextLayer_8bit, rotation: psapi.enum.WarpRotation) -> None:
+        ...
+
     # ── Range-based style API ───────────────────────────────────────────────
 
     def style_range(self: TextLayer_8bit, start: int, end: int) -> CharacterStyleRange_8bit:
