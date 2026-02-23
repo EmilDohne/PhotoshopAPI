@@ -33,7 +33,7 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         Replace the full text payload with a new value.
 
-        Returns True when a payload was found and updated.
+        :raises RuntimeError: if this layer has no TySh block, no parseable text payload, or mutation fails
 
     )pbdoc");
 
@@ -44,7 +44,8 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         Replace text occurrences in the payload.
 
-        Returns True when at least one occurrence was replaced.
+        :raises ValueError: if old_text is empty
+        :raises RuntimeError: if this layer has no TySh block, no parseable text payload, or mutation fails
 
 
     )pbdoc");
@@ -52,6 +53,8 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
     text_layer.def("set_text_equal_length", &Class::set_text_equal_length, py::arg("value"), R"pbdoc(
 
         Replace the full text payload only if UTF-16 code-unit length matches.
+        :raises ValueError: if the replacement length differs from the current UTF-16 code-unit length
+        :raises RuntimeError: if this layer has no TySh block, no parseable text payload, or mutation fails
 
     )pbdoc");
 
@@ -61,6 +64,8 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("replace_all") = true, R"pbdoc(
 
         Replace text occurrences only when old and new UTF-16 code-unit lengths match.
+        :raises ValueError: if old_text is empty or UTF-16 lengths differ
+        :raises RuntimeError: if this layer has no TySh block, no parseable text payload, or mutation fails
 
     )pbdoc");
 
@@ -149,7 +154,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("font_index"), py::arg("new_name"), R"pbdoc(
 
         Rename an existing font entry in both ResourceDict/FontSet and
-        DocumentResources/FontSet.  Returns True on success.
+        DocumentResources/FontSet.
+        :raises ValueError: if font_index is out of range
+        :raises RuntimeError: if writing updated EngineData fails
 
     )pbdoc");
 
@@ -165,7 +172,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("run_index"), py::arg("postscript_name"), R"pbdoc(
 
         Find-or-add the font by PostScript name, then set it as the /Font
-        for the given style run.  Returns True on success.
+        for the given style run.
+        :raises ValueError: if run_index is invalid
+        :raises RuntimeError: if the font cannot be added or EngineData write fails
 
     )pbdoc");
 
@@ -173,7 +182,8 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("postscript_name"), R"pbdoc(
 
         Find-or-add the font by PostScript name, then set it as the /Font
-        in the normal style sheet.  Returns True on success.
+        in the normal style sheet.
+        :raises RuntimeError: if the font cannot be added or EngineData write fails
 
     )pbdoc");
 
@@ -198,7 +208,7 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         Set the WritingDirection enum in the EngineData.
         Use WritingDirection.Horizontal or WritingDirection.Vertical.
-        Returns True on success.
+        :raises RuntimeError: if writing orientation data fails
 
     )pbdoc");
 
@@ -248,7 +258,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("top"), py::arg("left"), py::arg("bottom"), py::arg("right"), R"pbdoc(
 
         Set the box bounds in text-space coordinates.
-        The layer must already be box text.  Returns True on success.
+        The layer must already be box text.
+        :raises ValueError: for invalid bounds or if the layer is not box text
+        :raises RuntimeError: if writing updated EngineData fails
 
     )pbdoc");
 
@@ -256,7 +268,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("width"), py::arg("height"), R"pbdoc(
 
         Set box width and height while keeping the current top-left corner.
-        The layer must already be box text.  Returns True on success.
+        The layer must already be box text.
+        :raises ValueError: for invalid size or if the layer is not box text
+        :raises RuntimeError: if writing updated EngineData fails
 
     )pbdoc");
 
@@ -264,7 +278,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("width"), R"pbdoc(
 
         Set only the box width, keeping top, left, and height unchanged.
-        The layer must already be box text.  Returns True on success.
+        The layer must already be box text.
+        :raises ValueError: for invalid width or if the layer is not box text
+        :raises RuntimeError: if writing updated EngineData fails
 
     )pbdoc");
 
@@ -272,7 +288,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
         py::arg("height"), R"pbdoc(
 
         Set only the box height, keeping top, left, and width unchanged.
-        The layer must already be box text.  Returns True on success.
+        The layer must already be box text.
+        :raises ValueError: for invalid height or if the layer is not box text
+        :raises RuntimeError: if writing updated EngineData fails
 
     )pbdoc");
 
@@ -281,14 +299,16 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         Convert a point-text layer to box (area) text with the given dimensions.
         The box is placed at (0, 0) in text-space coordinates.
-        Returns False if the layer is already box text.
+        :raises ValueError: for invalid dimensions or if the layer is already box text
+        :raises RuntimeError: if shape data cannot be rewritten
 
     )pbdoc");
 
     text_layer.def("convert_to_point_text", &Class::convert_to_point_text, R"pbdoc(
 
         Convert a box-text layer back to point text, removing the bounding rectangle.
-        Returns False if the layer is already point text.
+        :raises ValueError: if the layer is already point text
+        :raises RuntimeError: if shape data cannot be rewritten
 
     )pbdoc");
 
@@ -311,9 +331,9 @@ void bind_textlayer_core_apis(py::class_<TextLayer<T>, Layer<T>, std::shared_ptr
 
         :param method: The anti-aliasing method to apply
         :type method: AntiAliasMethod
-
-        :return: True on success
-        :rtype: bool
+        :raises:
+            ValueError: if an unsupported anti-alias enum value is passed
+            RuntimeError: if this layer has no TySh tagged block or writing AntA fails
 
     )pbdoc");
 

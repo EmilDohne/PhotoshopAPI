@@ -163,7 +163,7 @@ TEST_CASE("Shape: set_box_bounds changes bounds and survives roundtrip")
 	REQUIRE(layer->is_box_text());
 
 	const double new_top = 10.0, new_left = 20.0, new_bottom = 310.0, new_right = 520.0;
-	CHECK(layer->set_box_bounds(new_top, new_left, new_bottom, new_right));
+	CHECK_NOTHROW(layer->set_box_bounds(new_top, new_left, new_bottom, new_right));
 
 	// Verify immediate readback
 	const auto bounds = layer->box_bounds();
@@ -208,7 +208,7 @@ TEST_CASE("Shape: set_box_size keeps top-left and sets new width/height")
 	const double orig_top = (*orig)[0];
 	const double orig_left = (*orig)[1];
 
-	CHECK(layer->set_box_size(400.0, 200.0));
+	CHECK_NOTHROW(layer->set_box_size(400.0, 200.0));
 
 	const auto after = layer->box_bounds();
 	REQUIRE(after.has_value());
@@ -232,7 +232,7 @@ TEST_CASE("Shape: set_box_width changes only width")
 	const auto orig_h = layer->box_height();
 	REQUIRE(orig_h.has_value());
 
-	CHECK(layer->set_box_width(999.0));
+	CHECK_NOTHROW(layer->set_box_width(999.0));
 	CHECK(layer->box_width().value() == doctest::Approx(999.0));
 	CHECK(layer->box_height().value() == doctest::Approx(orig_h.value()));
 }
@@ -251,7 +251,7 @@ TEST_CASE("Shape: set_box_height changes only height")
 	const auto orig_w = layer->box_width();
 	REQUIRE(orig_w.has_value());
 
-	CHECK(layer->set_box_height(777.0));
+	CHECK_NOTHROW(layer->set_box_height(777.0));
 	CHECK(layer->box_height().value() == doctest::Approx(777.0));
 	CHECK(layer->box_width().value() == doctest::Approx(orig_w.value()));
 }
@@ -269,11 +269,11 @@ TEST_CASE("Shape: set_box_bounds rejects non-finite values")
 
 	const auto inf = std::numeric_limits<double>::infinity();
 	const auto nan = std::numeric_limits<double>::quiet_NaN();
-	CHECK_FALSE(layer->set_box_bounds(inf, 0, 100, 100));
-	CHECK_FALSE(layer->set_box_bounds(0, nan, 100, 100));
-	CHECK_FALSE(layer->set_box_size(inf, 100));
-	CHECK_FALSE(layer->set_box_width(nan));
-	CHECK_FALSE(layer->set_box_height(-1.0));
+	CHECK_THROWS(layer->set_box_bounds(inf, 0, 100, 100));
+	CHECK_THROWS(layer->set_box_bounds(0, nan, 100, 100));
+	CHECK_THROWS(layer->set_box_size(inf, 100));
+	CHECK_THROWS(layer->set_box_width(nan));
+	CHECK_THROWS(layer->set_box_height(-1.0));
 }
 
 
@@ -292,7 +292,7 @@ TEST_CASE("Shape: convert_to_box_text turns point text into box text")
 	REQUIRE(layer != nullptr);
 	REQUIRE(layer->is_point_text());
 
-	CHECK(layer->convert_to_box_text(300.0, 150.0));
+	CHECK_NOTHROW(layer->convert_to_box_text(300.0, 150.0));
 	CHECK(layer->is_box_text());
 	CHECK_FALSE(layer->is_point_text());
 
@@ -315,7 +315,7 @@ TEST_CASE("Shape: convert_to_box_text roundtrips through file write/read")
 	auto layer = find_text_layer_by_name(file, "VerticalPointControl");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->convert_to_box_text(250.0, 120.0));
+	CHECK_NOTHROW(layer->convert_to_box_text(250.0, 120.0));
 
 	const auto out_path = temp_psd_path();
 	LayeredFile<bpp8_t>::write(std::move(file), out_path);
@@ -343,7 +343,7 @@ TEST_CASE("Shape: convert_to_point_text turns box text into point text")
 	REQUIRE(layer != nullptr);
 	REQUIRE(layer->is_box_text());
 
-	CHECK(layer->convert_to_point_text());
+	CHECK_NOTHROW(layer->convert_to_point_text());
 	CHECK(layer->is_point_text());
 	CHECK_FALSE(layer->is_box_text());
 	CHECK_FALSE(layer->box_bounds().has_value());
@@ -360,7 +360,7 @@ TEST_CASE("Shape: convert_to_point_text roundtrips through file write/read")
 	auto layer = find_text_layer_by_name(file, "HorizontalBoxControl");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->convert_to_point_text());
+	CHECK_NOTHROW(layer->convert_to_point_text());
 
 	const auto out_path = temp_psd_path();
 	LayeredFile<bpp8_t>::write(std::move(file), out_path);
@@ -387,7 +387,7 @@ TEST_CASE("Shape: convert_to_box_text fails when already box text")
 	REQUIRE(layer != nullptr);
 	REQUIRE(layer->is_box_text());
 
-	CHECK_FALSE(layer->convert_to_box_text(100, 100));
+	CHECK_THROWS(layer->convert_to_box_text(100, 100));
 }
 
 
@@ -402,7 +402,7 @@ TEST_CASE("Shape: convert_to_point_text fails when already point text")
 	REQUIRE(layer != nullptr);
 	REQUIRE(layer->is_point_text());
 
-	CHECK_FALSE(layer->convert_to_point_text());
+	CHECK_THROWS(layer->convert_to_point_text());
 }
 
 

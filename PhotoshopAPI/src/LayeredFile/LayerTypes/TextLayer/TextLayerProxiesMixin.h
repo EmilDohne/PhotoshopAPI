@@ -71,38 +71,38 @@ public:
 		std::optional<double>                    outline_width()          { return layer->style_run_outline_width(index); }
 
 		// --- Setters ---
-		bool set_font_size(const double v)                                { return layer->set_style_run_font_size(index, v); }
-		bool set_leading(const double v)                                  { return layer->set_style_run_leading(index, v); }
-		bool set_auto_leading(const bool v)                               { return layer->set_style_run_auto_leading(index, v); }
-		bool set_kerning(const int32_t v)                                 { return layer->set_style_run_kerning(index, v); }
-		bool set_fill_color(const std::vector<double>& v)                 { return layer->set_style_run_fill_color(index, v); }
-		bool set_stroke_color(const std::vector<double>& v)               { return layer->set_style_run_stroke_color(index, v); }
-		bool set_font(const int32_t v)                                    { return layer->set_style_run_font(index, v); }
-		bool set_font_by_name(const std::string& v)                       { return layer->set_style_run_font_by_name(index, v); }
-		bool set_faux_bold(const bool v)                                  { return layer->set_style_run_faux_bold(index, v); }
-		bool set_faux_italic(const bool v)                                { return layer->set_style_run_faux_italic(index, v); }
-		bool set_horizontal_scale(const double v)                         { return layer->set_style_run_horizontal_scale(index, v); }
-		bool set_vertical_scale(const double v)                           { return layer->set_style_run_vertical_scale(index, v); }
-		bool set_tracking(const int32_t v)                                { return layer->set_style_run_tracking(index, v); }
-		bool set_auto_kerning(const bool v)                               { return layer->set_style_run_auto_kerning(index, v); }
-		bool set_baseline_shift(const double v)                           { return layer->set_style_run_baseline_shift(index, v); }
-		bool set_font_caps(const TextLayerEnum::FontCaps v)                        { return layer->set_style_run_font_caps(index, v); }
-		bool set_font_baseline(const TextLayerEnum::FontBaseline v)                 { return layer->set_style_run_font_baseline(index, v); }
-		bool set_no_break(const bool v)                                   { return layer->set_style_run_no_break(index, v); }
-		bool set_language(const int32_t v)                                { return layer->set_style_run_language(index, v); }
-		bool set_character_direction(const TextLayerEnum::CharacterDirection v)     { return layer->set_style_run_character_direction(index, v); }
-		bool set_baseline_direction(const TextLayerEnum::BaselineDirection v)       { return layer->set_style_run_baseline_direction(index, v); }
-		bool set_tsume(const double v)                                    { return layer->set_style_run_tsume(index, v); }
-		bool set_kashida(const int32_t v)                                 { return layer->set_style_run_kashida(index, v); }
-		bool set_diacritic_pos(const TextLayerEnum::DiacriticPosition v)            { return layer->set_style_run_diacritic_pos(index, v); }
-		bool set_ligatures(const bool v)                                  { return layer->set_style_run_ligatures(index, v); }
-		bool set_dligatures(const bool v)                                 { return layer->set_style_run_dligatures(index, v); }
-		bool set_underline(const bool v)                                  { return layer->set_style_run_underline(index, v); }
-		bool set_strikethrough(const bool v)                              { return layer->set_style_run_strikethrough(index, v); }
-		bool set_stroke_flag(const bool v)                                { return layer->set_style_run_stroke_flag(index, v); }
-		bool set_fill_flag(const bool v)                                  { return layer->set_style_run_fill_flag(index, v); }
-		bool set_fill_first(const bool v)                                 { return layer->set_style_run_fill_first(index, v); }
-		bool set_outline_width(const double v)                            { return layer->set_style_run_outline_width(index, v); }
+		void set_font_size(const double v) { layer->set_style_run_font_size(index, v); }
+		void set_leading(const double v) { layer->set_style_run_leading(index, v); }
+		void set_auto_leading(const bool v) { layer->set_style_run_auto_leading(index, v); }
+		void set_kerning(const int32_t v) { layer->set_style_run_kerning(index, v); }
+		void set_fill_color(const std::vector<double>& v) { layer->set_style_run_fill_color(index, v); }
+		void set_stroke_color(const std::vector<double>& v) { layer->set_style_run_stroke_color(index, v); }
+		void set_font(const int32_t v) { layer->set_style_run_font(index, v); }
+		void set_font_by_name(const std::string& v) { layer->set_style_run_font_by_name(index, v); }
+		void set_faux_bold(const bool v) { layer->set_style_run_faux_bold(index, v); }
+		void set_faux_italic(const bool v) { layer->set_style_run_faux_italic(index, v); }
+		void set_horizontal_scale(const double v) { layer->set_style_run_horizontal_scale(index, v); }
+		void set_vertical_scale(const double v) { layer->set_style_run_vertical_scale(index, v); }
+		void set_tracking(const int32_t v) { layer->set_style_run_tracking(index, v); }
+		void set_auto_kerning(const bool v) { layer->set_style_run_auto_kerning(index, v); }
+		void set_baseline_shift(const double v) { layer->set_style_run_baseline_shift(index, v); }
+		void set_font_caps(const TextLayerEnum::FontCaps v) { layer->set_style_run_font_caps(index, v); }
+		void set_font_baseline(const TextLayerEnum::FontBaseline v) { layer->set_style_run_font_baseline(index, v); }
+		void set_no_break(const bool v) { layer->set_style_run_no_break(index, v); }
+		void set_language(const int32_t v) { layer->set_style_run_language(index, v); }
+		void set_character_direction(const TextLayerEnum::CharacterDirection v) { layer->set_style_run_character_direction(index, v); }
+		void set_baseline_direction(const TextLayerEnum::BaselineDirection v) { layer->set_style_run_baseline_direction(index, v); }
+		void set_tsume(const double v) { layer->set_style_run_tsume(index, v); }
+		void set_kashida(const int32_t v) { layer->set_style_run_kashida(index, v); }
+		void set_diacritic_pos(const TextLayerEnum::DiacriticPosition v) { layer->set_style_run_diacritic_pos(index, v); }
+		void set_ligatures(const bool v) { layer->set_style_run_ligatures(index, v); }
+		void set_dligatures(const bool v) { layer->set_style_run_dligatures(index, v); }
+		void set_underline(const bool v) { layer->set_style_run_underline(index, v); }
+		void set_strikethrough(const bool v) { layer->set_style_run_strikethrough(index, v); }
+		void set_stroke_flag(const bool v) { layer->set_style_run_stroke_flag(index, v); }
+		void set_fill_flag(const bool v) { layer->set_style_run_fill_flag(index, v); }
+		void set_fill_first(const bool v) { layer->set_style_run_fill_first(index, v); }
+		void set_outline_width(const double v) { layer->set_style_run_outline_width(index, v); }
 	};
 
 	/// Proxy for the normal (default) character style sheet (no index).
@@ -145,39 +145,39 @@ public:
 		std::optional<std::vector<double>>       stroke_color()           { return layer->style_normal_stroke_color(); }
 
 		// --- Setters ---
-		bool set_sheet_index(const int32_t v)                             { return layer->set_style_normal_sheet_index(v); }
-		bool set_font(const int32_t v)                                    { return layer->set_style_normal_font(v); }
-		bool set_font_by_name(const std::string& v)                       { return layer->set_style_normal_font_by_name(v); }
-		bool set_font_size(const double v)                                { return layer->set_style_normal_font_size(v); }
-		bool set_leading(const double v)                                  { return layer->set_style_normal_leading(v); }
-		bool set_auto_leading(const bool v)                               { return layer->set_style_normal_auto_leading(v); }
-		bool set_kerning(const int32_t v)                                 { return layer->set_style_normal_kerning(v); }
-		bool set_faux_bold(const bool v)                                  { return layer->set_style_normal_faux_bold(v); }
-		bool set_faux_italic(const bool v)                                { return layer->set_style_normal_faux_italic(v); }
-		bool set_horizontal_scale(const double v)                         { return layer->set_style_normal_horizontal_scale(v); }
-		bool set_vertical_scale(const double v)                           { return layer->set_style_normal_vertical_scale(v); }
-		bool set_tracking(const int32_t v)                                { return layer->set_style_normal_tracking(v); }
-		bool set_auto_kerning(const bool v)                               { return layer->set_style_normal_auto_kerning(v); }
-		bool set_baseline_shift(const double v)                           { return layer->set_style_normal_baseline_shift(v); }
-		bool set_font_caps(const TextLayerEnum::FontCaps v)                        { return layer->set_style_normal_font_caps(v); }
-		bool set_font_baseline(const TextLayerEnum::FontBaseline v)                 { return layer->set_style_normal_font_baseline(v); }
-		bool set_no_break(const bool v)                                   { return layer->set_style_normal_no_break(v); }
-		bool set_language(const int32_t v)                                { return layer->set_style_normal_language(v); }
-		bool set_character_direction(const TextLayerEnum::CharacterDirection v)     { return layer->set_style_normal_character_direction(v); }
-		bool set_baseline_direction(const TextLayerEnum::BaselineDirection v)       { return layer->set_style_normal_baseline_direction(v); }
-		bool set_tsume(const double v)                                    { return layer->set_style_normal_tsume(v); }
-		bool set_kashida(const int32_t v)                                 { return layer->set_style_normal_kashida(v); }
-		bool set_diacritic_pos(const TextLayerEnum::DiacriticPosition v)            { return layer->set_style_normal_diacritic_pos(v); }
-		bool set_ligatures(const bool v)                                  { return layer->set_style_normal_ligatures(v); }
-		bool set_dligatures(const bool v)                                 { return layer->set_style_normal_dligatures(v); }
-		bool set_underline(const bool v)                                  { return layer->set_style_normal_underline(v); }
-		bool set_strikethrough(const bool v)                              { return layer->set_style_normal_strikethrough(v); }
-		bool set_stroke_flag(const bool v)                                { return layer->set_style_normal_stroke_flag(v); }
-		bool set_fill_flag(const bool v)                                  { return layer->set_style_normal_fill_flag(v); }
-		bool set_fill_first(const bool v)                                 { return layer->set_style_normal_fill_first(v); }
-		bool set_outline_width(const double v)                            { return layer->set_style_normal_outline_width(v); }
-		bool set_fill_color(const std::vector<double>& v)                 { return layer->set_style_normal_fill_color(v); }
-		bool set_stroke_color(const std::vector<double>& v)               { return layer->set_style_normal_stroke_color(v); }
+		void set_sheet_index(const int32_t v) { layer->set_style_normal_sheet_index(v); }
+		void set_font(const int32_t v) { layer->set_style_normal_font(v); }
+		void set_font_by_name(const std::string& v) { layer->set_style_normal_font_by_name(v); }
+		void set_font_size(const double v) { layer->set_style_normal_font_size(v); }
+		void set_leading(const double v) { layer->set_style_normal_leading(v); }
+		void set_auto_leading(const bool v) { layer->set_style_normal_auto_leading(v); }
+		void set_kerning(const int32_t v) { layer->set_style_normal_kerning(v); }
+		void set_faux_bold(const bool v) { layer->set_style_normal_faux_bold(v); }
+		void set_faux_italic(const bool v) { layer->set_style_normal_faux_italic(v); }
+		void set_horizontal_scale(const double v) { layer->set_style_normal_horizontal_scale(v); }
+		void set_vertical_scale(const double v) { layer->set_style_normal_vertical_scale(v); }
+		void set_tracking(const int32_t v) { layer->set_style_normal_tracking(v); }
+		void set_auto_kerning(const bool v) { layer->set_style_normal_auto_kerning(v); }
+		void set_baseline_shift(const double v) { layer->set_style_normal_baseline_shift(v); }
+		void set_font_caps(const TextLayerEnum::FontCaps v) { layer->set_style_normal_font_caps(v); }
+		void set_font_baseline(const TextLayerEnum::FontBaseline v) { layer->set_style_normal_font_baseline(v); }
+		void set_no_break(const bool v) { layer->set_style_normal_no_break(v); }
+		void set_language(const int32_t v) { layer->set_style_normal_language(v); }
+		void set_character_direction(const TextLayerEnum::CharacterDirection v) { layer->set_style_normal_character_direction(v); }
+		void set_baseline_direction(const TextLayerEnum::BaselineDirection v) { layer->set_style_normal_baseline_direction(v); }
+		void set_tsume(const double v) { layer->set_style_normal_tsume(v); }
+		void set_kashida(const int32_t v) { layer->set_style_normal_kashida(v); }
+		void set_diacritic_pos(const TextLayerEnum::DiacriticPosition v) { layer->set_style_normal_diacritic_pos(v); }
+		void set_ligatures(const bool v) { layer->set_style_normal_ligatures(v); }
+		void set_dligatures(const bool v) { layer->set_style_normal_dligatures(v); }
+		void set_underline(const bool v) { layer->set_style_normal_underline(v); }
+		void set_strikethrough(const bool v) { layer->set_style_normal_strikethrough(v); }
+		void set_stroke_flag(const bool v) { layer->set_style_normal_stroke_flag(v); }
+		void set_fill_flag(const bool v) { layer->set_style_normal_fill_flag(v); }
+		void set_fill_first(const bool v) { layer->set_style_normal_fill_first(v); }
+		void set_outline_width(const double v) { layer->set_style_normal_outline_width(v); }
+		void set_fill_color(const std::vector<double>& v) { layer->set_style_normal_fill_color(v); }
+		void set_stroke_color(const std::vector<double>& v) { layer->set_style_normal_stroke_color(v); }
 	};
 
 	/// Proxy for a single paragraph run (indexed).
@@ -210,27 +210,27 @@ public:
 		std::optional<bool>                      every_line_composer()    { return layer->paragraph_run_every_line_composer(index); }
 
 		// --- Setters ---
-		bool set_justification(const TextLayerEnum::Justification v)                { return layer->set_paragraph_run_justification(index, v); }
-		bool set_first_line_indent(const double v)                        { return layer->set_paragraph_run_first_line_indent(index, v); }
-		bool set_start_indent(const double v)                             { return layer->set_paragraph_run_start_indent(index, v); }
-		bool set_end_indent(const double v)                               { return layer->set_paragraph_run_end_indent(index, v); }
-		bool set_space_before(const double v)                             { return layer->set_paragraph_run_space_before(index, v); }
-		bool set_space_after(const double v)                              { return layer->set_paragraph_run_space_after(index, v); }
-		bool set_auto_hyphenate(const bool v)                             { return layer->set_paragraph_run_auto_hyphenate(index, v); }
-		bool set_hyphenated_word_size(const int32_t v)                    { return layer->set_paragraph_run_hyphenated_word_size(index, v); }
-		bool set_pre_hyphen(const int32_t v)                              { return layer->set_paragraph_run_pre_hyphen(index, v); }
-		bool set_post_hyphen(const int32_t v)                             { return layer->set_paragraph_run_post_hyphen(index, v); }
-		bool set_consecutive_hyphens(const int32_t v)                     { return layer->set_paragraph_run_consecutive_hyphens(index, v); }
-		bool set_zone(const double v)                                     { return layer->set_paragraph_run_zone(index, v); }
-		bool set_word_spacing(const std::vector<double>& v)               { return layer->set_paragraph_run_word_spacing(index, v); }
-		bool set_letter_spacing(const std::vector<double>& v)             { return layer->set_paragraph_run_letter_spacing(index, v); }
-		bool set_glyph_spacing(const std::vector<double>& v)              { return layer->set_paragraph_run_glyph_spacing(index, v); }
-		bool set_auto_leading(const double v)                             { return layer->set_paragraph_run_auto_leading(index, v); }
-		bool set_leading_type(const TextLayerEnum::LeadingType v)                   { return layer->set_paragraph_run_leading_type(index, v); }
-		bool set_hanging(const bool v)                                    { return layer->set_paragraph_run_hanging(index, v); }
-		bool set_burasagari(const bool v)                                 { return layer->set_paragraph_run_burasagari(index, v); }
-		bool set_kinsoku_order(const TextLayerEnum::KinsokuOrder v)                  { return layer->set_paragraph_run_kinsoku_order(index, v); }
-		bool set_every_line_composer(const bool v)                        { return layer->set_paragraph_run_every_line_composer(index, v); }
+		void set_justification(const TextLayerEnum::Justification v) { layer->set_paragraph_run_justification(index, v); }
+		void set_first_line_indent(const double v) { layer->set_paragraph_run_first_line_indent(index, v); }
+		void set_start_indent(const double v) { layer->set_paragraph_run_start_indent(index, v); }
+		void set_end_indent(const double v) { layer->set_paragraph_run_end_indent(index, v); }
+		void set_space_before(const double v) { layer->set_paragraph_run_space_before(index, v); }
+		void set_space_after(const double v) { layer->set_paragraph_run_space_after(index, v); }
+		void set_auto_hyphenate(const bool v) { layer->set_paragraph_run_auto_hyphenate(index, v); }
+		void set_hyphenated_word_size(const int32_t v) { layer->set_paragraph_run_hyphenated_word_size(index, v); }
+		void set_pre_hyphen(const int32_t v) { layer->set_paragraph_run_pre_hyphen(index, v); }
+		void set_post_hyphen(const int32_t v) { layer->set_paragraph_run_post_hyphen(index, v); }
+		void set_consecutive_hyphens(const int32_t v) { layer->set_paragraph_run_consecutive_hyphens(index, v); }
+		void set_zone(const double v) { layer->set_paragraph_run_zone(index, v); }
+		void set_word_spacing(const std::vector<double>& v) { layer->set_paragraph_run_word_spacing(index, v); }
+		void set_letter_spacing(const std::vector<double>& v) { layer->set_paragraph_run_letter_spacing(index, v); }
+		void set_glyph_spacing(const std::vector<double>& v) { layer->set_paragraph_run_glyph_spacing(index, v); }
+		void set_auto_leading(const double v) { layer->set_paragraph_run_auto_leading(index, v); }
+		void set_leading_type(const TextLayerEnum::LeadingType v) { layer->set_paragraph_run_leading_type(index, v); }
+		void set_hanging(const bool v) { layer->set_paragraph_run_hanging(index, v); }
+		void set_burasagari(const bool v) { layer->set_paragraph_run_burasagari(index, v); }
+		void set_kinsoku_order(const TextLayerEnum::KinsokuOrder v) { layer->set_paragraph_run_kinsoku_order(index, v); }
+		void set_every_line_composer(const bool v) { layer->set_paragraph_run_every_line_composer(index, v); }
 	};
 
 	/// Proxy for the normal (default) paragraph sheet (no index).
@@ -263,28 +263,28 @@ public:
 		std::optional<bool>                      every_line_composer()    { return layer->paragraph_normal_every_line_composer(); }
 
 		// --- Setters ---
-		bool set_sheet_index(const int32_t v)                             { return layer->set_paragraph_normal_sheet_index(v); }
-		bool set_justification(const TextLayerEnum::Justification v)                { return layer->set_paragraph_normal_justification(v); }
-		bool set_first_line_indent(const double v)                        { return layer->set_paragraph_normal_first_line_indent(v); }
-		bool set_start_indent(const double v)                             { return layer->set_paragraph_normal_start_indent(v); }
-		bool set_end_indent(const double v)                               { return layer->set_paragraph_normal_end_indent(v); }
-		bool set_space_before(const double v)                             { return layer->set_paragraph_normal_space_before(v); }
-		bool set_space_after(const double v)                              { return layer->set_paragraph_normal_space_after(v); }
-		bool set_auto_hyphenate(const bool v)                             { return layer->set_paragraph_normal_auto_hyphenate(v); }
-		bool set_hyphenated_word_size(const int32_t v)                    { return layer->set_paragraph_normal_hyphenated_word_size(v); }
-		bool set_pre_hyphen(const int32_t v)                              { return layer->set_paragraph_normal_pre_hyphen(v); }
-		bool set_post_hyphen(const int32_t v)                             { return layer->set_paragraph_normal_post_hyphen(v); }
-		bool set_consecutive_hyphens(const int32_t v)                     { return layer->set_paragraph_normal_consecutive_hyphens(v); }
-		bool set_zone(const double v)                                     { return layer->set_paragraph_normal_zone(v); }
-		bool set_word_spacing(const std::vector<double>& v)               { return layer->set_paragraph_normal_word_spacing(v); }
-		bool set_letter_spacing(const std::vector<double>& v)             { return layer->set_paragraph_normal_letter_spacing(v); }
-		bool set_glyph_spacing(const std::vector<double>& v)              { return layer->set_paragraph_normal_glyph_spacing(v); }
-		bool set_auto_leading(const double v)                             { return layer->set_paragraph_normal_auto_leading(v); }
-		bool set_leading_type(const TextLayerEnum::LeadingType v)                   { return layer->set_paragraph_normal_leading_type(v); }
-		bool set_hanging(const bool v)                                    { return layer->set_paragraph_normal_hanging(v); }
-		bool set_burasagari(const bool v)                                 { return layer->set_paragraph_normal_burasagari(v); }
-		bool set_kinsoku_order(const TextLayerEnum::KinsokuOrder v)                  { return layer->set_paragraph_normal_kinsoku_order(v); }
-		bool set_every_line_composer(const bool v)                        { return layer->set_paragraph_normal_every_line_composer(v); }
+		void set_sheet_index(const int32_t v) { layer->set_paragraph_normal_sheet_index(v); }
+		void set_justification(const TextLayerEnum::Justification v) { layer->set_paragraph_normal_justification(v); }
+		void set_first_line_indent(const double v) { layer->set_paragraph_normal_first_line_indent(v); }
+		void set_start_indent(const double v) { layer->set_paragraph_normal_start_indent(v); }
+		void set_end_indent(const double v) { layer->set_paragraph_normal_end_indent(v); }
+		void set_space_before(const double v) { layer->set_paragraph_normal_space_before(v); }
+		void set_space_after(const double v) { layer->set_paragraph_normal_space_after(v); }
+		void set_auto_hyphenate(const bool v) { layer->set_paragraph_normal_auto_hyphenate(v); }
+		void set_hyphenated_word_size(const int32_t v) { layer->set_paragraph_normal_hyphenated_word_size(v); }
+		void set_pre_hyphen(const int32_t v) { layer->set_paragraph_normal_pre_hyphen(v); }
+		void set_post_hyphen(const int32_t v) { layer->set_paragraph_normal_post_hyphen(v); }
+		void set_consecutive_hyphens(const int32_t v) { layer->set_paragraph_normal_consecutive_hyphens(v); }
+		void set_zone(const double v) { layer->set_paragraph_normal_zone(v); }
+		void set_word_spacing(const std::vector<double>& v) { layer->set_paragraph_normal_word_spacing(v); }
+		void set_letter_spacing(const std::vector<double>& v) { layer->set_paragraph_normal_letter_spacing(v); }
+		void set_glyph_spacing(const std::vector<double>& v) { layer->set_paragraph_normal_glyph_spacing(v); }
+		void set_auto_leading(const double v) { layer->set_paragraph_normal_auto_leading(v); }
+		void set_leading_type(const TextLayerEnum::LeadingType v) { layer->set_paragraph_normal_leading_type(v); }
+		void set_hanging(const bool v) { layer->set_paragraph_normal_hanging(v); }
+		void set_burasagari(const bool v) { layer->set_paragraph_normal_burasagari(v); }
+		void set_kinsoku_order(const TextLayerEnum::KinsokuOrder v) { layer->set_paragraph_normal_kinsoku_order(v); }
+		void set_every_line_composer(const bool v) { layer->set_paragraph_normal_every_line_composer(v); }
 	};
 
 	/// Proxy for a single font entry in the FontSet (indexed).
@@ -302,7 +302,7 @@ public:
 		bool                        is_sentinel()      { return layer->is_sentinel_font(index); }
 
 		// --- Setters ---
-		bool set_postscript_name(const std::string& v) { return layer->set_font_postscript_name(index, v); }
+		void set_postscript_name(const std::string& v) { layer->set_font_postscript_name(index, v); }
 	};
 
 	/// Proxy for the FontSet as a whole (no index).
@@ -350,3 +350,4 @@ public:
 };
 
 PSAPI_NAMESPACE_END
+

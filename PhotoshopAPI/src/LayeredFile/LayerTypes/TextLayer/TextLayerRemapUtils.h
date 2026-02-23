@@ -178,90 +178,83 @@ inline bool remap_legacy_from_to_ranges(
 	}
 
 	const size_t old_plain_units = old_span.text_utf16.size();
-
-	// Walk the descriptor tree, remapping From/To long values in-place.
-	// We reuse skip_descriptor_value() from DescriptorUtils to advance the
-	// cursor, and read_descriptor_key() for key parsing; only the mutation
-	// logic (remap_value / remap_desc_body) is local.
-
-	std::function<void(size_t)> remap_desc_body;
-	std::function<void(size_t, const std::string&)> remap_value;
-
-	remap_desc_body = [&](size_t pos)
+	const size_t old_body_size = skip_descriptor_body(block.m_Data, tysh_header_bytes);
+	if (old_body_size == 0u)
 	{
-		if (pos + 4u > block.m_Data.size()) return;
-		const uint32_t cn = read_u32_be(block.m_Data, pos); pos += 4u;
-		pos += static_cast<size_t>(cn) * 2u;
-		// classID
-		auto [cid, cb] = read_descriptor_key(block.m_Data, pos);
-		if (cb == 0u) return;
-		pos += cb;
-		// count
-		if (pos + 4u > block.m_Data.size()) return;
-		const uint32_t count = read_u32_be(block.m_Data, pos); pos += 4u;
-		for (uint32_t i = 0u; i < count; ++i)
+		return false;
+	}
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, tysh_header_bytes, descriptor))
+	{
+		return false;
+	}
+
+	std::function<void(const std::string&, Descriptors::DescriptorBase*)> remap_value;
+	remap_value = [&](const std::string& item_key, Descriptors::DescriptorBase* value)
+	{
+		if (value == nullptr)
 		{
-			auto [k, kb] = read_descriptor_key(block.m_Data, pos);
-			if (kb == 0u) return;
-			pos += kb;
-			remap_value(pos, k);
-			const size_t skipped = skip_descriptor_value(block.m_Data, pos);
-			if (skipped == 0u) return;
-			pos += skipped;
+			return;
 		}
-	};
 
-	remap_value = [&](size_t pos, const std::string& item_key)
-	{
-		if (pos + 4u > block.m_Data.size()) return;
-		const char t0 = static_cast<char>(to_u8(block.m_Data[pos]));
-		const char t1 = static_cast<char>(to_u8(block.m_Data[pos + 1u]));
-		const char t2 = static_cast<char>(to_u8(block.m_Data[pos + 2u]));
-		const char t3 = static_cast<char>(to_u8(block.m_Data[pos + 3u]));
-
-		auto match4 = [](char a, char b, char c, char d, const char* s) {
-			return a == s[0] && b == s[1] && c == s[2] && d == s[3];
-		};
-
-		if (match4(t0, t1, t2, t3, "long"))
+		if (item_key == "From" || item_key == "T   ")
 		{
-			if (item_key == "From" || item_key == "T   ")
+			auto* int32_value = dynamic_cast<Descriptors::int32_t_Wrapper*>(value);
+			if (int32_value != nullptr && int32_value->m_Value >= 0)
 			{
-				const size_t value_offset = pos + 4u;
-				if (value_offset + 4u > block.m_Data.size()) return;
-				const auto old_value = read_i32_be(block.m_Data, value_offset);
-				if (old_value < 0) return;
 				const auto remapped = remap_engine_index(
-					static_cast<size_t>(old_value),
+					static_cast<size_t>(int32_value->m_Value),
 					old_plain_units,
 					replacements
 				);
 				if (remapped <= static_cast<size_t>(std::numeric_limits<int32_t>::max()))
 				{
-					write_i32_be(block.m_Data, value_offset, static_cast<int32_t>(remapped));
+					int32_value->m_Value = static_cast<int32_t>(remapped);
 				}
 			}
 		}
-		else if (match4(t0, t1, t2, t3, "Objc") || match4(t0, t1, t2, t3, "GlbO") || match4(t0, t1, t2, t3, "ObAr"))
+
+		if (auto* nested_descriptor = dynamic_cast<Descriptors::Descriptor*>(value))
 		{
-			remap_desc_body(pos + 4u);
-		}
-		else if (match4(t0, t1, t2, t3, "VlLs"))
-		{
-			size_t p = pos + 4u;
-			if (p + 4u > block.m_Data.size()) return;
-			const uint32_t cnt = read_u32_be(block.m_Data, p); p += 4u;
-			for (uint32_t i = 0u; i < cnt; ++i)
+			for (auto& [nested_key, nested_value] : nested_descriptor->items())
 			{
-				remap_value(p, item_key);
-				const size_t c = skip_descriptor_value(block.m_Data, p);
-				if (c == 0u) return;
-				p += c;
+				remap_value(nested_key, nested_value.get());
+			}
+			return;
+		}
+
+		if (auto* object_array = dynamic_cast<Descriptors::ObjectArray*>(value))
+		{
+			for (auto& [nested_key, nested_value] : object_array->items())
+			{
+				remap_value(nested_key, nested_value.get());
+			}
+			return;
+		}
+
+		if (auto* list = dynamic_cast<Descriptors::List*>(value))
+		{
+			for (auto& item : list->m_Items)
+			{
+				remap_value("", item.get());
 			}
 		}
 	};
 
-	remap_desc_body(tysh_header_bytes);
+	for (auto& [key, value] : descriptor.items())
+	{
+		remap_value(key, value.get());
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes + old_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
+		new_body.begin(),
+		new_body.end());
 	return true;
 }
 

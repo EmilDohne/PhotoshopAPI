@@ -199,6 +199,73 @@ TEST_CASE("Warp: warp APIs still work after text roundtrip")
 }
 
 
+TEST_CASE("Warp: set APIs mutate and survive roundtrip")
+{
+	const auto fixture = std::filesystem::current_path() / "documents" / "TextLayers" / "TextLayers_Warp.psd";
+	REQUIRE(std::filesystem::exists(fixture));
+
+	auto file = LayeredFile<bpp8_t>::read(fixture);
+	auto layer = find_text_layer(file, "WarpArc");
+	REQUIRE(layer != nullptr);
+
+	layer->set_warp_style(TextLayerEnum::WarpStyle::Wave);
+	layer->set_warp_value(-22.5);
+	layer->set_warp_horizontal_distortion(15.0);
+	layer->set_warp_vertical_distortion(-8.25);
+	layer->set_warp_rotation(TextLayerEnum::WarpRotation::Vertical);
+
+	auto style = layer->warp_style();
+	REQUIRE(style.has_value());
+	CHECK(style.value() == TextLayerEnum::WarpStyle::Wave);
+
+	auto value = layer->warp_value();
+	REQUIRE(value.has_value());
+	CHECK(std::abs(value.value() - (-22.5)) < 0.01);
+
+	auto hd = layer->warp_horizontal_distortion();
+	REQUIRE(hd.has_value());
+	CHECK(std::abs(hd.value() - 15.0) < 0.01);
+
+	auto vd = layer->warp_vertical_distortion();
+	REQUIRE(vd.has_value());
+	CHECK(std::abs(vd.value() - (-8.25)) < 0.01);
+
+	auto rotation = layer->warp_rotation();
+	REQUIRE(rotation.has_value());
+	CHECK(rotation.value() == TextLayerEnum::WarpRotation::Vertical);
+	CHECK(layer->has_warp());
+
+	auto tmp = std::filesystem::temp_directory_path() / "psapi_warp_set_roundtrip.psd";
+	LayeredFile<bpp8_t>::write(std::move(file), tmp);
+	auto reread = LayeredFile<bpp8_t>::read(tmp);
+	std::filesystem::remove(tmp);
+
+	auto rl = find_text_layer(reread, "WarpArc");
+	REQUIRE(rl != nullptr);
+
+	style = rl->warp_style();
+	REQUIRE(style.has_value());
+	CHECK(style.value() == TextLayerEnum::WarpStyle::Wave);
+
+	value = rl->warp_value();
+	REQUIRE(value.has_value());
+	CHECK(std::abs(value.value() - (-22.5)) < 0.01);
+
+	hd = rl->warp_horizontal_distortion();
+	REQUIRE(hd.has_value());
+	CHECK(std::abs(hd.value() - 15.0) < 0.01);
+
+	vd = rl->warp_vertical_distortion();
+	REQUIRE(vd.has_value());
+	CHECK(std::abs(vd.value() - (-8.25)) < 0.01);
+
+	rotation = rl->warp_rotation();
+	REQUIRE(rotation.has_value());
+	CHECK(rotation.value() == TextLayerEnum::WarpRotation::Vertical);
+	CHECK(rl->has_warp());
+}
+
+
 TEST_CASE("Warp: Basic fixture layers have warpNone")
 {
 	const auto fixture = std::filesystem::current_path() / "documents" / "TextLayers" / "TextLayers_Basic.psd";

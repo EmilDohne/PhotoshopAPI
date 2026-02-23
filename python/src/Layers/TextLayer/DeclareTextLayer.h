@@ -72,8 +72,11 @@ void declare_text_layer(py::module& m, const std::string& extension)
         ----------
 
         text : Optional[str]
-            Read-only property that returns the first detected text payload from the
-            layer descriptor, or None if no text payload is present.
+            Read-only property that returns the text payload from the layer's TySh
+            descriptor. In normal Photoshop-authored files there is typically a single
+            payload per text layer. If a file contains duplicate TySh
+            payloads, this returns the first parseable one as Photoshop will only
+            display the first. Returns None if no text payload is present.
 
     )pbdoc";
 
@@ -206,8 +209,8 @@ void declare_text_layer(py::module& m, const std::string& extension)
         :param char_offset: UTF-16 code-unit offset within the run where the split occurs
         :type char_offset: int
 
-        :return: True on success
-        :rtype: bool
+        :raises:
+            RuntimeError: if no TySh descriptor exists or the split cannot be applied
 
     )pbdoc");
 

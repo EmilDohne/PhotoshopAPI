@@ -11,6 +11,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -66,9 +67,12 @@ public:
 	std::optional<bool>                      paragraph_normal_every_line_composer() const    { return paragraph_normal_bool_property("EveryLineComposer"); }
 
 	// --- Paragraph normal setters ---
-	bool set_paragraph_normal_sheet_index(const int32_t sheet_index)
+	void set_paragraph_normal_sheet_index(const int32_t sheet_index)
 	{
-		if (sheet_index < 0) return false;
+		if (sheet_index < 0)
+		{
+			throw std::invalid_argument("TextLayer::set_paragraph_normal_sheet_index() failed: sheet_index must be >= 0");
+		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
 			const auto engine_span_opt = TextLayerDetail::find_engine_data_span(*block);
@@ -80,43 +84,62 @@ public:
 			if (!parsed.ok) continue;
 			auto sheet_set = EngineData::find_by_path(parsed.root, { "ResourceDict", "ParagraphSheetSet" });
 			if (sheet_set == nullptr || sheet_set->type != EngineData::ValueType::Array) continue;
-			if (static_cast<size_t>(sheet_index) >= sheet_set->array_items.size()) return false;
+			if (static_cast<size_t>(sheet_index) >= sheet_set->array_items.size())
+			{
+				throw std::invalid_argument("TextLayer::set_paragraph_normal_sheet_index() failed: sheet_index out of range");
+			}
 			auto normal_index_value = EngineData::find_by_path(parsed.root, { "ResourceDict", "TheNormalParagraphSheet" });
-			if (normal_index_value == nullptr) return false;
+			if (normal_index_value == nullptr)
+			{
+				throw std::runtime_error("TextLayer::set_paragraph_normal_sheet_index() failed: missing TheNormalParagraphSheet");
+			}
 			const size_t old_start = normal_index_value->start_offset;
 			const size_t old_end = normal_index_value->end_offset;
 			if (!EngineData::set_number(*normal_index_value, static_cast<double>(sheet_index)))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::set_paragraph_normal_sheet_index() failed: unable to set TheNormalParagraphSheet");
+			}
 			auto new_bytes = EngineData::format_value_bytes(*normal_index_value);
 			EngineData::splice_payload(payload, old_start, old_end, new_bytes);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload))
+			{
+				throw std::runtime_error("TextLayer::set_paragraph_normal_sheet_index() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_paragraph_normal_sheet_index() failed: no parseable TySh block found");
 	}
 
-	bool set_paragraph_normal_justification(const TextLayerEnum::Justification v)                          { return set_paragraph_normal_int32_property("Justification", static_cast<int32_t>(v)); }
-	bool set_paragraph_normal_first_line_indent(const double v)                            { return set_paragraph_normal_number_property("FirstLineIndent", v); }
-	bool set_paragraph_normal_start_indent(const double v)                                 { return set_paragraph_normal_number_property("StartIndent", v); }
-	bool set_paragraph_normal_end_indent(const double v)                                   { return set_paragraph_normal_number_property("EndIndent", v); }
-	bool set_paragraph_normal_space_before(const double v)                                 { return set_paragraph_normal_number_property("SpaceBefore", v); }
-	bool set_paragraph_normal_space_after(const double v)                                  { return set_paragraph_normal_number_property("SpaceAfter", v); }
-	bool set_paragraph_normal_auto_hyphenate(const bool v)                                 { return set_paragraph_normal_bool_property("AutoHyphenate", v); }
-	bool set_paragraph_normal_hyphenated_word_size(const int32_t v)                        { return set_paragraph_normal_int32_property("HyphenatedWordSize", v); }
-	bool set_paragraph_normal_pre_hyphen(const int32_t v)                                  { return set_paragraph_normal_int32_property("PreHyphen", v); }
-	bool set_paragraph_normal_post_hyphen(const int32_t v)                                 { return set_paragraph_normal_int32_property("PostHyphen", v); }
-	bool set_paragraph_normal_consecutive_hyphens(const int32_t v)                         { return set_paragraph_normal_int32_property("ConsecutiveHyphens", v); }
-	bool set_paragraph_normal_zone(const double v)                                         { return set_paragraph_normal_number_property("Zone", v); }
-	bool set_paragraph_normal_word_spacing(const std::vector<double>& v)                   { return set_paragraph_normal_number_array_property("WordSpacing", v); }
-	bool set_paragraph_normal_letter_spacing(const std::vector<double>& v)                 { return set_paragraph_normal_number_array_property("LetterSpacing", v); }
-	bool set_paragraph_normal_glyph_spacing(const std::vector<double>& v)                  { return set_paragraph_normal_number_array_property("GlyphSpacing", v); }
-	bool set_paragraph_normal_auto_leading(const double v)                                 { return set_paragraph_normal_number_property("AutoLeading", v); }
-	bool set_paragraph_normal_leading_type(const TextLayerEnum::LeadingType v)                              { return set_paragraph_normal_int32_property("LeadingType", static_cast<int32_t>(v)); }
-	bool set_paragraph_normal_hanging(const bool v)                                        { return set_paragraph_normal_bool_property("Hanging", v); }
-	bool set_paragraph_normal_burasagari(const bool v)                                     { return set_paragraph_normal_bool_property("Burasagari", v); }
-	bool set_paragraph_normal_kinsoku_order(const TextLayerEnum::KinsokuOrder v)                            { return set_paragraph_normal_int32_property("KinsokuOrder", static_cast<int32_t>(v)); }
-	bool set_paragraph_normal_every_line_composer(const bool v)                            { return set_paragraph_normal_bool_property("EveryLineComposer", v); }
+	void set_paragraph_normal_justification(const TextLayerEnum::Justification v)                          { throw_on_set_failure(set_paragraph_normal_int32_property("Justification", static_cast<int32_t>(v)), "set_paragraph_normal_justification"); }
+	void set_paragraph_normal_first_line_indent(const double v)                            { throw_on_set_failure(set_paragraph_normal_number_property("FirstLineIndent", v), "set_paragraph_normal_first_line_indent"); }
+	void set_paragraph_normal_start_indent(const double v)                                 { throw_on_set_failure(set_paragraph_normal_number_property("StartIndent", v), "set_paragraph_normal_start_indent"); }
+	void set_paragraph_normal_end_indent(const double v)                                   { throw_on_set_failure(set_paragraph_normal_number_property("EndIndent", v), "set_paragraph_normal_end_indent"); }
+	void set_paragraph_normal_space_before(const double v)                                 { throw_on_set_failure(set_paragraph_normal_number_property("SpaceBefore", v), "set_paragraph_normal_space_before"); }
+	void set_paragraph_normal_space_after(const double v)                                  { throw_on_set_failure(set_paragraph_normal_number_property("SpaceAfter", v), "set_paragraph_normal_space_after"); }
+	void set_paragraph_normal_auto_hyphenate(const bool v)                                 { throw_on_set_failure(set_paragraph_normal_bool_property("AutoHyphenate", v), "set_paragraph_normal_auto_hyphenate"); }
+	void set_paragraph_normal_hyphenated_word_size(const int32_t v)                        { throw_on_set_failure(set_paragraph_normal_int32_property("HyphenatedWordSize", v), "set_paragraph_normal_hyphenated_word_size"); }
+	void set_paragraph_normal_pre_hyphen(const int32_t v)                                  { throw_on_set_failure(set_paragraph_normal_int32_property("PreHyphen", v), "set_paragraph_normal_pre_hyphen"); }
+	void set_paragraph_normal_post_hyphen(const int32_t v)                                 { throw_on_set_failure(set_paragraph_normal_int32_property("PostHyphen", v), "set_paragraph_normal_post_hyphen"); }
+	void set_paragraph_normal_consecutive_hyphens(const int32_t v)                         { throw_on_set_failure(set_paragraph_normal_int32_property("ConsecutiveHyphens", v), "set_paragraph_normal_consecutive_hyphens"); }
+	void set_paragraph_normal_zone(const double v)                                         { throw_on_set_failure(set_paragraph_normal_number_property("Zone", v), "set_paragraph_normal_zone"); }
+	void set_paragraph_normal_word_spacing(const std::vector<double>& v)                   { throw_on_set_failure(set_paragraph_normal_number_array_property("WordSpacing", v), "set_paragraph_normal_word_spacing"); }
+	void set_paragraph_normal_letter_spacing(const std::vector<double>& v)                 { throw_on_set_failure(set_paragraph_normal_number_array_property("LetterSpacing", v), "set_paragraph_normal_letter_spacing"); }
+	void set_paragraph_normal_glyph_spacing(const std::vector<double>& v)                  { throw_on_set_failure(set_paragraph_normal_number_array_property("GlyphSpacing", v), "set_paragraph_normal_glyph_spacing"); }
+	void set_paragraph_normal_auto_leading(const double v)                                 { throw_on_set_failure(set_paragraph_normal_number_property("AutoLeading", v), "set_paragraph_normal_auto_leading"); }
+	void set_paragraph_normal_leading_type(const TextLayerEnum::LeadingType v)                              { throw_on_set_failure(set_paragraph_normal_int32_property("LeadingType", static_cast<int32_t>(v)), "set_paragraph_normal_leading_type"); }
+	void set_paragraph_normal_hanging(const bool v)                                        { throw_on_set_failure(set_paragraph_normal_bool_property("Hanging", v), "set_paragraph_normal_hanging"); }
+	void set_paragraph_normal_burasagari(const bool v)                                     { throw_on_set_failure(set_paragraph_normal_bool_property("Burasagari", v), "set_paragraph_normal_burasagari"); }
+	void set_paragraph_normal_kinsoku_order(const TextLayerEnum::KinsokuOrder v)                            { throw_on_set_failure(set_paragraph_normal_int32_property("KinsokuOrder", static_cast<int32_t>(v)), "set_paragraph_normal_kinsoku_order"); }
+	void set_paragraph_normal_every_line_composer(const bool v)                            { throw_on_set_failure(set_paragraph_normal_bool_property("EveryLineComposer", v), "set_paragraph_normal_every_line_composer"); }
 
 private:
+	void throw_on_set_failure(const bool ok, const char* method_name) const
+	{
+		if (!ok)
+		{
+			throw std::invalid_argument(std::string("TextLayer::") + method_name + "() failed");
+		}
+	}
 
 	std::optional<int32_t> paragraph_normal_int32_property(const std::string_view property_key) const
 	{

@@ -1,4 +1,4 @@
-﻿#include "doctest.h"
+#include "doctest.h"
 #include "TestTextLayerMutationUtils.h"
 
 TEST_CASE("TextLayer mutates style run font size and fill color with roundtrip")
@@ -21,10 +21,10 @@ TEST_CASE("TextLayer mutates style run font size and fill color with roundtrip")
 	REQUIRE(initial_fill.has_value());
 	REQUIRE(initial_fill->size() == 4u);
 
-	CHECK(text_layer->set_style_run_font_size(2u, 42.5));
-	CHECK(text_layer->set_style_run_fill_color(2u, std::vector<double>{ 1.0, 0.2, 0.3, 0.4 }));
-	CHECK_FALSE(text_layer->set_style_run_font_size(20u, 55.0));
-	CHECK_FALSE(text_layer->set_style_run_fill_color(2u, std::vector<double>{ 1.0, 0.2, 0.3 }));
+	CHECK_NOTHROW(text_layer->set_style_run_font_size(2u, 42.5));
+	CHECK_NOTHROW(text_layer->set_style_run_fill_color(2u, std::vector<double>{ 1.0, 0.2, 0.3, 0.4 }));
+	CHECK_THROWS(text_layer->set_style_run_font_size(20u, 55.0));
+	CHECK_THROWS(text_layer->set_style_run_fill_color(2u, std::vector<double>{ 1.0, 0.2, 0.3 }));
 
 	const auto out_path = temp_psd_path();
 	LayeredFile<bpp8_t>::write(std::move(file), out_path);
@@ -187,83 +187,83 @@ TEST_CASE("TextLayer mutates style run character properties with roundtrip")
 		};
 	}
 
-	CHECK(text_layer->set_style_run_font(0u, run_font_after));
-	CHECK(text_layer->set_style_run_font_size(0u, run_font_size_after));
-	CHECK(text_layer->set_style_run_faux_bold(0u, run_faux_bold_after));
-	CHECK(text_layer->set_style_run_faux_italic(0u, run_faux_italic_after));
-	CHECK(text_layer->set_style_run_horizontal_scale(0u, run_horizontal_scale_after));
-	CHECK(text_layer->set_style_run_vertical_scale(0u, run_vertical_scale_after));
-	CHECK(text_layer->set_style_run_tracking(0u, run_tracking_after));
-	CHECK(text_layer->set_style_run_auto_kerning(0u, run_auto_kerning_after));
-	CHECK(text_layer->set_style_run_baseline_shift(0u, run_baseline_shift_after));
-	CHECK(text_layer->set_style_run_leading(0u, run_leading_after));
-	CHECK(text_layer->set_style_run_auto_leading(0u, run_auto_leading_after));
-	CHECK(text_layer->set_style_run_kerning(0u, run_kerning_after));
-	CHECK(text_layer->set_style_run_font_caps(0u, run_font_caps_after));
-	CHECK(text_layer->set_style_run_no_break(0u, run_no_break_after));
-	CHECK(text_layer->set_style_run_font_baseline(0u, run_font_baseline_after));
-	CHECK(text_layer->set_style_run_language(0u, run_language_after));
-	CHECK(text_layer->set_style_run_character_direction(0u, expected_character_direction_after));
-	CHECK(text_layer->set_style_run_baseline_direction(0u, run_baseline_direction_after));
-	CHECK(text_layer->set_style_run_tsume(0u, run_tsume_after));
-	CHECK(text_layer->set_style_run_kashida(0u, run_kashida_after));
-	CHECK(text_layer->set_style_run_diacritic_pos(0u, expected_diacritic_pos_after));
-	CHECK(text_layer->set_style_run_ligatures(0u, run_ligatures_after));
-	CHECK(text_layer->set_style_run_dligatures(0u, run_dligatures_after));
-	CHECK(text_layer->set_style_run_underline(0u, run_underline_after));
-	CHECK(text_layer->set_style_run_strikethrough(0u, run_strikethrough_after));
+	CHECK_NOTHROW(text_layer->set_style_run_font(0u, run_font_after));
+	CHECK_NOTHROW(text_layer->set_style_run_font_size(0u, run_font_size_after));
+	CHECK_NOTHROW(text_layer->set_style_run_faux_bold(0u, run_faux_bold_after));
+	CHECK_NOTHROW(text_layer->set_style_run_faux_italic(0u, run_faux_italic_after));
+	CHECK_NOTHROW(text_layer->set_style_run_horizontal_scale(0u, run_horizontal_scale_after));
+	CHECK_NOTHROW(text_layer->set_style_run_vertical_scale(0u, run_vertical_scale_after));
+	CHECK_NOTHROW(text_layer->set_style_run_tracking(0u, run_tracking_after));
+	CHECK_NOTHROW(text_layer->set_style_run_auto_kerning(0u, run_auto_kerning_after));
+	CHECK_NOTHROW(text_layer->set_style_run_baseline_shift(0u, run_baseline_shift_after));
+	CHECK_NOTHROW(text_layer->set_style_run_leading(0u, run_leading_after));
+	CHECK_NOTHROW(text_layer->set_style_run_auto_leading(0u, run_auto_leading_after));
+	CHECK_NOTHROW(text_layer->set_style_run_kerning(0u, run_kerning_after));
+	CHECK_NOTHROW(text_layer->set_style_run_font_caps(0u, run_font_caps_after));
+	CHECK_NOTHROW(text_layer->set_style_run_no_break(0u, run_no_break_after));
+	CHECK_NOTHROW(text_layer->set_style_run_font_baseline(0u, run_font_baseline_after));
+	CHECK_NOTHROW(text_layer->set_style_run_language(0u, run_language_after));
+	CHECK_NOTHROW(text_layer->set_style_run_character_direction(0u, expected_character_direction_after));
+	CHECK_NOTHROW(text_layer->set_style_run_baseline_direction(0u, run_baseline_direction_after));
+	CHECK_NOTHROW(text_layer->set_style_run_tsume(0u, run_tsume_after));
+	CHECK_NOTHROW(text_layer->set_style_run_kashida(0u, run_kashida_after));
+	CHECK_NOTHROW(text_layer->set_style_run_diacritic_pos(0u, expected_diacritic_pos_after));
+	CHECK_NOTHROW(text_layer->set_style_run_ligatures(0u, run_ligatures_after));
+	CHECK_NOTHROW(text_layer->set_style_run_dligatures(0u, run_dligatures_after));
+	CHECK_NOTHROW(text_layer->set_style_run_underline(0u, run_underline_after));
+	CHECK_NOTHROW(text_layer->set_style_run_strikethrough(0u, run_strikethrough_after));
 	if (run_stroke_flag_after.has_value())
 	{
-		CHECK(text_layer->set_style_run_stroke_flag(0u, run_stroke_flag_after.value()));
+		CHECK_NOTHROW(text_layer->set_style_run_stroke_flag(0u, run_stroke_flag_after.value()));
 	}
 	else
 	{
-		CHECK(text_layer->set_style_run_stroke_flag(0u, true));
+		CHECK_NOTHROW(text_layer->set_style_run_stroke_flag(0u, true));
 	}
 	if (run_fill_flag_after.has_value())
 	{
-		CHECK(text_layer->set_style_run_fill_flag(0u, run_fill_flag_after.value()));
+		CHECK_NOTHROW(text_layer->set_style_run_fill_flag(0u, run_fill_flag_after.value()));
 	}
 	else
 	{
-		CHECK(text_layer->set_style_run_fill_flag(0u, true));
+		CHECK_NOTHROW(text_layer->set_style_run_fill_flag(0u, true));
 	}
 	if (run_fill_first_after.has_value())
 	{
-		CHECK(text_layer->set_style_run_fill_first(0u, run_fill_first_after.value()));
+		CHECK_NOTHROW(text_layer->set_style_run_fill_first(0u, run_fill_first_after.value()));
 	}
 	else
 	{
-		CHECK(text_layer->set_style_run_fill_first(0u, false));
+		CHECK_NOTHROW(text_layer->set_style_run_fill_first(0u, false));
 	}
-	CHECK(text_layer->set_style_run_outline_width(0u, expected_outline_width_after));
-	CHECK(text_layer->set_style_run_fill_color(0u, run_fill_color_after));
+	CHECK_NOTHROW(text_layer->set_style_run_outline_width(0u, expected_outline_width_after));
+	CHECK_NOTHROW(text_layer->set_style_run_fill_color(0u, run_fill_color_after));
 	if (run_stroke_color_after.has_value())
 	{
-		CHECK(text_layer->set_style_run_stroke_color(0u, run_stroke_color_after.value()));
+		CHECK_NOTHROW(text_layer->set_style_run_stroke_color(0u, run_stroke_color_after.value()));
 	}
 	else
 	{
-		CHECK_FALSE(text_layer->set_style_run_stroke_color(0u, std::vector<double>{ 1.0, 0.1, 0.2, 0.3 }));
+		CHECK_THROWS(text_layer->set_style_run_stroke_color(0u, std::vector<double>{ 1.0, 0.1, 0.2, 0.3 }));
 	}
-	CHECK_FALSE(text_layer->set_style_run_font(200u, run_font_after));
-	CHECK_FALSE(text_layer->set_style_run_font_size(0u, std::numeric_limits<double>::infinity()));
-	CHECK_FALSE(text_layer->set_style_run_leading(200u, run_leading_after));
-	CHECK_FALSE(text_layer->set_style_run_auto_leading(200u, run_auto_leading_after));
-	CHECK_FALSE(text_layer->set_style_run_kerning(200u, run_kerning_after));
-	CHECK_FALSE(text_layer->set_style_run_font_baseline(200u, run_font_baseline_after));
-	CHECK_FALSE(text_layer->set_style_run_language(200u, run_language_after));
-	CHECK_FALSE(text_layer->set_style_run_baseline_direction(200u, run_baseline_direction_after));
-	CHECK_FALSE(text_layer->set_style_run_tsume(200u, run_tsume_after));
-	CHECK_FALSE(text_layer->set_style_run_kashida(200u, run_kashida_after));
-	CHECK_FALSE(text_layer->set_style_run_stroke_flag(200u, true));
-	CHECK_FALSE(text_layer->set_style_run_fill_flag(200u, true));
-	CHECK_FALSE(text_layer->set_style_run_fill_first(200u, true));
-	CHECK_FALSE(text_layer->set_style_run_outline_width(200u, 1.0));
-	CHECK_FALSE(text_layer->set_style_run_fill_color(0u, {}));
-	CHECK_FALSE(text_layer->set_style_run_fill_color(0u, std::vector<double>{ 1.0, 0.0, 0.0 }));
-	CHECK_FALSE(text_layer->set_style_run_stroke_color(0u, {}));
-	CHECK_FALSE(text_layer->set_style_run_stroke_color(0u, std::vector<double>{ 1.0, 0.0, 0.0 }));
+	CHECK_THROWS(text_layer->set_style_run_font(200u, run_font_after));
+	CHECK_THROWS(text_layer->set_style_run_font_size(0u, std::numeric_limits<double>::infinity()));
+	CHECK_THROWS(text_layer->set_style_run_leading(200u, run_leading_after));
+	CHECK_THROWS(text_layer->set_style_run_auto_leading(200u, run_auto_leading_after));
+	CHECK_THROWS(text_layer->set_style_run_kerning(200u, run_kerning_after));
+	CHECK_THROWS(text_layer->set_style_run_font_baseline(200u, run_font_baseline_after));
+	CHECK_THROWS(text_layer->set_style_run_language(200u, run_language_after));
+	CHECK_THROWS(text_layer->set_style_run_baseline_direction(200u, run_baseline_direction_after));
+	CHECK_THROWS(text_layer->set_style_run_tsume(200u, run_tsume_after));
+	CHECK_THROWS(text_layer->set_style_run_kashida(200u, run_kashida_after));
+	CHECK_THROWS(text_layer->set_style_run_stroke_flag(200u, true));
+	CHECK_THROWS(text_layer->set_style_run_fill_flag(200u, true));
+	CHECK_THROWS(text_layer->set_style_run_fill_first(200u, true));
+	CHECK_THROWS(text_layer->set_style_run_outline_width(200u, 1.0));
+	CHECK_THROWS(text_layer->set_style_run_fill_color(0u, {}));
+	CHECK_THROWS(text_layer->set_style_run_fill_color(0u, std::vector<double>{ 1.0, 0.0, 0.0 }));
+	CHECK_THROWS(text_layer->set_style_run_stroke_color(0u, {}));
+	CHECK_THROWS(text_layer->set_style_run_stroke_color(0u, std::vector<double>{ 1.0, 0.0, 0.0 }));
 
 	const auto out_path = temp_psd_path();
 	LayeredFile<bpp8_t>::write(std::move(file), out_path);
@@ -540,47 +540,47 @@ TEST_CASE("TextLayer mutates normal style sheet properties with roundtrip")
 		std::clamp((*normal_stroke_color_before)[3] + 0.1, 0.0, 1.0)
 	};
 
-	CHECK(text_layer->set_style_normal_sheet_index(normal_sheet_index_before.value()));
-	CHECK(text_layer->set_style_normal_font(normal_font_after));
-	CHECK(text_layer->set_style_normal_font_size(normal_font_size_after));
-	CHECK(text_layer->set_style_normal_leading(normal_leading_after));
-	CHECK(text_layer->set_style_normal_auto_leading(normal_auto_leading_after));
-	CHECK(text_layer->set_style_normal_kerning(normal_kerning_after));
-	CHECK(text_layer->set_style_normal_faux_bold(normal_faux_bold_after));
-	CHECK(text_layer->set_style_normal_faux_italic(normal_faux_italic_after));
-	CHECK(text_layer->set_style_normal_horizontal_scale(normal_horizontal_scale_after));
-	CHECK(text_layer->set_style_normal_vertical_scale(normal_vertical_scale_after));
-	CHECK(text_layer->set_style_normal_tracking(normal_tracking_after));
-	CHECK(text_layer->set_style_normal_auto_kerning(normal_auto_kerning_after));
-	CHECK(text_layer->set_style_normal_baseline_shift(normal_baseline_shift_after));
-	CHECK(text_layer->set_style_normal_font_caps(normal_font_caps_after));
-	CHECK(text_layer->set_style_normal_font_baseline(normal_font_baseline_after));
-	CHECK(text_layer->set_style_normal_no_break(normal_no_break_after));
-	CHECK(text_layer->set_style_normal_language(normal_language_after));
-	CHECK(text_layer->set_style_normal_character_direction(normal_character_direction_after));
-	CHECK(text_layer->set_style_normal_baseline_direction(normal_baseline_direction_after));
-	CHECK(text_layer->set_style_normal_tsume(normal_tsume_after));
-	CHECK(text_layer->set_style_normal_kashida(normal_kashida_after));
-	CHECK(text_layer->set_style_normal_diacritic_pos(normal_diacritic_pos_after));
-	CHECK(text_layer->set_style_normal_ligatures(normal_ligatures_after));
-	CHECK(text_layer->set_style_normal_dligatures(normal_dligatures_after));
-	CHECK(text_layer->set_style_normal_underline(normal_underline_after));
-	CHECK(text_layer->set_style_normal_strikethrough(normal_strikethrough_after));
-	CHECK(text_layer->set_style_normal_stroke_flag(normal_stroke_flag_after));
-	CHECK(text_layer->set_style_normal_fill_flag(normal_fill_flag_after));
-	CHECK(text_layer->set_style_normal_fill_first(normal_fill_first_after));
-	CHECK(text_layer->set_style_normal_outline_width(normal_outline_width_after));
-	CHECK(text_layer->set_style_normal_fill_color(normal_fill_color_after));
-	CHECK(text_layer->set_style_normal_stroke_color(normal_stroke_color_after));
-	CHECK_FALSE(text_layer->set_style_normal_sheet_index(-1));
-	CHECK_FALSE(text_layer->set_style_normal_sheet_index(200));
-	CHECK_FALSE(text_layer->set_style_normal_font_size(std::numeric_limits<double>::infinity()));
-	CHECK_FALSE(text_layer->set_style_normal_fill_color({}));
-	CHECK_FALSE(text_layer->set_style_normal_fill_color(std::vector<double>{ 1.0, 0.0, 0.0 }));
-	CHECK_FALSE(text_layer->set_style_normal_fill_color(std::vector<double>{ 1.0, 0.0, std::numeric_limits<double>::infinity(), 0.0 }));
-	CHECK_FALSE(text_layer->set_style_normal_stroke_color({}));
-	CHECK_FALSE(text_layer->set_style_normal_stroke_color(std::vector<double>{ 1.0, 0.0, 0.0 }));
-	CHECK_FALSE(text_layer->set_style_normal_stroke_color(std::vector<double>{ 1.0, 0.0, std::numeric_limits<double>::infinity(), 0.0 }));
+	CHECK_NOTHROW(text_layer->set_style_normal_sheet_index(normal_sheet_index_before.value()));
+	CHECK_NOTHROW(text_layer->set_style_normal_font(normal_font_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_font_size(normal_font_size_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_leading(normal_leading_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_auto_leading(normal_auto_leading_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_kerning(normal_kerning_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_faux_bold(normal_faux_bold_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_faux_italic(normal_faux_italic_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_horizontal_scale(normal_horizontal_scale_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_vertical_scale(normal_vertical_scale_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_tracking(normal_tracking_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_auto_kerning(normal_auto_kerning_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_baseline_shift(normal_baseline_shift_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_font_caps(normal_font_caps_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_font_baseline(normal_font_baseline_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_no_break(normal_no_break_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_language(normal_language_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_character_direction(normal_character_direction_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_baseline_direction(normal_baseline_direction_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_tsume(normal_tsume_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_kashida(normal_kashida_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_diacritic_pos(normal_diacritic_pos_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_ligatures(normal_ligatures_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_dligatures(normal_dligatures_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_underline(normal_underline_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_strikethrough(normal_strikethrough_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_stroke_flag(normal_stroke_flag_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_fill_flag(normal_fill_flag_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_fill_first(normal_fill_first_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_outline_width(normal_outline_width_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_fill_color(normal_fill_color_after));
+	CHECK_NOTHROW(text_layer->set_style_normal_stroke_color(normal_stroke_color_after));
+	CHECK_THROWS(text_layer->set_style_normal_sheet_index(-1));
+	CHECK_THROWS(text_layer->set_style_normal_sheet_index(200));
+	CHECK_THROWS(text_layer->set_style_normal_font_size(std::numeric_limits<double>::infinity()));
+	CHECK_THROWS(text_layer->set_style_normal_fill_color({}));
+	CHECK_THROWS(text_layer->set_style_normal_fill_color(std::vector<double>{ 1.0, 0.0, 0.0 }));
+	CHECK_THROWS(text_layer->set_style_normal_fill_color(std::vector<double>{ 1.0, 0.0, std::numeric_limits<double>::infinity(), 0.0 }));
+	CHECK_THROWS(text_layer->set_style_normal_stroke_color({}));
+	CHECK_THROWS(text_layer->set_style_normal_stroke_color(std::vector<double>{ 1.0, 0.0, 0.0 }));
+	CHECK_THROWS(text_layer->set_style_normal_stroke_color(std::vector<double>{ 1.0, 0.0, std::numeric_limits<double>::infinity(), 0.0 }));
 
 	const auto out_path = temp_psd_path();
 	LayeredFile<bpp8_t>::write(std::move(file), out_path);

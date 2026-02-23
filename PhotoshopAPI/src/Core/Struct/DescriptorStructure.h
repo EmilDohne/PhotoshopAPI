@@ -515,6 +515,16 @@ namespace Descriptors
 		/// Is the Descriptor empty?
 		bool empty() const noexcept;
 
+		/// Iterate descriptor items in insertion order.
+		const std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>>& items() const noexcept
+		{
+			return m_DescriptorItems;
+		}
+		std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>>& items() noexcept
+		{
+			return m_DescriptorItems;
+		}
+
 	protected:
 		/// The storage of our key-value items
 		std::vector<std::pair<std::string, std::unique_ptr<DescriptorBase>>> m_DescriptorItems;

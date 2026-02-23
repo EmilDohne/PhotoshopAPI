@@ -130,7 +130,7 @@ TEST_CASE("Transform: set_transform writes and reads back correctly")
 	const double c = std::cos(angle);
 	const double s = std::sin(angle);
 	std::vector<double> custom = {c, s, -s, c, 42.5, 99.0};
-	CHECK(layer->set_transform(custom));
+	CHECK_NOTHROW(layer->set_transform(custom));
 
 	// Read back
 	auto readback = layer->transform();
@@ -150,12 +150,12 @@ TEST_CASE("Transform: set_transform_xx/yy individual writers work")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_transform_xx(2.5));
-	CHECK(layer->set_transform_yy(3.0));
-	CHECK(layer->set_transform_xy(0.1));
-	CHECK(layer->set_transform_yx(-0.2));
-	CHECK(layer->set_transform_tx(100.0));
-	CHECK(layer->set_transform_ty(200.0));
+	CHECK_NOTHROW(layer->set_transform_xx(2.5));
+	CHECK_NOTHROW(layer->set_transform_yy(3.0));
+	CHECK_NOTHROW(layer->set_transform_xy(0.1));
+	CHECK_NOTHROW(layer->set_transform_yx(-0.2));
+	CHECK_NOTHROW(layer->set_transform_tx(100.0));
+	CHECK_NOTHROW(layer->set_transform_ty(200.0));
 
 	CHECK(layer->transform_xx().value() == doctest::Approx(2.5));
 	CHECK(layer->transform_yy().value() == doctest::Approx(3.0));
@@ -172,9 +172,9 @@ TEST_CASE("Transform: set_transform rejects wrong-size vector")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK_FALSE(layer->set_transform({}));
-	CHECK_FALSE(layer->set_transform({1.0, 0.0, 0.0}));
-	CHECK_FALSE(layer->set_transform({1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0}));
+	CHECK_THROWS(layer->set_transform({}));
+	CHECK_THROWS(layer->set_transform({1.0, 0.0, 0.0}));
+	CHECK_THROWS(layer->set_transform({1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0}));
 }
 
 TEST_CASE("Transform: set_transform_component rejects out-of-range index")
@@ -184,8 +184,8 @@ TEST_CASE("Transform: set_transform_component rejects out-of-range index")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK_FALSE(layer->set_transform_component(6, 1.0));
-	CHECK_FALSE(layer->set_transform_component(100, 1.0));
+	CHECK_THROWS(layer->set_transform_component(6, 1.0));
+	CHECK_THROWS(layer->set_transform_component(100, 1.0));
 	CHECK_FALSE(layer->transform_component(6).has_value());
 }
 
@@ -201,7 +201,7 @@ TEST_CASE("Transform: roundtrip through file write preserves transform")
 	const double c = std::cos(angle);
 	const double s = std::sin(angle);
 	std::vector<double> custom = {c, s, -s, c, 55.5, 77.7};
-	CHECK(layer->set_transform(custom));
+	CHECK_NOTHROW(layer->set_transform(custom));
 
 	// Write to temp and re-read
 	auto tmp = std::filesystem::temp_directory_path() / "psapi_transform_roundtrip.psb";
@@ -305,7 +305,7 @@ TEST_CASE("Transform: set_rotation_angle sets angle and preserves scale/translat
 	const double orig_tx = orig[4];
 	const double orig_ty = orig[5];
 
-	CHECK(layer->set_rotation_angle(45.0));
+	CHECK_NOTHROW(layer->set_rotation_angle(45.0));
 
 	auto angle = layer->rotation_angle();
 	REQUIRE(angle.has_value());
@@ -327,7 +327,7 @@ TEST_CASE("Transform: set_rotation_angle negative angle")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_rotation_angle(-30.0));
+	CHECK_NOTHROW(layer->set_rotation_angle(-30.0));
 	CHECK(layer->rotation_angle().value() == doctest::Approx(-30.0).epsilon(0.01));
 }
 
@@ -338,8 +338,8 @@ TEST_CASE("Transform: set_scale_x changes horizontal scale preserving angle")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_rotation_angle(20.0));
-	CHECK(layer->set_scale_x(1.5));
+	CHECK_NOTHROW(layer->set_rotation_angle(20.0));
+	CHECK_NOTHROW(layer->set_scale_x(1.5));
 
 	CHECK(layer->scale_x().value() == doctest::Approx(1.5).epsilon(0.01));
 	CHECK(layer->scale_y().value() == doctest::Approx(1.0).epsilon(0.01));
@@ -353,8 +353,8 @@ TEST_CASE("Transform: set_scale_y changes vertical scale preserving angle")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_rotation_angle(20.0));
-	CHECK(layer->set_scale_y(0.75));
+	CHECK_NOTHROW(layer->set_rotation_angle(20.0));
+	CHECK_NOTHROW(layer->set_scale_y(0.75));
 
 	CHECK(layer->scale_y().value() == doctest::Approx(0.75).epsilon(0.01));
 	CHECK(layer->scale_x().value() == doctest::Approx(1.0).epsilon(0.01));
@@ -368,8 +368,8 @@ TEST_CASE("Transform: set_scale sets both factors at once")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_rotation_angle(15.0));
-	CHECK(layer->set_scale(2.0, 0.5));
+	CHECK_NOTHROW(layer->set_rotation_angle(15.0));
+	CHECK_NOTHROW(layer->set_scale(2.0, 0.5));
 
 	CHECK(layer->scale_x().value() == doctest::Approx(2.0).epsilon(0.01));
 	CHECK(layer->scale_y().value() == doctest::Approx(0.5).epsilon(0.01));
@@ -383,8 +383,8 @@ TEST_CASE("Transform: rotation + scale roundtrip through file write")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_rotation_angle(60.0));
-	CHECK(layer->set_scale(1.25, 0.8));
+	CHECK_NOTHROW(layer->set_rotation_angle(60.0));
+	CHECK_NOTHROW(layer->set_scale(1.25, 0.8));
 
 	auto tmp = std::filesystem::temp_directory_path() / "psapi_rot_scale_rt.psb";
 	LayeredFile<bpp8_t>::write(std::move(file), tmp);
@@ -427,7 +427,7 @@ TEST_CASE("Transform: set_position changes tx/ty and preserves rotation")
 	auto angle_before = layer->rotation_angle();
 	auto sx_before = layer->scale_x();
 
-	CHECK(layer->set_position(123.0, 456.0));
+	CHECK_NOTHROW(layer->set_position(123.0, 456.0));
 
 	auto [tx, ty] = layer->position();
 	CHECK(tx == doctest::Approx(123.0));
@@ -446,7 +446,7 @@ TEST_CASE("Transform: reset_transform produces identity with preserved position"
 
 	auto [old_tx, old_ty] = layer->position();
 
-	CHECK(layer->reset_transform());
+	CHECK_NOTHROW(layer->reset_transform());
 
 	auto xform = layer->transform();
 	CHECK(xform[0] == doctest::Approx(1.0));
@@ -480,7 +480,7 @@ TEST_CASE("Transform: set_font applies to all style runs and normal sheet")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_font("Courier-Bold"));
+	CHECK_NOTHROW(layer->set_font("Courier-Bold"));
 
 	// primary_font_name should reflect the new font
 	auto name = layer->primary_font_name();
@@ -510,7 +510,7 @@ TEST_CASE("Transform: set_font roundtrips through file write")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_font("HelveticaNeue-Light"));
+	CHECK_NOTHROW(layer->set_font("HelveticaNeue-Light"));
 
 	auto tmp = std::filesystem::temp_directory_path() / "psapi_font_rt.psb";
 	LayeredFile<bpp8_t>::write(std::move(file), tmp);
@@ -533,7 +533,7 @@ TEST_CASE("Transform: position roundtrip through file write")
 	auto layer = find_text_layer(file, "SimpleASCII");
 	REQUIRE(layer != nullptr);
 
-	CHECK(layer->set_position(77.5, 199.25));
+	CHECK_NOTHROW(layer->set_position(77.5, 199.25));
 
 	auto tmp = std::filesystem::temp_directory_path() / "psapi_pos_rt.psb";
 	LayeredFile<bpp8_t>::write(std::move(file), tmp);

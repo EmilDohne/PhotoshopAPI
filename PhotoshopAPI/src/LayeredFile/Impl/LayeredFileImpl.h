@@ -7,6 +7,7 @@
 #include "Core/TaggedBlocks/LrSectionTaggedBlock.h"
 #include "Core/TaggedBlocks/Lr16TaggedBlock.h"
 #include "Core/TaggedBlocks/Lr32TaggedBlock.h"
+#include "Core/Endian/EndianByteSwap.h"
 #include "Core/Struct/ICCProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
@@ -27,11 +28,7 @@ namespace _Impl
 			return data;
 		}
 
-		const uint32_t declared_size =
-			(static_cast<uint32_t>(data[0]) << 24u) |
-			(static_cast<uint32_t>(data[1]) << 16u) |
-			(static_cast<uint32_t>(data[2]) << 8u) |
-			static_cast<uint32_t>(data[3]);
+		const uint32_t declared_size = endian_decode_be<uint32_t>(reinterpret_cast<const std::byte*>(data.data()));
 
 		// Truncate only when the declared size is plausible and within buffer bounds.
 		if (declared_size >= 128u && declared_size <= data.size())

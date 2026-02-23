@@ -1,4 +1,4 @@
-﻿#include "doctest.h"
+#include "doctest.h"
 #include "TestTextLayerMutationUtils.h"
 
 // ============================================================
@@ -204,7 +204,7 @@ TEST_CASE("TextLayer set_orientation changes horizontal to vertical")
 	REQUIRE(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Horizontal);
 
 	// Change to vertical
-	CHECK(text_layer->set_orientation(TextLayerEnum::WritingDirection::Vertical));
+	CHECK_NOTHROW(text_layer->set_orientation(TextLayerEnum::WritingDirection::Vertical));
 
 	// Verify in-memory
 	CHECK(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Vertical);
@@ -223,7 +223,7 @@ TEST_CASE("TextLayer set_orientation writes Procession=1 for vertical text")
 	REQUIRE(text_layer != nullptr);
 	REQUIRE(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Horizontal);
 
-	CHECK(text_layer->set_orientation(TextLayerEnum::WritingDirection::Vertical));
+	CHECK_NOTHROW(text_layer->set_orientation(TextLayerEnum::WritingDirection::Vertical));
 
 	auto [record, _channel_data] = text_layer->to_photoshop();
 	REQUIRE(record.m_AdditionalLayerInfo.has_value());
@@ -250,7 +250,7 @@ TEST_CASE("TextLayer set_orientation changes vertical to horizontal")
 	REQUIRE(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Vertical);
 
 	// Change to horizontal
-	CHECK(text_layer->set_orientation(TextLayerEnum::WritingDirection::Horizontal));
+	CHECK_NOTHROW(text_layer->set_orientation(TextLayerEnum::WritingDirection::Horizontal));
 
 	// Verify in-memory
 	CHECK(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Horizontal);
@@ -269,7 +269,7 @@ TEST_CASE("TextLayer set_orientation writes Procession=0 for horizontal text")
 	REQUIRE(text_layer != nullptr);
 	REQUIRE(text_layer->orientation().value() == TextLayerEnum::WritingDirection::Vertical);
 
-	CHECK(text_layer->set_orientation(TextLayerEnum::WritingDirection::Horizontal));
+	CHECK_NOTHROW(text_layer->set_orientation(TextLayerEnum::WritingDirection::Horizontal));
 
 	auto [record, _channel_data] = text_layer->to_photoshop();
 	REQUIRE(record.m_AdditionalLayerInfo.has_value());
@@ -482,7 +482,7 @@ TEST_CASE("TextLayer set_font_postscript_name renames an existing font")
 	REQUIRE(original.has_value());
 
 	// Rename
-	CHECK(text_layer->set_font_postscript_name(0, "ReplacedFont-Regular"));
+	CHECK_NOTHROW(text_layer->set_font_postscript_name(0, "ReplacedFont-Regular"));
 
 	// Verify
 	const auto renamed = text_layer->font_postscript_name(0);
@@ -504,7 +504,7 @@ TEST_CASE("TextLayer set_font_postscript_name out of range returns false")
 	auto text_layer = find_text_layer_with_contents(file, "Hello 123");
 	REQUIRE(text_layer != nullptr);
 
-	CHECK_FALSE(text_layer->set_font_postscript_name(9999, "NoSuchFont"));
+	CHECK_THROWS(text_layer->set_font_postscript_name(9999, "NoSuchFont"));
 }
 
 TEST_CASE("TextLayer add_font then use the new font in a style run")
@@ -523,7 +523,7 @@ TEST_CASE("TextLayer add_font then use the new font in a style run")
 	REQUIRE(new_idx >= 0);
 
 	// Point style run 0 at the new font
-	CHECK(text_layer->set_style_run_font(0, new_idx));
+	CHECK_NOTHROW(text_layer->set_style_run_font(0, new_idx));
 
 	// Verify
 	const auto run_font = text_layer->style_run_font(0);
@@ -601,7 +601,7 @@ TEST_CASE("TextLayer set_style_run_font_by_name with existing font")
 	const auto count_before = text_layer->font_count();
 
 	// set_style_run_font_by_name should find the existing font, not add a new one
-	CHECK(text_layer->set_style_run_font_by_name(0, existing_name.value()));
+	CHECK_NOTHROW(text_layer->set_style_run_font_by_name(0, existing_name.value()));
 
 	// Count should be unchanged since the font already existed
 	CHECK(text_layer->font_count() == count_before);
@@ -626,7 +626,7 @@ TEST_CASE("TextLayer set_style_run_font_by_name adds new font when not found")
 	const auto count_before = text_layer->font_count();
 
 	// Use a font name not in the set - should add it
-	CHECK(text_layer->set_style_run_font_by_name(0, "BrandNewFont-Regular"));
+	CHECK_NOTHROW(text_layer->set_style_run_font_by_name(0, "BrandNewFont-Regular"));
 
 	// Count should be incremented
 	CHECK(text_layer->font_count() == count_before + 1u);
@@ -656,7 +656,7 @@ TEST_CASE("TextLayer set_style_normal_font_by_name sets the normal sheet font")
 	const auto count_before = text_layer->font_count();
 
 	// Set normal font to a new name
-	CHECK(text_layer->set_style_normal_font_by_name("NormalNewFont-Light"));
+	CHECK_NOTHROW(text_layer->set_style_normal_font_by_name("NormalNewFont-Light"));
 
 	// Font should have been added
 	CHECK(text_layer->font_count() == count_before + 1u);
@@ -689,7 +689,7 @@ TEST_CASE("TextLayer set_style_normal_font_by_name reuses existing font")
 	const auto count_before = text_layer->font_count();
 
 	// set_style_normal_font_by_name with existing font should NOT add a new entry
-	CHECK(text_layer->set_style_normal_font_by_name(existing_name.value()));
+	CHECK_NOTHROW(text_layer->set_style_normal_font_by_name(existing_name.value()));
 	CHECK(text_layer->font_count() == count_before);
 
 	// Normal font should be 0
@@ -712,7 +712,7 @@ TEST_CASE("TextLayer add_font roundtrip through file write and read")
 	// Add a font and wire it into run 0
 	const auto new_idx = text_layer->add_font("RoundtripFont-Medium");
 	REQUIRE(new_idx >= 0);
-	CHECK(text_layer->set_style_run_font(0, new_idx));
+	CHECK_NOTHROW(text_layer->set_style_run_font(0, new_idx));
 	const auto count_after_add = text_layer->font_count();
 
 	// Write to temp file

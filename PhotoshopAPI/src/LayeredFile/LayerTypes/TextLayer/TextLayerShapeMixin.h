@@ -40,6 +40,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -134,10 +136,12 @@ public:
 	/// Set the box bounds in the EngineData.  The layer must already be box text.
 	/// Values are { top, left, bottom, right } in Photoshop's text-space coordinates.
 	/// (Note: on-disk format is [ top left right bottom ]; we swap internally.)
-	bool set_box_bounds(double top, double left, double bottom, double right)
+	void set_box_bounds(double top, double left, double bottom, double right)
 	{
 		if (!std::isfinite(top) || !std::isfinite(left) || !std::isfinite(bottom) || !std::isfinite(right))
-			return false;
+		{
+			throw std::invalid_argument("TextLayer::set_box_bounds() failed: all bounds must be finite");
+		}
 
 		for (const auto& block : self()->text_tagged_blocks())
 		{
@@ -153,7 +157,10 @@ public:
 			if (!parsed.ok) continue;
 
 			auto data_node = find_box_bounds_node(parsed.root);
-			if (data_node == nullptr) return false;
+			if (data_node == nullptr)
+			{
+				throw std::invalid_argument("TextLayer::set_box_bounds() failed: layer is not box text");
+			}
 
 			// On-disk order is [top, left, right, bottom]
 			const std::vector<double> new_vals = { top, left, right, bottom };
@@ -161,56 +168,77 @@ public:
 			const size_t old_end = data_node->end_offset;
 
 			if (!EngineData::set_double_array(*data_node, new_vals))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::set_box_bounds() failed: unable to update BoxBounds");
+			}
 			// Mark all items as non-integer so they serialize with a decimal point
 			for (auto& item : data_node->array_items) item.is_integer = false;
 
 			auto new_bytes = EngineData::format_value_bytes(*data_node);
 			EngineData::splice_payload(payload, old_start, old_end, new_bytes);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload))
+			{
+				throw std::runtime_error("TextLayer::set_box_bounds() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_box_bounds() failed: no parseable TySh block found");
 	}
 
 	/// Convenience: set box width and height, keeping the current top-left corner.
 	/// The layer must already be box text with existing bounds.
-	bool set_box_size(double width, double height)
+	void set_box_size(double width, double height)
 	{
 		if (!std::isfinite(width) || !std::isfinite(height) || width <= 0.0 || height <= 0.0)
-			return false;
+		{
+			throw std::invalid_argument("TextLayer::set_box_size() failed: width and height must be finite and > 0");
+		}
 
 		auto b = box_bounds();
-		if (!b.has_value()) return false;
+		if (!b.has_value())
+		{
+			throw std::invalid_argument("TextLayer::set_box_size() failed: layer is not box text");
+		}
 
 		const double top = (*b)[0];
 		const double left = (*b)[1];
-		return set_box_bounds(top, left, top + height, left + width);
+		set_box_bounds(top, left, top + height, left + width);
 	}
 
 	/// Set only the box width, keeping top, left, and height unchanged.
 	/// The layer must already be box text with existing bounds.
-	bool set_box_width(double width)
+	void set_box_width(double width)
 	{
 		if (!std::isfinite(width) || width <= 0.0)
-			return false;
+		{
+			throw std::invalid_argument("TextLayer::set_box_width() failed: width must be finite and > 0");
+		}
 
 		auto b = box_bounds();
-		if (!b.has_value()) return false;
+		if (!b.has_value())
+		{
+			throw std::invalid_argument("TextLayer::set_box_width() failed: layer is not box text");
+		}
 
-		return set_box_bounds((*b)[0], (*b)[1], (*b)[2], (*b)[1] + width);
+		set_box_bounds((*b)[0], (*b)[1], (*b)[2], (*b)[1] + width);
 	}
 
 	/// Set only the box height, keeping top, left, and width unchanged.
 	/// The layer must already be box text with existing bounds.
-	bool set_box_height(double height)
+	void set_box_height(double height)
 	{
 		if (!std::isfinite(height) || height <= 0.0)
-			return false;
+		{
+			throw std::invalid_argument("TextLayer::set_box_height() failed: height must be finite and > 0");
+		}
 
 		auto b = box_bounds();
-		if (!b.has_value()) return false;
+		if (!b.has_value())
+		{
+			throw std::invalid_argument("TextLayer::set_box_height() failed: layer is not box text");
+		}
 
-		return set_box_bounds((*b)[0], (*b)[1], (*b)[0] + height, (*b)[3]);
+		set_box_bounds((*b)[0], (*b)[1], (*b)[0] + height, (*b)[3]);
 	}
 
 	/// Convert an existing point-text layer to box text with the given width and height.
@@ -220,10 +248,12 @@ public:
 	/// This modifies the EngineData tree and re-serializes it:
 	///   - All three ShapeType values are set to 1
 	///   - The PointBase entry in Cookie/Photoshop is replaced with BoxBounds
-	bool convert_to_box_text(double width, double height)
+	void convert_to_box_text(double width, double height)
 	{
 		if (!std::isfinite(width) || !std::isfinite(height) || width <= 0.0 || height <= 0.0)
-			return false;
+		{
+			throw std::invalid_argument("TextLayer::convert_to_box_text() failed: width and height must be finite and > 0");
+		}
 
 		for (const auto& block : self()->text_tagged_blocks())
 		{
@@ -240,22 +270,35 @@ public:
 
 			// Verify it is currently point text
 			auto cookie_st = find_cookie_shape_type(parsed.root);
-			if (cookie_st == nullptr) return false;
+			if (cookie_st == nullptr)
+			{
+				throw std::runtime_error("TextLayer::convert_to_box_text() failed: missing ShapeType");
+			}
 
 			int32_t current_shape = 0;
 			if (!TextLayerDetail::number_value_to_int32(*cookie_st, current_shape))
-				return false;
-			if (current_shape == 1) return false;   // already box text
+			{
+				throw std::runtime_error("TextLayer::convert_to_box_text() failed: invalid ShapeType");
+			}
+			if (current_shape == 1)
+			{
+				throw std::invalid_argument("TextLayer::convert_to_box_text() failed: layer is already box text");
+			}
 
 			// --- Modify the tree ---
 
 			// 1. Set all three ShapeType values to 1
 			if (!set_all_shape_types(parsed.root, 1))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::convert_to_box_text() failed: unable to set ShapeType");
+			}
 
 			// 2. In the Photoshop dict: remove PointBase, insert BoxBounds
 			auto* ps_dict = find_photoshop_dict(parsed.root);
-			if (ps_dict == nullptr) return false;
+			if (ps_dict == nullptr)
+			{
+				throw std::runtime_error("TextLayer::convert_to_box_text() failed: missing Photoshop shape dictionary");
+			}
 
 			EngineData::remove_dict_value(*ps_dict, "PointBase");
 
@@ -271,9 +314,13 @@ public:
 
 			// --- Re-serialize and write back ---
 			auto new_payload = EngineData::serialize(parsed.root);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), new_payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), new_payload))
+			{
+				throw std::runtime_error("TextLayer::convert_to_box_text() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::convert_to_box_text() failed: no parseable TySh block found");
 	}
 
 	/// Convert an existing box-text layer back to point text.
@@ -283,7 +330,7 @@ public:
 	/// This modifies the EngineData tree and re-serializes it:
 	///   - All three ShapeType values are set to 0
 	///   - The BoxBounds entry in Cookie/Photoshop is replaced with PointBase
-	bool convert_to_point_text()
+	void convert_to_point_text()
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
@@ -299,22 +346,35 @@ public:
 			if (!parsed.ok) continue;
 
 			auto cookie_st = find_cookie_shape_type(parsed.root);
-			if (cookie_st == nullptr) return false;
+			if (cookie_st == nullptr)
+			{
+				throw std::runtime_error("TextLayer::convert_to_point_text() failed: missing ShapeType");
+			}
 
 			int32_t current_shape = 0;
 			if (!TextLayerDetail::number_value_to_int32(*cookie_st, current_shape))
-				return false;
-			if (current_shape == 0) return false;   // already point text
+			{
+				throw std::runtime_error("TextLayer::convert_to_point_text() failed: invalid ShapeType");
+			}
+			if (current_shape == 0)
+			{
+				throw std::invalid_argument("TextLayer::convert_to_point_text() failed: layer is already point text");
+			}
 
 			// --- Modify the tree ---
 
 			// 1. Set all three ShapeType values to 0
 			if (!set_all_shape_types(parsed.root, 0))
-				return false;
+			{
+				throw std::runtime_error("TextLayer::convert_to_point_text() failed: unable to set ShapeType");
+			}
 
 			// 2. In the Photoshop dict: remove BoxBounds, insert PointBase
 			auto* ps_dict = find_photoshop_dict(parsed.root);
-			if (ps_dict == nullptr) return false;
+			if (ps_dict == nullptr)
+			{
+				throw std::runtime_error("TextLayer::convert_to_point_text() failed: missing Photoshop shape dictionary");
+			}
 
 			EngineData::remove_dict_value(*ps_dict, "BoxBounds");
 
@@ -329,9 +389,13 @@ public:
 
 			// --- Re-serialize and write back ---
 			auto new_payload = EngineData::serialize(parsed.root);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), new_payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), new_payload))
+			{
+				throw std::runtime_error("TextLayer::convert_to_point_text() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::convert_to_point_text() failed: no parseable TySh block found");
 	}
 
 private:

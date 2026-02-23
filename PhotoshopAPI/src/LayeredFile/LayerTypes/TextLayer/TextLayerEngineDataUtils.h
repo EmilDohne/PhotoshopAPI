@@ -651,32 +651,25 @@ inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, 
 	const size_t body = find_text_descriptor_body_offset(block);
 	if (body == 0u) return std::nullopt;
 
-	const auto keys = enumerate_descriptor_keys(block.m_Data, body);
-	for (const auto& kv : keys)
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, body, descriptor))
 	{
-		if (kv.key != target_key || kv.ostype != "enum")
-			continue;
-
-		size_t p = kv.data_offset;
-		auto read_key_str = [&](size_t off) -> std::pair<std::string, size_t> {
-			if (off + 4u > block.m_Data.size()) return { "", 0u };
-			const uint32_t kl = read_u32_be(block.m_Data, off);
-			const uint32_t actual = (kl == 0u) ? 4u : kl;
-			if (off + 4u + actual > block.m_Data.size()) return { "", 0u };
-			std::string s;
-			for (uint32_t j = 0u; j < actual; ++j)
-				s.push_back(static_cast<char>(to_u8(block.m_Data[off + 4u + j])));
-			return { s, 4u + actual };
-		};
-
-		auto [tid, tid_bytes] = read_key_str(p);
-		if (tid_bytes == 0u) return std::nullopt;
-		p += tid_bytes;
-		auto [val, val_bytes] = read_key_str(p);
-		if (val_bytes == 0u) return std::nullopt;
-		return val;
+		return std::nullopt;
 	}
-	return std::nullopt;
+
+	try
+	{
+		const auto* enumerated = descriptor.at<Descriptors::Enumerated>(target_key);
+		if (enumerated == nullptr)
+		{
+			return std::nullopt;
+		}
+		return enumerated->m_Enum;
+	}
+	catch (...)
+	{
+		return std::nullopt;
+	}
 }
 
 /// Write an enum-type value in the text descriptor in-place.
@@ -690,77 +683,42 @@ inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_k
 	const size_t body = find_text_descriptor_body_offset(block);
 	if (body == 0u) return false;
 
-	const auto keys = enumerate_descriptor_keys(block.m_Data, body);
-	for (const auto& kv : keys)
+	const size_t old_body_size = skip_descriptor_body(block.m_Data, body);
+	if (old_body_size == 0u)
 	{
-		if (kv.key != target_key || kv.ostype != "enum")
-			continue;
-
-		size_t p = kv.data_offset;
-		auto read_key_str = [&](size_t off) -> std::pair<std::string, size_t> {
-			if (off + 4u > block.m_Data.size()) return { "", 0u };
-			const uint32_t kl = read_u32_be(block.m_Data, off);
-			const uint32_t actual = (kl == 0u) ? 4u : kl;
-			if (off + 4u + actual > block.m_Data.size()) return { "", 0u };
-			std::string s;
-			for (uint32_t j = 0u; j < actual; ++j)
-				s.push_back(static_cast<char>(to_u8(block.m_Data[off + 4u + j])));
-			return { s, 4u + actual };
-		};
-
-		// Skip the enum type ID
-		auto [tid, tid_bytes] = read_key_str(p);
-		if (tid_bytes == 0u) return false;
-		p += tid_bytes;
-
-		// Now p points to the value key (length-prefix + value bytes)
-		if (p + 4u > block.m_Data.size()) return false;
-		const uint32_t val_len = read_u32_be(block.m_Data, p);
-		const uint32_t val_actual = (val_len == 0u) ? 4u : val_len;
-		if (p + 4u + val_actual > block.m_Data.size()) return false;
-
-		// Compute old and new encoded sizes (4-byte length prefix + value bytes)
-		const size_t old_encoded = 4u + val_actual;
-		// For the new value: 4-byte charIDs use length=0 encoding
-		const bool new_is_char = (new_value.size() == 4u);
-		const size_t new_encoded = 4u + new_value.size();
-
-		if (old_encoded == new_encoded)
-		{
-			// Same size: overwrite length prefix and value in-place
-			const uint32_t new_len = new_is_char ? 0u : static_cast<uint32_t>(new_value.size());
-			block.m_Data[p + 0] = static_cast<std::byte>((new_len >> 24) & 0xFF);
-			block.m_Data[p + 1] = static_cast<std::byte>((new_len >> 16) & 0xFF);
-			block.m_Data[p + 2] = static_cast<std::byte>((new_len >>  8) & 0xFF);
-			block.m_Data[p + 3] = static_cast<std::byte>((new_len      ) & 0xFF);
-			for (size_t j = 0u; j < new_value.size(); ++j)
-				block.m_Data[p + 4u + j] = static_cast<std::byte>(static_cast<uint8_t>(new_value[j]));
-		}
-		else
-		{
-			// Different size: erase old bytes and insert new ones
-			auto it_old_begin = block.m_Data.begin() + static_cast<ptrdiff_t>(p);
-			auto it_old_end   = it_old_begin + static_cast<ptrdiff_t>(old_encoded);
-			block.m_Data.erase(it_old_begin, it_old_end);
-
-			// Build the new encoded bytes: length prefix + value
-			std::vector<std::byte> replacement;
-			replacement.reserve(new_encoded);
-			const uint32_t new_len = new_is_char ? 0u : static_cast<uint32_t>(new_value.size());
-			replacement.push_back(static_cast<std::byte>((new_len >> 24) & 0xFF));
-			replacement.push_back(static_cast<std::byte>((new_len >> 16) & 0xFF));
-			replacement.push_back(static_cast<std::byte>((new_len >>  8) & 0xFF));
-			replacement.push_back(static_cast<std::byte>((new_len      ) & 0xFF));
-			for (char c : new_value)
-				replacement.push_back(static_cast<std::byte>(static_cast<uint8_t>(c)));
-
-			auto it_insert = block.m_Data.begin() + static_cast<ptrdiff_t>(p);
-			block.m_Data.insert(it_insert, replacement.begin(), replacement.end());
-		}
-
-		return true;
+		return false;
 	}
-	return false;
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, body, descriptor))
+	{
+		return false;
+	}
+
+	try
+	{
+		auto& entry = descriptor.at(target_key);
+		auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+		if (enumerated == nullptr)
+		{
+			return false;
+		}
+		enumerated->m_Enum = new_value;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body + old_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
+		new_body.begin(),
+		new_body.end());
+	return true;
 }
 
 // -----------------------------------------------------------------------
@@ -793,32 +751,25 @@ inline std::optional<std::string> read_warp_enum(const TaggedBlock& block, const
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return std::nullopt;
 
-	const auto keys = enumerate_descriptor_keys(block.m_Data, warp_body);
-	for (const auto& kv : keys)
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
 	{
-		if (kv.key != target_key || kv.ostype != "enum")
-			continue;
-
-		size_t p = kv.data_offset;
-		auto read_key_str = [&](size_t off) -> std::pair<std::string, size_t> {
-			if (off + 4u > block.m_Data.size()) return { "", 0u };
-			const uint32_t kl = read_u32_be(block.m_Data, off);
-			const uint32_t actual = (kl == 0u) ? 4u : kl;
-			if (off + 4u + actual > block.m_Data.size()) return { "", 0u };
-			std::string s;
-			for (uint32_t j = 0u; j < actual; ++j)
-				s.push_back(static_cast<char>(to_u8(block.m_Data[off + 4u + j])));
-			return { s, 4u + actual };
-		};
-
-		auto [tid, tid_bytes] = read_key_str(p);
-		if (tid_bytes == 0u) return std::nullopt;
-		p += tid_bytes;
-		auto [val, val_bytes] = read_key_str(p);
-		if (val_bytes == 0u) return std::nullopt;
-		return val;
+		return std::nullopt;
 	}
-	return std::nullopt;
+
+	try
+	{
+		const auto* enumerated = descriptor.at<Descriptors::Enumerated>(target_key);
+		if (enumerated == nullptr)
+		{
+			return std::nullopt;
+		}
+		return enumerated->m_Enum;
+	}
+	catch (...)
+	{
+		return std::nullopt;
+	}
 }
 
 inline std::optional<double> read_warp_double(const TaggedBlock& block, const std::string& target_key)
@@ -826,24 +777,127 @@ inline std::optional<double> read_warp_double(const TaggedBlock& block, const st
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return std::nullopt;
 
-	const auto keys = enumerate_descriptor_keys(block.m_Data, warp_body);
-	for (const auto& kv : keys)
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
 	{
-		if (kv.key != target_key)
-			continue;
+		return std::nullopt;
+	}
 
-		if (kv.ostype == "doub")
+	try
+	{
+		return descriptor.at<double>(target_key);
+	}
+	catch (...)
+	{
+		// fall through
+	}
+
+	try
+	{
+		const auto* unit_float = descriptor.at<Descriptors::UnitFloat>(target_key);
+		if (unit_float == nullptr)
 		{
-			if (kv.data_offset + 8u > block.m_Data.size()) return std::nullopt;
-			return read_double_be(block.m_Data, kv.data_offset);
+			return std::nullopt;
 		}
-		else if (kv.ostype == "UntF")
+		return unit_float->m_Value;
+	}
+	catch (...)
+	{
+		return std::nullopt;
+	}
+}
+
+inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
+{
+	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	if (warp_body == 0u) return false;
+
+	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	if (old_warp_body_size == 0u)
+	{
+		return false;
+	}
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	{
+		return false;
+	}
+
+	try
+	{
+		auto& entry = descriptor.at(target_key);
+		auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+		if (enumerated == nullptr)
 		{
-			if (kv.data_offset + 12u > block.m_Data.size()) return std::nullopt;
-			return read_double_be(block.m_Data, kv.data_offset + 4u);
+			return false;
+		}
+		enumerated->m_Enum = new_value;
+	}
+	catch (...)
+	{
+		return false;
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		new_body.begin(),
+		new_body.end());
+	return true;
+}
+
+inline bool write_warp_double(TaggedBlock& block, const std::string& target_key, const double new_value)
+{
+	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	if (warp_body == 0u) return false;
+
+	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	if (old_warp_body_size == 0u)
+	{
+		return false;
+	}
+
+	Descriptors::Descriptor descriptor{};
+	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	{
+		return false;
+	}
+
+	try
+	{
+		auto& entry = descriptor.at(target_key);
+
+		if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
+		{
+			double_value->m_Value = new_value;
+		}
+		else if (auto* unit_float = dynamic_cast<Descriptors::UnitFloat*>(entry.get()))
+		{
+			unit_float->m_Value = new_value;
+		}
+		else
+		{
+			return false;
 		}
 	}
-	return std::nullopt;
+	catch (...)
+	{
+		return false;
+	}
+
+	const auto new_body = serialize_descriptor_body(descriptor);
+	block.m_Data.erase(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block.m_Data.insert(
+		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		new_body.begin(),
+		new_body.end());
+	return true;
 }
 
 } // namespace TextLayerDetail

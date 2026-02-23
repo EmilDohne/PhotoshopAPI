@@ -2,6 +2,8 @@
 
 #include "Macros.h"
 #include "TextLayerTypes.h"
+#include "Core/Endian/EndianByteSwap.h"
+#include "Core/FileIO/BytesIO.h"
 
 #include <algorithm>
 #include <array>
@@ -14,6 +16,7 @@
 #include <iomanip>
 #include <limits>
 #include <optional>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -31,17 +34,16 @@ inline uint8_t to_u8(const std::byte value)
 
 inline uint16_t read_u16_be(const std::vector<std::byte>& data, const size_t offset)
 {
-	return static_cast<uint16_t>(
-		(static_cast<uint16_t>(to_u8(data[offset])) << 8) |
-		static_cast<uint16_t>(to_u8(data[offset + 1u])));
+	return bytes_io::read_as_and_swap<uint16_t, std::byte>(
+		std::span<const std::byte>(data.data(), data.size()),
+		offset);
 }
 
 inline uint32_t read_u32_be(const std::vector<std::byte>& data, const size_t offset)
 {
-	return (static_cast<uint32_t>(to_u8(data[offset])) << 24) |
-		(static_cast<uint32_t>(to_u8(data[offset + 1u])) << 16) |
-		(static_cast<uint32_t>(to_u8(data[offset + 2u])) << 8) |
-		static_cast<uint32_t>(to_u8(data[offset + 3u]));
+	return bytes_io::read_as_and_swap<uint32_t, std::byte>(
+		std::span<const std::byte>(data.data(), data.size()),
+		offset);
 }
 
 inline int32_t read_i32_be(const std::vector<std::byte>& data, const size_t offset)
@@ -51,22 +53,15 @@ inline int32_t read_i32_be(const std::vector<std::byte>& data, const size_t offs
 
 inline double read_double_be(const std::vector<std::byte>& data, const size_t offset)
 {
-	uint64_t bits = 0u;
-	for (size_t i = 0u; i < 8u; ++i)
-	{
-		bits = (bits << 8) | static_cast<uint64_t>(to_u8(data[offset + i]));
-	}
-	double result;
-	std::memcpy(&result, &bits, sizeof(double));
-	return result;
+	return bytes_io::read_as_and_swap<double, std::byte>(
+		std::span<const std::byte>(data.data(), data.size()),
+		offset);
 }
 
 inline void write_u32_be(std::vector<std::byte>& data, const size_t offset, const uint32_t value)
 {
-	data[offset] = static_cast<std::byte>((value >> 24) & 0xFFu);
-	data[offset + 1u] = static_cast<std::byte>((value >> 16) & 0xFFu);
-	data[offset + 2u] = static_cast<std::byte>((value >> 8) & 0xFFu);
-	data[offset + 3u] = static_cast<std::byte>(value & 0xFFu);
+	const uint32_t encoded = endian_encode_be<uint32_t>(value);
+	std::memcpy(data.data() + static_cast<std::ptrdiff_t>(offset), &encoded, sizeof(uint32_t));
 }
 
 inline void write_i32_be(std::vector<std::byte>& data, const size_t offset, const int32_t value)
@@ -76,12 +71,8 @@ inline void write_i32_be(std::vector<std::byte>& data, const size_t offset, cons
 
 inline void write_double_be(std::vector<std::byte>& data, const size_t offset, const double value)
 {
-	uint64_t bits;
-	std::memcpy(&bits, &value, sizeof(double));
-	for (size_t i = 0u; i < 8u; ++i)
-	{
-		data[offset + i] = static_cast<std::byte>((bits >> (56u - i * 8u)) & 0xFFu);
-	}
+	const double encoded = endian_encode_be<double>(value);
+	std::memcpy(data.data() + static_cast<std::ptrdiff_t>(offset), &encoded, sizeof(double));
 }
 
 inline void write_utf16le_as_be(std::vector<std::byte>& data, const size_t byte_offset, const std::u16string& utf16le)

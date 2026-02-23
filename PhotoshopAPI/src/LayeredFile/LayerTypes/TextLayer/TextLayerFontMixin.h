@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -228,7 +229,7 @@ public:
 		return -1;
 	}
 
-	bool set_font_postscript_name(const size_t font_index, const std::string& new_name)
+	void set_font_postscript_name(const size_t font_index, const std::string& new_name)
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
@@ -259,7 +260,10 @@ public:
 					patches.push_back({ old_start, old_end, EngineData::format_value_bytes(*name_val) });
 				}
 			}
-			if (patches.empty()) return false;
+			if (patches.empty())
+			{
+				throw std::invalid_argument("TextLayer::set_font_postscript_name() failed: font_index out of range");
+			}
 
 			auto doc_fs = EngineData::find_by_path(parsed.root, { "DocumentResources", "FontSet" });
 			if (doc_fs != nullptr && doc_fs->type == EngineData::ValueType::Array
@@ -276,25 +280,35 @@ public:
 			}
 
 			EngineData::apply_patches(payload, patches);
-			return TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload);
+			if (!TextLayerDetail::write_engine_payload(*block, engine_span_opt.value(), payload))
+			{
+				throw std::runtime_error("TextLayer::set_font_postscript_name() failed: unable to write engine payload");
+			}
+			return;
 		}
-		return false;
+		throw std::runtime_error("TextLayer::set_font_postscript_name() failed: no parseable TySh block found");
 	}
 
-	bool set_style_run_font_by_name(const size_t run_index, const std::string& postscript_name)
+	void set_style_run_font_by_name(const size_t run_index, const std::string& postscript_name)
 	{
 		int32_t idx = find_font_index(postscript_name);
 		if (idx < 0) idx = add_font(postscript_name);
-		if (idx < 0) return false;
-		return self()->set_style_run_font(run_index, idx);
+		if (idx < 0)
+		{
+			throw std::runtime_error("TextLayer::set_style_run_font_by_name() failed: unable to add requested font");
+		}
+		self()->set_style_run_font(run_index, idx);
 	}
 
-	bool set_style_normal_font_by_name(const std::string& postscript_name)
+	void set_style_normal_font_by_name(const std::string& postscript_name)
 	{
 		int32_t idx = find_font_index(postscript_name);
 		if (idx < 0) idx = add_font(postscript_name);
-		if (idx < 0) return false;
-		return self()->set_style_normal_font(idx);
+		if (idx < 0)
+		{
+			throw std::runtime_error("TextLayer::set_style_normal_font_by_name() failed: unable to add requested font");
+		}
+		self()->set_style_normal_font(idx);
 	}
 
 	// -----------------------------------------------------------------------
@@ -312,22 +326,21 @@ public:
 		return std::nullopt;
 	}
 
-	bool set_font(const std::string& postscript_name)
+	void set_font(const std::string& postscript_name)
 	{
 		int32_t idx = find_font_index(postscript_name);
 		if (idx < 0) idx = add_font(postscript_name);
-		if (idx < 0) return false;
+		if (idx < 0)
+		{
+			throw std::runtime_error("TextLayer::set_font() failed: unable to add requested font");
+		}
 
-		bool ok = true;
 		const auto count = self()->style_run_count();
 		for (size_t i = 0; i < count; ++i)
 		{
-			if (!self()->set_style_run_font(i, idx))
-				ok = false;
+			self()->set_style_run_font(i, idx);
 		}
-		if (!self()->set_style_normal_font(idx))
-			ok = false;
-		return ok;
+		self()->set_style_normal_font(idx);
 	}
 };
 

@@ -43,7 +43,7 @@ class TestTextLayer(unittest.TestCase):
         layer = _find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Hello", "Greetings"))
+        layer.replace_text("Hello", "Greetings")
         self.assertEqual(layer.text, "Greetings 123")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
@@ -68,8 +68,9 @@ class TestTextLayer(unittest.TestCase):
         layer = _find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
 
-        self.assertFalse(layer.replace_text_equal_length("Hello", "Greetings"))
-        self.assertTrue(layer.replace_text_equal_length("Hello", "Hallo"))
+        with self.assertRaises(ValueError):
+            layer.replace_text_equal_length("Hello", "Greetings")
+        layer.replace_text_equal_length("Hello", "Hallo")
         self.assertEqual(layer.text, "Hallo 123")
 
     @unittest.skipUnless(os.path.exists(_STYLE_RUNS_FIXTURE_PATH), "Style-runs text layer fixture is missing")
@@ -85,10 +86,12 @@ class TestTextLayer(unittest.TestCase):
         self.assertIsNotNone(fill_before)
         self.assertEqual(len(fill_before), 4)
 
-        self.assertTrue(layer.set_style_run_font_size(2, 48.0))
-        self.assertTrue(layer.set_style_run_fill_color(2, [1.0, 0.1, 0.25, 0.75]))
-        self.assertFalse(layer.set_style_run_fill_color(2, [1.0, 0.1, 0.25]))
-        self.assertFalse(layer.set_style_run_font_size(200, 48.0))
+        layer.set_style_run_font_size(2, 48.0)
+        layer.set_style_run_fill_color(2, [1.0, 0.1, 0.25, 0.75])
+        with self.assertRaises(ValueError):
+            layer.set_style_run_fill_color(2, [1.0, 0.1, 0.25])
+        with self.assertRaises(ValueError):
+            layer.set_style_run_font_size(200, 48.0)
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
             out_path = tmp.name
@@ -249,76 +252,94 @@ class TestTextLayer(unittest.TestCase):
                 min(1.0, max(0.0, run_stroke_color_before[3] + 0.05)),
             ]
 
-        self.assertTrue(layer.set_style_run_font(0, run_font_after))
-        self.assertTrue(layer.set_style_run_font_size(0, run_font_size_after))
-        self.assertTrue(layer.set_style_run_faux_bold(0, run_faux_bold_after))
-        self.assertTrue(layer.set_style_run_faux_italic(0, run_faux_italic_after))
-        self.assertTrue(layer.set_style_run_horizontal_scale(0, run_horizontal_scale_after))
-        self.assertTrue(layer.set_style_run_vertical_scale(0, run_vertical_scale_after))
-        self.assertTrue(layer.set_style_run_tracking(0, run_tracking_after))
-        self.assertTrue(layer.set_style_run_auto_kerning(0, run_auto_kerning_after))
-        self.assertTrue(layer.set_style_run_baseline_shift(0, run_baseline_shift_after))
-        self.assertTrue(layer.set_style_run_leading(0, run_leading_after))
-        self.assertTrue(layer.set_style_run_auto_leading(0, run_auto_leading_after))
-        self.assertTrue(layer.set_style_run_kerning(0, run_kerning_after))
-        self.assertTrue(layer.set_style_run_font_caps(0, run_font_caps_after))
-        self.assertTrue(layer.set_style_run_no_break(0, run_no_break_after))
-        self.assertTrue(layer.set_style_run_font_baseline(0, run_font_baseline_after))
-        self.assertTrue(layer.set_style_run_language(0, run_language_after))
+        layer.set_style_run_font(0, run_font_after)
+        layer.set_style_run_font_size(0, run_font_size_after)
+        layer.set_style_run_faux_bold(0, run_faux_bold_after)
+        layer.set_style_run_faux_italic(0, run_faux_italic_after)
+        layer.set_style_run_horizontal_scale(0, run_horizontal_scale_after)
+        layer.set_style_run_vertical_scale(0, run_vertical_scale_after)
+        layer.set_style_run_tracking(0, run_tracking_after)
+        layer.set_style_run_auto_kerning(0, run_auto_kerning_after)
+        layer.set_style_run_baseline_shift(0, run_baseline_shift_after)
+        layer.set_style_run_leading(0, run_leading_after)
+        layer.set_style_run_auto_leading(0, run_auto_leading_after)
+        layer.set_style_run_kerning(0, run_kerning_after)
+        layer.set_style_run_font_caps(0, run_font_caps_after)
+        layer.set_style_run_no_break(0, run_no_break_after)
+        layer.set_style_run_font_baseline(0, run_font_baseline_after)
+        layer.set_style_run_language(0, run_language_after)
         expected_character_direction_after = run_character_direction_after
         if expected_character_direction_after is None:
             expected_character_direction_after = psapi.enum.CharacterDirection.LeftToRight
-        self.assertTrue(layer.set_style_run_character_direction(0, expected_character_direction_after))
-        self.assertTrue(layer.set_style_run_baseline_direction(0, run_baseline_direction_after))
-        self.assertTrue(layer.set_style_run_tsume(0, run_tsume_after))
-        self.assertTrue(layer.set_style_run_kashida(0, run_kashida_after))
+        layer.set_style_run_character_direction(0, expected_character_direction_after)
+        layer.set_style_run_baseline_direction(0, run_baseline_direction_after)
+        layer.set_style_run_tsume(0, run_tsume_after)
+        layer.set_style_run_kashida(0, run_kashida_after)
         expected_diacritic_pos_after = run_diacritic_pos_after
         if expected_diacritic_pos_after is None:
             expected_diacritic_pos_after = psapi.enum.DiacriticPosition.Loose
-        self.assertTrue(layer.set_style_run_diacritic_pos(0, expected_diacritic_pos_after))
-        self.assertTrue(layer.set_style_run_ligatures(0, run_ligatures_after))
-        self.assertTrue(layer.set_style_run_dligatures(0, run_dligatures_after))
-        self.assertTrue(layer.set_style_run_underline(0, run_underline_after))
-        self.assertTrue(layer.set_style_run_strikethrough(0, run_strikethrough_after))
+        layer.set_style_run_diacritic_pos(0, expected_diacritic_pos_after)
+        layer.set_style_run_ligatures(0, run_ligatures_after)
+        layer.set_style_run_dligatures(0, run_dligatures_after)
+        layer.set_style_run_underline(0, run_underline_after)
+        layer.set_style_run_strikethrough(0, run_strikethrough_after)
         if run_stroke_flag_after is not None:
-            self.assertTrue(layer.set_style_run_stroke_flag(0, run_stroke_flag_after))
+            layer.set_style_run_stroke_flag(0, run_stroke_flag_after)
         else:
-            self.assertTrue(layer.set_style_run_stroke_flag(0, True))
+            layer.set_style_run_stroke_flag(0, True)
         if run_fill_flag_after is not None:
-            self.assertTrue(layer.set_style_run_fill_flag(0, run_fill_flag_after))
+            layer.set_style_run_fill_flag(0, run_fill_flag_after)
         else:
-            self.assertTrue(layer.set_style_run_fill_flag(0, True))
+            layer.set_style_run_fill_flag(0, True)
         if run_fill_first_after is not None:
-            self.assertTrue(layer.set_style_run_fill_first(0, run_fill_first_after))
+            layer.set_style_run_fill_first(0, run_fill_first_after)
         else:
-            self.assertTrue(layer.set_style_run_fill_first(0, False))
+            layer.set_style_run_fill_first(0, False)
         expected_outline_width_after = run_outline_width_after
         if expected_outline_width_after is None:
             expected_outline_width_after = 2.0
-        self.assertTrue(layer.set_style_run_outline_width(0, expected_outline_width_after))
-        self.assertTrue(layer.set_style_run_fill_color(0, run_fill_color_after))
+        layer.set_style_run_outline_width(0, expected_outline_width_after)
+        layer.set_style_run_fill_color(0, run_fill_color_after)
         expected_stroke_color_after = run_stroke_color_after
         if expected_stroke_color_after is None:
             expected_stroke_color_after = [1.0, 0.1, 0.2, 0.3]
-        self.assertTrue(layer.set_style_run_stroke_color(0, expected_stroke_color_after))
-        self.assertFalse(layer.set_style_run_font(200, run_font_after))
-        self.assertFalse(layer.set_style_run_font_size(0, float("inf")))
-        self.assertFalse(layer.set_style_run_leading(200, run_leading_after))
-        self.assertFalse(layer.set_style_run_auto_leading(200, run_auto_leading_after))
-        self.assertFalse(layer.set_style_run_kerning(200, run_kerning_after))
-        self.assertFalse(layer.set_style_run_font_baseline(200, run_font_baseline_after))
-        self.assertFalse(layer.set_style_run_language(200, run_language_after))
-        self.assertFalse(layer.set_style_run_baseline_direction(200, run_baseline_direction_after))
-        self.assertFalse(layer.set_style_run_tsume(200, run_tsume_after))
-        self.assertFalse(layer.set_style_run_kashida(200, run_kashida_after))
-        self.assertFalse(layer.set_style_run_stroke_flag(200, True))
-        self.assertFalse(layer.set_style_run_fill_flag(200, True))
-        self.assertFalse(layer.set_style_run_fill_first(200, True))
-        self.assertFalse(layer.set_style_run_outline_width(200, 1.0))
-        self.assertFalse(layer.set_style_run_fill_color(0, []))
-        self.assertFalse(layer.set_style_run_fill_color(0, [1.0, 0.0, 0.0]))
-        self.assertFalse(layer.set_style_run_stroke_color(0, []))
-        self.assertFalse(layer.set_style_run_stroke_color(0, [1.0, 0.0, 0.0]))
+        layer.set_style_run_stroke_color(0, expected_stroke_color_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_font(200, run_font_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_font_size(0, float("inf"))
+        with self.assertRaises(ValueError):
+            layer.set_style_run_leading(200, run_leading_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_auto_leading(200, run_auto_leading_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_kerning(200, run_kerning_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_font_baseline(200, run_font_baseline_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_language(200, run_language_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_baseline_direction(200, run_baseline_direction_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_tsume(200, run_tsume_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_kashida(200, run_kashida_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_stroke_flag(200, True)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_fill_flag(200, True)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_fill_first(200, True)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_outline_width(200, 1.0)
+        with self.assertRaises(ValueError):
+            layer.set_style_run_fill_color(0, [])
+        with self.assertRaises(ValueError):
+            layer.set_style_run_fill_color(0, [1.0, 0.0, 0.0])
+        with self.assertRaises(ValueError):
+            layer.set_style_run_stroke_color(0, [])
+        with self.assertRaises(ValueError):
+            layer.set_style_run_stroke_color(0, [1.0, 0.0, 0.0])
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
             out_path = tmp.name
@@ -508,47 +529,56 @@ class TestTextLayer(unittest.TestCase):
             min(1.0, max(0.0, normal_stroke_color_before[3] + 0.1)),
         ]
 
-        self.assertTrue(layer.set_style_normal_sheet_index(normal_sheet_index_before))
-        self.assertTrue(layer.set_style_normal_font(normal_font_after))
-        self.assertTrue(layer.set_style_normal_font_size(normal_font_size_after))
-        self.assertTrue(layer.set_style_normal_leading(normal_leading_after))
-        self.assertTrue(layer.set_style_normal_auto_leading(normal_auto_leading_after))
-        self.assertTrue(layer.set_style_normal_kerning(normal_kerning_after))
-        self.assertTrue(layer.set_style_normal_faux_bold(normal_faux_bold_after))
-        self.assertTrue(layer.set_style_normal_faux_italic(normal_faux_italic_after))
-        self.assertTrue(layer.set_style_normal_horizontal_scale(normal_horizontal_scale_after))
-        self.assertTrue(layer.set_style_normal_vertical_scale(normal_vertical_scale_after))
-        self.assertTrue(layer.set_style_normal_tracking(normal_tracking_after))
-        self.assertTrue(layer.set_style_normal_auto_kerning(normal_auto_kerning_after))
-        self.assertTrue(layer.set_style_normal_baseline_shift(normal_baseline_shift_after))
-        self.assertTrue(layer.set_style_normal_font_caps(normal_font_caps_after))
-        self.assertTrue(layer.set_style_normal_font_baseline(normal_font_baseline_after))
-        self.assertTrue(layer.set_style_normal_no_break(normal_no_break_after))
-        self.assertTrue(layer.set_style_normal_language(normal_language_after))
-        self.assertTrue(layer.set_style_normal_character_direction(normal_character_direction_after))
-        self.assertTrue(layer.set_style_normal_baseline_direction(normal_baseline_direction_after))
-        self.assertTrue(layer.set_style_normal_tsume(normal_tsume_after))
-        self.assertTrue(layer.set_style_normal_kashida(normal_kashida_after))
-        self.assertTrue(layer.set_style_normal_diacritic_pos(normal_diacritic_pos_after))
-        self.assertTrue(layer.set_style_normal_ligatures(normal_ligatures_after))
-        self.assertTrue(layer.set_style_normal_dligatures(normal_dligatures_after))
-        self.assertTrue(layer.set_style_normal_underline(normal_underline_after))
-        self.assertTrue(layer.set_style_normal_strikethrough(normal_strikethrough_after))
-        self.assertTrue(layer.set_style_normal_stroke_flag(normal_stroke_flag_after))
-        self.assertTrue(layer.set_style_normal_fill_flag(normal_fill_flag_after))
-        self.assertTrue(layer.set_style_normal_fill_first(normal_fill_first_after))
-        self.assertTrue(layer.set_style_normal_outline_width(normal_outline_width_after))
-        self.assertTrue(layer.set_style_normal_fill_color(normal_fill_color_after))
-        self.assertTrue(layer.set_style_normal_stroke_color(normal_stroke_color_after))
-        self.assertFalse(layer.set_style_normal_sheet_index(-1))
-        self.assertFalse(layer.set_style_normal_sheet_index(200))
-        self.assertFalse(layer.set_style_normal_font_size(float("inf")))
-        self.assertFalse(layer.set_style_normal_fill_color([]))
-        self.assertFalse(layer.set_style_normal_fill_color([1.0, 0.0, 0.0]))
-        self.assertFalse(layer.set_style_normal_fill_color([1.0, 0.0, float("inf"), 0.0]))
-        self.assertFalse(layer.set_style_normal_stroke_color([]))
-        self.assertFalse(layer.set_style_normal_stroke_color([1.0, 0.0, 0.0]))
-        self.assertFalse(layer.set_style_normal_stroke_color([1.0, 0.0, float("inf"), 0.0]))
+        layer.set_style_normal_sheet_index(normal_sheet_index_before)
+        layer.set_style_normal_font(normal_font_after)
+        layer.set_style_normal_font_size(normal_font_size_after)
+        layer.set_style_normal_leading(normal_leading_after)
+        layer.set_style_normal_auto_leading(normal_auto_leading_after)
+        layer.set_style_normal_kerning(normal_kerning_after)
+        layer.set_style_normal_faux_bold(normal_faux_bold_after)
+        layer.set_style_normal_faux_italic(normal_faux_italic_after)
+        layer.set_style_normal_horizontal_scale(normal_horizontal_scale_after)
+        layer.set_style_normal_vertical_scale(normal_vertical_scale_after)
+        layer.set_style_normal_tracking(normal_tracking_after)
+        layer.set_style_normal_auto_kerning(normal_auto_kerning_after)
+        layer.set_style_normal_baseline_shift(normal_baseline_shift_after)
+        layer.set_style_normal_font_caps(normal_font_caps_after)
+        layer.set_style_normal_font_baseline(normal_font_baseline_after)
+        layer.set_style_normal_no_break(normal_no_break_after)
+        layer.set_style_normal_language(normal_language_after)
+        layer.set_style_normal_character_direction(normal_character_direction_after)
+        layer.set_style_normal_baseline_direction(normal_baseline_direction_after)
+        layer.set_style_normal_tsume(normal_tsume_after)
+        layer.set_style_normal_kashida(normal_kashida_after)
+        layer.set_style_normal_diacritic_pos(normal_diacritic_pos_after)
+        layer.set_style_normal_ligatures(normal_ligatures_after)
+        layer.set_style_normal_dligatures(normal_dligatures_after)
+        layer.set_style_normal_underline(normal_underline_after)
+        layer.set_style_normal_strikethrough(normal_strikethrough_after)
+        layer.set_style_normal_stroke_flag(normal_stroke_flag_after)
+        layer.set_style_normal_fill_flag(normal_fill_flag_after)
+        layer.set_style_normal_fill_first(normal_fill_first_after)
+        layer.set_style_normal_outline_width(normal_outline_width_after)
+        layer.set_style_normal_fill_color(normal_fill_color_after)
+        layer.set_style_normal_stroke_color(normal_stroke_color_after)
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_sheet_index(-1)
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_sheet_index(200)
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_font_size(float("inf"))
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_fill_color([])
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_fill_color([1.0, 0.0, 0.0])
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_fill_color([1.0, 0.0, float("inf"), 0.0])
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_stroke_color([])
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_stroke_color([1.0, 0.0, 0.0])
+        with self.assertRaises(ValueError):
+            layer.set_style_normal_stroke_color([1.0, 0.0, float("inf"), 0.0])
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
             out_path = tmp.name
@@ -686,50 +716,73 @@ class TestTextLayer(unittest.TestCase):
         kinsoku_order_after = psapi.enum.KinsokuOrder.PushOutFirst if kinsoku_order_before == psapi.enum.KinsokuOrder.PushInFirst else psapi.enum.KinsokuOrder.PushInFirst
         every_line_composer_after = not every_line_composer_before
 
-        self.assertTrue(layer.set_paragraph_run_justification(0, after))
-        self.assertTrue(layer.set_paragraph_run_first_line_indent(0, first_line_after))
-        self.assertTrue(layer.set_paragraph_run_start_indent(0, start_after))
-        self.assertTrue(layer.set_paragraph_run_end_indent(0, end_after))
-        self.assertTrue(layer.set_paragraph_run_space_before(0, space_before_after))
-        self.assertTrue(layer.set_paragraph_run_space_after(0, space_after_after))
-        self.assertTrue(layer.set_paragraph_run_auto_hyphenate(0, auto_hyphenate_after))
-        self.assertTrue(layer.set_paragraph_run_hyphenated_word_size(0, hyphenated_word_size_after))
-        self.assertTrue(layer.set_paragraph_run_pre_hyphen(0, pre_hyphen_after))
-        self.assertTrue(layer.set_paragraph_run_post_hyphen(0, post_hyphen_after))
-        self.assertTrue(layer.set_paragraph_run_consecutive_hyphens(0, consecutive_hyphens_after))
-        self.assertTrue(layer.set_paragraph_run_zone(0, zone_after))
-        self.assertTrue(layer.set_paragraph_run_word_spacing(0, word_spacing_after))
-        self.assertTrue(layer.set_paragraph_run_letter_spacing(0, letter_spacing_after))
-        self.assertTrue(layer.set_paragraph_run_glyph_spacing(0, glyph_spacing_after))
-        self.assertTrue(layer.set_paragraph_run_auto_leading(0, auto_leading_after))
-        self.assertTrue(layer.set_paragraph_run_leading_type(0, leading_type_after))
-        self.assertTrue(layer.set_paragraph_run_hanging(0, hanging_after))
-        self.assertTrue(layer.set_paragraph_run_burasagari(0, burasagari_after))
-        self.assertTrue(layer.set_paragraph_run_kinsoku_order(0, kinsoku_order_after))
-        self.assertTrue(layer.set_paragraph_run_every_line_composer(0, every_line_composer_after))
-        self.assertFalse(layer.set_paragraph_run_justification(200, after))
-        self.assertFalse(layer.set_paragraph_run_first_line_indent(200, first_line_after))
-        self.assertFalse(layer.set_paragraph_run_start_indent(200, start_after))
-        self.assertFalse(layer.set_paragraph_run_end_indent(200, end_after))
-        self.assertFalse(layer.set_paragraph_run_space_before(200, space_before_after))
-        self.assertFalse(layer.set_paragraph_run_space_after(200, space_after_after))
-        self.assertFalse(layer.set_paragraph_run_auto_hyphenate(200, auto_hyphenate_after))
-        self.assertFalse(layer.set_paragraph_run_hyphenated_word_size(200, hyphenated_word_size_after))
-        self.assertFalse(layer.set_paragraph_run_pre_hyphen(200, pre_hyphen_after))
-        self.assertFalse(layer.set_paragraph_run_post_hyphen(200, post_hyphen_after))
-        self.assertFalse(layer.set_paragraph_run_consecutive_hyphens(200, consecutive_hyphens_after))
-        self.assertFalse(layer.set_paragraph_run_zone(200, zone_after))
-        self.assertFalse(layer.set_paragraph_run_word_spacing(200, word_spacing_after))
-        self.assertFalse(layer.set_paragraph_run_letter_spacing(200, letter_spacing_after))
-        self.assertFalse(layer.set_paragraph_run_glyph_spacing(200, glyph_spacing_after))
-        self.assertFalse(layer.set_paragraph_run_auto_leading(200, auto_leading_after))
-        self.assertFalse(layer.set_paragraph_run_leading_type(200, leading_type_after))
-        self.assertFalse(layer.set_paragraph_run_hanging(200, hanging_after))
-        self.assertFalse(layer.set_paragraph_run_burasagari(200, burasagari_after))
-        self.assertFalse(layer.set_paragraph_run_kinsoku_order(200, kinsoku_order_after))
-        self.assertFalse(layer.set_paragraph_run_every_line_composer(200, every_line_composer_after))
-        self.assertFalse(layer.set_paragraph_run_word_spacing(0, []))
-        self.assertFalse(layer.set_paragraph_run_word_spacing(0, [1.0, float("inf"), 2.0]))
+        layer.set_paragraph_run_justification(0, after)
+        layer.set_paragraph_run_first_line_indent(0, first_line_after)
+        layer.set_paragraph_run_start_indent(0, start_after)
+        layer.set_paragraph_run_end_indent(0, end_after)
+        layer.set_paragraph_run_space_before(0, space_before_after)
+        layer.set_paragraph_run_space_after(0, space_after_after)
+        layer.set_paragraph_run_auto_hyphenate(0, auto_hyphenate_after)
+        layer.set_paragraph_run_hyphenated_word_size(0, hyphenated_word_size_after)
+        layer.set_paragraph_run_pre_hyphen(0, pre_hyphen_after)
+        layer.set_paragraph_run_post_hyphen(0, post_hyphen_after)
+        layer.set_paragraph_run_consecutive_hyphens(0, consecutive_hyphens_after)
+        layer.set_paragraph_run_zone(0, zone_after)
+        layer.set_paragraph_run_word_spacing(0, word_spacing_after)
+        layer.set_paragraph_run_letter_spacing(0, letter_spacing_after)
+        layer.set_paragraph_run_glyph_spacing(0, glyph_spacing_after)
+        layer.set_paragraph_run_auto_leading(0, auto_leading_after)
+        layer.set_paragraph_run_leading_type(0, leading_type_after)
+        layer.set_paragraph_run_hanging(0, hanging_after)
+        layer.set_paragraph_run_burasagari(0, burasagari_after)
+        layer.set_paragraph_run_kinsoku_order(0, kinsoku_order_after)
+        layer.set_paragraph_run_every_line_composer(0, every_line_composer_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_justification(200, after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_first_line_indent(200, first_line_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_start_indent(200, start_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_end_indent(200, end_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_space_before(200, space_before_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_space_after(200, space_after_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_auto_hyphenate(200, auto_hyphenate_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_hyphenated_word_size(200, hyphenated_word_size_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_pre_hyphen(200, pre_hyphen_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_post_hyphen(200, post_hyphen_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_consecutive_hyphens(200, consecutive_hyphens_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_zone(200, zone_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_word_spacing(200, word_spacing_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_letter_spacing(200, letter_spacing_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_glyph_spacing(200, glyph_spacing_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_auto_leading(200, auto_leading_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_leading_type(200, leading_type_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_hanging(200, hanging_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_burasagari(200, burasagari_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_kinsoku_order(200, kinsoku_order_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_every_line_composer(200, every_line_composer_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_word_spacing(0, [])
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_run_word_spacing(0, [1.0, float("inf"), 2.0])
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
             out_path = tmp.name
@@ -888,35 +941,42 @@ class TestTextLayer(unittest.TestCase):
         normal_kinsoku_order_after = psapi.enum.KinsokuOrder.PushOutFirst if normal_kinsoku_order_before == psapi.enum.KinsokuOrder.PushInFirst else psapi.enum.KinsokuOrder.PushInFirst
         normal_every_line_composer_after = not normal_every_line_composer_before
 
-        self.assertTrue(layer.set_paragraph_normal_sheet_index(normal_sheet_index_before))
-        self.assertTrue(layer.set_paragraph_normal_justification(normal_justification_after))
-        self.assertTrue(layer.set_paragraph_normal_first_line_indent(normal_first_line_after))
-        self.assertTrue(layer.set_paragraph_normal_start_indent(normal_start_after))
-        self.assertTrue(layer.set_paragraph_normal_end_indent(normal_end_after))
-        self.assertTrue(layer.set_paragraph_normal_space_before(normal_space_before_after))
-        self.assertTrue(layer.set_paragraph_normal_space_after(normal_space_after_after))
-        self.assertTrue(layer.set_paragraph_normal_auto_hyphenate(normal_auto_hyphenate_after))
-        self.assertTrue(layer.set_paragraph_normal_hyphenated_word_size(normal_hyphenated_word_size_after))
-        self.assertTrue(layer.set_paragraph_normal_pre_hyphen(normal_pre_hyphen_after))
-        self.assertTrue(layer.set_paragraph_normal_post_hyphen(normal_post_hyphen_after))
-        self.assertTrue(layer.set_paragraph_normal_consecutive_hyphens(normal_consecutive_hyphens_after))
-        self.assertTrue(layer.set_paragraph_normal_zone(normal_zone_after))
-        self.assertTrue(layer.set_paragraph_normal_word_spacing(normal_word_spacing_after))
-        self.assertTrue(layer.set_paragraph_normal_letter_spacing(normal_letter_spacing_after))
-        self.assertTrue(layer.set_paragraph_normal_glyph_spacing(normal_glyph_spacing_after))
-        self.assertTrue(layer.set_paragraph_normal_auto_leading(normal_auto_leading_after))
-        self.assertTrue(layer.set_paragraph_normal_leading_type(normal_leading_type_after))
-        self.assertTrue(layer.set_paragraph_normal_hanging(normal_hanging_after))
-        self.assertTrue(layer.set_paragraph_normal_burasagari(normal_burasagari_after))
-        self.assertTrue(layer.set_paragraph_normal_kinsoku_order(normal_kinsoku_order_after))
-        self.assertTrue(layer.set_paragraph_normal_every_line_composer(normal_every_line_composer_after))
-        self.assertFalse(layer.set_paragraph_normal_sheet_index(200))
-        self.assertFalse(layer.set_paragraph_normal_sheet_index(-1))
-        self.assertFalse(layer.set_paragraph_normal_space_before(float("inf")))
-        self.assertFalse(layer.set_paragraph_normal_word_spacing([]))
-        self.assertFalse(layer.set_paragraph_normal_word_spacing([1.0, float("inf"), 2.0]))
-        self.assertFalse(layer.set_paragraph_normal_letter_spacing([]))
-        self.assertFalse(layer.set_paragraph_normal_glyph_spacing([]))
+        layer.set_paragraph_normal_sheet_index(normal_sheet_index_before)
+        layer.set_paragraph_normal_justification(normal_justification_after)
+        layer.set_paragraph_normal_first_line_indent(normal_first_line_after)
+        layer.set_paragraph_normal_start_indent(normal_start_after)
+        layer.set_paragraph_normal_end_indent(normal_end_after)
+        layer.set_paragraph_normal_space_before(normal_space_before_after)
+        layer.set_paragraph_normal_space_after(normal_space_after_after)
+        layer.set_paragraph_normal_auto_hyphenate(normal_auto_hyphenate_after)
+        layer.set_paragraph_normal_hyphenated_word_size(normal_hyphenated_word_size_after)
+        layer.set_paragraph_normal_pre_hyphen(normal_pre_hyphen_after)
+        layer.set_paragraph_normal_post_hyphen(normal_post_hyphen_after)
+        layer.set_paragraph_normal_consecutive_hyphens(normal_consecutive_hyphens_after)
+        layer.set_paragraph_normal_zone(normal_zone_after)
+        layer.set_paragraph_normal_word_spacing(normal_word_spacing_after)
+        layer.set_paragraph_normal_letter_spacing(normal_letter_spacing_after)
+        layer.set_paragraph_normal_glyph_spacing(normal_glyph_spacing_after)
+        layer.set_paragraph_normal_auto_leading(normal_auto_leading_after)
+        layer.set_paragraph_normal_leading_type(normal_leading_type_after)
+        layer.set_paragraph_normal_hanging(normal_hanging_after)
+        layer.set_paragraph_normal_burasagari(normal_burasagari_after)
+        layer.set_paragraph_normal_kinsoku_order(normal_kinsoku_order_after)
+        layer.set_paragraph_normal_every_line_composer(normal_every_line_composer_after)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_sheet_index(200)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_sheet_index(-1)
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_space_before(float("inf"))
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_word_spacing([])
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_word_spacing([1.0, float("inf"), 2.0])
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_letter_spacing([])
+        with self.assertRaises(ValueError):
+            layer.set_paragraph_normal_glyph_spacing([])
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as tmp:
             out_path = tmp.name

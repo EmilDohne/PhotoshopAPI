@@ -153,7 +153,7 @@ class TestOrientationAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Horizontal)
-        self.assertTrue(layer.set_orientation(psapi.enum.WritingDirection.Vertical))
+        layer.set_orientation(psapi.enum.WritingDirection.Vertical)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Vertical)
         self.assertTrue(layer.is_vertical)
 
@@ -163,7 +163,7 @@ class TestOrientationAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "VERTICAL")
         self.assertIsNotNone(layer)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Vertical)
-        self.assertTrue(layer.set_orientation(psapi.enum.WritingDirection.Horizontal))
+        layer.set_orientation(psapi.enum.WritingDirection.Horizontal)
         self.assertEqual(layer.orientation(), psapi.enum.WritingDirection.Horizontal)
         self.assertFalse(layer.is_vertical)
 
@@ -285,7 +285,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_font_postscript_name(0, "RenamedFont")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_postscript_name(0), "RenamedFont")
         self.assertEqual(layer.font_count, count_before)
 
@@ -295,8 +295,8 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Hello 123")
         self.assertIsNotNone(layer)
 
-        result = layer.set_font_postscript_name(999, "NoSuchFont")
-        self.assertFalse(result)
+        with self.assertRaises(ValueError):
+            layer.set_font_postscript_name(999, "NoSuchFont")
 
     @unittest.skipUnless(os.path.exists(_FIXTURE_PATH), "Basic fixture missing")
     def test_add_font_unicode_name(self):
@@ -342,7 +342,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_style_run_font_by_name(0, "BrandNewFont-Py")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before + 1)
         # Run 0 should point at the newly-added index
         self.assertEqual(layer.style_run_font(0), count_before)
@@ -356,7 +356,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         existing_name = layer.font_postscript_name(0)
         count_before = layer.font_count
         result = layer.set_style_run_font_by_name(0, existing_name)
-        self.assertTrue(result)
+        self.assertIsNone(result)
         # Should NOT have added a new font
         self.assertEqual(layer.font_count, count_before)
 
@@ -368,7 +368,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
 
         count_before = layer.font_count
         result = layer.set_style_normal_font_by_name("NormalNewFont-Py")
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before + 1)
         self.assertEqual(layer.style_normal_font(), count_before)
 
@@ -381,7 +381,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         existing_name = layer.font_postscript_name(0)
         count_before = layer.font_count
         result = layer.set_style_normal_font_by_name(existing_name)
-        self.assertTrue(result)
+        self.assertIsNone(result)
         self.assertEqual(layer.font_count, count_before)
 
     # ── Step 7: Legacy From/To remap tests ─────────────────────────────────
@@ -393,7 +393,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Beta", "BetaBetaBeta"))
+        layer.replace_text("Beta", "BetaBetaBeta")
         self.assertEqual(layer.text, "Alpha BetaBetaBeta Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -414,7 +414,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Alpha", "A"))
+        layer.replace_text("Alpha", "A")
         self.assertEqual(layer.text, "A Beta Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -435,7 +435,7 @@ class TestFontSetWriteAPIs(unittest.TestCase):
         layer = self._find_text_layer(file, "Alpha Beta Gamma")
         self.assertIsNotNone(layer)
 
-        self.assertTrue(layer.replace_text("Beta", "XXXX"))
+        layer.replace_text("Beta", "XXXX")
         self.assertEqual(layer.text, "Alpha XXXX Gamma")
 
         with tempfile.NamedTemporaryFile(suffix=".psd", delete=False) as f:
@@ -466,6 +466,6 @@ class TestFontConvenience(unittest.TestCase):
         layer = _find_text_layer_by_name(file, "SimpleASCII")
         self.assertIsNotNone(layer)
         old_name = layer.primary_font_name
-        self.assertTrue(layer.set_font("TestPySetFont"))
+        layer.set_font("TestPySetFont")
         self.assertEqual(layer.primary_font_name, "TestPySetFont")
         self.assertNotEqual(layer.primary_font_name, old_name)

@@ -8,7 +8,6 @@
 //  run split/query helpers.
 // =========================================================================
 
-#include "TextLayerDescriptorBinaryUtils.h"
 #include "TextLayerTyShBuilderUtils.h"
 #include "TextLayerRunSplitUtils.h"
 
