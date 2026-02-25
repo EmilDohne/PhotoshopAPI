@@ -91,7 +91,6 @@ struct SmartObjectLayer final: public Layer<T>, public ImageDataMixin<T>
 	using typename ImageDataMixin<T>::channel_type;
 	using typename ImageDataMixin<T>::image_type;
 
-public:
 
 	std::vector<int> channel_indices(bool include_mask) const override
 	{
@@ -1126,6 +1125,7 @@ private:
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
+		Layer<T>::m_LayerColor = parameters.display_color;
 		Layer<T>::parse_mask(parameters);
 
 		// Transform the layer by the passed parameters' width and height

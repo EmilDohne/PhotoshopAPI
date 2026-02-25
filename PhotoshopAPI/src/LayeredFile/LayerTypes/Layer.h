@@ -7,10 +7,7 @@
 #include "PhotoshopFile/AdditionalLayerInfo.h"
 
 #include "Core/TaggedBlocks/TaggedBlock.h"
-#include "Core/TaggedBlocks/LinkedLayerTaggedBlock.h"
 #include "Core/TaggedBlocks/LrSectionTaggedBlock.h"
-#include "Core/TaggedBlocks/Lr16TaggedBlock.h"
-#include "Core/TaggedBlocks/Lr32TaggedBlock.h"
 #include "Core/TaggedBlocks/PlacedLayerTaggedBlock.h"
 #include "Core/TaggedBlocks/ProtectedSettingTaggedBlock.h"
 #include "Core/TaggedBlocks/ReferencePointTaggedBlock.h"
@@ -26,10 +23,10 @@
 #include <string>
 #include <memory>
 
+#include "Core/TaggedBlocks/SheetColorTaggedBlock.h"
+
 PSAPI_NAMESPACE_BEGIN
-
-
-/// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.) which includes the minimum to parse a generic layer type
+	/// Base Struct for Layers of all types (Group, Image, [Adjustment], etc.) which includes the minimum to parse a generic layer type
 template <typename T>
 	requires concepts::bit_depth<T>
 struct Layer : public MaskMixin<T>
@@ -45,7 +42,7 @@ struct Layer : public MaskMixin<T>
 		/// the layer itself
 		std::optional<std::variant<std::vector<T>, compressed::channel<T>>> mask = std::nullopt;
 		/// The Layer Name to give to the layer, has a maximum length of 255
-		std::string name = "";
+		std::string name;
 		/// The Layers Blend Mode, all available blend modes are valid except for 'Passthrough' on non-group layers
 		Enum::BlendMode blendmode = Enum::BlendMode::Normal;
 		/// The X Center coordinate in respect to the canvas' top left. So a value of 32 would mean the layer is centered 32 pixels from the left of the canvas.
@@ -59,16 +56,18 @@ struct Layer : public MaskMixin<T>
 		/// The Layer opacity, the value displayed by Photoshop will be this value / 255 so 255 corresponds to 100% 
 		/// while 128 would correspond to ~50%
 		uint8_t opacity = 255u;
-		// The compression codec of the layer, it is perfectly valid for each layer (and channel) to be compressed differently
+		/// The compression codec of the layer, it is perfectly valid for each layer (and channel) to be compressed differently
 		Enum::Compression compression = Enum::Compression::ZipPrediction; 
-		// The Layers color mode, currently only RGB is supported
+		/// The Layers color mode
 		Enum::ColorMode colormode = Enum::ColorMode::RGB;
-		// Whether the layer is visible
+		/// Whether the layer is visible
 		bool visible = true;
-		// Whether the layer is locked
+		/// Whether the layer is locked
 		bool locked = false;
-		// Whether the layer is clipped to the one below
+		/// Whether the layer is clipped to the one below
 		bool clipping_mask = false;
+		/// The layer display color
+		Enum::LayerColor display_color = Enum::LayerColor::none;
 	};
 
 	/// The layers' name. Stored as a utf-8 string
@@ -176,6 +175,10 @@ struct Layer : public MaskMixin<T>
 	/// allow better detection during channel access for e.g. image layers
 	Enum::ColorMode color_mode() const noexcept { return m_ColorMode; }
 
+	/// The layers' display color in the GUI.
+	Enum::LayerColor display_color() const noexcept { return m_LayerColor; }
+	void display_color(const Enum::LayerColor color) noexcept { m_LayerColor = color; }
+
 	/// Set the write compression for all channels.
 	///
 	/// This has no effect on the in-memory compression of these channels but only on write.
@@ -187,7 +190,7 @@ struct Layer : public MaskMixin<T>
 		MaskMixin<T>::set_mask_compression(_compcode);
 	}
 
-	Layer() : m_LayerName(""), m_BlendMode(Enum::BlendMode::Normal), m_IsVisible(true), m_Opacity(255), m_Width(0u), m_Height(0u), m_CenterX(0u), m_CenterY(0u) {};
+	Layer() : m_IsVisible(true), m_Opacity(255) {};
 
 	/// \brief Initialize a Layer instance from the internal Photoshop File Format structures.
 	///
@@ -239,8 +242,15 @@ struct Layer : public MaskMixin<T>
 			{
 				m_IsLocked = false;
 			}
+
+			// Parse the layer color
+			auto layer_sheet_color_block = additional_layer_info.getTaggedBlock<SheetColorTaggedBlock>(Enum::TaggedBlockKey::lrSheetColorSetting);
+			if (layer_sheet_color_block.has_value())
+			{
+				m_LayerColor = layer_sheet_color_block.value()->m_Color;
+			}
 		}
-		// For now we only parse visibility from the bitflags but this could be expanded to parse other information as well.
+		// For now, we only parse visibility from the bitflags but this could be expanded to parse other information as well.
 		m_IsVisible = !layerRecord.m_BitFlags.m_isHidden;
 		m_IsClippingMask = static_cast<bool>(layerRecord.m_Clipping);
 		if (m_IsLocked && !layerRecord.m_BitFlags.m_isTransparencyProtected)
@@ -404,6 +414,8 @@ protected:
 
 	float m_CenterY{};
 
+	Enum::LayerColor m_LayerColor = Enum::LayerColor::none;
+
 	Enum::ColorMode m_ColorMode = Enum::ColorMode::RGB;
 	
 	using channel_type = std::unique_ptr<channel_wrapper>;
@@ -471,6 +483,9 @@ protected:
 		// Generate our LockedSettings Tagged block
 		auto protectionSettingsPtr = std::make_shared<ProtectedSettingTaggedBlock>(m_IsLocked);
 		block_vec.push_back(protectionSettingsPtr);
+
+		auto lr_color_ptr = std::make_shared<SheetColorTaggedBlock>(m_LayerColor);
+		block_vec.push_back(lr_color_ptr);
 
 		return block_vec;
 	}

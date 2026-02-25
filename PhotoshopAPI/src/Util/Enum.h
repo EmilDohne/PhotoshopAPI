@@ -1015,6 +1015,37 @@ namespace Enum
 // --------------------------------------------------------------------------------
 namespace Enum
 {
+	enum class LayerColor : uint16_t
+	{
+		none = 0,
+		red = 1,
+		orange = 2,
+		yellow = 3,
+		green = 4,
+		blue = 5,
+		violet = 6,
+		gray = 7,
+		seafoam = 8,
+		indigo = 9,
+		magenta = 10,
+		fuschia = 11
+	};
+
+	template <typename T>
+		requires std::is_enum_v<T>
+	auto as_integer(const T value) -> typename std::underlying_type_t<T>
+	{
+		return static_cast<typename std::underlying_type_t<T>>(value);
+	}
+
+	template <typename T, typename IntType>
+		requires std::is_enum_v<T> && std::is_integral_v<IntType>
+	auto from_integer(const int value) -> T
+	{
+		return static_cast<T>(value);
+	}
+
+
 	enum class SectionDivider
 	{
 		Any,
