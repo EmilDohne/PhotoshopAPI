@@ -83,6 +83,22 @@ class Layer_8bit:
         ...
 
     @property
+    def clipping_mask(self: Layer_8bit) -> bool:
+        ...
+
+    @clipping_mask.setter
+    def clipping_mask(self: Layer_8bit, value: bool) -> None:
+        ...
+
+    @property
+    def display_color(self: Layer_8bit) ->  psapi.enum.LayerColor:
+        ...
+
+    @display_color.setter
+    def display_color(self: Layer_8bit, value: psapi.enum.LayerColor) -> None:
+        ...
+
+    @property
     def is_locked(self: Layer_8bit) -> bool:
         ...
 
@@ -223,6 +239,22 @@ class Layer_16bit:
 
     @is_visible.setter
     def is_visible(self: Layer_16bit, value: bool) -> None:
+        ...
+
+    @property
+    def clipping_mask(self: Layer_16bit) -> bool:
+        ...
+
+    @clipping_mask.setter
+    def clipping_mask(self: Layer_16bit, value: bool) -> None:
+        ...
+
+    @property
+    def display_color(self: Layer_16bit) ->  psapi.enum.LayerColor:
+        ...
+
+    @display_color.setter
+    def display_color(self: Layer_16bit, value: psapi.enum.LayerColor) -> None:
         ...
 
     @property
@@ -367,6 +399,22 @@ class Layer_32bit:
 
     @is_visible.setter
     def is_visible(self: Layer_32bit, value: bool) -> None:
+        ...
+
+    @property
+    def clipping_mask(self: Layer_32bit) -> bool:
+        ...
+
+    @clipping_mask.setter
+    def clipping_mask(self: Layer_32bit, value: bool) -> None:
+        ...
+
+    @property
+    def display_color(self: Layer_32bit) ->  psapi.enum.LayerColor:
+        ...
+
+    @display_color.setter
+    def display_color(self: Layer_32bit, value: psapi.enum.LayerColor) -> None:
         ...
 
     @property

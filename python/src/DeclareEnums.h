@@ -257,3 +257,42 @@ void declare_blendmode_enums(py::module& m)
 	blendMode.value("color", Enum::BlendMode::Color);
 	blendMode.value("luminosity", Enum::BlendMode::Luminosity);
 }
+
+
+void declare_layercolor_enum(py::module& m)
+{
+	py::enum_<Enum::LayerColor> layer_color(m, "LayerColor", R"pbdoc(
+
+		Enum representing the display layer color
+
+		Attributes
+		-------------
+
+		none : int
+		red : int
+		orange : int
+		yellow : int
+		green : int
+		blue : int
+		violet : int
+		gray : int
+		seafoam : int
+		indigo : int
+		magenta : int
+		fuschia : int
+
+	)pbdoc");
+
+	layer_color.value("none", Enum::LayerColor::none);
+	layer_color.value("red", Enum::LayerColor::red);
+	layer_color.value("orange", Enum::LayerColor::orange);
+	layer_color.value("yellow", Enum::LayerColor::yellow);
+	layer_color.value("green", Enum::LayerColor::green);
+	layer_color.value("blue", Enum::LayerColor::blue);
+	layer_color.value("violet", Enum::LayerColor::violet);
+	layer_color.value("gray", Enum::LayerColor::gray);
+	layer_color.value("seafoam", Enum::LayerColor::seafoam);
+	layer_color.value("indigo", Enum::LayerColor::indigo);
+	layer_color.value("magenta", Enum::LayerColor::magenta);
+	layer_color.value("fuschia", Enum::LayerColor::fuschia);
+}
