@@ -33,6 +33,8 @@ PhotoshopBenchmark/src/tempCodeRunnerFile.py
 # VS Code Counter
 .VSCodeCounter/
 
+.idea/
+
 # Visual studio code settings
 .vscode/
 
@@ -72,6 +74,9 @@ bld/
 [Oo]ut/
 [Ll]og/
 [Ll]ogs/
+cmake-build-debug/
+cmake-build-release/
+cmake-build-relwithdebinfo/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/

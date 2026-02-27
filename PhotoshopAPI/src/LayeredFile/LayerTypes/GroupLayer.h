@@ -56,6 +56,7 @@ struct GroupLayer final: public Layer<T>
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
+		Layer<T>::m_LayerColor = parameters.display_color;
 
 		if (Layer<T>::m_IsClippingMask)
 		{

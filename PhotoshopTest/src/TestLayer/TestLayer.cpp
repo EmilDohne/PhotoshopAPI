@@ -54,3 +54,46 @@ TEST_CASE("Read clipping masks")
 		LayeredFile<bpp8_t>::write(std::move(document_3), "documents/clipping_mask_invalid_layer_3.psd");
 	}
 }
+
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer sheet colors psd")
+{
+	using namespace NAMESPACE_PSAPI;
+
+	auto document = LayeredFile<bpp8_t>::read("documents/LayerColor/layers_with_display_color.psd");
+	for (const auto& layer : document.flat_layers())
+	{
+		CHECK(layer->display_color() == Enum::LayerColor::violet);
+		layer->display_color(Enum::LayerColor::green);
+	}
+
+	LayeredFile<bpp8_t>::write(std::move(document), "documents/LayerColor/layers_with_display_color_out.psd");
+	auto read_back = LayeredFile<bpp8_t>::read("documents/LayerColor/layers_with_display_color_out.psd");
+	for (const auto& layer : read_back.flat_layers())
+	{
+		CHECK(layer->display_color() == Enum::LayerColor::green);
+	}
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+TEST_CASE("Roundtrip layer sheet colors psb")
+{
+	using namespace NAMESPACE_PSAPI;
+
+	auto document = LayeredFile<bpp8_t>::read("documents/LayerColor/layers_with_display_color.psb");
+	for (const auto& layer : document.flat_layers())
+	{
+		CHECK(layer->display_color() == Enum::LayerColor::violet);
+		layer->display_color(Enum::LayerColor::green);
+	}
+
+	LayeredFile<bpp8_t>::write(std::move(document), "documents/LayerColor/layers_with_display_color_out.psb");
+	auto read_back = LayeredFile<bpp8_t>::read("documents/LayerColor/layers_with_display_color_out.psb");
+	for (const auto& layer : read_back.flat_layers())
+	{
+		CHECK(layer->display_color() == Enum::LayerColor::green);
+	}
+}

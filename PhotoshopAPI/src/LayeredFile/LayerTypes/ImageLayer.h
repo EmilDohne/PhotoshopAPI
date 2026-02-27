@@ -496,6 +496,7 @@ private:
 		Layer<T>::m_Width = parameters.width;
 		Layer<T>::m_Height = parameters.height;
 		Layer<T>::m_IsClippingMask = parameters.clipping_mask;
+		Layer<T>::m_LayerColor = parameters.display_color;
 
 		// Forward the mask channel if it was passed as part of the image data to the layer mask
 		// The actual populating of the mask channel will be done further down

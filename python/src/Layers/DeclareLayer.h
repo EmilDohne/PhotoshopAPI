@@ -25,11 +25,11 @@ using namespace NAMESPACE_PSAPI;
 template <typename T>
 void declare_layer(py::module& m, const std::string& extension) {
     using Class = Layer<T>;
-    // Designate shared_ptr as the holder type so pybind11 doesnt cast to unique_ptr giving us a heap corruption error
+    // Designate shared_ptr as the holder type so pybind11 doesn't cast to unique_ptr giving us a heap corruption error
     using PyClass = py::class_<Class, std::shared_ptr<Class>>;
-    std::string className = "Layer" + extension;
+    std::string class_name = "Layer" + extension;
 
-    PyClass layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    PyClass layer(m, class_name.c_str(), py::dynamic_attr(), py::buffer_protocol());
     layer.doc() = R"pbdoc(
 
         Base type that all layers inherit from, this class should not be instantiated
@@ -65,6 +65,8 @@ void declare_layer(py::module& m, const std::string& extension) {
             Whether the layer is visible
         clipping_mask: bool
             Whether the layer is clipped to the one below.
+        display_color: enum.LayerColor
+            The layers' display color.
         mask: np.ndarray
             The layers' mask channel, may be empty
         mask_disabled: bool
@@ -98,4 +100,6 @@ void declare_layer(py::module& m, const std::string& extension) {
     layer.def_property("is_locked", [](const Class& self) { return self.locked(); }, [](Class& self, bool locked) { self.locked(locked); });
     layer.def_property("is_visible", [](const Class& self) { return self.visible(); }, [](Class& self, bool visible) { self.visible(visible); });
     layer.def_property("clipping_mask", [](const Class& self) { return self.clipping_mask(); }, [](Class& self, bool is_clipped) { self.clipping_mask(is_clipped); });
+    layer.def_property("display_color", [](const Class& self) { return self.display_color(); }, [](Class& self, Enum::LayerColor layer_color) { self.display_color(layer_color); });
+
 }
