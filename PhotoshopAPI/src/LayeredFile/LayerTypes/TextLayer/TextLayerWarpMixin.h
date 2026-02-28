@@ -95,7 +95,7 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			auto result = TextLayerDetail::read_warp_enum(*block, "warpStyle");
+			auto result = TextLayerDetail::read_warp_enum(block, "warpStyle");
 			if (result.has_value())
 			{
 				return warp_style_from_ps(result.value());
@@ -108,7 +108,7 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			auto result = TextLayerDetail::read_warp_double(*block, "warpValue");
+			auto result = TextLayerDetail::read_warp_double(block, "warpValue");
 			if (result.has_value()) return result;
 		}
 		return std::nullopt;
@@ -118,7 +118,7 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			auto result = TextLayerDetail::read_warp_double(*block, "warpPerspective");
+			auto result = TextLayerDetail::read_warp_double(block, "warpPerspective");
 			if (result.has_value()) return result;
 		}
 		return std::nullopt;
@@ -128,7 +128,7 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			auto result = TextLayerDetail::read_warp_double(*block, "warpPerspectiveOther");
+			auto result = TextLayerDetail::read_warp_double(block, "warpPerspectiveOther");
 			if (result.has_value()) return result;
 		}
 		return std::nullopt;
@@ -138,7 +138,7 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			auto result = TextLayerDetail::read_warp_enum(*block, "warpRotate");
+			auto result = TextLayerDetail::read_warp_enum(block, "warpRotate");
 			if (result.has_value())
 			{
 				return warp_rotation_from_ps(result.value());
@@ -164,7 +164,7 @@ public:
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_warp_enum(*block, "warpStyle", warp_style_code.value()))
+			if (TextLayerDetail::write_warp_enum(block, "warpStyle", warp_style_code.value()))
 			{
 				++modified;
 			}
@@ -186,7 +186,7 @@ public:
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_warp_double(*block, "warpValue", value))
+			if (TextLayerDetail::write_warp_double(block, "warpValue", value))
 			{
 				++modified;
 			}
@@ -208,7 +208,7 @@ public:
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_warp_double(*block, "warpPerspective", value))
+			if (TextLayerDetail::write_warp_double(block, "warpPerspective", value))
 			{
 				++modified;
 			}
@@ -230,7 +230,7 @@ public:
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_warp_double(*block, "warpPerspectiveOther", value))
+			if (TextLayerDetail::write_warp_double(block, "warpPerspectiveOther", value))
 			{
 				++modified;
 			}
@@ -258,7 +258,7 @@ public:
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_warp_enum(*block, "warpRotate", warp_rotation_code.value()))
+			if (TextLayerDetail::write_warp_enum(block, "warpRotate", warp_rotation_code.value()))
 			{
 				++modified;
 			}

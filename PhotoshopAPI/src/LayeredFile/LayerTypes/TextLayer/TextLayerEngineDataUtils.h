@@ -290,7 +290,7 @@ inline EngineData::Value* paragraph_normal_sheet_properties(EngineData::Value& r
 //  TaggedBlock-level helpers (find/read/write EngineData)
 // -----------------------------------------------------------------------
 
-inline std::optional<RawDataSpan> find_engine_data_span(const TaggedBlock& block)
+inline std::optional<RawDataSpan> find_engine_data_span(const TypeToolTaggedBlock& block)
 {
 	static constexpr std::string_view key = "EngineData";
 	static constexpr std::string_view type = "tdta";
@@ -322,7 +322,7 @@ inline std::optional<RawDataSpan> find_engine_data_span(const TaggedBlock& block
 	return std::nullopt;
 }
 
-inline std::optional<std::vector<std::byte>> read_engine_payload(const TaggedBlock& block)
+inline std::optional<std::vector<std::byte>> read_engine_payload(const TypeToolTaggedBlock& block)
 {
 	const auto engine_span_opt = find_engine_data_span(block);
 	if (!engine_span_opt.has_value())
@@ -336,7 +336,7 @@ inline std::optional<std::vector<std::byte>> read_engine_payload(const TaggedBlo
 	);
 }
 
-inline bool write_engine_payload(TaggedBlock& block, const RawDataSpan& engine_span, const std::vector<std::byte>& payload)
+inline bool write_engine_payload(TypeToolTaggedBlock& block, const RawDataSpan& engine_span, const std::vector<std::byte>& payload)
 {
 	const auto old_payload_size = engine_span.byte_count;
 	const auto new_payload_size = payload.size();
@@ -502,7 +502,7 @@ inline std::vector<RunLengthArraySpan> parse_run_length_arrays(const std::vector
 //  Text span parsing
 // -----------------------------------------------------------------------
 
-inline std::optional<size_t> find_txt_text_value_offset(const TaggedBlock& block)
+inline std::optional<size_t> find_txt_text_value_offset(const TypeToolTaggedBlock& block)
 {
 	static constexpr std::array<char, 8u> marker{ 'T', 'x', 't', ' ', 'T', 'E', 'X', 'T' };
 	if (block.m_Data.size() < marker.size() + sizeof(uint32_t))
@@ -530,13 +530,8 @@ inline std::optional<size_t> find_txt_text_value_offset(const TaggedBlock& block
 	return std::nullopt;
 }
 
-inline std::optional<ParsedTextSpan> parse_text_span(const TaggedBlock& block)
+inline std::optional<ParsedTextSpan> parse_text_span(const TypeToolTaggedBlock& block)
 {
-	if (block.getKey() != Enum::TaggedBlockKey::lrTypeTool)
-	{
-		return std::nullopt;
-	}
-
 	const auto count_offset_opt = find_txt_text_value_offset(block);
 	if (!count_offset_opt.has_value())
 	{
@@ -583,7 +578,7 @@ inline std::optional<ParsedTextSpan> parse_text_span(const TaggedBlock& block)
 	return span;
 }
 
-inline bool write_text_in_span(TaggedBlock& block, const ParsedTextSpan& span, const std::u16string& utf16le)
+inline bool write_text_in_span(TypeToolTaggedBlock& block, const ParsedTextSpan& span, const std::u16string& utf16le)
 {
 	const size_t old_value_bytes = span.code_unit_count * 2u;
 	const size_t new_code_unit_count = utf16le.size() + span.trailing_null_units;
@@ -630,11 +625,8 @@ inline bool write_text_in_span(TaggedBlock& block, const ParsedTextSpan& span, c
 
 /// Return the offset of the text descriptor body inside the TySh TaggedBlock.
 /// The text descriptor starts right after the 56-byte TySh header.
-inline size_t find_text_descriptor_body_offset(const TaggedBlock& block)
+inline size_t find_text_descriptor_body_offset(const TypeToolTaggedBlock& block)
 {
-	if (block.getKey() != Enum::TaggedBlockKey::lrTypeTool)
-		return 0u;
-
 	// TySh layout: 2 (version) + 6*8 (transform) + 2 (text desc version) = 52 + 4 = 56
 	// But the descriptor body actually starts at offset 56 (after the 4-byte version prefix
 	// of the descriptor, which is already included in the body parse).
@@ -648,25 +640,25 @@ inline size_t find_text_descriptor_body_offset(const TaggedBlock& block)
 
 /// Read an enum-type key from the text descriptor.
 /// Returns the enum value string (e.g. "AnCr" for anti-alias crisp).
-inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, const std::string& target_key)
+inline std::optional<std::string> read_text_desc_enum(
+	const TypeToolTaggedBlock& block,
+	const std::string& target_key)
 {
-	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	if (block.has_parsed_descriptors())
 	{
-		if (typed->has_parsed_descriptors())
+		try
 		{
-			try
-			{
-				const auto* enumerated = typed->text_descriptor().at<Descriptors::Enumerated>(target_key);
-				if (enumerated == nullptr)
-				{
-					return std::nullopt;
-				}
-				return enumerated->m_Enum;
-			}
-			catch (...)
+			const auto* enumerated = block.text_descriptor().at<Descriptors::Enumerated>(target_key);
+			if (enumerated == nullptr)
 			{
 				return std::nullopt;
 			}
+			return enumerated->m_Enum;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to read parsed text descriptor enum key '%s'", target_key.c_str());
+			return std::nullopt;
 		}
 	}
 
@@ -690,6 +682,7 @@ inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, 
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to read fallback text descriptor enum key '%s'", target_key.c_str());
 		return std::nullopt;
 	}
 }
@@ -700,28 +693,35 @@ inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, 
 /// Uses Photoshop's descriptor key encoding: length == 0 means 4-byte charID,
 /// length > 0 means variable-length stringID.
 /// Returns true on success.
-inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
+inline bool write_text_desc_enum(
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
+	const std::string& target_key,
+	const std::string& new_value)
 {
-	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	if (!block_ptr)
 	{
-		if (typed->has_parsed_descriptors())
+		return false;
+	}
+	auto& block = *block_ptr;
+
+	if (block.has_parsed_descriptors())
+	{
+		try
 		{
-			try
-			{
-				auto& entry = typed->text_descriptor().at(target_key);
-				auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
-				if (enumerated == nullptr)
-				{
-					return false;
-				}
-				enumerated->m_Enum = new_value;
-				typed->sync_data_from_descriptors();
-				return true;
-			}
-			catch (...)
+			auto& entry = block.text_descriptor().at(target_key);
+			auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+			if (enumerated == nullptr)
 			{
 				return false;
 			}
+			enumerated->m_Enum = new_value;
+			block.sync_data_from_descriptors();
+			return true;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to write parsed text descriptor enum key '%s'", target_key.c_str());
+			return false;
 		}
 	}
 
@@ -752,6 +752,7 @@ inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_k
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to write fallback text descriptor enum key '%s'", target_key.c_str());
 		return false;
 	}
 
@@ -763,7 +764,7 @@ inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_k
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
 		new_body.begin(),
 		new_body.end());
-	refresh_type_tool_descriptor_cache(block);
+	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
 	return true;
 }
 
@@ -771,11 +772,8 @@ inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_k
 //  Warp descriptor helpers
 // -----------------------------------------------------------------------
 
-inline size_t find_warp_descriptor_body_offset(const TaggedBlock& block)
+inline size_t find_warp_descriptor_body_offset(const TypeToolTaggedBlock& block)
 {
-	if (block.getKey() != Enum::TaggedBlockKey::lrTypeTool)
-		return 0u;
-
 	static constexpr size_t tysh_header_bytes = 56u;
 	if (block.m_Data.size() < tysh_header_bytes + 12u)
 		return 0u;
@@ -792,25 +790,31 @@ inline size_t find_warp_descriptor_body_offset(const TaggedBlock& block)
 	return warp_header_offset + warp_prefix_bytes;
 }
 
-inline std::optional<std::string> read_warp_enum(const TaggedBlock& block, const std::string& target_key)
+inline std::optional<std::string> read_warp_enum(
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
+	const std::string& target_key)
 {
-	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	if (!block_ptr)
 	{
-		if (typed->has_parsed_descriptors())
+		return std::nullopt;
+	}
+	const auto& block = *block_ptr;
+
+	if (block.has_parsed_descriptors())
+	{
+		try
 		{
-			try
-			{
-				const auto* enumerated = typed->warp_descriptor().at<Descriptors::Enumerated>(target_key);
-				if (enumerated == nullptr)
-				{
-					return std::nullopt;
-				}
-				return enumerated->m_Enum;
-			}
-			catch (...)
+			const auto* enumerated = block.warp_descriptor().at<Descriptors::Enumerated>(target_key);
+			if (enumerated == nullptr)
 			{
 				return std::nullopt;
 			}
+			return enumerated->m_Enum;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to read parsed warp descriptor enum key '%s'", target_key.c_str());
+			return std::nullopt;
 		}
 	}
 
@@ -834,37 +838,44 @@ inline std::optional<std::string> read_warp_enum(const TaggedBlock& block, const
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to read fallback warp descriptor enum key '%s'", target_key.c_str());
 		return std::nullopt;
 	}
 }
 
-inline std::optional<double> read_warp_double(const TaggedBlock& block, const std::string& target_key)
+inline std::optional<double> read_warp_double(
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
+	const std::string& target_key)
 {
-	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	if (!block_ptr)
 	{
-		if (typed->has_parsed_descriptors())
+		return std::nullopt;
+	}
+	const auto& block = *block_ptr;
+
+	if (block.has_parsed_descriptors())
+	{
+		try
 		{
-			try
-			{
-				return typed->warp_descriptor().at<double>(target_key);
-			}
-			catch (...)
-			{
-				// fallthrough
-			}
-			try
-			{
-				const auto* unit_float = typed->warp_descriptor().at<Descriptors::UnitFloat>(target_key);
-				if (unit_float == nullptr)
-				{
-					return std::nullopt;
-				}
-				return unit_float->m_Value;
-			}
-			catch (...)
+			return block.warp_descriptor().at<double>(target_key);
+		}
+		catch (...)
+		{
+			// fallthrough
+		}
+		try
+		{
+			const auto* unit_float = block.warp_descriptor().at<Descriptors::UnitFloat>(target_key);
+			if (unit_float == nullptr)
 			{
 				return std::nullopt;
 			}
+			return unit_float->m_Value;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to read parsed warp descriptor numeric key '%s'", target_key.c_str());
+			return std::nullopt;
 		}
 	}
 
@@ -897,32 +908,40 @@ inline std::optional<double> read_warp_double(const TaggedBlock& block, const st
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to read fallback warp descriptor numeric key '%s'", target_key.c_str());
 		return std::nullopt;
 	}
 }
 
-inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
+inline bool write_warp_enum(
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
+	const std::string& target_key,
+	const std::string& new_value)
 {
-	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	if (!block_ptr)
 	{
-		if (typed->has_parsed_descriptors())
+		return false;
+	}
+	auto& block = *block_ptr;
+
+	if (block.has_parsed_descriptors())
+	{
+		try
 		{
-			try
-			{
-				auto& entry = typed->warp_descriptor().at(target_key);
-				auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
-				if (enumerated == nullptr)
-				{
-					return false;
-				}
-				enumerated->m_Enum = new_value;
-				typed->sync_data_from_descriptors();
-				return true;
-			}
-			catch (...)
+			auto& entry = block.warp_descriptor().at(target_key);
+			auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+			if (enumerated == nullptr)
 			{
 				return false;
 			}
+			enumerated->m_Enum = new_value;
+			block.sync_data_from_descriptors();
+			return true;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to write parsed warp descriptor enum key '%s'", target_key.c_str());
+			return false;
 		}
 	}
 
@@ -953,6 +972,7 @@ inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, c
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to write fallback warp descriptor enum key '%s'", target_key.c_str());
 		return false;
 	}
 
@@ -964,38 +984,45 @@ inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, c
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
-	refresh_type_tool_descriptor_cache(block);
+	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
 	return true;
 }
 
-inline bool write_warp_double(TaggedBlock& block, const std::string& target_key, const double new_value)
+inline bool write_warp_double(
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
+	const std::string& target_key,
+	const double new_value)
 {
-	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	if (!block_ptr)
 	{
-		if (typed->has_parsed_descriptors())
+		return false;
+	}
+	auto& block = *block_ptr;
+
+	if (block.has_parsed_descriptors())
+	{
+		try
 		{
-			try
+			auto& entry = block.warp_descriptor().at(target_key);
+			if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
 			{
-				auto& entry = typed->warp_descriptor().at(target_key);
-				if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
-				{
-					double_value->m_Value = new_value;
-				}
-				else if (auto* unit_float = dynamic_cast<Descriptors::UnitFloat*>(entry.get()))
-				{
-					unit_float->m_Value = new_value;
-				}
-				else
-				{
-					return false;
-				}
-				typed->sync_data_from_descriptors();
-				return true;
+				double_value->m_Value = new_value;
 			}
-			catch (...)
+			else if (auto* unit_float = dynamic_cast<Descriptors::UnitFloat*>(entry.get()))
+			{
+				unit_float->m_Value = new_value;
+			}
+			else
 			{
 				return false;
 			}
+			block.sync_data_from_descriptors();
+			return true;
+		}
+		catch (...)
+		{
+			PSAPI_LOG_WARNING("TextLayer", "Failed to write parsed warp descriptor numeric key '%s'", target_key.c_str());
+			return false;
 		}
 	}
 
@@ -1017,7 +1044,6 @@ inline bool write_warp_double(TaggedBlock& block, const std::string& target_key,
 	try
 	{
 		auto& entry = descriptor.at(target_key);
-
 		if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
 		{
 			double_value->m_Value = new_value;
@@ -1033,6 +1059,7 @@ inline bool write_warp_double(TaggedBlock& block, const std::string& target_key,
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to write fallback warp descriptor numeric key '%s'", target_key.c_str());
 		return false;
 	}
 
@@ -1044,7 +1071,7 @@ inline bool write_warp_double(TaggedBlock& block, const std::string& target_key,
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
-	refresh_type_tool_descriptor_cache(block);
+	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
 	return true;
 }
 

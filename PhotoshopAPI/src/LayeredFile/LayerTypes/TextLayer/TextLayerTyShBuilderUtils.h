@@ -1002,7 +1002,7 @@ inline std::shared_ptr<TypeToolTaggedBlock> build_tysh_tagged_block(
 
 	auto block = std::make_shared<TypeToolTaggedBlock>();
 	block->m_Data = std::move(data);
-	(void)block->parse_descriptors_from_data();
+	[[maybe_unused]] auto _descriptor = block->parse_descriptors_from_data();
 	return block;
 }
 

@@ -28,7 +28,9 @@ namespace TextLayerDetail
 {
 inline std::vector<std::byte> serialize_descriptor_body(const Descriptors::Descriptor& descriptor)
 {
-	File memory_file(std::vector<uint8_t>{});
+	std::vector<uint8_t> buffer{};
+	buffer.reserve(32768u);
+	File memory_file(std::move(buffer));
 	descriptor.write(memory_file);
 
 	std::vector<uint8_t> bytes_u8(static_cast<size_t>(memory_file.getSize()), 0u);
@@ -70,17 +72,15 @@ inline bool parse_descriptor_body(
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to parse descriptor body from raw data");
 		success = false;
 	}
 	return success;
 }
 
-inline void refresh_type_tool_descriptor_cache(TaggedBlock& block)
+inline void refresh_type_tool_descriptor_cache(TypeToolTaggedBlock& block)
 {
-	if (auto* type_tool = dynamic_cast<TypeToolTaggedBlock*>(&block))
-	{
-		(void)type_tool->parse_descriptors_from_data();
-	}
+	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
 }
 
 // -----------------------------------------------------------------------

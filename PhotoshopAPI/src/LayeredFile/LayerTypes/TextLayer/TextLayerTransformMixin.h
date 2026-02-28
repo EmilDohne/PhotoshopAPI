@@ -136,7 +136,7 @@ public:
 
 			// Also update the "Ornt" enum in the TySh binary descriptor so
 			// Photoshop renders the correct orientation on open.
-			TextLayerDetail::write_text_desc_enum(*block, "Ornt", ornt_value);
+			TextLayerDetail::write_text_desc_enum(block, "Ornt", ornt_value);
 
 			return;
 		}
@@ -155,7 +155,6 @@ public:
 	{
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			std::vector<double> result(kTransformDoubles);
 			for (size_t i = 0u; i < kTransformDoubles; ++i)
@@ -170,7 +169,6 @@ public:
 		if (index >= kTransformDoubles) return std::nullopt;
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			return TextLayerDetail::read_double_be(block->m_Data, kTransformOffset + index * 8u);
 		}
@@ -192,7 +190,6 @@ public:
 		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			for (size_t i = 0u; i < kTransformDoubles; ++i)
 				TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + i * 8u, values[i]);
@@ -210,7 +207,6 @@ public:
 		}
 		for (const auto& block : self()->text_tagged_blocks())
 		{
-			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + index * 8u, value);
 			TextLayerDetail::refresh_type_tool_descriptor_cache(*block);

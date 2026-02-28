@@ -201,7 +201,7 @@ struct TextLayer :
 		size_t modified = 0u;
 		for (const auto& block : blocks)
 		{
-			if (TextLayerDetail::write_text_desc_enum(*block, "AntA", code))
+			if (TextLayerDetail::write_text_desc_enum(block, "AntA", code))
 			{
 				++modified;
 			}
@@ -343,7 +343,7 @@ struct TextLayer :
 			std::vector<TextLayerDetail::TextReplacement> replacements{};
 			replacements.push_back(TextLayerDetail::TextReplacement{ 0u, parsed->text_utf16.size(), new_utf16.size() });
 
-			if (!TextLayerDetail::apply_text_mutation(*block, parsed.value(), new_utf16, replacements))
+			if (!TextLayerDetail::apply_text_mutation(block, parsed.value(), new_utf16, replacements))
 			{
 				throw std::runtime_error("TextLayer::set_text() failed: unable to apply TySh text mutation");
 			}
@@ -387,7 +387,7 @@ struct TextLayer :
 				continue;
 			}
 
-			if (!TextLayerDetail::apply_text_mutation(*block, parsed.value(), replaced->text_utf16, replaced->replacements))
+			if (!TextLayerDetail::apply_text_mutation(block, parsed.value(), replaced->text_utf16, replaced->replacements))
 			{
 				throw std::runtime_error("TextLayer::replace_text() failed: unable to apply TySh text mutation");
 			}
@@ -566,10 +566,7 @@ private:
 	std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
 	{
 		auto blocks = Layer<T>::generate_tagged_blocks();
-		blocks.insert(
-			blocks.begin() + static_cast<std::ptrdiff_t>(Layer<T>::m_UnparsedBlocks.size()),
-			m_TypeToolBlocks.begin(),
-			m_TypeToolBlocks.end());
+		blocks.insert(blocks.end(), m_TypeToolBlocks.begin(), m_TypeToolBlocks.end());
 		return blocks;
 	}
 

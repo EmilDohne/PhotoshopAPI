@@ -23,6 +23,7 @@
 #include <cstdint>
 #include <functional>
 #include <limits>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -36,7 +37,7 @@ namespace TextLayerDetail
 // -----------------------------------------------------------------------
 
 inline bool remap_engine_data(
-	TaggedBlock& block,
+	TypeToolTaggedBlock& block,
 	const ParsedTextSpan& old_span,
 	const std::u16string& new_text_utf16,
 	const std::vector<TextReplacement>& replacements)
@@ -162,14 +163,15 @@ inline bool remap_engine_data(
 /// Remap legacy descriptor From/To integer ranges after text mutation.
 /// Uses the shared descriptor walking utilities instead of duplicating them.
 inline bool remap_legacy_from_to_ranges(
-	TaggedBlock& block,
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
 	const ParsedTextSpan& old_span,
 	const std::vector<TextReplacement>& replacements)
 {
-	if (block.getKey() != Enum::TaggedBlockKey::lrTypeTool)
+	if (!block_ptr)
 	{
 		return false;
 	}
+	auto& block = *block_ptr;
 
 	static constexpr size_t tysh_header_bytes = 56u;
 	if (block.m_Data.size() < tysh_header_bytes + 12u)
@@ -179,12 +181,9 @@ inline bool remap_legacy_from_to_ranges(
 
 	const size_t old_plain_units = old_span.text_utf16.size();
 	Descriptors::Descriptor* descriptor_ptr = nullptr;
-	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	if (block.has_parsed_descriptors())
 	{
-		if (typed->has_parsed_descriptors())
-		{
-			descriptor_ptr = &typed->text_descriptor();
-		}
+		descriptor_ptr = &block.text_descriptor();
 	}
 
 	Descriptors::Descriptor descriptor{};
@@ -260,13 +259,10 @@ inline bool remap_legacy_from_to_ranges(
 		remap_value(key, value.get());
 	}
 
-	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	if (block.has_parsed_descriptors())
 	{
-		if (typed->has_parsed_descriptors())
-		{
-			typed->sync_data_from_descriptors();
-			return true;
-		}
+		block.sync_data_from_descriptors();
+		return true;
 	}
 
 	const auto new_body = serialize_descriptor_body(*descriptor_ptr);
@@ -277,23 +273,29 @@ inline bool remap_legacy_from_to_ranges(
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
 		new_body.begin(),
 		new_body.end());
-	refresh_type_tool_descriptor_cache(block);
+	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
 	return true;
 }
 
 inline bool apply_text_mutation(
-	TaggedBlock& block,
+	const std::shared_ptr<TypeToolTaggedBlock>& block_ptr,
 	const ParsedTextSpan& parsed_old,
 	const std::u16string& new_text_utf16,
 	const std::vector<TextReplacement>& replacements)
 {
+	if (!block_ptr)
+	{
+		return false;
+	}
+	auto& block = *block_ptr;
+
 	if (!write_text_in_span(block, parsed_old, new_text_utf16))
 	{
 		return false;
 	}
 
 	(void)remap_engine_data(block, parsed_old, new_text_utf16, replacements);
-	(void)remap_legacy_from_to_ranges(block, parsed_old, replacements);
+	(void)remap_legacy_from_to_ranges(block_ptr, parsed_old, replacements);
 	return true;
 }
 

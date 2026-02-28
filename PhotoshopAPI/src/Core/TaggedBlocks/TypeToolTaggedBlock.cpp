@@ -26,7 +26,9 @@ void append_be(std::vector<std::byte>& data, const T value)
 
 std::vector<std::byte> serialize_descriptor_body(const Descriptors::Descriptor& descriptor)
 {
-	File memory_file(std::vector<uint8_t>{});
+	std::vector<uint8_t> buffer{};
+	buffer.reserve(32768u);
+	File memory_file(std::move(buffer));
 	descriptor.write(memory_file);
 
 	std::vector<uint8_t> bytes(static_cast<size_t>(memory_file.getSize()), 0u);
@@ -144,6 +146,7 @@ bool TypeToolTaggedBlock::parse_descriptors_from_data()
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TypeToolTaggedBlock", "Failed to parse TySh text descriptor body");
 		return false;
 	}
 	const size_t text_body_size = static_cast<size_t>(text_file.getOffset());
@@ -173,6 +176,7 @@ bool TypeToolTaggedBlock::parse_descriptors_from_data()
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TypeToolTaggedBlock", "Failed to parse TySh warp descriptor body");
 		return false;
 	}
 	const size_t warp_body_size = static_cast<size_t>(warp_file.getOffset());

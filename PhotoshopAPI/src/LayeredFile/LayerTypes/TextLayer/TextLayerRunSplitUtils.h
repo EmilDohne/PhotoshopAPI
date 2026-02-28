@@ -11,7 +11,6 @@
 #include "TextLayerParsingUtils.h"
 
 #include "Core/Struct/EngineDataStructure.h"
-#include "Core/TaggedBlocks/TaggedBlock.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -31,7 +30,7 @@ namespace TextLayerDetail
 /// [0, char_offset) and the new run covers [char_offset, run_length).
 /// The new run inherits all style properties from the original.
 /// Returns true on success.
-inline bool split_style_run(TaggedBlock& block, size_t run_index, size_t char_offset)
+inline bool split_style_run(TypeToolTaggedBlock& block, size_t run_index, size_t char_offset)
 {
 	const auto engine_span_opt = find_engine_data_span(block);
 	if (!engine_span_opt.has_value()) return false;
@@ -91,7 +90,7 @@ inline bool split_style_run(TaggedBlock& block, size_t run_index, size_t char_of
 }
 
 /// Split a paragraph run similarly.
-inline bool split_paragraph_run(TaggedBlock& block, size_t run_index, size_t char_offset)
+inline bool split_paragraph_run(TypeToolTaggedBlock& block, size_t run_index, size_t char_offset)
 {
 	const auto engine_span_opt = find_engine_data_span(block);
 	if (!engine_span_opt.has_value()) return false;
@@ -143,7 +142,7 @@ inline bool split_paragraph_run(TaggedBlock& block, size_t run_index, size_t cha
 }
 
 /// Get the run lengths as a vector of int32.
-inline std::optional<std::vector<int32_t>> get_style_run_lengths(const TaggedBlock& block)
+inline std::optional<std::vector<int32_t>> get_style_run_lengths(const TypeToolTaggedBlock& block)
 {
 	const auto payload = read_engine_payload(block);
 	if (!payload.has_value()) return std::nullopt;

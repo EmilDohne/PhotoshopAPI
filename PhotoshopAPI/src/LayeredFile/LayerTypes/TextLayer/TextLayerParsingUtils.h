@@ -487,6 +487,7 @@ inline std::optional<double> parse_double_from_range(const std::vector<std::byte
 	}
 	catch (...)
 	{
+		PSAPI_LOG_WARNING("TextLayer", "Failed to parse numeric token while reading text layer payload");
 		return std::nullopt;
 	}
 }
