@@ -17,6 +17,7 @@
 #include "ReferencePointTaggedBlock.h"
 #include "TypeToolTaggedBlock.h"
 #include "UnicodeLayerNameTaggedBlock.h"
+#include "SheetColorTaggedBlock.h"
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -62,6 +63,7 @@ template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedB
 template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
 template <typename T>
@@ -90,6 +92,7 @@ template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedB
 template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
 
 
 template <typename T>
@@ -120,6 +123,7 @@ template std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>		TaggedBlockStorag
 template std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<LinkedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<TypeToolTaggedBlock>>			TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<SheetColorTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
 
 
 
@@ -213,6 +217,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			typeToolTaggedBlock->read(document, header, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(typeToolTaggedBlock);
 			return typeToolTaggedBlock;
+		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrSheetColorSetting)
+		{
+			auto lrSheetColorSetting = std::make_shared<SheetColorTaggedBlock>();
+			lrSheetColorSetting->read(document, offset, signature, padding);
+			this->m_TaggedBlocks.push_back(lrSheetColorSetting);
+			return lrSheetColorSetting;
 		}
 		else
 		{

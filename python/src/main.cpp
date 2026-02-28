@@ -27,6 +27,7 @@ PYBIND11_MODULE(photoshopapi, m)
 	declare_compression_enums(enum_module);
 	declare_blendmode_enums(enum_module);
 	declare_textlayer_enums(enum_module);
+	declare_layercolor_enum(enum_module);
 
 	auto util_module = m.def_submodule("util", "Utility functions and structures to support the creation/interaction with LayeredFile or PhotoshopFile");
 	declare_file_struct(util_module);

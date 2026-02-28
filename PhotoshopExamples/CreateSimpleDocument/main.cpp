@@ -20,17 +20,18 @@ int main()
 	LayeredFile<bpp8_t> document = { Enum::ColorMode::RGB, width, height };
 	// Create our individual channels to add to our image layer. Keep in mind that all these 3 channels need to 
 	// be specified for RGB mode
-	std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channelMap;
-	channelMap[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 255u);
-	channelMap[Enum::ChannelID::Green] = std::vector<bpp8_t>(width * height, 0u);
-	channelMap[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 0u);
+	std::unordered_map <Enum::ChannelID, std::vector<bpp8_t>> channel_map;
+	channel_map[Enum::ChannelID::Red] = std::vector<bpp8_t>(width * height, 255u);
+	channel_map[Enum::ChannelID::Green] = std::vector<bpp8_t>(width * height, 0u);
+	channel_map[Enum::ChannelID::Blue] = std::vector<bpp8_t>(width * height, 0u);
 
-	ImageLayer<bpp8_t>::Params layerParams = {};
-	layerParams.name = "Layer Red";
-	layerParams.width = width;
-	layerParams.height = height;
+	ImageLayer<bpp8_t>::Params layer_params = {};
+	layer_params.name = "Layer Red";
+	layer_params.width = width;
+	layer_params.height = height;
+	layer_params.display_color = Enum::LayerColor::blue;
 
-	auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channelMap), layerParams);
+	auto layer = std::make_shared<ImageLayer<bpp8_t>>(std::move(channel_map), layer_params);
 	document.add_layer(layer);
 
 	// It is perfectly legal to modify a layers properties even after it was added to the document as attributes
