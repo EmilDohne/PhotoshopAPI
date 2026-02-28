@@ -11,7 +11,6 @@ wheels/
 # setuptools related artifacts
 .venv/
 build/
-build-vs/
 PhotoshopAPI.egg-info/
 
 # Benchmark Binary files
