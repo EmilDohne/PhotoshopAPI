@@ -59,8 +59,8 @@ void declare_text_layer(py::module& m, const std::string& extension)
     declare_character_style_range<T>(m, extension);
     declare_paragraph_style_range<T>(m, extension);
 
-    std::string class_name = "TextLayer" + extension;
-    PyClass text_layer(m, class_name.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    std::string className = "TextLayer" + extension;
+    PyClass text_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
     text_layer.doc() = R"pbdoc(
 

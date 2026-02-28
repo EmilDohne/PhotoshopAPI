@@ -52,8 +52,8 @@ void declare_text_layer(py::module& m, const std::string& extension)
     using Class  = TextLayer<T>;
     using PyClass = py::class_<Class, Layer<T>, std::shared_ptr<Class>>;
 
-    std::string class_name = "TextLayer" + extension;
-    PyClass text_layer(m, class_name.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    std::string className = "TextLayer" + extension;
+    PyClass text_layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
 
     text_layer.doc() = R"pbdoc(
 
