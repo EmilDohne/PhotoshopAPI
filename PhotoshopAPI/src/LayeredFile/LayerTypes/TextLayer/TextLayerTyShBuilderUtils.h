@@ -17,6 +17,7 @@
 #include "Core/Struct/EngineDataStructure.h"
 #include "Core/Struct/UnicodeString.h"
 #include "Core/TaggedBlocks/TaggedBlock.h"
+#include "Core/TaggedBlocks/TypeToolTaggedBlock.h"
 #include "Util/Enum.h"
 
 #include <algorithm>
@@ -65,18 +66,6 @@ inline std::vector<std::byte> serialize_descriptor_with_version(const Descriptor
 	return bytes;
 }
 
-// -----------------------------------------------------------------------
-//  TyShTaggedBlock  -  trivial derivation that lets us set the key
-// -----------------------------------------------------------------------
-
-struct TyShTaggedBlock : TaggedBlock
-{
-	TyShTaggedBlock()
-	{
-		m_Key = Enum::TaggedBlockKey::lrTypeTool;
-	}
-};
-// -----------------------------------------------------------------------
 //  Build minimal EngineData blob
 // -----------------------------------------------------------------------
 
@@ -922,7 +911,7 @@ inline std::vector<std::byte> build_warp_descriptor()
 
 /// Build a complete TySh tagged block from scratch.
 /// The result can be inserted into Layer<T>::m_UnparsedBlocks.
-inline std::shared_ptr<TaggedBlock> build_tysh_tagged_block(
+inline std::shared_ptr<TypeToolTaggedBlock> build_tysh_tagged_block(
 	const std::string& text_utf8,
 	const std::string& font_postscript_name,
 	double font_size = 24.0,
@@ -1011,8 +1000,9 @@ inline std::shared_ptr<TaggedBlock> build_tysh_tagged_block(
 	// Warp descriptor (includes own version prefix)
 	data.insert(data.end(), warp_desc.begin(), warp_desc.end());
 
-	auto block = std::make_shared<TyShTaggedBlock>();
+	auto block = std::make_shared<TypeToolTaggedBlock>();
 	block->m_Data = std::move(data);
+	(void)block->parse_descriptors_from_data();
 	return block;
 }
 

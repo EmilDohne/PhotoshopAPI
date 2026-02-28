@@ -178,16 +178,29 @@ inline bool remap_legacy_from_to_ranges(
 	}
 
 	const size_t old_plain_units = old_span.text_utf16.size();
-	const size_t old_body_size = skip_descriptor_body(block.m_Data, tysh_header_bytes);
-	if (old_body_size == 0u)
+	Descriptors::Descriptor* descriptor_ptr = nullptr;
+	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
 	{
-		return false;
+		if (typed->has_parsed_descriptors())
+		{
+			descriptor_ptr = &typed->text_descriptor();
+		}
 	}
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, tysh_header_bytes, descriptor))
+	size_t old_body_size = 0u;
+	if (descriptor_ptr == nullptr)
 	{
-		return false;
+		old_body_size = skip_descriptor_body(block.m_Data, tysh_header_bytes);
+		if (old_body_size == 0u)
+		{
+			return false;
+		}
+		if (!parse_descriptor_body(block.m_Data, tysh_header_bytes, descriptor))
+		{
+			return false;
+		}
+		descriptor_ptr = &descriptor;
 	}
 
 	std::function<void(const std::string&, Descriptors::DescriptorBase*)> remap_value;
@@ -242,12 +255,21 @@ inline bool remap_legacy_from_to_ranges(
 		}
 	};
 
-	for (auto& [key, value] : descriptor.items())
+	for (auto& [key, value] : descriptor_ptr->items())
 	{
 		remap_value(key, value.get());
 	}
 
-	const auto new_body = serialize_descriptor_body(descriptor);
+	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			typed->sync_data_from_descriptors();
+			return true;
+		}
+	}
+
+	const auto new_body = serialize_descriptor_body(*descriptor_ptr);
 	block.m_Data.erase(
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes + old_body_size));
@@ -255,6 +277,7 @@ inline bool remap_legacy_from_to_ranges(
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
 		new_body.begin(),
 		new_body.end());
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 

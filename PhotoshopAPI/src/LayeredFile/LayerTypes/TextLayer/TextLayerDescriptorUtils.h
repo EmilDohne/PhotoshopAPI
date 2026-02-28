@@ -14,15 +14,11 @@
 
 #include "Core/Struct/DescriptorStructure.h"
 #include "Core/Struct/File.h"
+#include "Core/TaggedBlocks/TypeToolTaggedBlock.h"
 
-#include <atomic>
-#include <chrono>
 #include <cstddef>
 #include <cstdint>
-#include <filesystem>
-#include <span>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -30,35 +26,20 @@ PSAPI_NAMESPACE_BEGIN
 
 namespace TextLayerDetail
 {
-inline std::filesystem::path make_descriptor_temp_path()
-{
-	static std::atomic<uint64_t> counter{ 0u };
-	const uint64_t tick = static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count());
-	const uint64_t idx = counter.fetch_add(1u, std::memory_order_relaxed);
-	return std::filesystem::temp_directory_path() /
-		("psapi_descriptor_" + std::to_string(tick) + "_" + std::to_string(idx) + ".bin");
-}
-
 inline std::vector<std::byte> serialize_descriptor_body(const Descriptors::Descriptor& descriptor)
 {
-	const auto temp_path = make_descriptor_temp_path();
-	{
-		File::FileParams write_params{};
-		write_params.doRead = false;
-		write_params.forceOverwrite = true;
-		File output(temp_path, write_params);
-		descriptor.write(output);
-	}
+	File memory_file(std::vector<uint8_t>{});
+	descriptor.write(memory_file);
 
-	std::vector<std::byte> bytes{};
-	{
-		File input(temp_path);
-		bytes.resize(static_cast<size_t>(input.getSize()));
-		input.read(std::span<uint8_t>(reinterpret_cast<uint8_t*>(bytes.data()), bytes.size()));
-	}
+	std::vector<uint8_t> bytes_u8(static_cast<size_t>(memory_file.getSize()), 0u);
+	memory_file.setOffset(0u);
+	memory_file.read(bytes_u8);
 
-	std::error_code ec{};
-	std::filesystem::remove(temp_path, ec);
+	std::vector<std::byte> bytes(bytes_u8.size());
+	for (size_t i = 0u; i < bytes_u8.size(); ++i)
+	{
+		bytes[i] = static_cast<std::byte>(bytes_u8[i]);
+	}
 	return bytes;
 }
 
@@ -72,27 +53,18 @@ inline bool parse_descriptor_body(
 		return false;
 	}
 
-	const auto temp_path = make_descriptor_temp_path();
+	std::vector<uint8_t> tail{};
+	tail.reserve(data.size() - offset);
+	for (size_t i = offset; i < data.size(); ++i)
 	{
-		File::FileParams write_params{};
-		write_params.doRead = false;
-		write_params.forceOverwrite = true;
-		File output(temp_path, write_params);
-
-		std::vector<uint8_t> tail{};
-		tail.reserve(data.size() - offset);
-		for (size_t i = offset; i < data.size(); ++i)
-		{
-			tail.push_back(std::to_integer<uint8_t>(data[i]));
-		}
-		output.write(std::span<uint8_t>(tail.data(), tail.size()));
+		tail.push_back(std::to_integer<uint8_t>(data[i]));
 	}
 
+	File input(std::move(tail));
+	Descriptors::Descriptor parsed{};
 	bool success = true;
 	try
 	{
-		File input(temp_path);
-		Descriptors::Descriptor parsed{};
 		parsed.read(input);
 		out_descriptor = std::move(parsed);
 	}
@@ -100,10 +72,15 @@ inline bool parse_descriptor_body(
 	{
 		success = false;
 	}
-
-	std::error_code ec{};
-	std::filesystem::remove(temp_path, ec);
 	return success;
+}
+
+inline void refresh_type_tool_descriptor_cache(TaggedBlock& block)
+{
+	if (auto* type_tool = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	{
+		(void)type_tool->parse_descriptors_from_data();
+	}
 }
 
 // -----------------------------------------------------------------------

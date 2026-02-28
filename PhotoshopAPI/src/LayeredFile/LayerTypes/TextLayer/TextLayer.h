@@ -15,6 +15,7 @@
 #include "LayeredFile/LayerTypes/Layer.h"
 #include "LayeredFile/concepts.h"
 #include "Core/Struct/UnicodeString.h"
+#include "Core/TaggedBlocks/TypeToolTaggedBlock.h"
 
 // Mixin headers (each brings in exactly what it needs)
 #include "TextLayerFwd.h"
@@ -80,6 +81,16 @@ struct TextLayer :
 
 	TextLayer() = default;
 
+	TextLayer(const LayerRecord& layerRecord, ChannelImageData& channelImageData, const FileHeader& header)
+		: Layer<T>(layerRecord, channelImageData, header)
+	{
+		if (!layerRecord.m_AdditionalLayerInfo.has_value())
+		{
+			return;
+		}
+		m_TypeToolBlocks = layerRecord.m_AdditionalLayerInfo.value().get_tagged_blocks<TypeToolTaggedBlock>();
+	}
+
 	// =================================================================
 	//  Constructor: create a TextLayer from scratch
 	// =================================================================
@@ -116,7 +127,7 @@ struct TextLayer :
 		auto tysh_block = TextLayerDetail::build_tysh_tagged_block(
 			text, font_postscript_name, font_size, fill_color,
 			position_x, position_y, box_width, box_height);
-		Layer<T>::m_UnparsedBlocks.push_back(std::move(tysh_block));
+		m_TypeToolBlocks.push_back(std::move(tysh_block));
 	}
 
 	/// Convenience factory that builds a minimal TextLayer without a full Params struct.
@@ -512,17 +523,9 @@ private:
 	//  Private helpers
 	// -----------------------------------------------------------------
 
-	std::vector<std::shared_ptr<TaggedBlock>> text_tagged_blocks() const
+	std::vector<std::shared_ptr<TypeToolTaggedBlock>> text_tagged_blocks() const
 	{
-		std::vector<std::shared_ptr<TaggedBlock>> out;
-		for (const auto& block : Layer<T>::m_UnparsedBlocks)
-		{
-			if (block && block->getKey() == Enum::TaggedBlockKey::lrTypeTool)
-			{
-				out.push_back(block);
-			}
-		}
-		return out;
+		return m_TypeToolBlocks;
 	}
 
 	size_t num_channels(bool include_mask) const
@@ -559,6 +562,18 @@ private:
 		ChannelImageData channel_image_data(std::move(channel_data));
 		return std::make_tuple(channel_info, std::move(channel_image_data));
 	}
+
+	std::vector<std::shared_ptr<TaggedBlock>> generate_tagged_blocks() override
+	{
+		auto blocks = Layer<T>::generate_tagged_blocks();
+		blocks.insert(
+			blocks.begin() + static_cast<std::ptrdiff_t>(Layer<T>::m_UnparsedBlocks.size()),
+			m_TypeToolBlocks.begin(),
+			m_TypeToolBlocks.end());
+		return blocks;
+	}
+
+	std::vector<std::shared_ptr<TypeToolTaggedBlock>> m_TypeToolBlocks{};
 };
 
 

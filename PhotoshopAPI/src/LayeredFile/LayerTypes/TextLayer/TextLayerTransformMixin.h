@@ -196,6 +196,7 @@ public:
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			for (size_t i = 0u; i < kTransformDoubles; ++i)
 				TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + i * 8u, values[i]);
+			TextLayerDetail::refresh_type_tool_descriptor_cache(*block);
 			return;
 		}
 		throw std::runtime_error("TextLayer::set_transform() failed: no lrTypeTool transform payload found");
@@ -212,6 +213,7 @@ public:
 			if (block->getKey() != Enum::TaggedBlockKey::lrTypeTool) continue;
 			if (block->m_Data.size() < kTransformOffset + kTransformBytes) continue;
 			TextLayerDetail::write_double_be(block->m_Data, kTransformOffset + index * 8u, value);
+			TextLayerDetail::refresh_type_tool_descriptor_cache(*block);
 			return;
 		}
 		throw std::runtime_error("TextLayer::set_transform_component() failed: no lrTypeTool transform payload found");

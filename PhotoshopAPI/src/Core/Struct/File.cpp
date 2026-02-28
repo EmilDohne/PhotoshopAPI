@@ -3,6 +3,8 @@
 #include "Macros.h"
 #include "Profiling/Perf/Instrumentor.h"
 
+#include <algorithm>
+
 PSAPI_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
@@ -12,6 +14,19 @@ void File::read(std::span<uint8_t> buffer)
 	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
+		return;
+	}
+
+	if (m_IsMemoryBacked)
+	{
+		if (m_Offset + buffer.size() > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				buffer.size(), m_Offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer.data(), m_MemoryBuffer.data() + static_cast<size_t>(m_Offset), buffer.size());
+		m_Offset += buffer.size();
 		return;
 	}
 
@@ -36,6 +51,18 @@ void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 		return;
 	}
 
+	if (m_IsMemoryBacked)
+	{
+		if (offset + buffer.size() > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				buffer.size(), offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer.data(), m_MemoryBuffer.data() + static_cast<size_t>(offset), buffer.size());
+		return;
+	}
+
 	if (offset + buffer.size() > m_Size) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", buffer.size(), offset, m_Size);
@@ -55,6 +82,21 @@ void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::write(std::span<uint8_t> buffer)
 {
+	if (m_IsMemoryBacked)
+	{
+		const size_t write_offset = static_cast<size_t>(m_Offset);
+		const size_t write_size = buffer.size();
+		const size_t required_size = write_offset + write_size;
+		if (required_size > m_MemoryBuffer.size())
+		{
+			m_MemoryBuffer.resize(required_size, 0u);
+		}
+		std::memcpy(m_MemoryBuffer.data() + write_offset, buffer.data(), write_size);
+		m_Offset += write_size;
+		m_Size = std::max<uint64_t>(m_Size, m_Offset);
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	m_Size += buffer.size();
 	m_Offset += buffer.size();
@@ -66,6 +108,22 @@ void File::write(std::span<uint8_t> buffer)
 // --------------------------------------------------------------------------------
 void File::skip(int64_t size)
 {
+	if (m_IsMemoryBacked)
+	{
+		if (size <= 0)
+		{
+			return;
+		}
+		if (m_Offset + static_cast<uint64_t>(size) > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be skipped from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				size, m_Offset, m_Size);
+			return;
+		}
+		m_Offset += static_cast<uint64_t>(size);
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (size <= 0)
 	{
@@ -84,6 +142,17 @@ void File::skip(int64_t size)
 // --------------------------------------------------------------------------------
 void File::setOffset(const uint64_t offset)
 {
+	if (m_IsMemoryBacked)
+	{
+		if (offset > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		m_Offset = offset;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset == m_Offset)
 	{
@@ -103,6 +172,17 @@ void File::setOffset(const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::set_offset(const uint64_t offset)
 {
+	if (m_IsMemoryBacked)
+	{
+		if (offset > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		m_Offset = offset;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset == m_Offset)
 	{
@@ -123,6 +203,24 @@ void File::set_offset(const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t size)
 {
+	if (m_IsMemoryBacked)
+	{
+		if (offset > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		if (offset + size > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				size, offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer, reinterpret_cast<const char*>(m_MemoryBuffer.data() + static_cast<size_t>(offset)), static_cast<size_t>(size));
+		m_Offset = offset + size;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset > m_Size) [[unlikely]]
 	{
@@ -151,6 +249,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 // ---------------------------------------------------------------------------------------------------------------------
 File::File(std::filesystem::path file, const FileParams params)
 {
+	m_IsMemoryBacked = false;
 	file = file.make_preferred();
 	// Check if the parent path exists and if not we will create it
 	if (!std::filesystem::is_directory(file.parent_path()) && (!file.parent_path().empty() || file.has_root_directory()))
@@ -209,6 +308,16 @@ File::File(std::filesystem::path file, const FileParams params)
 	}	
 
 	m_FilePath = file;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+File::File(std::vector<uint8_t> buffer)
+{
+	m_IsMemoryBacked = true;
+	m_MemoryBuffer = std::move(buffer);
+	m_Offset = 0u;
+	m_Size = static_cast<uint64_t>(m_MemoryBuffer.size());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

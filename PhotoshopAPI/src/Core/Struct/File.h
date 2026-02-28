@@ -126,8 +126,14 @@ struct File
 	// --------------------------------------------------------------------------------
 	File(std::filesystem::path file, const FileParams params = FileParams());
 
+	/// Initialize an in-memory File object from raw bytes.
+	/// The resulting object supports both read and write operations.
+	File(std::vector<uint8_t> buffer);
+
 
 private:
+	bool m_IsMemoryBacked = false;
+	std::vector<uint8_t> m_MemoryBuffer{};
 	std::filesystem::path m_FilePath;
 	std::fstream m_Document;	// The file stream that represents our document
 	mio::ummap_source m_DocumentMMap;

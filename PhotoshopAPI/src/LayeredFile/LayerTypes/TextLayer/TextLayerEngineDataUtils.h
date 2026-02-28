@@ -368,6 +368,7 @@ inline bool write_engine_payload(TaggedBlock& block, const RawDataSpan& engine_s
 		payload.end(),
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(engine_span.value_offset)
 	);
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 
@@ -619,6 +620,7 @@ inline bool write_text_in_span(TaggedBlock& block, const ParsedTextSpan& span, c
 		block.m_Data[null_start + i] = static_cast<std::byte>(0);
 	}
 
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 
@@ -648,6 +650,26 @@ inline size_t find_text_descriptor_body_offset(const TaggedBlock& block)
 /// Returns the enum value string (e.g. "AnCr" for anti-alias crisp).
 inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, const std::string& target_key)
 {
+	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				const auto* enumerated = typed->text_descriptor().at<Descriptors::Enumerated>(target_key);
+				if (enumerated == nullptr)
+				{
+					return std::nullopt;
+				}
+				return enumerated->m_Enum;
+			}
+			catch (...)
+			{
+				return std::nullopt;
+			}
+		}
+	}
+
 	const size_t body = find_text_descriptor_body_offset(block);
 	if (body == 0u) return std::nullopt;
 
@@ -680,6 +702,29 @@ inline std::optional<std::string> read_text_desc_enum(const TaggedBlock& block, 
 /// Returns true on success.
 inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
 {
+	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				auto& entry = typed->text_descriptor().at(target_key);
+				auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+				if (enumerated == nullptr)
+				{
+					return false;
+				}
+				enumerated->m_Enum = new_value;
+				typed->sync_data_from_descriptors();
+				return true;
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+	}
+
 	const size_t body = find_text_descriptor_body_offset(block);
 	if (body == 0u) return false;
 
@@ -718,6 +763,7 @@ inline bool write_text_desc_enum(TaggedBlock& block, const std::string& target_k
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
 		new_body.begin(),
 		new_body.end());
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 
@@ -748,6 +794,26 @@ inline size_t find_warp_descriptor_body_offset(const TaggedBlock& block)
 
 inline std::optional<std::string> read_warp_enum(const TaggedBlock& block, const std::string& target_key)
 {
+	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				const auto* enumerated = typed->warp_descriptor().at<Descriptors::Enumerated>(target_key);
+				if (enumerated == nullptr)
+				{
+					return std::nullopt;
+				}
+				return enumerated->m_Enum;
+			}
+			catch (...)
+			{
+				return std::nullopt;
+			}
+		}
+	}
+
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return std::nullopt;
 
@@ -774,6 +840,34 @@ inline std::optional<std::string> read_warp_enum(const TaggedBlock& block, const
 
 inline std::optional<double> read_warp_double(const TaggedBlock& block, const std::string& target_key)
 {
+	if (const auto* typed = dynamic_cast<const TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				return typed->warp_descriptor().at<double>(target_key);
+			}
+			catch (...)
+			{
+				// fallthrough
+			}
+			try
+			{
+				const auto* unit_float = typed->warp_descriptor().at<Descriptors::UnitFloat>(target_key);
+				if (unit_float == nullptr)
+				{
+					return std::nullopt;
+				}
+				return unit_float->m_Value;
+			}
+			catch (...)
+			{
+				return std::nullopt;
+			}
+		}
+	}
+
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return std::nullopt;
 
@@ -809,6 +903,29 @@ inline std::optional<double> read_warp_double(const TaggedBlock& block, const st
 
 inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, const std::string& new_value)
 {
+	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				auto& entry = typed->warp_descriptor().at(target_key);
+				auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
+				if (enumerated == nullptr)
+				{
+					return false;
+				}
+				enumerated->m_Enum = new_value;
+				typed->sync_data_from_descriptors();
+				return true;
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+	}
+
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return false;
 
@@ -847,11 +964,41 @@ inline bool write_warp_enum(TaggedBlock& block, const std::string& target_key, c
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 
 inline bool write_warp_double(TaggedBlock& block, const std::string& target_key, const double new_value)
 {
+	if (auto* typed = dynamic_cast<TypeToolTaggedBlock*>(&block))
+	{
+		if (typed->has_parsed_descriptors())
+		{
+			try
+			{
+				auto& entry = typed->warp_descriptor().at(target_key);
+				if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
+				{
+					double_value->m_Value = new_value;
+				}
+				else if (auto* unit_float = dynamic_cast<Descriptors::UnitFloat*>(entry.get()))
+				{
+					unit_float->m_Value = new_value;
+				}
+				else
+				{
+					return false;
+				}
+				typed->sync_data_from_descriptors();
+				return true;
+			}
+			catch (...)
+			{
+				return false;
+			}
+		}
+	}
+
 	const size_t warp_body = find_warp_descriptor_body_offset(block);
 	if (warp_body == 0u) return false;
 
@@ -897,6 +1044,7 @@ inline bool write_warp_double(TaggedBlock& block, const std::string& target_key,
 		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
+	refresh_type_tool_descriptor_cache(block);
 	return true;
 }
 
