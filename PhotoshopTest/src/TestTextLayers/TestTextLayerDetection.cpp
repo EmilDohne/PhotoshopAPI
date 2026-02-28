@@ -80,12 +80,12 @@ TEST_CASE("Text layer detection from Txt2 tagged block")
 	auto layer_record = make_layer_record_with_blocks({ txt2_block });
 
 	ChannelImageData channel_image_data{};
-	LayeredFile<bpp8_t> layered_file(Enum::ColorMode::RGB, 1u, 1u);
+	LayeredFile<bpp8_t> layeredFile(Enum::ColorMode::RGB, 1u, 1u);
 	FileHeader header(Enum::Version::Psd, 3u, 1u, 1u, Enum::BitDepth::BD_8, Enum::ColorMode::RGB);
 	AdditionalLayerInfo global_additional_layer_info{};
 
 	const auto layer = _Impl::identify_layer_type<bpp8_t>(
-		layered_file,
+		layeredFile,
 		layer_record,
 		channel_image_data,
 		header,
@@ -105,12 +105,12 @@ TEST_CASE("Text layer preserves Txt2 tagged block on write")
 	auto layer_record = make_layer_record_with_blocks({ txt2_block });
 
 	ChannelImageData channel_image_data{};
-	LayeredFile<bpp8_t> layered_file(Enum::ColorMode::RGB, 1u, 1u);
+	LayeredFile<bpp8_t> layeredFile(Enum::ColorMode::RGB, 1u, 1u);
 	FileHeader header(Enum::Version::Psd, 3u, 1u, 1u, Enum::BitDepth::BD_8, Enum::ColorMode::RGB);
 	AdditionalLayerInfo global_additional_layer_info{};
 
 	const auto layer = _Impl::identify_layer_type<bpp8_t>(
-		layered_file,
+		layeredFile,
 		layer_record,
 		channel_image_data,
 		header,

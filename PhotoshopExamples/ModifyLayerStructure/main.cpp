@@ -16,7 +16,7 @@ int main()
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
 	// variable on the PhotoshopFile to figure it out programmatically. This would need to be done using the 
 	// "extended" read signature.
-	LayeredFile<bpp8_t> layered_file = LayeredFile<bpp8_t>::read("LayeredFile.psd");
+	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("LayeredFile.psd");
 
 	// The Structure of the Photoshop file we just opened is
 	// 'Group'
@@ -30,9 +30,9 @@ int main()
 
 	// By not specifying a second parameter to move_layer() we tell the function to move it to the scene root
 	// we could however also move it under another group by passing that group as a second parameter
-	layered_file.move_layer("Group/NestedGroup");
-	layered_file.remove_layer("Group/ImageLayer");
+	layeredFile.move_layer("Group/NestedGroup");
+	layeredFile.remove_layer("Group/ImageLayer");
 
 	// One could also export as *.psb and PhotoshopAPI would take care of all the conversions internally
-	LayeredFile<bpp8_t>::write(std::move(layered_file), "RearrangedFile.psd");
+	LayeredFile<bpp8_t>::write(std::move(layeredFile), "RearrangedFile.psd");
 }

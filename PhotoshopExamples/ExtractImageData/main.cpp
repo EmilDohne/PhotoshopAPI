@@ -15,10 +15,10 @@ int main()
 	// In this case we already know the bit depth but otherwise one could use the PhotoshopFile.m_Header.m_Depth
 	// variable on the PhotoshopFile to figure it out programmatically. This would need to be done using the 
 	// "extended" read signature shown in the ExtendedSignature example.
-	LayeredFile<bpp8_t> layered_file = LayeredFile<bpp8_t>::read("ImageData.psb");
+	LayeredFile<bpp8_t> layeredFile = LayeredFile<bpp8_t>::read("ImageData.psb");
 
 	// We could also use findLayer() on the LayeredFile but this way we directly get the appropriate type
-	auto img_layer_ptr = find_layer_as<bpp8_t, ImageLayer>("RedLayer", layered_file);
+	auto img_layer_ptr = find_layer_as<bpp8_t, ImageLayer>("RedLayer", layeredFile);
 
 	// We can now either extract just the channels we want:
 	std::vector<bpp8_t> channel_r = img_layer_ptr->get_channel(Enum::ChannelID::Red);
@@ -40,7 +40,7 @@ int main()
 	}
 
 	// If we want to extract e.g. the layer mask:
-	auto mask_img_layer_ptr = find_layer_as<bpp8_t, ImageLayer>("Group/EmptyLayerWithMask", layered_file);
+	auto mask_img_layer_ptr = find_layer_as<bpp8_t, ImageLayer>("Group/EmptyLayerWithMask", layeredFile);
 
 	// If this doesnt have a mask channel we will simply get an empty channel. In this case though, even though
 	// we have a mask it will be empty as well as Photoshop fills in the gaps in the layer with the mask_default_color
