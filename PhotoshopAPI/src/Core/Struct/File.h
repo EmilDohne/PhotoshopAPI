@@ -126,8 +126,6 @@ struct File
 	// --------------------------------------------------------------------------------
 	File(std::filesystem::path file, const FileParams params = FileParams());
 
-	/// Initialize an in-memory File object from raw bytes.
-	/// The resulting object supports both read and write operations.
 	File(std::vector<uint8_t> buffer);
 
 

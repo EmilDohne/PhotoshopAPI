@@ -16,10 +16,6 @@
 
 PSAPI_NAMESPACE_BEGIN
 
-/// Typed representation of the lrTypeTool ("TySh") tagged block.
-///
-/// This keeps parsed text/warp descriptors in memory so callers can mutate
-/// descriptors directly without reparsing the raw payload on every call.
 struct TypeToolTaggedBlock : TaggedBlock
 {
 	TypeToolTaggedBlock();
@@ -33,19 +29,17 @@ struct TypeToolTaggedBlock : TaggedBlock
 
 	void write(File& document, const FileHeader& header, ProgressCallback& callback, const uint16_t padding = 1u) override;
 
-	/// Rebuild raw TySh bytes from parsed descriptor members.
 	void sync_data_from_descriptors();
 
-	/// Reparse descriptor members from the current raw TySh bytes.
 	bool parse_descriptors_from_data();
 
 	bool has_parsed_descriptors() const noexcept { return m_DescriptorsParsed; }
 
-	Descriptors::Descriptor& text_descriptor() noexcept { return m_TextDescriptor; }
-	const Descriptors::Descriptor& text_descriptor() const noexcept { return m_TextDescriptor; }
+	Descriptors::Descriptor& text_descriptor() noexcept { return m_TextData; }
+	const Descriptors::Descriptor& text_descriptor() const noexcept { return m_TextData; }
 
-	Descriptors::Descriptor& warp_descriptor() noexcept { return m_WarpDescriptor; }
-	const Descriptors::Descriptor& warp_descriptor() const noexcept { return m_WarpDescriptor; }
+	Descriptors::Descriptor& warp_descriptor() noexcept { return m_WarpData; }
+	const Descriptors::Descriptor& warp_descriptor() const noexcept { return m_WarpData; }
 
 	uint16_t text_version() const noexcept { return m_TextVersion; }
 	uint16_t warp_version() const noexcept { return m_WarpVersion; }
@@ -54,15 +48,15 @@ struct TypeToolTaggedBlock : TaggedBlock
 
 private:
 	uint16_t m_TyShVersion = 1u;
-	std::array<double, 6u> m_Transform{ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
+	std::array<double, 6u> m_TransformationMatrix{ 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 };
 
 	uint16_t m_TextVersion = 50u;
 	uint32_t m_TextDescriptorVersion = 16u;
-	Descriptors::Descriptor m_TextDescriptor{ "TxLr" };
+	Descriptors::Descriptor m_TextData{ "TxLr" };
 
 	uint16_t m_WarpVersion = 1u;
 	uint32_t m_WarpDescriptorVersion = 16u;
-	Descriptors::Descriptor m_WarpDescriptor{ "warp" };
+	Descriptors::Descriptor m_WarpData{ "warp" };
 	std::vector<std::byte> m_WarpTrailingData{};
 
 	bool m_DescriptorsParsed = false;

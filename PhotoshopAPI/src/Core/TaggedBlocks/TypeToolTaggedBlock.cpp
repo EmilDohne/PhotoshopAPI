@@ -81,7 +81,7 @@ void TypeToolTaggedBlock::sync_data_from_descriptors()
 	data.reserve(128u);
 
 	append_be<uint16_t>(data, m_TyShVersion);
-	for (const auto component : m_Transform)
+	for (const auto component : m_TransformationMatrix)
 	{
 		append_be<double>(data, component);
 	}
@@ -89,14 +89,14 @@ void TypeToolTaggedBlock::sync_data_from_descriptors()
 	append_be<uint16_t>(data, m_TextVersion);
 	append_be<uint32_t>(data, m_TextDescriptorVersion);
 	{
-		const auto text_body = serialize_descriptor_body(m_TextDescriptor);
+		const auto text_body = serialize_descriptor_body(m_TextData);
 		data.insert(data.end(), text_body.begin(), text_body.end());
 	}
 
 	append_be<uint16_t>(data, m_WarpVersion);
 	append_be<uint32_t>(data, m_WarpDescriptorVersion);
 	{
-		const auto warp_body = serialize_descriptor_body(m_WarpDescriptor);
+		const auto warp_body = serialize_descriptor_body(m_WarpData);
 		data.insert(data.end(), warp_body.begin(), warp_body.end());
 	}
 	data.insert(data.end(), m_WarpTrailingData.begin(), m_WarpTrailingData.end());
@@ -120,9 +120,9 @@ bool TypeToolTaggedBlock::parse_descriptors_from_data()
 	ByteStream stream(bytes);
 
 	m_TyShVersion = ReadBinaryData<uint16_t>(stream);
-	for (size_t i = 0u; i < m_Transform.size(); ++i)
+	for (size_t i = 0u; i < m_TransformationMatrix.size(); ++i)
 	{
-		m_Transform[i] = ReadBinaryData<double>(stream);
+		m_TransformationMatrix[i] = ReadBinaryData<double>(stream);
 	}
 
 	m_TextVersion = ReadBinaryData<uint16_t>(stream);
@@ -189,8 +189,8 @@ bool TypeToolTaggedBlock::parse_descriptors_from_data()
 		m_WarpTrailingData.push_back(static_cast<std::byte>(bytes[i]));
 	}
 
-	m_TextDescriptor = std::move(text_descriptor);
-	m_WarpDescriptor = std::move(warp_descriptor);
+	m_TextData = std::move(text_descriptor);
+	m_WarpData = std::move(warp_descriptor);
 	m_DescriptorsParsed = true;
 	return true;
 }
