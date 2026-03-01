@@ -19,14 +19,14 @@ void File::read(std::span<uint8_t> buffer)
 
 	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
 	{
-		const auto& m_MemoryBuffer = std::get<std::vector<uint8_t>>(m_Storage);
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
 		if (m_Offset + buffer.size() > m_Size) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
 				buffer.size(), m_Offset, m_Size);
 			return;
 		}
-		std::memcpy(buffer.data(), m_MemoryBuffer.data() + static_cast<size_t>(m_Offset), buffer.size());
+		std::memcpy(buffer.data(), memory_buffer.data() + static_cast<size_t>(m_Offset), buffer.size());
 		m_Offset += buffer.size();
 		return;
 	}
@@ -54,14 +54,14 @@ void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 
 	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
 	{
-		const auto& m_MemoryBuffer = std::get<std::vector<uint8_t>>(m_Storage);
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
 		if (offset + buffer.size() > m_Size) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
 				buffer.size(), offset, m_Size);
 			return;
 		}
-		std::memcpy(buffer.data(), m_MemoryBuffer.data() + static_cast<size_t>(offset), buffer.size());
+		std::memcpy(buffer.data(), memory_buffer.data() + static_cast<size_t>(offset), buffer.size());
 		return;
 	}
 
@@ -86,15 +86,15 @@ void File::write(std::span<uint8_t> buffer)
 {
 	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
 	{
-		auto& m_MemoryBuffer = std::get<std::vector<uint8_t>>(m_Storage);
+		auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
 		const size_t write_offset = static_cast<size_t>(m_Offset);
 		const size_t write_size = buffer.size();
 		const size_t required_size = write_offset + write_size;
-		if (required_size > m_MemoryBuffer.size())
+		if (required_size > memory_buffer.size())
 		{
-			m_MemoryBuffer.resize(required_size, 0u);
+			memory_buffer.resize(required_size, 0u);
 		}
-		std::memcpy(m_MemoryBuffer.data() + write_offset, buffer.data(), write_size);
+		std::memcpy(memory_buffer.data() + write_offset, buffer.data(), write_size);
 		m_Offset += write_size;
 		m_Size = std::max<uint64_t>(m_Size, m_Offset);
 		return;
@@ -208,7 +208,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 {
 	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
 	{
-		const auto& m_MemoryBuffer = std::get<std::vector<uint8_t>>(m_Storage);
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
 		if (offset > m_Size) [[unlikely]]
 		{
 			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
@@ -220,7 +220,7 @@ void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t 
 				size, offset, m_Size);
 			return;
 		}
-		std::memcpy(buffer, reinterpret_cast<const char*>(m_MemoryBuffer.data() + static_cast<size_t>(offset)), static_cast<size_t>(size));
+		std::memcpy(buffer, reinterpret_cast<const char*>(memory_buffer.data() + static_cast<size_t>(offset)), static_cast<size_t>(size));
 		m_Offset = offset + size;
 		return;
 	}

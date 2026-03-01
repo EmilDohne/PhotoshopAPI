@@ -134,7 +134,7 @@ inline bool remap_engine_data(
 							{
 								const size_t arr_old_start = child.start_offset;
 								const size_t arr_old_end = child.end_offset;
-								(void)EngineData::set_int32_array(child, remapped);
+								[[maybe_unused]] const bool set_run_length_array = EngineData::set_int32_array(child, remapped);
 								patches.push_back({ arr_old_start, arr_old_end, EngineData::format_value_bytes(child) });
 							}
 						}
@@ -171,31 +171,30 @@ inline bool remap_legacy_from_to_ranges(
 	{
 		return false;
 	}
-	auto& block = *block_ptr;
 
 	static constexpr size_t tysh_header_bytes = 56u;
-	if (block.m_Data.size() < tysh_header_bytes + 12u)
+	if (block_ptr->m_Data.size() < tysh_header_bytes + 12u)
 	{
 		return false;
 	}
 
 	const size_t old_plain_units = old_span.text_utf16.size();
 	Descriptors::Descriptor* descriptor_ptr = nullptr;
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
-		descriptor_ptr = &block.text_descriptor();
+		descriptor_ptr = &block_ptr->text_descriptor();
 	}
 
 	Descriptors::Descriptor descriptor{};
 	size_t old_body_size = 0u;
 	if (descriptor_ptr == nullptr)
 	{
-		old_body_size = skip_descriptor_body(block.m_Data, tysh_header_bytes);
+		old_body_size = skip_descriptor_body(block_ptr->m_Data, tysh_header_bytes);
 		if (old_body_size == 0u)
 		{
 			return false;
 		}
-		if (!parse_descriptor_body(block.m_Data, tysh_header_bytes, descriptor))
+		if (!parse_descriptor_body(block_ptr->m_Data, tysh_header_bytes, descriptor))
 		{
 			return false;
 		}
@@ -259,21 +258,21 @@ inline bool remap_legacy_from_to_ranges(
 		remap_value(key, value.get());
 	}
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
-		block.sync_data_from_descriptors();
+		block_ptr->sync_data_from_descriptors();
 		return true;
 	}
 
 	const auto new_body = serialize_descriptor_body(*descriptor_ptr);
-	block.m_Data.erase(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes + old_body_size));
-	block.m_Data.insert(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
+	block_ptr->m_Data.erase(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes + old_body_size));
+	block_ptr->m_Data.insert(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(tysh_header_bytes),
 		new_body.begin(),
 		new_body.end());
-	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
+	[[maybe_unused]] auto _descriptor = block_ptr->parse_descriptors_from_data();
 	return true;
 }
 
@@ -287,15 +286,14 @@ inline bool apply_text_mutation(
 	{
 		return false;
 	}
-	auto& block = *block_ptr;
 
-	if (!write_text_in_span(block, parsed_old, new_text_utf16))
+	if (!write_text_in_span(*block_ptr, parsed_old, new_text_utf16))
 	{
 		return false;
 	}
 
-	(void)remap_engine_data(block, parsed_old, new_text_utf16, replacements);
-	(void)remap_legacy_from_to_ranges(block_ptr, parsed_old, replacements);
+	[[maybe_unused]] const bool remapped_engine_data = remap_engine_data(*block_ptr, parsed_old, new_text_utf16, replacements);
+	[[maybe_unused]] const bool remapped_legacy_ranges = remap_legacy_from_to_ranges(block_ptr, parsed_old, replacements);
 	return true;
 }
 

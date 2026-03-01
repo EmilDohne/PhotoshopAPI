@@ -702,20 +702,19 @@ inline bool write_text_desc_enum(
 	{
 		return false;
 	}
-	auto& block = *block_ptr;
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
 		try
 		{
-			auto& entry = block.text_descriptor().at(target_key);
+			auto& entry = block_ptr->text_descriptor().at(target_key);
 			auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
 			if (enumerated == nullptr)
 			{
 				return false;
 			}
 			enumerated->m_Enum = new_value;
-			block.sync_data_from_descriptors();
+			block_ptr->sync_data_from_descriptors();
 			return true;
 		}
 		catch (...)
@@ -725,17 +724,17 @@ inline bool write_text_desc_enum(
 		}
 	}
 
-	const size_t body = find_text_descriptor_body_offset(block);
+	const size_t body = find_text_descriptor_body_offset(*block_ptr);
 	if (body == 0u) return false;
 
-	const size_t old_body_size = skip_descriptor_body(block.m_Data, body);
+	const size_t old_body_size = skip_descriptor_body(block_ptr->m_Data, body);
 	if (old_body_size == 0u)
 	{
 		return false;
 	}
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, body, descriptor))
+	if (!parse_descriptor_body(block_ptr->m_Data, body, descriptor))
 	{
 		return false;
 	}
@@ -757,14 +756,14 @@ inline bool write_text_desc_enum(
 	}
 
 	const auto new_body = serialize_descriptor_body(descriptor);
-	block.m_Data.erase(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body + old_body_size));
-	block.m_Data.insert(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(body),
+	block_ptr->m_Data.erase(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(body),
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(body + old_body_size));
+	block_ptr->m_Data.insert(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(body),
 		new_body.begin(),
 		new_body.end());
-	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
+	[[maybe_unused]] auto _descriptor = block_ptr->parse_descriptors_from_data();
 	return true;
 }
 
@@ -798,13 +797,12 @@ inline std::optional<std::string> read_warp_enum(
 	{
 		return std::nullopt;
 	}
-	const auto& block = *block_ptr;
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
 		try
 		{
-			const auto* enumerated = block.warp_descriptor().at<Descriptors::Enumerated>(target_key);
+			const auto* enumerated = block_ptr->warp_descriptor().at<Descriptors::Enumerated>(target_key);
 			if (enumerated == nullptr)
 			{
 				return std::nullopt;
@@ -818,11 +816,11 @@ inline std::optional<std::string> read_warp_enum(
 		}
 	}
 
-	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	const size_t warp_body = find_warp_descriptor_body_offset(*block_ptr);
 	if (warp_body == 0u) return std::nullopt;
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	if (!parse_descriptor_body(block_ptr->m_Data, warp_body, descriptor))
 	{
 		return std::nullopt;
 	}
@@ -851,13 +849,12 @@ inline std::optional<double> read_warp_double(
 	{
 		return std::nullopt;
 	}
-	const auto& block = *block_ptr;
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
 		try
 		{
-			return block.warp_descriptor().at<double>(target_key);
+			return block_ptr->warp_descriptor().at<double>(target_key);
 		}
 		catch (...)
 		{
@@ -865,7 +862,7 @@ inline std::optional<double> read_warp_double(
 		}
 		try
 		{
-			const auto* unit_float = block.warp_descriptor().at<Descriptors::UnitFloat>(target_key);
+			const auto* unit_float = block_ptr->warp_descriptor().at<Descriptors::UnitFloat>(target_key);
 			if (unit_float == nullptr)
 			{
 				return std::nullopt;
@@ -879,11 +876,11 @@ inline std::optional<double> read_warp_double(
 		}
 	}
 
-	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	const size_t warp_body = find_warp_descriptor_body_offset(*block_ptr);
 	if (warp_body == 0u) return std::nullopt;
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	if (!parse_descriptor_body(block_ptr->m_Data, warp_body, descriptor))
 	{
 		return std::nullopt;
 	}
@@ -922,20 +919,19 @@ inline bool write_warp_enum(
 	{
 		return false;
 	}
-	auto& block = *block_ptr;
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
 		try
 		{
-			auto& entry = block.warp_descriptor().at(target_key);
+			auto& entry = block_ptr->warp_descriptor().at(target_key);
 			auto* enumerated = dynamic_cast<Descriptors::Enumerated*>(entry.get());
 			if (enumerated == nullptr)
 			{
 				return false;
 			}
 			enumerated->m_Enum = new_value;
-			block.sync_data_from_descriptors();
+			block_ptr->sync_data_from_descriptors();
 			return true;
 		}
 		catch (...)
@@ -945,17 +941,17 @@ inline bool write_warp_enum(
 		}
 	}
 
-	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	const size_t warp_body = find_warp_descriptor_body_offset(*block_ptr);
 	if (warp_body == 0u) return false;
 
-	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	const size_t old_warp_body_size = skip_descriptor_body(block_ptr->m_Data, warp_body);
 	if (old_warp_body_size == 0u)
 	{
 		return false;
 	}
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	if (!parse_descriptor_body(block_ptr->m_Data, warp_body, descriptor))
 	{
 		return false;
 	}
@@ -977,14 +973,14 @@ inline bool write_warp_enum(
 	}
 
 	const auto new_body = serialize_descriptor_body(descriptor);
-	block.m_Data.erase(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
-	block.m_Data.insert(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+	block_ptr->m_Data.erase(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block_ptr->m_Data.insert(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
-	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
+	[[maybe_unused]] auto _descriptor = block_ptr->parse_descriptors_from_data();
 	return true;
 }
 
@@ -997,13 +993,12 @@ inline bool write_warp_double(
 	{
 		return false;
 	}
-	auto& block = *block_ptr;
 
-	if (block.has_parsed_descriptors())
+	if (block_ptr->has_parsed_descriptors())
 	{
 		try
 		{
-			auto& entry = block.warp_descriptor().at(target_key);
+			auto& entry = block_ptr->warp_descriptor().at(target_key);
 			if (auto* double_value = dynamic_cast<Descriptors::double_Wrapper*>(entry.get()))
 			{
 				double_value->m_Value = new_value;
@@ -1016,7 +1011,7 @@ inline bool write_warp_double(
 			{
 				return false;
 			}
-			block.sync_data_from_descriptors();
+			block_ptr->sync_data_from_descriptors();
 			return true;
 		}
 		catch (...)
@@ -1026,17 +1021,17 @@ inline bool write_warp_double(
 		}
 	}
 
-	const size_t warp_body = find_warp_descriptor_body_offset(block);
+	const size_t warp_body = find_warp_descriptor_body_offset(*block_ptr);
 	if (warp_body == 0u) return false;
 
-	const size_t old_warp_body_size = skip_descriptor_body(block.m_Data, warp_body);
+	const size_t old_warp_body_size = skip_descriptor_body(block_ptr->m_Data, warp_body);
 	if (old_warp_body_size == 0u)
 	{
 		return false;
 	}
 
 	Descriptors::Descriptor descriptor{};
-	if (!parse_descriptor_body(block.m_Data, warp_body, descriptor))
+	if (!parse_descriptor_body(block_ptr->m_Data, warp_body, descriptor))
 	{
 		return false;
 	}
@@ -1064,14 +1059,14 @@ inline bool write_warp_double(
 	}
 
 	const auto new_body = serialize_descriptor_body(descriptor);
-	block.m_Data.erase(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
-	block.m_Data.insert(
-		block.m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+	block_ptr->m_Data.erase(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body + old_warp_body_size));
+	block_ptr->m_Data.insert(
+		block_ptr->m_Data.begin() + static_cast<std::ptrdiff_t>(warp_body),
 		new_body.begin(),
 		new_body.end());
-	[[maybe_unused]] auto _descriptor = block.parse_descriptors_from_data();
+	[[maybe_unused]] auto _descriptor = block_ptr->parse_descriptors_from_data();
 	return true;
 }
 
