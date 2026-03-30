@@ -15,6 +15,7 @@
 #include "PlacedLayerTaggedBlock.h"
 #include "ProtectedSettingTaggedBlock.h"
 #include "ReferencePointTaggedBlock.h"
+#include "TypeToolTaggedBlock.h"
 #include "UnicodeLayerNameTaggedBlock.h"
 #include "SheetColorTaggedBlock.h"
 
@@ -61,6 +62,7 @@ template std::shared_ptr<ProtectedSettingTaggedBlock>	TaggedBlockStorage::getTag
 template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
@@ -89,6 +91,7 @@ template std::shared_ptr<ProtectedSettingTaggedBlock>	TaggedBlockStorage::getTag
 template std::shared_ptr<PlacedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
 
 
@@ -119,6 +122,7 @@ template std::vector<std::shared_ptr<ProtectedSettingTaggedBlock>>	TaggedBlockSt
 template std::vector<std::shared_ptr<PlacedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>	TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<LinkedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<TypeToolTaggedBlock>>			TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<SheetColorTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
 
 
@@ -206,6 +210,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			lrLinkedTaggedBlock->read(document, header, offset, taggedBlock.value(), signature, padding);
 			this->m_TaggedBlocks.push_back(lrLinkedTaggedBlock);
 			return lrLinkedTaggedBlock;
+		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrTypeTool)
+		{
+			auto typeToolTaggedBlock = std::make_shared<TypeToolTaggedBlock>();
+			typeToolTaggedBlock->read(document, header, offset, signature, padding);
+			this->m_TaggedBlocks.push_back(typeToolTaggedBlock);
+			return typeToolTaggedBlock;
 		}
 		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrSheetColorSetting)
 		{

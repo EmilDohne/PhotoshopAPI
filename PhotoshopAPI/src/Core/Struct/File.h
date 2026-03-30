@@ -6,6 +6,7 @@
 #include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <variant>
 #include <vector>
 #include <cstring>
 
@@ -112,7 +113,14 @@ struct File
 	/// Return the path of the file associated with the File object
 	// --------------------------------------------------------------------------------
 	// --------------------------------------------------------------------------------
-	inline std::filesystem::path getPath() const noexcept { return m_FilePath; };
+	inline std::filesystem::path getPath() const noexcept
+	{
+		if (const auto* path = std::get_if<std::filesystem::path>(&m_Storage))
+		{
+			return *path;
+		}
+		return {};
+	};
 
 
 	/// Return whether we can read the given file from the document or if it would exceed the file size
@@ -126,9 +134,11 @@ struct File
 	// --------------------------------------------------------------------------------
 	File(std::filesystem::path file, const FileParams params = FileParams());
 
+	File(std::vector<uint8_t> buffer);
+
 
 private:
-	std::filesystem::path m_FilePath;
+	std::variant<std::filesystem::path, std::vector<uint8_t>> m_Storage{};
 	std::fstream m_Document;	// The file stream that represents our document
 	mio::ummap_source m_DocumentMMap;
 	uint64_t m_Size;			// The total size of the document

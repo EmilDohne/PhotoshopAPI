@@ -3,11 +3,12 @@
 #include "Core/FileIO/Read.h"
 #include "Core/FileIO/Write.h"
 #include "Core/FileIO/Util.h"
+#include "Core/FileIO/LengthMarkers.h"
 #include "Enum.h"
 #include "Logger.h"
 #include "Profiling/Perf/Instrumentor.h"
 
-#include <cassert>
+#include <limits>
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -101,7 +102,20 @@ ICCProfileBlock::ICCProfileBlock(std::vector<uint8_t>&& iccProfile)
 {
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name = { "", 2u };
-	assert(iccProfile.size() < std::numeric_limits<uint32_t>::max());
+
+	// Length markers for image resources are uint32 and this block is padded to 2 bytes,
+	// so raw ICC payload may not exceed uint32_max - 1 bytes.
+	constexpr size_t max_raw_icc_size = static_cast<size_t>(std::numeric_limits<uint32_t>::max()) - 1u;
+	if (iccProfile.size() > max_raw_icc_size)
+	{
+		PSAPI_LOG_ERROR(
+			"ICCProfileBlock",
+			"ICC profile payload too large: got %zu bytes, max supported is %zu bytes",
+			iccProfile.size(),
+			max_raw_icc_size
+		);
+	}
+
 	m_DataSize = RoundUpToMultiple<uint32_t>(static_cast<uint32_t>(iccProfile.size()), 2u);
 
 	m_RawICCProfile = std::move(iccProfile);
@@ -114,11 +128,16 @@ void ICCProfileBlock::read(File& document, const uint64_t offset)
 	PSAPI_PROFILE_FUNCTION();
 	m_UniqueId = Enum::ImageResource::ICCProfile;
 	m_Name.read(document, 2u);
-	m_DataSize = RoundUpToMultiple(ReadBinaryData<uint32_t>(document), 2u);
+	const uint32_t raw_size = ReadBinaryData<uint32_t>(document);
+	m_DataSize = RoundUpToMultiple(raw_size, 2u);
 	auto size = static_cast<uint64_t>(4u) + 2u + m_Name.size() + 4u + m_DataSize;
 	FileSection::initialize(offset, size);
 
-	m_RawICCProfile = ReadBinaryArray<uint8_t>(document, m_DataSize);
+	m_RawICCProfile = ReadBinaryArray<uint8_t>(document, raw_size);
+	if (m_DataSize > raw_size)
+	{
+		document.skip(static_cast<int64_t>(m_DataSize - raw_size));
+	}
 }
 
 
@@ -133,18 +152,24 @@ void ICCProfileBlock::write(File& document)
 
 	WriteBinaryData<uint16_t>(document, Enum::imageResourceToInt(m_UniqueId));
 	m_Name.write(document);
-	WriteBinaryData<uint32_t>(document, m_DataSize);	// This value is already padded
 
-	WriteBinaryArray<uint8_t>(document, std::move(m_RawICCProfile));
-
-	// Check that we didnt initialize m_DataSize incorrectly
-	if (static_cast<int>(m_DataSize) - m_RawICCProfile.size() < 0) [[unlikely]]
+	constexpr size_t max_raw_icc_size = static_cast<size_t>(std::numeric_limits<uint32_t>::max()) - 1u;
+	if (m_RawICCProfile.size() > max_raw_icc_size)
 	{
-		PSAPI_LOG_ERROR("ICCProfileBlock", "Block would require writing %i padding bytes which is not possible, is m_DataSize initialized correctly?", 
-			static_cast<int>(m_DataSize) - m_RawICCProfile.size());
+		PSAPI_LOG_ERROR(
+			"ICCProfileBlock",
+			"ICC profile payload too large for write: got %zu bytes, max supported is %zu bytes",
+			m_RawICCProfile.size(),
+			max_raw_icc_size
+		);
 	}
-	// This will handle the 0 byte case
-	WritePadddingBytes(document, m_DataSize - m_RawICCProfile.size());
+
+	const uint32_t raw_size = static_cast<uint32_t>(m_RawICCProfile.size());
+	m_DataSize = RoundUpToMultiple(raw_size, 2u);
+	{
+		Impl::ScopedLengthBlock<uint32_t> len_block(document, 2u);
+		WriteBinaryArray<uint8_t>(document, m_RawICCProfile);
+	}
 }
 
 PSAPI_NAMESPACE_END

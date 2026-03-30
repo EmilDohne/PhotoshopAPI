@@ -3,6 +3,8 @@
 #include "Macros.h"
 #include "Profiling/Perf/Instrumentor.h"
 
+#include <algorithm>
+
 PSAPI_NAMESPACE_BEGIN
 
 // --------------------------------------------------------------------------------
@@ -12,6 +14,20 @@ void File::read(std::span<uint8_t> buffer)
 	PSAPI_PROFILE_FUNCTION();
 	if (buffer.size() == 0)
 	{
+		return;
+	}
+
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
+		if (m_Offset + buffer.size() > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				buffer.size(), m_Offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer.data(), memory_buffer.data() + static_cast<size_t>(m_Offset), buffer.size());
+		m_Offset += buffer.size();
 		return;
 	}
 
@@ -36,6 +52,19 @@ void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 		return;
 	}
 
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
+		if (offset + buffer.size() > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				buffer.size(), offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer.data(), memory_buffer.data() + static_cast<size_t>(offset), buffer.size());
+		return;
+	}
+
 	if (offset + buffer.size() > m_Size) [[unlikely]]
 	{
 		PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the file size of %" PRIu64 "", buffer.size(), offset, m_Size);
@@ -55,6 +84,22 @@ void File::readFromOffset(std::span<uint8_t> buffer, const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::write(std::span<uint8_t> buffer)
 {
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
+		const size_t write_offset = static_cast<size_t>(m_Offset);
+		const size_t write_size = buffer.size();
+		const size_t required_size = write_offset + write_size;
+		if (required_size > memory_buffer.size())
+		{
+			memory_buffer.resize(required_size, 0u);
+		}
+		std::memcpy(memory_buffer.data() + write_offset, buffer.data(), write_size);
+		m_Offset += write_size;
+		m_Size = std::max<uint64_t>(m_Size, m_Offset);
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	m_Size += buffer.size();
 	m_Offset += buffer.size();
@@ -66,6 +111,22 @@ void File::write(std::span<uint8_t> buffer)
 // --------------------------------------------------------------------------------
 void File::skip(int64_t size)
 {
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		if (size <= 0)
+		{
+			return;
+		}
+		if (m_Offset + static_cast<uint64_t>(size) > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be skipped from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				size, m_Offset, m_Size);
+			return;
+		}
+		m_Offset += static_cast<uint64_t>(size);
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (size <= 0)
 	{
@@ -84,6 +145,17 @@ void File::skip(int64_t size)
 // --------------------------------------------------------------------------------
 void File::setOffset(const uint64_t offset)
 {
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		if (offset > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		m_Offset = offset;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset == m_Offset)
 	{
@@ -103,6 +175,17 @@ void File::setOffset(const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::set_offset(const uint64_t offset)
 {
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		if (offset > m_Size)
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		m_Offset = offset;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset == m_Offset)
 	{
@@ -123,6 +206,25 @@ void File::set_offset(const uint64_t offset)
 // --------------------------------------------------------------------------------
 void File::setOffsetAndRead(char* buffer, const uint64_t offset, const uint64_t size)
 {
+	if (std::holds_alternative<std::vector<uint8_t>>(m_Storage))
+	{
+		const auto& memory_buffer = std::get<std::vector<uint8_t>>(m_Storage);
+		if (offset > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Cannot set offset to %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 ".", offset, m_Size);
+			return;
+		}
+		if (offset + size > m_Size) [[unlikely]]
+		{
+			PSAPI_LOG_ERROR("File", "Size %" PRIu64 " cannot be read from offset %" PRIu64 " as it would exceed the memory buffer size of %" PRIu64 "",
+				size, offset, m_Size);
+			return;
+		}
+		std::memcpy(buffer, reinterpret_cast<const char*>(memory_buffer.data() + static_cast<size_t>(offset)), static_cast<size_t>(size));
+		m_Offset = offset + size;
+		return;
+	}
+
 	std::lock_guard<std::mutex> guard(m_Mutex);
 	if (offset > m_Size) [[unlikely]]
 	{
@@ -208,7 +310,16 @@ File::File(std::filesystem::path file, const FileParams params)
 		PSAPI_LOG_ERROR("File", "Failed to open file: %s", file.u8string().c_str());
 	}	
 
-	m_FilePath = file;
+	m_Storage = file;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
+File::File(std::vector<uint8_t> buffer)
+{
+	m_Storage = std::move(buffer);
+	m_Offset = 0u;
+	m_Size = static_cast<uint64_t>(std::get<std::vector<uint8_t>>(m_Storage).size());
 }
 
 // ---------------------------------------------------------------------------------------------------------------------

@@ -7,17 +7,36 @@
 #include "Core/TaggedBlocks/LrSectionTaggedBlock.h"
 #include "Core/TaggedBlocks/Lr16TaggedBlock.h"
 #include "Core/TaggedBlocks/Lr32TaggedBlock.h"
+#include "Core/Endian/EndianByteSwap.h"
 #include "Core/Struct/ICCProfile.h"
 #include "PhotoshopFile/PhotoshopFile.h"
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
 #include "LayeredFile/fwd.h"
 
+#include <cstdint>
 
 PSAPI_NAMESPACE_BEGIN
 
 namespace _Impl
 {
+	inline std::vector<uint8_t> normalize_icc_payload(std::vector<uint8_t> data)
+	{
+		// ICC profile header starts with big-endian profile size in bytes.
+		if (data.size() < 4u)
+		{
+			return data;
+		}
+
+		const uint32_t declared_size = endian_decode_be<uint32_t>(reinterpret_cast<const std::byte*>(data.data()));
+
+		// Truncate only when the declared size is plausible and within buffer bounds.
+		if (declared_size >= 128u && declared_size <= data.size())
+		{
+			data.resize(declared_size);
+		}
+		return data;
+	}
 
 	/// Identify the type of layer the current layer record represents and return a layerVariant object (std::variant<ImageLayer, GroupLayer ...>)
 	/// initialized with the given layer record and corresponding channel image data.
@@ -196,7 +215,7 @@ namespace _Impl
 		const auto blockPtr = file->m_ImageResources.getResourceBlockView<ICCProfileBlock>(Enum::ImageResource::ICCProfile);
 		if (blockPtr)
 		{
-			return ICCProfile{ blockPtr->m_RawICCProfile };
+			return ICCProfile{ normalize_icc_payload(blockPtr->m_RawICCProfile) };
 		}
 		return ICCProfile{};
 	}

@@ -14,3 +14,4 @@ under the hood. Knowing these is not vital to using the PhotoshopAPI but will gi
 
    compression.rst
    in-memory-compression.rst
+   text-layers.rst

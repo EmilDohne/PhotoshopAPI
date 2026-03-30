@@ -94,13 +94,14 @@ private:
 REGISTER_LISTENER("failure", /*priority=*/1, FailureReporter);
 
 
-int main()
+int main(int argc, char** argv)
 {
 	PhotoshopAPI::Instrumentor::Get().BeginSession("Test");
 #if ARM_MAC_ARCH
 	PSAPI_LOG_WARNING("Test", "Detected we are running on an ARM-based MacOS system which means we disable any deliberately failing tests as these would segfault due to incorrect exception handling.");
 #endif
 	doctest::Context context;
+	context.applyCommandLine(argc, argv);
 	int res = context.run();
 
 	if (context.shouldExit())

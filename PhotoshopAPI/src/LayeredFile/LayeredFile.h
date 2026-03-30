@@ -8,6 +8,7 @@
 #include "PhotoshopFile/LayerAndMaskInformation.h"
 
 #include "LayeredFile/Impl/LayeredFileImpl.h"
+#include "LayeredFile/LayerTypes/TextLayer/TextLayer.h"
 #include "fwd.h"
 #include "concepts.h"
 
@@ -630,6 +631,32 @@ struct LayeredFile
 	{
 		ProgressCallback callback{};
 		LayeredFile<T>::write(std::move(layeredFile), filePath, callback, forceOvewrite);
+	}
+
+	/// \brief Remove the global Txt2 (TextEngineData) block to trigger Photoshop's text update dialog.
+	///
+	/// The global `Txt2` block is a document-level cache token that Photoshop uses to decide
+	/// whether text layers are up-to-date. After removing it, Photoshop detects the mismatch
+	/// on open and immediately shows the "Update text layers?" prompt. Clicking Update
+	/// re-renders every text layer from the `TySh` metadata, giving you a fully rendered,
+	/// editable text document in one click.
+	///
+	/// The per-layer text data (`TySh` / `lrTypeTool`) and all style information is
+	/// completely unaffected by this call.
+	void invalidate_text_cache()
+	{
+		// Strip the global Txt2 block to trigger the "Update text layers?" prompt.
+		m_UnparsedBlocks.erase(
+			std::remove_if(
+				m_UnparsedBlocks.begin(),
+				m_UnparsedBlocks.end(),
+				[](const std::shared_ptr<TaggedBlock>& block)
+				{
+					return block && block->getKey() == Enum::TaggedBlockKey::lrTextEngineData;
+				}
+			),
+			m_UnparsedBlocks.end()
+		);
 	}
 
 private:

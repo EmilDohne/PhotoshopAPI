@@ -47,6 +47,7 @@ Features
 Supported:
 - Read and write of \*.psd and \*.psb files
 - Creating and modifying simple and complex nested layer structures
+- Editable text layers (create, style, and inspect runs)
 - Smart Objects (replacing, warping, extracting)
 - Pixel Masks
 - Modifying layer attributes (name, blend mode etc.)
@@ -58,7 +59,6 @@ Supported:
 Planned:
 - Support for Adjustment Layers
 - Support for Vector Masks
-- Support for Text Layers
 - Indexed, Duotone Color Modes
 
 Not Supported:
@@ -194,3 +194,4 @@ img_layer.opacity = .5
 
 document.write(os.path.join(os.path.dirname(__file__), "WriteSimpleFile.psd"))
 ```
+

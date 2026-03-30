@@ -27,9 +27,9 @@ void declare_layer(py::module& m, const std::string& extension) {
     using Class = Layer<T>;
     // Designate shared_ptr as the holder type so pybind11 doesn't cast to unique_ptr giving us a heap corruption error
     using PyClass = py::class_<Class, std::shared_ptr<Class>>;
-    std::string class_name = "Layer" + extension;
+    std::string className = "Layer" + extension;
 
-    PyClass layer(m, class_name.c_str(), py::dynamic_attr(), py::buffer_protocol());
+    PyClass layer(m, className.c_str(), py::dynamic_attr(), py::buffer_protocol());
     layer.doc() = R"pbdoc(
 
         Base type that all layers inherit from, this class should not be instantiated

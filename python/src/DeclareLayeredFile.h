@@ -9,6 +9,7 @@
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
 
+#include <cstring>
 #include <iostream>
 
 namespace py = pybind11;
@@ -209,10 +210,14 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	// ---------------------------------------------------------------------------------------------------------------------
 	layeredFile.def_property("icc",
 		[](const Class& self) {
-			auto data = self.icc_profile().data();
-			uint8_t* ptr = data.data();
-			std::vector<size_t> shape = { self.icc_profile().data_size() };
-			return py::array_t<uint8_t>(shape, ptr);
+			const auto data = self.icc_profile().data();
+			const auto length = static_cast<py::ssize_t>(data.size());
+			py::array_t<uint8_t> array({ length }, { static_cast<py::ssize_t>(sizeof(uint8_t)) });
+			if (!data.empty())
+			{
+				std::memcpy(array.mutable_data(), data.data(), data.size());
+			}
+			return array;
 		},
 		[](Class& self, std::variant<std::filesystem::path, py::array_t<uint8_t>> value) {
 			if (std::holds_alternative<py::array_t<uint8_t>>(value)) {
@@ -261,6 +266,34 @@ void declare_layered_file(py::module& m, const std::string& extension) {
 	layeredFile.def_static("read", py::overload_cast<const std::filesystem::path&>(&Class::read), py::arg("path"), R"pbdoc(
 
 		Read and create a LayeredFile from disk. If the bit depth isnt known ahead of time use LayeredFile.read() instead which will return the appropriate type
+
+	)pbdoc");
+
+	layeredFile.def("invalidate_text_cache", &Class::invalidate_text_cache, R"pbdoc(
+
+		Remove the global Txt2 block and mark all text layers dirty so Photoshop re-renders every one on open.
+
+		**What this does (two steps):**
+
+		1. Strips the global ``Txt2`` (TextEngineData) tagged block. Photoshop uses this
+		   block as a render-cache token; its absence causes the "Update text layers?"
+		   dialog to appear the moment the file is opened.
+
+		2. Forces every text layer through the parsed TySh serialization path. Without
+		   this step, layers never touched by setter APIs stay as raw-byte pass-throughs;
+		   Photoshop's per-layer update checker sees no change in their data and silently
+		   skips re-rendering them, leaving them blank even after you click Update.
+
+		After one click of "Update" in Photoshop, all text layers are rendered from the
+		live TySh metadata and remain fully editable. The actual text content and
+		styling of unmodified layers is preserved exactly.
+
+		Example usage::
+
+		    lf = psapi.LayeredFile.read("template.psd")
+		    # ... edit specific text layers ...
+		    lf.invalidate_text_cache()   # one call - all layers will render on open
+		    lf.write("output.psd")
 
 	)pbdoc");
 
