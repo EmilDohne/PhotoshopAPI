@@ -11,6 +11,7 @@
 #include "Core/TaggedBlocks/PlacedLayerTaggedBlock.h"
 #include "Core/TaggedBlocks/ProtectedSettingTaggedBlock.h"
 #include "Core/TaggedBlocks/ReferencePointTaggedBlock.h"
+#include "Core/TaggedBlocks/BlendFillTaggedBlock.h"
 #include "Core/TaggedBlocks/UnicodeLayerNameTaggedBlock.h"
 
 #include "MaskDataMixin.h"
@@ -127,6 +128,20 @@ struct Layer : public MaskMixin<T>
 		m_Opacity = static_cast<uint8_t>(value * 255.0f); 
 	}
 
+	/// The layers' fill value
+	float fill() const noexcept { return static_cast<float>(m_Fill) / 255; }
+	/// The layers' fill value.
+	void fill(float value) noexcept
+	{
+		if (value < 0.0f || value > 1.0f)
+		{
+			PSAPI_LOG_WARNING("Layer", "Encountered fill value not between 0-1. Clamping this to fit into that range");
+		}
+		value = std::clamp<float>(value, 0.0f, 1.0f);
+
+		m_Fill = static_cast<uint8_t>(value * 255.0f);
+	}
+
 	/// The layers' width from 0 - 300,000
 	virtual uint32_t width() const noexcept { return m_Width; }
 	/// The layers' width from 0 - 300,000
@@ -222,8 +237,7 @@ struct Layer : public MaskMixin<T>
 			// Pass along the unparsed blocks
 			m_UnparsedBlocks = additional_layer_info.get_base_tagged_blocks();
 
-			auto section_divider_block = additional_layer_info.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider);
-			if (section_divider_block.has_value() && section_divider_block.value()->m_BlendMode.has_value())
+			if (auto section_divider_block = additional_layer_info.getTaggedBlock<LrSectionTaggedBlock>(Enum::TaggedBlockKey::lrSectionDivider); section_divider_block.has_value() && section_divider_block.value()->m_BlendMode.has_value())
 			{
 				m_BlendMode = section_divider_block.value()->m_BlendMode.value();
 			}
@@ -233,10 +247,9 @@ struct Layer : public MaskMixin<T>
 			}
 
 			// Parse the layer protection settings
-			auto protectionSettings = additional_layer_info.getTaggedBlock<ProtectedSettingTaggedBlock>(Enum::TaggedBlockKey::lrProtectedSetting);
-			if (protectionSettings)
+			if (auto protection_settings = additional_layer_info.getTaggedBlock<ProtectedSettingTaggedBlock>(Enum::TaggedBlockKey::lrProtectedSetting))
 			{
-				m_IsLocked = protectionSettings.value()->m_IsLocked;
+				m_IsLocked = protection_settings.value()->m_IsLocked;
 			}
 			else
 			{
@@ -244,8 +257,7 @@ struct Layer : public MaskMixin<T>
 			}
 
 			// Parse the layer color
-			auto layer_sheet_color_block = additional_layer_info.getTaggedBlock<SheetColorTaggedBlock>(Enum::TaggedBlockKey::lrSheetColorSetting);
-			if (layer_sheet_color_block.has_value())
+			if (auto layer_sheet_color_block = additional_layer_info.getTaggedBlock<SheetColorTaggedBlock>(Enum::TaggedBlockKey::lrSheetColorSetting); layer_sheet_color_block.has_value())
 			{
 				m_LayerColor = layer_sheet_color_block.value()->m_Color;
 			}
@@ -323,19 +335,22 @@ struct Layer : public MaskMixin<T>
 		if (layerRecord.m_AdditionalLayerInfo.has_value())
 		{
 			// Get the reference point (if it is there)
-			auto& additionalLayerInfo = layerRecord.m_AdditionalLayerInfo.value();
-			auto reference_point = additionalLayerInfo.get_tagged_block<ReferencePointTaggedBlock>();
-			if (reference_point)
+			auto& additional_layer_info = layerRecord.m_AdditionalLayerInfo.value();
+			if (auto reference_point = additional_layer_info.get_tagged_block<ReferencePointTaggedBlock>())
 			{
 				m_ReferencePointX.emplace(reference_point->m_ReferenceX);
 				m_ReferencePointY.emplace(reference_point->m_ReferenceY);
 			}
 			
 			// Get the unicode layer name (if it is there) and override the pascal string name
-			auto unicode_name = additionalLayerInfo.get_tagged_block<UnicodeLayerNameTaggedBlock>();
-			if (unicode_name)
+			if (auto unicode_name = additional_layer_info.get_tagged_block<UnicodeLayerNameTaggedBlock>())
 			{
 				m_LayerName = unicode_name->m_Name.string();
+			}
+
+			if (auto blend_fill = additional_layer_info.get_tagged_block<BlendFillTaggedBlock>())
+			{
+				m_Fill = blend_fill->m_Fill;
 			}
 		}
 	}
@@ -405,6 +420,8 @@ protected:
 
 	/// 0 - 255 despite the appearance being 0-100 in photoshop
 	uint8_t m_Opacity{};
+	/// 0 - 255 despite the appearance being 0-100 in photoshop
+	uint8_t m_Fill{};
 
 	uint32_t m_Width{};
 
@@ -477,15 +494,18 @@ protected:
 
 		// Generate our unicode layer name block, we always include this as its size is trivial and this avoids 
 		// any issues with names being truncated
-		auto unicodeNamePtr = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
-		block_vec.push_back(unicodeNamePtr);
+		const auto unicode_layer_name_tagged_block = std::make_shared<UnicodeLayerNameTaggedBlock>(m_LayerName, static_cast<uint8_t>(4u));
+		block_vec.push_back(unicode_layer_name_tagged_block);
 
 		// Generate our LockedSettings Tagged block
-		auto protectionSettingsPtr = std::make_shared<ProtectedSettingTaggedBlock>(m_IsLocked);
-		block_vec.push_back(protectionSettingsPtr);
+		const auto protected_setting_tagged_block = std::make_shared<ProtectedSettingTaggedBlock>(m_IsLocked);
+		block_vec.push_back(protected_setting_tagged_block);
 
-		auto lr_color_ptr = std::make_shared<SheetColorTaggedBlock>(m_LayerColor);
-		block_vec.push_back(lr_color_ptr);
+		const auto sheet_color_tagged_block = std::make_shared<SheetColorTaggedBlock>(m_LayerColor);
+		block_vec.push_back(sheet_color_tagged_block);
+
+		const auto blend_fill_tagged_block = std::make_shared<BlendFillTaggedBlock>(m_Fill);
+		block_vec.push_back(blend_fill_tagged_block);
 
 		return block_vec;
 	}

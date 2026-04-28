@@ -47,6 +47,8 @@ void declare_layer(py::module& m, const std::string& extension) {
             The blend mode of the layer, 'Passthrough' is reserved for group layers
         opacity : float
             The layers opacity from 0.0 - 1.0
+        fill : float
+            The layers fill from 0.0 - 1.0
         width : int
             The width of the layer ranging up to 30,000 for PSD and 300,000 for PSB,
             this does not have to match the files width
@@ -93,6 +95,7 @@ void declare_layer(py::module& m, const std::string& extension) {
     layer.def_property("name", &Class::name, &Class::name);		
     layer.def_property("blend_mode", [](const Class& self) { return self.blendmode(); }, [](Class& self, Enum::BlendMode blendmode) { self.blendmode(blendmode); });
     layer.def_property("opacity", [](const Class& self) { return self.opacity(); }, [](Class& self, float opacity) { self.opacity(opacity); });
+    layer.def_property("fill", [](const Class& self) { return self.fill(); }, [](Class& self, float fill) { self.fill(fill); });
     layer.def_property("width", [](const Class& self) { return self.width(); }, [](Class& self, uint32_t width) { self.width(width); });
     layer.def_property("height", [](const Class& self) { return self.height(); }, [](Class& self, uint32_t height) { self.height(height); });
     layer.def_property("center_x", [](const Class& self) { return self.center_x(); }, [](Class& self, float center_x) { self.center_x(center_x); });

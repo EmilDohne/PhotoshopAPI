@@ -799,6 +799,8 @@ namespace Enum
 		lrSavingMergedTransparency,	// Holds no data, just indicates channel Image data section includes transparency (needs to be tested)
 		lrPixelSourceData,	// Data for 3d or video layers
 		lrUserMask,
+		lrObjectBasedFXInfo,
+		lrBlendFill,
 		// 16- and 32-bit files store their layer records under these tagged blocks at the end of the layer
 		// and mask information section
 		Lr16,
@@ -880,6 +882,8 @@ namespace Enum
 			{"Mt32", TaggedBlockKey::lrSavingMergedTransparency},
 			{"PxSD", TaggedBlockKey::lrPixelSourceData},
 			{"LMsk", TaggedBlockKey::lrUserMask},
+			{"lfx2", TaggedBlockKey::lrObjectBasedFXInfo },
+			{"iOpa", TaggedBlockKey::lrBlendFill},
 			{"Lr16", TaggedBlockKey::Lr16},
 			{"Lr32", TaggedBlockKey::Lr32},
 			{"Layr", TaggedBlockKey::Layr},
