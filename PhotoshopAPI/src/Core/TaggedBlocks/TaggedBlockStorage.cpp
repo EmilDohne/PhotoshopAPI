@@ -2,7 +2,6 @@
 
 #include "Macros.h"
 #include "Core/FileIO/Read.h"
-#include "Core/FileIO/Write.h"
 #include "Logger.h"
 #include "StringUtil.h"
 
@@ -18,6 +17,8 @@
 #include "TypeToolTaggedBlock.h"
 #include "UnicodeLayerNameTaggedBlock.h"
 #include "SheetColorTaggedBlock.h"
+#include "BlendFillTaggedBlock.h"
+
 
 PSAPI_NAMESPACE_BEGIN
 
@@ -64,6 +65,7 @@ template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTagg
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
+template std::shared_ptr<BlendFillTaggedBlock>			TaggedBlockStorage::getTaggedBlockView(const Enum::TaggedBlockKey key) const;
 
 
 template <typename T>
@@ -93,6 +95,7 @@ template std::shared_ptr<PlacedLayerDataTaggedBlock>	TaggedBlockStorage::getTagg
 template std::shared_ptr<LinkedLayerTaggedBlock>		TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<TypeToolTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
 template std::shared_ptr<SheetColorTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
+template std::shared_ptr<BlendFillTaggedBlock>			TaggedBlockStorage::getTaggedBlockView() const;
 
 
 template <typename T>
@@ -124,6 +127,7 @@ template std::vector<std::shared_ptr<PlacedLayerDataTaggedBlock>>	TaggedBlockSto
 template std::vector<std::shared_ptr<LinkedLayerTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<TypeToolTaggedBlock>>			TaggedBlockStorage::get_tagged_blocks() const;
 template std::vector<std::shared_ptr<SheetColorTaggedBlock>>		TaggedBlockStorage::get_tagged_blocks() const;
+template std::vector<std::shared_ptr<BlendFillTaggedBlock>>			TaggedBlockStorage::get_tagged_blocks() const;
 
 
 
@@ -224,6 +228,13 @@ const std::shared_ptr<TaggedBlock> TaggedBlockStorage::readTaggedBlock(File& doc
 			lrSheetColorSetting->read(document, offset, signature, padding);
 			this->m_TaggedBlocks.push_back(lrSheetColorSetting);
 			return lrSheetColorSetting;
+		}
+		else if (taggedBlock.value() == Enum::TaggedBlockKey::lrBlendFill)
+		{
+			auto block = std::make_shared<BlendFillTaggedBlock>();
+			block->read(document, offset, signature, padding);
+			this->m_TaggedBlocks.push_back(block);
+			return block;
 		}
 		else
 		{

@@ -43,6 +43,14 @@ class Layer_8bit:
         ...
 
     @property
+    def fill(self: Layer_8bit) -> float:
+        ...
+
+    @fill.setter
+    def fill(self: Layer_8bit, value: float) -> None:
+        ...
+
+    @property
     def width(self: Layer_8bit) -> int:
         ...
 
@@ -199,6 +207,14 @@ class Layer_16bit:
 
     @opacity.setter
     def opacity(self: Layer_16bit, value: float) -> None:
+        ...
+
+    @property
+    def fill(self: Layer_16bit) -> float:
+        ...
+
+    @fill.setter
+    def fill(self: Layer_16bit, value: float) -> None:
         ...
 
     @property
@@ -359,6 +375,14 @@ class Layer_32bit:
 
     @opacity.setter
     def opacity(self: Layer_32bit, value: float) -> None:
+        ...
+
+    @property
+    def fill(self: Layer_32bit) -> float:
+        ...
+
+    @fill.setter
+    def fill(self: Layer_32bit, value: float) -> None:
         ...
 
     @property
