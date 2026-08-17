@@ -57,14 +57,37 @@ void ResolutionInfoBlock::read(File& document, const uint64_t offset)
 		PSAPI_LOG_ERROR("ResolutionInfoBlock", "Data size must be 16, not %u", m_DataSize);
 	}
 	
-	// Read the ResolutionInfo struct
+	// Read the ResolutionInfo struct. The unit fields are guarded by find()
+	// rather than .at(): the spec tolerates unknown widthUnit values (e.g.
+	// DCC tools like Houdini write 0 = "undefined"), and a strict .at() throws
+	// std::out_of_range that aborts the whole LayeredFile read.
+	auto readResUnit = [](File& doc) -> Enum::ResolutionUnit {
+		uint16_t v = ReadBinaryData<uint16_t>(doc);
+		auto it = Enum::resolutionUnitMap.find(v);
+		if (it == Enum::resolutionUnitMap.end())
+		{
+			PSAPI_LOG_WARNING("ResolutionInfoBlock", "Unknown resolution unit value %u, defaulting to PixelsPerInch", v);
+			return Enum::ResolutionUnit::PixelsPerInch;
+		}
+		return it->second;
+	};
+	auto readDisplayUnit = [](File& doc) -> Enum::DisplayUnit {
+		uint16_t v = ReadBinaryData<uint16_t>(doc);
+		auto it = Enum::displayUnitMap.find(v);
+		if (it == Enum::displayUnitMap.end())
+		{
+			PSAPI_LOG_WARNING("ResolutionInfoBlock", "Unknown display unit value %u, defaulting to Inches", v);
+			return Enum::DisplayUnit::Inches;
+		}
+		return it->second;
+	};
 	m_HorizontalRes = { ReadBinaryData<uint16_t>(document), ReadBinaryData<uint16_t>(document) };
-	m_HorizontalResUnit = Enum::resolutionUnitMap.at(ReadBinaryData<uint16_t>(document));
-	m_WidthUnit = Enum::displayUnitMap.at(ReadBinaryData<uint16_t>(document));
+	m_HorizontalResUnit = readResUnit(document);
+	m_WidthUnit = readDisplayUnit(document);
 
 	m_VerticalRes = { ReadBinaryData<uint16_t>(document), ReadBinaryData<uint16_t>(document) };
-	m_VerticalResUnit = Enum::resolutionUnitMap.at(ReadBinaryData<uint16_t>(document));
-	m_HeightUnit = Enum::displayUnitMap.at(ReadBinaryData<uint16_t>(document));
+	m_VerticalResUnit = readResUnit(document);
+	m_HeightUnit = readDisplayUnit(document);
 }
 
 
