@@ -2,6 +2,7 @@
 
 #include <OpenImageIO/imageio.h>
 
+#include <cassert>
 #include <memory>
 
 PSAPI_NAMESPACE_BEGIN

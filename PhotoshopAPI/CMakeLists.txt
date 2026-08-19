@@ -49,9 +49,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "AppleClang")
 	target_compile_options(PhotoshopAPI PUBLIC -fexperimental-library)
 	target_link_options(PhotoshopAPI PUBLIC -fexperimental-library)
 
-	# AppleClang 21 (Xcode 26.4+) rejects fmt's consteval format-string checks with
-	# "call to consteval function ... is not a constant expression" (fmtlib/fmt#4740,
-	# unresolved upstream as of fmt 12.1.0). fmt only honours a user-provided override
-	# of this macro from 12.1.0 onwards, so this requires fmt >= 12.1.0 to take effect.
+	# Works around an AppleClang 21 consteval bug in fmt (fmtlib/fmt#4740)
 	target_compile_definitions(PhotoshopAPI PUBLIC FMT_USE_CONSTEVAL=0)
 endif()
